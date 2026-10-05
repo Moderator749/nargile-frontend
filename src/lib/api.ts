@@ -14,7 +14,8 @@ export const api = axios.create({
 
 api.interceptors.request.use((config) => {
   const token = getToken();
-  if (token) {
+  // Respect an explicit header (e.g. calling /auth/me with a token not yet stored).
+  if (token && !config.headers.Authorization) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
@@ -24,7 +25,13 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     // An expired or revoked token is useless; log out so the UI falls back to logged-out.
-    if (axios.isAxiosError(error) && error.response?.status === 401) {
+    // Only for authenticated requests: a 401 from /auth/login (wrong password) must not
+    // log anyone out or wipe a guest's cart.
+    if (
+      axios.isAxiosError(error) &&
+      error.response?.status === 401 &&
+      error.config?.headers?.Authorization
+    ) {
       useAuthStore.getState().logout();
     }
     return Promise.reject(error);

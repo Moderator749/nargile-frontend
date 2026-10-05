@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
 import { clearToken, getToken, setToken } from "@/lib/auth";
+import { useCartStore } from "@/store/useCartStore";
 import type { User } from "@/types";
 
 interface AuthState {
@@ -25,6 +26,8 @@ export const useAuthStore = create<AuthState>()(
       logout: () => {
         clearToken();
         set({ token: null, user: null });
+        // Never leave the previous user's cart behind on a shared computer.
+        useCartStore.getState().clearCart();
       },
     }),
     {

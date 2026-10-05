@@ -25,7 +25,7 @@ export interface User {
   is_active: boolean;
   is_verified: boolean;
   created_at: ISODateTime;
-  /** Not yet returned by the backend's UserRead; required for B2B gating. */
+  /** Returned by GET /auth/me (UserMe); absent from other user responses. */
   segment_code?: SegmentType | null;
 }
 
@@ -36,6 +36,8 @@ export interface UserCreate {
   password: string;
   phone?: string | null;
   segment_code?: SegmentType | null;
+  /** Not yet stored by the backend (no column); ignored until it is added. */
+  full_name?: string;
 }
 
 export interface LoginRequest {
