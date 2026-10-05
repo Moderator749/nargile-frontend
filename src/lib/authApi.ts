@@ -6,10 +6,13 @@ export async function login(payload: LoginRequest): Promise<Token> {
   return data;
 }
 
-/** Fetches the profile for `token` explicitly, before it is stored. */
-export async function fetchMe(token: string): Promise<User> {
+/**
+ * Fetches the current profile. Pass `token` right after login, before it is
+ * stored; otherwise the interceptor attaches the stored one.
+ */
+export async function fetchMe(token?: string): Promise<User> {
   const { data } = await api.get<User>("/auth/me", {
-    headers: { Authorization: `Bearer ${token}` },
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
   });
   return data;
 }

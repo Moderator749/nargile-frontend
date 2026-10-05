@@ -32,7 +32,8 @@ api.interceptors.response.use(
       error.response?.status === 401 &&
       error.config?.headers?.Authorization
     ) {
-      useAuthStore.getState().logout();
+      // Expired session, not a user-initiated logout: keep the cart.
+      useAuthStore.getState().logout({ keepCart: true });
     }
     return Promise.reject(error);
   },

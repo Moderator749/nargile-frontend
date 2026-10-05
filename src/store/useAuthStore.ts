@@ -9,7 +9,10 @@ interface AuthState {
   user: User | null;
   token: string | null;
   setAuth: (token: string, user: User) => void;
-  logout: () => void;
+  /** Refresh the profile (e.g. ParaPuan balance) without touching the token. */
+  setUser: (user: User) => void;
+  /** Pass `keepCart` when the session merely expired (same person, keep their cart). */
+  logout: (options?: { keepCart?: boolean }) => void;
 }
 
 // The token's source of truth is src/lib/auth.ts (read by the API interceptor).
@@ -23,11 +26,12 @@ export const useAuthStore = create<AuthState>()(
         setToken(token);
         set({ token, user });
       },
-      logout: () => {
+      setUser: (user) => set({ user }),
+      logout: (options) => {
         clearToken();
         set({ token: null, user: null });
-        // Never leave the previous user's cart behind on a shared computer.
-        useCartStore.getState().clearCart();
+        // On an explicit logout, never leave the cart behind on a shared computer.
+        if (!options?.keepCart) useCartStore.getState().clearCart();
       },
     }),
     {

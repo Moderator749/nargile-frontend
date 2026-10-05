@@ -28,6 +28,11 @@ export function Navbar() {
           <Link href="/catalog" className={navLinkClass}>
             Katalog
           </Link>
+          {user && (
+            <Link href="/orders" className={navLinkClass}>
+              Siparişlerim
+            </Link>
+          )}
           {isB2B && (
             <Link href="/b2b" className={navLinkClass}>
               B2B Portal
@@ -56,7 +61,7 @@ export function Navbar() {
             </span>
             <button
               type="button"
-              onClick={logout}
+              onClick={() => logout()}
               className="flex items-center gap-1.5 rounded-md border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
             >
               <LogOut className="h-4 w-4" aria-hidden />

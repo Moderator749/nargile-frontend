@@ -10,7 +10,12 @@ import { fetchMe, login } from "@/lib/authApi";
 import { getApiErrorMessage } from "@/lib/errors";
 import { useAuthStore } from "@/store/useAuthStore";
 
-export function LoginForm({ justRegistered }: { justRegistered: boolean }) {
+interface LoginFormProps {
+  justRegistered: boolean;
+  redirectTo: string;
+}
+
+export function LoginForm({ justRegistered, redirectTo }: LoginFormProps) {
   const router = useRouter();
   const setAuth = useAuthStore((s) => s.setAuth);
 
@@ -29,7 +34,7 @@ export function LoginForm({ justRegistered }: { justRegistered: boolean }) {
       const { access_token } = await login({ email: email.trim(), password });
       const user = await fetchMe(access_token);
       setAuth(access_token, user);
-      router.replace("/catalog");
+      router.replace(redirectTo);
       // Stay in the submitting state while navigating away.
     } catch (err) {
       setError(getApiErrorMessage(err, "Giriş yapılamadı. Lütfen tekrar deneyin."));

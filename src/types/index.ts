@@ -28,6 +28,8 @@ export interface User {
   created_at: ISODateTime;
   /** Returned by GET /auth/me (UserMe); absent from other user responses. */
   segment_code?: SegmentType | null;
+  /** Usable ParaPuan (1 point = 1 TRY). Returned by GET /auth/me only. */
+  loyalty_balance?: number;
 }
 
 export const B2B_SEGMENTS: readonly SegmentType[] = ["WHOLESALE", "DEALER"];
@@ -142,8 +144,8 @@ export interface CartLineItem extends CartItem {
   segment_price: DecimalString | null;
 }
 
+/** The customer is always the authenticated user (from the token), never the body. */
 export interface CartCalculateRequest {
-  user_id: UUID;
   payment_method: PaymentMethod;
   items: CartItem[];
   points_to_redeem?: number;

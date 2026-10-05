@@ -8,8 +8,16 @@ export const metadata: Metadata = {
   title: "Giriş Yap | Nargile SaaS",
 };
 
+/** Only same-site relative paths, so `?next=` can't be used as an open redirect. */
+function safeRedirect(next: string | string[] | undefined): string {
+  if (typeof next !== "string" || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) {
+    return "/catalog";
+  }
+  return next;
+}
+
 export default async function LoginPage(props: PageProps<"/login">) {
-  const { registered } = await props.searchParams;
+  const { registered, next } = await props.searchParams;
 
   return (
     <AuthCard
@@ -24,7 +32,7 @@ export default async function LoginPage(props: PageProps<"/login">) {
         </>
       }
     >
-      <LoginForm justRegistered={registered === "1"} />
+      <LoginForm justRegistered={registered === "1"} redirectTo={safeRedirect(next)} />
     </AuthCard>
   );
 }
