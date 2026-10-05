@@ -20,6 +20,7 @@ export type OrderStatus = "PENDING_APPROVAL" | "APPROVED" | "SHIPPED" | "CANCELL
 export interface User {
   id: UUID;
   email: string;
+  full_name: string | null;
   phone: string | null;
   role: UserRole;
   is_active: boolean;
@@ -34,10 +35,9 @@ export const B2B_SEGMENTS: readonly SegmentType[] = ["WHOLESALE", "DEALER"];
 export interface UserCreate {
   email: string;
   password: string;
+  full_name?: string | null;
   phone?: string | null;
-  segment_code?: SegmentType | null;
-  /** Not yet stored by the backend (no column); ignored until it is added. */
-  full_name?: string;
+  // No segment_code: the backend always assigns RETAIL on self-registration.
 }
 
 export interface LoginRequest {
@@ -76,6 +76,28 @@ export interface Product {
   description: string | null;
   category_id: number | null;
   tags: string[] | null;
+}
+
+// Catalog listing (GET /products/): prices resolved for the caller's segment.
+export interface CatalogPrice {
+  currency: CurrencyType;
+  price_excl_tax: DecimalString;
+  price_incl_tax: DecimalString;
+  vat_rate: DecimalString;
+}
+
+export interface CatalogVariant {
+  id: UUID;
+  sku: string;
+  attributes: Record<string, unknown> | null;
+  /** Price for the caller's segment; null if not sold to that segment. */
+  price: CatalogPrice | null;
+  /** Public RETAIL price. */
+  list_price: CatalogPrice | null;
+}
+
+export interface CatalogProduct extends Product {
+  variants: CatalogVariant[];
 }
 
 export interface ProductVariant {

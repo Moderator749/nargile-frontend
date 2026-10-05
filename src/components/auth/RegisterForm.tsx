@@ -37,8 +37,6 @@ export function RegisterForm() {
         email: email.trim(),
         password,
         full_name: fullName.trim(),
-        // Public sign-ups are retail customers; B2B segments are assigned by staff.
-        segment_code: "RETAIL",
       });
       router.replace("/login?registered=1");
     } catch (err) {

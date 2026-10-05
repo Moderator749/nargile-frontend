@@ -52,7 +52,7 @@ export function Navbar() {
           <div className="flex items-center gap-2">
             <span className="hidden max-w-48 items-center gap-1.5 truncate text-sm text-slate-700 md:flex">
               <UserIcon className="h-4 w-4 shrink-0" aria-hidden />
-              <span className="truncate">{user.email}</span>
+              <span className="truncate">{user.full_name || user.email}</span>
             </span>
             <button
               type="button"
