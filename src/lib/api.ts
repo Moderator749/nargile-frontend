@@ -1,6 +1,7 @@
 import axios from "axios";
 
-import { clearToken, getToken } from "@/lib/auth";
+import { getToken } from "@/lib/auth";
+import { useAuthStore } from "@/store/useAuthStore";
 
 export const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000/api/v1";
@@ -22,9 +23,9 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // An expired or revoked token is useless; drop it so the UI falls back to logged-out.
+    // An expired or revoked token is useless; log out so the UI falls back to logged-out.
     if (axios.isAxiosError(error) && error.response?.status === 401) {
-      clearToken();
+      useAuthStore.getState().logout();
     }
     return Promise.reject(error);
   },

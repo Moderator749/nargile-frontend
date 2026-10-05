@@ -25,7 +25,11 @@ export interface User {
   is_active: boolean;
   is_verified: boolean;
   created_at: ISODateTime;
+  /** Not yet returned by the backend's UserRead; required for B2B gating. */
+  segment_code?: SegmentType | null;
 }
+
+export const B2B_SEGMENTS: readonly SegmentType[] = ["WHOLESALE", "DEALER"];
 
 export interface UserCreate {
   email: string;
@@ -102,6 +106,16 @@ export interface Inventory {
 export interface CartItem {
   variant_id: UUID;
   quantity: number;
+}
+
+/**
+ * Client-side cart line, persisted in the browser. Prices are display-only
+ * snapshots; the server re-prices everything in calculate-cart/checkout.
+ */
+export interface CartLineItem extends CartItem {
+  product_name: string;
+  price: DecimalString;
+  segment_price: DecimalString | null;
 }
 
 export interface CartCalculateRequest {
