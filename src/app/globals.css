@@ -137,6 +137,13 @@ html[data-auth] .guest-only {
   }
 }
 
+/* Admin status strip: the TCMB rate tiles breathe to show the feed is live. */
+@keyframes rate-glow {
+  50% {
+    opacity: 0.45;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html[data-auth] .public-price {
     animation: none;

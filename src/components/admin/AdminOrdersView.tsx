@@ -131,33 +131,35 @@ export function AdminOrdersView({ onClose }: { onClose?: () => void }) {
     if (canApproveOrder(order.status)) {
       const transfer = order.status === "AWAITING_TRANSFER";
       return (
-        <div className="flex flex-col items-stretch gap-1.5 sm:items-end">
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              onClick={() => actions.approve(order)}
-              loading={actions.busy(order.id)}
-              className="h-9! sm:w-auto!"
-              title={transfer ? "Havale hesaba geçti: siparişi ödendi olarak işaretle" : "Siparişi onayla"}
-            >
-              <CircleCheck className="h-4 w-4" aria-hidden /> {transfer ? "Ödendi" : "Onayla"}
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => actions.cancel(order)}
-              disabled={actions.busy(order.id)}
-              className="h-9! sm:w-auto!"
-            >
-              <XCircle className="h-4 w-4" aria-hidden /> İptal et
-            </Button>
-          </div>
-          {notice?.kind === "error" && <p className="text-xs text-red-600 dark:text-red-400">{notice.text}</p>}
+        // Stacked and compact: side by side they overflowed the cell and ran into
+        // the Durum column.
+        <div className="flex w-full flex-col items-stretch gap-1">
+          <Button
+            type="button"
+            onClick={() => actions.approve(order)}
+            loading={actions.busy(order.id)}
+            className="h-8! px-2.5! text-xs!"
+            title={transfer ? "Havale hesaba geçti: siparişi ödendi olarak işaretle" : "Siparişi onayla"}
+          >
+            <CircleCheck className="h-3.5 w-3.5 shrink-0" aria-hidden /> {transfer ? "Ödendi" : "Onayla"}
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => actions.cancel(order)}
+            disabled={actions.busy(order.id)}
+            className="h-8! px-2.5! text-xs!"
+          >
+            <XCircle className="h-3.5 w-3.5 shrink-0" aria-hidden /> İptal et
+          </Button>
+          {notice?.kind === "error" && (
+            <p className="whitespace-normal text-left text-[11px] leading-4 text-red-600 dark:text-red-400">{notice.text}</p>
+          )}
         </div>
       );
     }
     return notice?.kind === "success" ? (
-      <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400" role="status">
+      <p className="whitespace-normal text-left text-[11px] font-medium leading-4 text-emerald-600 dark:text-emerald-400" role="status">
         {notice.text}
       </p>
     ) : null;
@@ -248,29 +250,26 @@ export function AdminOrdersView({ onClose }: { onClose?: () => void }) {
           <p className="px-4 py-16 text-center text-sm text-slate-500 dark:text-zinc-400">Bu durumda sipariş yok.</p>
         ) : (
           <>
-            {/* Desktop table: scrolls inside its own box instead of stretching the page. */}
-            <div className="hidden overflow-x-auto md:block">
-            <table className="w-full min-w-[920px] table-fixed text-sm">
-              <colgroup>
-                <col className="w-10" />
-                <col className="w-[11rem]" />
-                <col className="w-[15rem]" />
-                <col className="w-[8.5rem]" />
-                <col className="w-[8rem]" />
-                <col className="w-[9rem]" />
-                <col />
-              </colgroup>
+            {/*
+              Desktop table, sized to its container — no horizontal scroll.
+              `table-fixed` with percentage columns keeps the badge and the action
+              buttons inside their own cells (side by side they used to spill into
+              the Durum column), and the text cells truncate instead of widening.
+              "Ödeme" folds into the amount cell below xl, where the panel is narrower.
+            */}
+            <div className="hidden md:block">
+            <table className="w-full table-fixed text-sm">
               <thead>
                 <tr className="border-b border-slate-200 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:border-white/10 dark:text-zinc-500">
-                  <th scope="col" className="px-2 py-3">
+                  <th scope="col" className="w-9 px-2 py-3">
                     <span className="sr-only">Detay</span>
                   </th>
-                  <th scope="col" className="px-4 py-3">Sipariş</th>
-                  <th scope="col" className="px-4 py-3">Müşteri</th>
-                  <th scope="col" className="px-4 py-3">Ödeme</th>
-                  <th scope="col" className="px-4 py-3 text-right">Tutar</th>
-                  <th scope="col" className="px-4 py-3">Durum</th>
-                  <th scope="col" className="px-4 py-3 text-right">
+                  <th scope="col" className="w-[20%] px-3 py-3">Sipariş</th>
+                  <th scope="col" className="w-[25%] px-3 py-3">Müşteri</th>
+                  <th scope="col" className="hidden w-[11%] px-3 py-3 xl:table-cell">Ödeme</th>
+                  <th scope="col" className="w-[12%] px-3 py-3 text-right">Tutar</th>
+                  <th scope="col" className="w-[16%] px-3 py-3">Durum</th>
+                  <th scope="col" className="w-[16%] px-3 py-3 text-right">
                     <span className="sr-only">İşlem</span>
                   </th>
                 </tr>
@@ -295,34 +294,41 @@ export function AdminOrdersView({ onClose }: { onClose?: () => void }) {
                             orderNumber={o.order_number}
                           />
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-3 py-3 align-top">
                           <p className="truncate font-mono text-xs font-semibold" title={o.order_number}>{o.order_number}</p>
-                          <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-500">{formatDate(o.created_at)}</p>
+                          <p className="mt-0.5 truncate text-xs text-slate-500 dark:text-zinc-500">{formatDate(o.created_at)}</p>
                           {o.shipping_method === "COURIER_ISTANBUL" && (
-                            <div className="mt-1.5">
+                            <div className="mt-1.5 flex">
                               <CourierFlag />
                             </div>
                           )}
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-3 py-3 align-top">
                           <p className="truncate font-medium">{o.customer_name || o.shipping_address?.full_name || "—"}</p>
                           <p className="truncate text-xs text-slate-500 dark:text-zinc-500" title={o.customer_email}>{o.customer_email}</p>
                           <AddressLine order={o} />
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="hidden px-3 py-3 align-top xl:table-cell">
                           <PaymentLabel method={o.payment_method} />
                         </td>
-                        <td className="px-4 py-3 text-right font-semibold tabular-nums">
+                        <td className="px-3 py-3 text-right align-top font-semibold tabular-nums">
                           {formatMoney(orderNetTotal(o))}
                           <p className="text-xs font-normal text-slate-500 dark:text-zinc-500">
                             {o.items.reduce((n, i) => n + i.quantity, 0)} ürün
                           </p>
+                          <p className="text-xs font-normal text-slate-500 xl:hidden dark:text-zinc-500">
+                            {o.payment_method === "BANK_TRANSFER" ? "Havale" : "Kart"}
+                          </p>
                         </td>
-                        <td className="px-4 py-3">
-                          <StatusBadge status={o.status} />
-                          {o.cancel_reason && <p className="mt-1 max-w-40 truncate text-xs text-slate-500" title={o.cancel_reason}>{o.cancel_reason}</p>}
+                        <td className="px-3 py-3 align-top">
+                          <StatusBadge status={o.status} compact />
+                          {o.cancel_reason && (
+                            <p className="mt-1 max-w-32 truncate text-xs text-slate-500" title={o.cancel_reason}>
+                              {o.cancel_reason}
+                            </p>
+                          )}
                         </td>
-                        <td className="px-4 py-3 text-right">{renderAction(o)}</td>
+                        <td className="px-3 py-3 align-top">{renderAction(o)}</td>
                       </tr>
                       {expanded && (
                         <tr id={sheetId(o.id)}>

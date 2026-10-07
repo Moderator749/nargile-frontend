@@ -15,7 +15,7 @@ import { StatusBadge } from "@/components/orders/StatusBadge";
 import { Alert } from "@/components/ui/Alert";
 import { adminDashboard, adminListOrdersPage } from "@/lib/adminApi";
 import { getApiErrorMessage } from "@/lib/errors";
-import { formatDate, formatMoney } from "@/lib/format";
+import { formatDateParts, formatMoney } from "@/lib/format";
 import { orderNetTotal } from "@/lib/ordersApi";
 import type { AdminDashboardData, AdminOrder, PeriodTotals } from "@/types";
 
@@ -66,7 +66,7 @@ function Cargo({ o }: { o: AdminOrder }) {
 }
 
 const cargoBtn =
-  "inline-flex h-7 items-center gap-1 whitespace-nowrap rounded-md px-2 text-[11px] font-semibold transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-red-600 disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex h-7 w-full items-center justify-center gap-1 whitespace-nowrap rounded-md px-2 text-[11px] font-semibold transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-red-600 disabled:cursor-not-allowed disabled:opacity-50";
 
 /**
  * "Kargoya ver" hands the order to the carrier and e-mails the customer;
@@ -78,14 +78,14 @@ function CargoActions({ o, actions }: { o: AdminOrder; actions: OrderActions }) 
   if (!canShipOrder(o.status))
     return notice ? (
       <p
-        className={`mt-1 text-[11px] leading-4 ${notice.kind === "error" ? "text-red-600 dark:text-red-400" : "text-emerald-700 dark:text-emerald-400"}`}
+        className={`mt-1 max-w-32 whitespace-normal text-[11px] leading-4 ${notice.kind === "error" ? "text-red-600 dark:text-red-400" : "text-emerald-700 dark:text-emerald-400"}`}
         role="status"
       >
         {notice.text}
       </p>
     ) : null;
   return (
-    <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+    <div className="mt-1.5 flex flex-col items-stretch gap-1">
       <button
         type="button"
         onClick={() => actions.ship(o)}
@@ -93,7 +93,7 @@ function CargoActions({ o, actions }: { o: AdminOrder; actions: OrderActions }) 
         title="Kargoya ver: müşteriye bilgilendirme e-postası gönderilir"
         className={`${cargoBtn} bg-emerald-600 text-white hover:bg-emerald-500`}
       >
-        <Truck className="h-3.5 w-3.5" aria-hidden /> Kargoya ver
+        <Truck className="h-3.5 w-3.5 shrink-0" aria-hidden /> Kargoya ver
       </button>
       <button
         type="button"
@@ -102,22 +102,60 @@ function CargoActions({ o, actions }: { o: AdminOrder; actions: OrderActions }) 
         title="Siparişi reddet: stok iade edilir, kazanılan puanlar geri alınır"
         className={`${cargoBtn} bg-white text-red-700 ring-1 ring-red-300 hover:bg-red-50 dark:bg-zinc-900 dark:text-red-300 dark:ring-red-500/30 dark:hover:bg-red-500/10`}
       >
-        <XCircle className="h-3.5 w-3.5" aria-hidden /> Reddet
+        <XCircle className="h-3.5 w-3.5 shrink-0" aria-hidden /> Reddet
       </button>
       {notice?.kind === "error" && (
-        <p className="basis-full text-[11px] leading-4 text-red-600 dark:text-red-400">{notice.text}</p>
+        <p className="max-w-32 text-[11px] leading-4 text-red-600 dark:text-red-400">{notice.text}</p>
       )}
     </div>
   );
 }
 
-function StatTile({ icon: Icon, label, value, sub, href }: { icon: typeof Users; label: string; value: string; sub?: string; href?: string }) {
+/**
+ * "Live rate" marker: a breathing emerald dot. TCMB publishes one bulletin a day
+ * and the API returns only that one, so there is no previous value to point an
+ * up/down arrow at — this says the feed is live without inventing a direction.
+ */
+function LiveDot() {
+  return (
+    <span className="relative ml-1 inline-flex h-2 w-2 shrink-0 align-middle" title="Canlı TCMB kuru">
+      <span className="absolute inset-0 rounded-full bg-emerald-500/70 motion-safe:animate-ping" aria-hidden />
+      <span className="relative h-2 w-2 rounded-full bg-emerald-500" aria-hidden />
+      <span className="sr-only">Canlı kur</span>
+    </span>
+  );
+}
+
+function StatTile({
+  icon: Icon,
+  label,
+  value,
+  sub,
+  href,
+  live = false,
+}: {
+  icon: typeof Users;
+  label: string;
+  value: string;
+  sub?: string;
+  href?: string;
+  /** Marks a TCMB rate tile: adds the live pulse and a soft breathing glow. */
+  live?: boolean;
+}) {
   const body = (
     <>
-      <Icon className="h-5 w-5 shrink-0 text-slate-400 dark:text-zinc-500" aria-hidden />
+      <Icon
+        className={`h-5 w-5 shrink-0 ${
+          live ? "text-emerald-600 motion-safe:animate-[rate-glow_3s_ease-in-out_infinite] dark:text-emerald-400" : "text-slate-400 dark:text-zinc-500"
+        }`}
+        aria-hidden
+      />
       <div className="min-w-0">
         <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-400">{label}</p>
-        <p className="truncate font-mono text-lg font-semibold tabular-nums">{value}</p>
+        <p className="truncate font-mono text-lg font-semibold tabular-nums">
+          {value}
+          {live && value !== "…" && value !== "—" && <LiveDot />}
+        </p>
         {sub && <p className="text-[11px] text-slate-500 dark:text-zinc-400">{sub}</p>}
       </div>
     </>
@@ -200,8 +238,8 @@ export function AdminDashboard() {
 
       {/* Status strip */}
       <section aria-label="Durum" className={`${panelClass} grid grid-cols-2 divide-slate-200 overflow-hidden sm:grid-cols-4 sm:divide-x dark:divide-white/10`}>
-        <StatTile icon={DollarSign} label="Dolar" value={data ? rate(data.usd_try) : "…"} sub={data?.rates_date ? `TCMB · ${data.rates_date}` : undefined} />
-        <StatTile icon={Euro} label="Euro" value={data ? rate(data.eur_try) : "…"} sub={data?.rates_date ? "Döviz satış" : undefined} />
+        <StatTile icon={DollarSign} label="Dolar" value={data ? rate(data.usd_try) : "…"} sub={data?.rates_date ? `TCMB · ${data.rates_date}` : undefined} live />
+        <StatTile icon={Euro} label="Euro" value={data ? rate(data.eur_try) : "…"} sub={data?.rates_date ? "Döviz satış" : undefined} live />
         <StatTile icon={Users} label="Üye sayısı" value={data ? data.member_count.toLocaleString("tr-TR") : "…"} sub="Kayıtlı müşteri" />
         <StatTile
           icon={UserCheck}
@@ -219,15 +257,38 @@ export function AdminDashboard() {
         </h2>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {KPIS.map((kpi) => (
-            <div key={kpi.title} className={`${panelClass} overflow-hidden`}>
-              <h3 className="border-b border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-slate-600 dark:border-white/10 dark:bg-white/[0.03] dark:text-zinc-300">
+            <div
+              key={kpi.title}
+              className="overflow-hidden rounded-2xl border border-emerald-200 bg-emerald-50 shadow-sm dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:shadow-none"
+            >
+              <h3 className="border-b border-emerald-200 bg-emerald-100/70 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-emerald-900 dark:border-emerald-500/25 dark:bg-emerald-500/15 dark:text-emerald-100">
                 {kpi.title}
               </h3>
-              <dl className="divide-y divide-slate-100 dark:divide-white/5">
+              <dl className="divide-y divide-emerald-200/70 dark:divide-emerald-500/20">
                 {PERIODS.map((p) => (
-                  <div key={p.key} className="flex items-baseline justify-between gap-3 px-4 py-3" title={p.hint}>
-                    <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-zinc-400">{p.label}</dt>
-                    <dd className="font-mono text-base font-semibold tabular-nums">{data ? kpi.value(data[p.key]) : "…"}</dd>
+                  <div
+                    key={p.key}
+                    title={p.hint}
+                    /* Today's figure is the one the admin reads all day: keep it on
+                       white so it stands out of the green run-rate rows. */
+                    className={`flex items-baseline justify-between gap-3 px-4 py-3 ${
+                      p.key === "daily" ? "bg-white dark:bg-zinc-900" : ""
+                    }`}
+                  >
+                    <dt
+                      className={`text-xs font-semibold uppercase tracking-wide ${
+                        p.key === "daily" ? "text-slate-500 dark:text-zinc-400" : "text-emerald-800 dark:text-emerald-200"
+                      }`}
+                    >
+                      {p.label}
+                    </dt>
+                    <dd
+                      className={`font-mono text-base font-semibold tabular-nums ${
+                        p.key === "daily" ? "" : "text-emerald-950 dark:text-emerald-50"
+                      }`}
+                    >
+                      {data ? kpi.value(data[p.key]) : "…"}
+                    </dd>
                   </div>
                 ))}
               </dl>
@@ -307,33 +368,27 @@ export function AdminDashboard() {
         ) : orders.rows.length === 0 ? (
           <p className="px-5 py-12 text-center text-sm text-slate-500 dark:text-zinc-400">Henüz sipariş yok.</p>
         ) : (
-          <div className={`scrollbar-visible overflow-x-auto transition-opacity ${orders.page === page ? "" : "opacity-60"}`}>
-            {/* min-w covers the fixed columns plus a readable Müşteri column: with
-                table-fixed a short table would otherwise squeeze it to nothing and
-                run "MÜŞTERİ" into "TARİH". */}
-            <table className="w-full min-w-[1180px] table-fixed text-sm">
-              <colgroup>
-                <col className="w-10" />
-                <col className="w-[10.5rem]" />
-                <col className="w-[16rem]" />
-                <col className="w-[9.5rem]" />
-                <col className="w-[8rem]" />
-                <col className="w-[8.5rem]" />
-                <col className="w-[9.5rem]" />
-                <col className="w-[11.5rem]" />
-              </colgroup>
+          <div className={`transition-opacity ${orders.page === page ? "" : "opacity-60"}`}>
+            {/*
+              No horizontal scroll: `table-fixed` with percentage columns always
+              fits the container, and every cell truncates or stacks rather than
+              pushing the table wider. The two columns that are only nice to have
+              drop out on narrower screens (their data rides in a neighbouring
+              cell instead), and the percentages that remain are reflowed.
+            */}
+            <table className="w-full table-fixed text-sm">
               <thead>
                 <tr className="border-b border-slate-200 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:border-white/10 dark:text-zinc-500">
-                  <th scope="col" className="px-2 py-3">
+                  <th scope="col" className="w-9 px-2 py-3">
                     <span className="sr-only">Detay</span>
                   </th>
-                  <th scope="col" className="whitespace-nowrap px-4 py-3">Sipariş No</th>
-                  <th scope="col" className="whitespace-nowrap px-4 py-3">Müşteri</th>
-                  <th scope="col" className="whitespace-nowrap px-4 py-3">Tarih</th>
-                  <th scope="col" className="whitespace-nowrap px-4 py-3">Satış şekli</th>
-                  <th scope="col" className="whitespace-nowrap px-4 py-3 text-right">Tutar</th>
-                  <th scope="col" className="whitespace-nowrap px-4 py-3">Durum</th>
-                  <th scope="col" className="whitespace-nowrap px-4 py-3">Kargo</th>
+                  <th scope="col" className="w-[16%] px-3 py-3">Sipariş No</th>
+                  <th scope="col" className="hidden w-[22%] px-3 py-3 md:table-cell">Müşteri</th>
+                  <th scope="col" className="hidden w-[10%] px-3 py-3 lg:table-cell">Tarih</th>
+                  <th scope="col" className="hidden w-[11%] px-3 py-3 xl:table-cell">Satış şekli</th>
+                  <th scope="col" className="hidden w-[12%] px-3 py-3 text-right md:table-cell">Tutar</th>
+                  <th scope="col" className="w-[16%] px-3 py-3">Durum</th>
+                  <th scope="col" className="hidden w-[13%] px-3 py-3 md:table-cell">Kargo</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white dark:divide-zinc-900">
@@ -350,10 +405,19 @@ export function AdminDashboard() {
                             orderNumber={o.order_number}
                           />
                         </td>
-                        <td className="truncate px-4 py-2.5 font-mono text-xs font-semibold" title={o.order_number}>
-                          {o.order_number}
+                        <td className="px-3 py-2.5 align-top">
+                          <p className="truncate font-mono text-xs font-semibold" title={o.order_number}>
+                            {o.order_number}
+                          </p>
+                          {/* What the hidden columns would have shown, while they are hidden. */}
+                          <p className="truncate text-[11px] text-slate-500 lg:hidden dark:text-zinc-400">
+                            {formatDateParts(o.created_at).date}
+                          </p>
+                          <p className="truncate text-[11px] text-slate-500 md:hidden dark:text-zinc-400">
+                            {o.customer_name || o.customer_email} · {formatMoney(orderNetTotal(o))}
+                          </p>
                         </td>
-                        <td className="px-4 py-2.5">
+                        <td className="hidden px-3 py-2.5 align-top md:table-cell">
                           <p className="truncate font-medium" title={o.customer_name ?? undefined}>
                             {o.customer_name || o.shipping_address?.full_name || "—"}
                           </p>
@@ -361,13 +425,25 @@ export function AdminDashboard() {
                             {o.customer_email}
                           </p>
                         </td>
-                        <td className="px-4 py-2.5 text-xs">{formatDate(o.created_at)}</td>
-                        <td className="px-4 py-2.5 text-xs">{o.payment_method === "BANK_TRANSFER" ? "Havale / EFT" : "Kredi kartı"}</td>
-                        <td className="px-4 py-2.5 text-right font-mono font-semibold tabular-nums">{formatMoney(orderNetTotal(o))}</td>
-                        <td className="px-4 py-2.5">
-                          <StatusBadge status={o.status} />
+                        <td className="hidden px-3 py-2.5 align-top text-xs lg:table-cell">
+                          <p className="truncate tabular-nums">{formatDateParts(o.created_at).date}</p>
+                          <p className="truncate tabular-nums text-slate-500 dark:text-zinc-400">
+                            {formatDateParts(o.created_at).time}
+                          </p>
                         </td>
-                        <td className="px-4 py-2.5 align-top text-xs">
+                        <td className="hidden px-3 py-2.5 align-top text-xs xl:table-cell">
+                          {o.payment_method === "BANK_TRANSFER" ? "Havale / EFT" : "Kredi kartı"}
+                        </td>
+                        <td className="hidden whitespace-nowrap px-3 py-2.5 text-right align-top font-mono text-xs font-semibold tabular-nums md:table-cell">
+                          {formatMoney(orderNetTotal(o))}
+                          <span className="block text-[11px] font-normal text-slate-500 xl:hidden dark:text-zinc-400">
+                            {o.payment_method === "BANK_TRANSFER" ? "Havale" : "Kart"}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2.5 align-top">
+                          <StatusBadge status={o.status} compact />
+                        </td>
+                        <td className="hidden px-3 py-2.5 align-top text-xs md:table-cell">
                           <Cargo o={o} />
                           <CargoActions o={o} actions={actions} />
                         </td>

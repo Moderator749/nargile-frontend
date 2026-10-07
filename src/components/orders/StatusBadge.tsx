@@ -27,11 +27,16 @@ export const ORDER_STATUS: Record<OrderStatus, { label: string; className: strin
   },
 };
 
-export function StatusBadge({ status }: { status: OrderStatus }) {
+/** `compact` is for the dense admin tables, where a full-size pill does not fit. */
+export function StatusBadge({ status, compact = false }: { status: OrderStatus; compact?: boolean }) {
   const s = ORDER_STATUS[status];
   return (
     <span
-      className={`inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${s.className}`}
+      className={`inline-flex max-w-full items-center justify-center rounded-full font-semibold ring-1 ring-inset ${
+        compact
+          ? "px-2 py-0.5 text-center text-[11px] leading-4 whitespace-normal sm:whitespace-nowrap"
+          : "whitespace-nowrap px-2.5 py-1 text-xs"
+      } ${s.className}`}
     >
       {s.label}
     </span>
