@@ -61,7 +61,8 @@ export const useCartStore = create<CartState>()(
     {
       name: "nargile-cart",
       version: 1,
-      storage: createJSONStorage(() => localStorage),
+      // window.localStorage throws on the server, which disables persistence there.
+      storage: createJSONStorage(() => window.localStorage),
       partialize: (state) => ({
         items: state.items,
         loyaltyPointsToRedeem: state.loyaltyPointsToRedeem,

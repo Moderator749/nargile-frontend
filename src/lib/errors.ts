@@ -9,6 +9,8 @@ const KNOWN_MESSAGES: Record<string, string> = {
   "Email already registered": "Bu e-posta adresiyle kayıtlı bir hesap zaten var.",
   "Invalid or expired token": "Oturumunuzun süresi doldu. Lütfen tekrar giriş yapın.",
   "Order not found": "Sipariş bulunamadı.",
+  "Admin privileges required": "Bu işlem için yönetici yetkisi gerekiyor.",
+  "Variant not found": "Ürün varyantı bulunamadı.",
 };
 
 // Checkout engine errors carry details (SKU, quantities); match and translate them.
@@ -24,6 +26,10 @@ const PATTERNS: [RegExp, (m: RegExpMatchArray) => string][] = [
   [
     /^No TRY price for variant (\S+)/,
     (m) => `${m[1]} kodlu ürün hesabınız için satışta değil. Lütfen sepetten çıkarın.`,
+  ],
+  [
+    /^Order cannot be approved — current status is (\w+)/,
+    (m) => `Bu sipariş onaylanamaz: durumu zaten "${m[1]}". Yalnızca onay bekleyen siparişler onaylanabilir.`,
   ],
   [/^Variant \S+ not found/, () => "Sepetinizdeki bir ürün artık satışta değil. Lütfen sepeti güncelleyin."],
 ];

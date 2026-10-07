@@ -2,8 +2,8 @@ import type { ReactNode } from "react";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 
 const styles = {
-  error: "border-red-200 bg-red-50 text-red-700",
-  success: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  error: "border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-300",
+  success: "border-emerald-200 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
 } as const;
 
 export function Alert({ variant, children }: { variant: keyof typeof styles; children: ReactNode }) {

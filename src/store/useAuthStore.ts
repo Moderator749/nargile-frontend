@@ -36,7 +36,8 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: "nargile-auth",
-      storage: createJSONStorage(() => localStorage),
+      // window.localStorage throws on the server, which disables persistence there.
+      storage: createJSONStorage(() => window.localStorage),
       partialize: (state) => ({ user: state.user }),
       // Rehydrated manually after mount (see StoreHydration) to avoid SSR mismatches.
       skipHydration: true,

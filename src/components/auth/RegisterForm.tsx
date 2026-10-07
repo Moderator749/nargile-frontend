@@ -3,6 +3,11 @@
 import { useState, type SubmitEvent } from "react";
 import { useRouter } from "next/navigation";
 
+import {
+  B2BApplicationFields,
+  EMPTY_APPLICATION,
+  applicationProblem,
+} from "@/components/auth/B2BApplicationFields";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -17,6 +22,8 @@ export function RegisterForm() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [applyB2B, setApplyB2B] = useState(false);
+  const [application, setApplication] = useState(EMPTY_APPLICATION);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -28,6 +35,11 @@ export function RegisterForm() {
       setError(`Şifreniz en az ${MIN_PASSWORD_LENGTH} karakter olmalı.`);
       return;
     }
+    const b2bProblem = applyB2B ? applicationProblem(application) : null;
+    if (b2bProblem) {
+      setError(b2bProblem);
+      return;
+    }
 
     setError(null);
     setSubmitting(true);
@@ -37,6 +49,7 @@ export function RegisterForm() {
         email: email.trim(),
         password,
         full_name: fullName.trim(),
+        b2b_application: applyB2B ? application : null,
       });
       router.replace("/login?registered=1");
     } catch (err) {
@@ -81,6 +94,28 @@ export function RegisterForm() {
         value={password}
         onChange={(e) => setPassword(e.target.value)}
       />
+
+      <div className="rounded-xl border border-slate-200 p-4 dark:border-white/10">
+        <label className="flex cursor-pointer items-start gap-3 text-sm">
+          <input
+            type="checkbox"
+            checked={applyB2B}
+            onChange={(e) => setApplyB2B(e.target.checked)}
+            className="mt-0.5 h-4 w-4 accent-red-600"
+          />
+          <span>
+            <span className="font-medium">Kafe, toptancı veya bayi misiniz?</span>
+            <span className="block text-xs text-slate-500 dark:text-zinc-400">
+              Başvurun; onaylanınca size özel fiyatlar hesabınıza tanımlanır. O zamana kadar perakende fiyatları geçerlidir.
+            </span>
+          </span>
+        </label>
+        {applyB2B && (
+          <div className="mt-4">
+            <B2BApplicationFields value={application} onChange={setApplication} />
+          </div>
+        )}
+      </div>
 
       <Button type="submit" loading={submitting}>
         {submitting ? "Hesap oluşturuluyor…" : "Hesap Oluştur"}

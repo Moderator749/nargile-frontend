@@ -1,26 +1,209 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/*
+ * Class-based dark mode: `dark:` styles apply when <html> has the `dark` class,
+ * set before first paint by THEME_SCRIPT (src/lib/theme.ts) from the visitor's
+ * saved choice or, by default, their system preference.
+ *
+ * Sections can force a scheme whatever the theme: `.dark` (the cinematic hero)
+ * or `.light` (the "studio light" storefront). Both swap the colour tokens. The
+ * `dark:` variant is off anywhere inside `.light`, so a dark block nested in a
+ * light section (e.g. the dealer CTA) must use tokens/explicit colours, not `dark:`.
+ */
+@custom-variant dark (&:where(.dark, .dark *):not(:where(.light, .light *)));
 
 @theme inline {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  /* Semantic colour tokens ("industrial luxury"): bg-background, text-muted-foreground, border-border… */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
 }
 
-@media (prefers-color-scheme: dark) {
+:root {
+  /* Sticky header height; Navbar measures and updates it live. These are pre-JS
+     estimates: mobile has an extra search row. Sticky toolbars sit below it. */
+  --header-height: 162px;
+}
+
+/* Light theme, or a "studio light" section: titanium-gray canvas, charcoal type. */
+:root,
+.light {
+  /* Native controls, scrollbars and form autofill follow the active scheme. */
+  color-scheme: light;
+
+  --background: #f5f5f7;
+  --foreground: #1d1d1f;
+  --muted: #e8e8ed;
+  --muted-foreground: #6e6e73;
+  --border: rgb(0 0 0 / 0.08);
+  /* Crimson is reserved for primary actions. */
+  --accent: #b4122b;
+  --accent-hover: #d0153a;
+}
+/* On <html> for the dark theme, or on a section that is always dark (e.g. the hero). */
+.dark {
+  color-scheme: dark;
+
+  /* Dark: true black canvas, titanium type, white/5 hairlines. */
+  --background: #000000;
+  --foreground: #f5f5f7;
+  --muted: #161618;
+  --muted-foreground: #86868b;
+  --border: rgb(255 255 255 / 0.08);
+  --accent: #c8102e;
+  --accent-hover: #e11d48;
+}
+@media (min-width: 48rem) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --header-height: 110px;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/*
+ * Logged-in visitors get segment (e.g. dealer) prices fetched client-side. Until
+ * they arrive, mask the server-rendered public RETAIL prices so a dealer never
+ * sees the wrong price flash. `data-auth` is set before first paint by the inline
+ * script in layout.tsx; `visibility` keeps the box size, so there is no layout shift.
+ */
+html[data-auth] .public-price {
+  border-radius: 0.375rem;
+  background-color: color-mix(in oklab, currentColor 10%, transparent);
+  animation: price-pulse 1.6s ease-in-out infinite;
+}
+html[data-auth] .public-price > * {
+  visibility: hidden;
+}
+
+/* Login prompts are pointless once logged in; hidden before first paint, no JS. */
+html[data-auth] .guest-only {
+  display: none;
+}
+
+@keyframes sheen {
+  0%,
+  20% {
+    transform: translateX(0);
+  }
+  80%,
+  100% {
+    transform: translateX(400%);
+  }
+}
+
+/* Hero spotlight breathing very slowly (scale only: centring uses the `translate` property). */
+@keyframes spotlight {
+  0%,
+  100% {
+    opacity: 0.85;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+}
+
+/* Mega-menu panel entrance. */
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes scrim-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Brand marquee: the track holds the list twice, so -50% lands on an identical frame. */
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes price-pulse {
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-auth] .public-price {
+    animation: none;
+  }
+}
+
+/*
+ * Always-visible horizontal scrollbar for wide admin tables. macOS hides overlay
+ * scrollbars until you scroll, so users didn't know more columns existed.
+ */
+.scrollbar-visible {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(148 163 184 / 0.7) transparent;
+}
+.scrollbar-visible::-webkit-scrollbar {
+  height: 10px;
+}
+.scrollbar-visible::-webkit-scrollbar-track {
+  background: rgb(148 163 184 / 0.12);
+  border-radius: 9999px;
+}
+.scrollbar-visible::-webkit-scrollbar-thumb {
+  background: rgb(148 163 184 / 0.7);
+  border-radius: 9999px;
+}
+.scrollbar-visible::-webkit-scrollbar-thumb:hover {
+  background: rgb(100 116 139 / 0.9);
+}
+
+/*
+ * YAZDIR: the admin's expanded order sheet prints on its own, as the paper form.
+ * The sheet marks itself with `data-print-sheet` for the length of window.print()
+ * (OrderSheet.tsx); everything else is hidden rather than unmounted, so the panel
+ * keeps its scroll position and open rows.
+ */
+@media print {
+  /* Anything that is not the sheet, inside it, or on its way down to it, goes —
+     dropped rather than merely hidden, so no blank pages follow the form. */
+  body:has([data-print-sheet])
+    *:not([data-print-sheet]):not([data-print-sheet] *):not(:has([data-print-sheet])) {
+    display: none !important;
+  }
+  /* Its ancestors (page, panel, table, row, cell) stay as a plain wrapper that
+     neither clips the form nor keeps the screen layout's widths. */
+  body:has([data-print-sheet]) *:has([data-print-sheet]) {
+    display: block !important;
+    overflow: visible !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: #fff !important;
+    box-shadow: none !important;
+  }
+  /* Black on white, whatever theme the admin works in. */
+  [data-print-sheet],
+  [data-print-sheet] * {
+    color: #000 !important;
+    background: transparent !important;
+    border-color: #94a3b8 !important;
+    box-shadow: none !important;
+  }
+  [data-print-sheet] {
+    padding: 0 !important;
+    border: 0 !important;
+  }
+  [data-print-sheet] [data-print-hide] {
+    display: none !important;
+  }
 }

@@ -9,15 +9,15 @@ interface LoyaltyPointsInputProps {
   onChange: (points: number) => void;
 }
 
-/** ParaPuan redemption, clamped to the user's balance (1 point = ₺1). */
+/** "Puan Kullan": redeem ParaPuan + Kumbarapuan, clamped to the balance (1 point = ₺1). */
 export function LoyaltyPointsInput({ balance, value, onChange }: LoyaltyPointsInputProps) {
   const [draft, setDraft] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
 
   if (balance <= 0) {
     return (
-      <p className="flex items-center gap-2 text-xs text-slate-500">
-        <Coins className="h-4 w-4" aria-hidden /> ParaPuan bakiyeniz bulunmuyor.
+      <p className="flex items-center gap-2 text-xs text-slate-500 dark:text-zinc-400">
+        <Coins className="h-4 w-4" aria-hidden /> Kullanılabilir puanınız bulunmuyor.
       </p>
     );
   }
@@ -39,11 +39,11 @@ export function LoyaltyPointsInput({ balance, value, onChange }: LoyaltyPointsIn
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between">
-        <label htmlFor="loyalty-points" className="flex items-center gap-1.5 text-sm font-medium text-slate-700">
-          <Coins className="h-4 w-4 text-amber-500" aria-hidden /> ParaPuan kullan
+        <label htmlFor="loyalty-points" className="flex items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-zinc-300">
+          <Coins className="h-4 w-4 text-red-500" aria-hidden /> Puan Kullan
         </label>
-        <span className="text-xs text-slate-500">
-          Bakiye: <strong className="text-slate-700">{balance.toLocaleString("tr-TR")}</strong> puan
+        <span className="text-xs text-slate-500 dark:text-zinc-400">
+          Bakiye: <strong className="text-slate-700 dark:text-zinc-300">{balance.toLocaleString("tr-TR")}</strong> puan
         </span>
       </div>
       <div className="flex gap-2">
@@ -52,7 +52,7 @@ export function LoyaltyPointsInput({ balance, value, onChange }: LoyaltyPointsIn
           type="text"
           inputMode="numeric"
           pattern="[0-9]*"
-          className="h-10 min-w-0 flex-1 rounded-lg border border-slate-300 px-3 text-sm tabular-nums focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+          className="h-10 min-w-0 flex-1 rounded-lg bg-white dark:bg-zinc-900 border border-slate-300 dark:border-white/15 px-3 text-sm tabular-nums focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20"
           value={draft ?? (value ? String(value) : "")}
           placeholder="0"
           onChange={(e) => setDraft(e.target.value.replace(/\D/g, ""))}
@@ -69,13 +69,13 @@ export function LoyaltyPointsInput({ balance, value, onChange }: LoyaltyPointsIn
             setWarning(null);
             onChange(value === balance ? 0 : balance);
           }}
-          className="h-10 shrink-0 rounded-lg border border-slate-300 px-3 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+          className="h-10 shrink-0 rounded-lg border border-slate-300 dark:border-white/15 px-3 text-xs font-semibold text-slate-700 dark:text-zinc-300 transition-colors hover:bg-slate-50 dark:hover:bg-white/5"
         >
           {value === balance ? "Kaldır" : "Tümünü kullan"}
         </button>
       </div>
-      <p id="loyalty-points-help" className={`text-xs ${warning ? "text-amber-700" : "text-slate-500"}`}>
-        {warning ?? "1 ParaPuan = ₺1. Kargo hariç tutara uygulanır."}
+      <p id="loyalty-points-help" className={`text-xs ${warning ? "text-red-600 dark:text-red-400" : "text-slate-500 dark:text-zinc-400"}`}>
+        {warning ?? "ParaPuan ve Kumbarapuan · 1 puan = ₺1 · kargo hariç tutara uygulanır."}
       </p>
     </div>
   );

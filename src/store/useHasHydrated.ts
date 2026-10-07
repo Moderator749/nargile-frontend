@@ -10,8 +10,16 @@ interface PersistApi {
   hasHydrated: () => boolean;
 }
 
-function usePersistHydrated(persist: PersistApi): boolean {
-  return useSyncExternalStore(persist.onFinishHydration, persist.hasHydrated, () => false);
+// On the server there is no storage, so zustand omits `.persist` entirely.
+const noSubscribe = () => () => {};
+const never = () => false;
+
+function usePersistHydrated(persist: PersistApi | undefined): boolean {
+  return useSyncExternalStore(
+    persist?.onFinishHydration ?? noSubscribe,
+    persist?.hasHydrated ?? never,
+    never,
+  );
 }
 
 /** True once the persisted auth state has loaded from localStorage. */

@@ -21,15 +21,15 @@ interface PaymentMethodPickerProps {
 export function PaymentMethodPicker({ value, onChange }: PaymentMethodPickerProps) {
   return (
     <fieldset>
-      <legend className="text-sm font-medium text-slate-700">Ödeme yöntemi</legend>
+      <legend className="text-sm font-medium text-slate-700 dark:text-zinc-300">Ödeme yöntemi</legend>
       <div className="mt-2 grid grid-cols-2 gap-2">
         {OPTIONS.map(({ value: option, title, hint, Icon }) => (
           <label
             key={option}
-            className={`flex cursor-pointer flex-col gap-1 rounded-lg border p-3 text-sm transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-indigo-500/40 ${
+            className={`flex cursor-pointer flex-col gap-1 rounded-lg border p-3 text-sm transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-red-500/40 ${
               value === option
-                ? "border-indigo-600 bg-indigo-50/60 ring-1 ring-indigo-600"
-                : "border-slate-300 hover:border-slate-400"
+                ? "border-red-600 dark:border-red-400 bg-red-50/60 dark:bg-red-500/10 ring-1 ring-red-600 dark:ring-red-400"
+                : "border-slate-300 dark:border-white/15 hover:border-slate-400 dark:hover:border-white/25"
             }`}
           >
             <input
@@ -40,10 +40,10 @@ export function PaymentMethodPicker({ value, onChange }: PaymentMethodPickerProp
               onChange={() => onChange(option)}
               className="sr-only"
             />
-            <span className="flex items-center gap-2 font-semibold text-slate-900">
+            <span className="flex items-center gap-2 font-semibold text-slate-900 dark:text-zinc-100">
               <Icon className="h-4 w-4" aria-hidden /> {title}
             </span>
-            <span className="text-xs text-slate-500">{hint}</span>
+            <span className="text-xs text-slate-500 dark:text-zinc-400">{hint}</span>
           </label>
         ))}
       </div>

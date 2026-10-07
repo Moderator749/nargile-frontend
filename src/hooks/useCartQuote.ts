@@ -5,7 +5,7 @@ import axios from "axios";
 
 import { buildCheckoutRequest, calculateCart } from "@/lib/ordersApi";
 import { getApiErrorMessage } from "@/lib/errors";
-import type { Cart, CartLineItem, PaymentMethod } from "@/types";
+import type { Cart, CartLineItem, PaymentMethod, ShippingMethod } from "@/types";
 
 const DEBOUNCE_MS = 400;
 
@@ -25,8 +25,10 @@ export function useCartQuote(
   paymentMethod: PaymentMethod,
   pointsToRedeem: number,
   enabled: boolean,
+  shippingMethod: ShippingMethod = "CARGO",
 ) {
-  const payload = buildCheckoutRequest(items, paymentMethod, pointsToRedeem);
+  // The address isn't needed to price the cart (courier eligibility is enforced in the form).
+  const payload = buildCheckoutRequest(items, paymentMethod, pointsToRedeem, shippingMethod);
   const key = enabled && items.length > 0 ? JSON.stringify(payload) : null;
   const [result, setResult] = useState<QuoteResult | null>(null);
 
