@@ -3,27 +3,31 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import axios from "axios";
-import { Check, ChevronRight, ShoppingBag, Truck } from "lucide-react";
+import { Check, ChevronRight, Hourglass, ShoppingBag, Truck } from "lucide-react";
 
 import { QuantityStepper } from "@/components/cart/QuantityStepper";
-import { ProductImage } from "@/components/catalog/ProductImage";
+import { CrossSells } from "@/components/product/CrossSells";
+import { ProductGallery } from "@/components/product/ProductGallery";
 import { useDisplayMoney } from "@/hooks/useDisplayMoney";
 import { useNow } from "@/hooks/useNow";
 import { countdownParts } from "@/lib/banner";
 import { fetchProduct } from "@/lib/catalogApi";
 import { cartLineFor } from "@/lib/cartLine";
 import { categoryCopy } from "@/lib/categories";
+import { normalizeHex, readableInk } from "@/lib/color";
 import { saleState } from "@/lib/flashSale";
 import type { Breadcrumb } from "@/lib/seo";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useCartStore } from "@/store/useCartStore";
 import { useAuthHydrated, useCartHydrated } from "@/store/useHasHydrated";
-import type { CatalogProduct, Category } from "@/types";
+import type { CatalogProductDetail, Category } from "@/types";
 
 interface ProductDetailProps {
   /** Server-rendered anonymous (RETAIL) view. */
-  initialProduct: CatalogProduct;
+  initialProduct: CatalogProductDetail;
   category: Category | undefined;
+  /** Every category, so a cross-sell card can label and illustrate its own. */
+  categories: Category[];
   breadcrumbs: Breadcrumb[];
 }
 
@@ -37,10 +41,10 @@ function countdown(ms: number) {
  * Product page body. Logged-in visitors refetch so the price is their own
  * segment's; until then the public price is masked (as in the catalog).
  */
-export function ProductDetail({ initialProduct, category, breadcrumbs }: ProductDetailProps) {
+export function ProductDetail({ initialProduct, category, categories, breadcrumbs }: ProductDetailProps) {
   const hydrated = useAuthHydrated();
   const token = useAuthStore((s) => s.token);
-  const [own, setOwn] = useState<{ token: string; product: CatalogProduct } | null>(null);
+  const [own, setOwn] = useState<{ token: string; product: CatalogProductDetail } | null>(null);
   // The stepper shows the cart's quantity until the visitor changes it (a draft).
   const [draft, setDraft] = useState<number | null>(null);
   const [added, setAdded] = useState(false);
@@ -64,7 +68,7 @@ export function ProductDetail({ initialProduct, category, breadcrumbs }: Product
 
   const variant = product.variants[0];
   const now = useNow(!!variant?.flash_sale);
-  const sale = saleState(variant, now);
+  const sale = saleState(product, variant, now);
   const regular = variant?.price ?? null;
   const price = sale.kind === "live" ? sale.price : regular;
   const was = sale.kind === "live" ? regular : (variant?.list_price ?? null);
@@ -103,6 +107,7 @@ export function ProductDetail({ initialProduct, category, breadcrumbs }: Product
 
   const Icon = categoryCopy(category?.slug).icon;
   const isHeavy = product.tags?.includes("HEAVY_CARGO") ?? false;
+  const dealColor = normalizeHex(product.opportunity_color);
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
@@ -123,20 +128,17 @@ export function ProductDetail({ initialProduct, category, breadcrumbs }: Product
       </nav>
 
       <div className="mt-6 grid gap-10 lg:grid-cols-2">
-        <div className="relative aspect-square overflow-hidden rounded-3xl bg-white shadow-sm shadow-black/[0.04] dark:bg-zinc-100">
-          <div className={`h-full ${soldOut ? "opacity-50 grayscale" : ""}`}>
-            <ProductImage
-              src={product.image_url}
-              alt={product.name}
-              sizes="(min-width: 1024px) 600px, 100vw"
-              fallback={
-                <div className="flex h-full items-center justify-center text-zinc-300">
-                  <Icon className="h-20 w-20" strokeWidth={1} aria-hidden />
-                </div>
-              }
-            />
-          </div>
-        </div>
+        <ProductGallery
+          images={product.image_urls}
+          youtubeUrl={product.youtube_video_url}
+          alt={product.name}
+          dimmed={soldOut}
+          fallback={
+            <div className="flex h-full items-center justify-center text-zinc-300">
+              <Icon className="h-20 w-20" strokeWidth={1} aria-hidden />
+            </div>
+          }
+        />
 
         <div className="flex flex-col">
           <p className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground">
@@ -166,15 +168,26 @@ export function ProductDetail({ initialProduct, category, breadcrumbs }: Product
 
           <div className="mt-4 flex flex-wrap gap-2">
             {sale.kind === "live" && (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-accent px-3 py-1 text-xs font-medium text-white">
-                Şok fiyat
-                <span className="font-mono tabular-nums" role="timer" aria-label="Kalan süre">
-                  {now === null ? "--:--:--" : countdown(sale.endsAt - now)}
-                </span>
+              // Same badge as the card: the admin's hex as an inline style, with
+              // ink chosen for contrast.
+              <span
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${
+                  dealColor ? "" : "bg-accent text-white"
+                }`}
+                style={dealColor ? { backgroundColor: dealColor, color: readableInk(dealColor) } : undefined}
+              >
+                Fırsat Ürün <Hourglass className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                {sale.endsAt !== null && (
+                  <span className="font-mono tabular-nums" role="timer" aria-label="Kalan süre">
+                    {now === null ? "--:--:--" : countdown(sale.endsAt - now)}
+                  </span>
+                )}
               </span>
             )}
-            {sale.kind === "ended" && (
-              <span className="rounded-full bg-zinc-900 px-3 py-1 text-xs font-medium text-zinc-100 dark:bg-zinc-700">Zaman Doldu</span>
+            {sale.kind === "missed" && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-zinc-900 px-3 py-1 text-xs font-medium text-zinc-100 dark:bg-zinc-700">
+                Fırsat Kaçtı <Hourglass className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              </span>
             )}
             {soldOut ? (
               <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700 ring-1 ring-inset ring-zinc-200 dark:bg-white/10 dark:text-zinc-200 dark:ring-white/10">
@@ -191,6 +204,24 @@ export function ProductDetail({ initialProduct, category, breadcrumbs }: Product
               </span>
             )}
           </div>
+
+          {/* "Renk": labels the admin typed, not a variant axis — one product, one
+              price, these colours. Absent in an older cached payload. */}
+          {(product.color_names?.length ?? 0) > 0 && (
+            <div className="mt-4">
+              <h2 className="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground">Renk</h2>
+              <ul className="mt-2 flex flex-wrap gap-1.5">
+                {product.color_names?.map((color) => (
+                  <li
+                    key={color}
+                    className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-foreground ring-1 ring-inset ring-border"
+                  >
+                    {color}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <QuantityStepper value={quantity} onChange={(q) => setDraft(Math.max(1, q))} label={product.name} />
@@ -257,6 +288,14 @@ export function ProductDetail({ initialProduct, category, breadcrumbs }: Product
           </ul>
         </div>
       </div>
+
+      {/* Below the product itself, across both columns. */}
+      <CrossSells
+        products={product.cross_sells}
+        categories={categories}
+        isLoggedIn={loggedIn}
+        pricesPending={pricesPending}
+      />
     </div>
   );
 }

@@ -9,10 +9,18 @@ interface ProductImageProps {
   /** Shown when there is no image or it fails to load. */
   fallback: ReactNode;
   sizes: string;
+  /**
+   * Overrides how the photo sits in its box. The default suits a full card; a
+   * small thumbnail needs far less padding or the photo all but disappears.
+   */
+  imageClassName?: string;
 }
 
+const DEFAULT_IMAGE_CLASS =
+  "object-contain p-8 mix-blend-multiply transition-transform duration-500 ease-out motion-safe:group-hover:scale-105";
+
 /** Product photo filling its (fixed-aspect) parent; falls back on missing or broken images. */
-export function ProductImage({ src, alt, fallback, sizes }: ProductImageProps) {
+export function ProductImage({ src, alt, fallback, sizes, imageClassName = DEFAULT_IMAGE_CLASS }: ProductImageProps) {
   // Remember which src failed, so a different product's image gets its own try.
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
   if (!src || failedSrc === src) return fallback;
@@ -26,7 +34,7 @@ export function ProductImage({ src, alt, fallback, sizes }: ProductImageProps) {
         fill
         sizes={sizes}
         onError={() => setFailedSrc(src)}
-        className="object-contain p-8 mix-blend-multiply transition-transform duration-500 ease-out motion-safe:group-hover:scale-105"
+        className={imageClassName}
       />
     </div>
   );

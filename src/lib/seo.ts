@@ -11,6 +11,13 @@ const absolute = (href: string) => `${SITE_URL}${href}`;
 /** The product detail page. */
 export const productHref = (id: string) => `/product/${id}`;
 
+/** Every photo of the product, cover first — what the gallery shows. */
+function productImages(product: { image_url: string | null; image_urls?: string[] }): string[] {
+  const gallery = product.image_urls ?? [];
+  if (gallery.length > 0) return gallery;
+  return product.image_url ? [product.image_url] : [];
+}
+
 export function breadcrumbJsonLd(crumbs: Breadcrumb[]) {
   return {
     "@context": "https://schema.org",
@@ -52,7 +59,7 @@ export function productListJsonLd(
             name: product.name,
             sku: variant.sku,
             mpn: product.base_code,
-            ...(product.image_url ? { image: product.image_url } : {}),
+            ...(productImages(product).length > 0 ? { image: productImages(product) } : {}),
             ...(product.description ? { description: product.description } : {}),
             ...(product.brand ? { brand: { "@type": "Brand", name: product.brand } } : {}),
             ...(category ? { category: category.name } : {}),
@@ -85,7 +92,7 @@ export function productJsonLd(product: CatalogProduct, category: Category | unde
     url: absolute(productHref(product.id)),
     mpn: product.base_code,
     ...(variant ? { sku: variant.sku } : {}),
-    ...(product.image_url ? { image: product.image_url } : {}),
+    ...(productImages(product).length > 0 ? { image: productImages(product) } : {}),
     ...(product.description ? { description: product.description } : {}),
     ...(product.brand ? { brand: { "@type": "Brand", name: product.brand } } : {}),
     ...(category ? { category: category.name } : {}),
@@ -98,7 +105,7 @@ export function productJsonLd(product: CatalogProduct, category: Category | unde
             url: absolute(productHref(product.id)),
             availability:
               variant?.in_stock === false ? "https://schema.org/OutOfStock" : "https://schema.org/InStock",
-            ...(sale ? { priceValidUntil: sale.ends_at.slice(0, 10) } : {}),
+            ...(sale?.ends_at ? { priceValidUntil: sale.ends_at.slice(0, 10) } : {}),
           },
         }
       : {}),

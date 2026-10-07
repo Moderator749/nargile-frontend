@@ -29,7 +29,13 @@ import type {
   DecimalString,
   OrderApproveResponse,
   OrderStatus,
+  ProductDeleteResult,
+  ProductSheet,
+  ProductSort,
+  SavedProductSheet,
   Segment,
+  SortDirection,
+  UploadedImage,
 } from "@/types";
 
 export const ADMIN_PAGE_SIZE = 50;
@@ -68,6 +74,56 @@ export async function adminListProducts(
     },
     signal,
   });
+  return data;
+}
+
+// ── Product sheet ("Ürün Ekle / Düzenle") ────────────────────────────────────
+
+/** Deletes the ticked products; the result says which were kept, and why. */
+export async function adminDeleteProducts(productIds: string[]): Promise<ProductDeleteResult> {
+  const { data } = await api.post<ProductDeleteResult>("/admin/products/delete", { product_ids: productIds });
+  return data;
+}
+
+/** Deep-copies the ticked products as unpublished drafts, in the order given. */
+export async function adminDuplicateProducts(productIds: string[]): Promise<AdminProduct[]> {
+  const { data } = await api.post<AdminProduct[]>("/admin/products/duplicate", { product_ids: productIds });
+  return data;
+}
+
+/** Puts a product on the storefront, or takes it off, from the products list. */
+export async function adminSetProductPublished(productId: string, isPublished: boolean): Promise<boolean> {
+  const { data } = await api.patch<{ id: string; is_published: boolean }>(
+    `/admin/products/${productId}/publish`,
+    { is_published: isPublished },
+  );
+  return data.is_published;
+}
+
+/** Stores images under the API's media root and returns their public URLs. */
+export async function adminUploadImages(files: File[]): Promise<UploadedImage[]> {
+  const form = new FormData();
+  for (const file of files) form.append("files", file);
+  // Overrides the client's JSON default; the browser adds the multipart boundary.
+  const { data } = await api.post<UploadedImage[]>("/admin/uploads", form, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return data;
+}
+
+/** The whole sheet in one request; the server writes its five tables atomically. */
+export async function adminCreateProductSheet(body: ProductSheet): Promise<SavedProductSheet> {
+  const { data } = await api.post<SavedProductSheet>("/admin/products/sheet", body);
+  return data;
+}
+
+export async function adminGetProductSheet(productId: string, signal?: AbortSignal): Promise<SavedProductSheet> {
+  const { data } = await api.get<SavedProductSheet>(`/admin/products/${productId}/sheet`, { signal });
+  return data;
+}
+
+export async function adminUpdateProductSheet(productId: string, body: ProductSheet): Promise<SavedProductSheet> {
+  const { data } = await api.put<SavedProductSheet>(`/admin/products/${productId}/sheet`, body);
   return data;
 }
 
@@ -266,7 +322,15 @@ export const adminBankAccounts = contentApi<BankAccount, BankAccountWrite>("/adm
 
 /** One page of products plus the total number of matches (X-Total-Count), for page controls. */
 export async function adminListProductsPage(
-  params: { q?: string; category?: string | null; page: number; pageSize?: number },
+  params: {
+    q?: string;
+    category?: string | null;
+    page: number;
+    pageSize?: number;
+    /** Omitted: the server's default order (by name). */
+    orderBy?: ProductSort | null;
+    orderDir?: SortDirection;
+  },
   signal?: AbortSignal,
 ): Promise<{ products: AdminProduct[]; total: number }> {
   const pageSize = params.pageSize ?? ADMIN_PAGE_SIZE;
@@ -274,6 +338,8 @@ export async function adminListProductsPage(
     params: {
       q: params.q || undefined,
       category: params.category || undefined,
+      order_by: params.orderBy || undefined,
+      order_dir: params.orderBy ? (params.orderDir ?? "asc") : undefined,
       skip: params.page * pageSize,
       limit: pageSize,
     },

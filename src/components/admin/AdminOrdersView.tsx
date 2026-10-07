@@ -5,9 +5,10 @@ import axios from "axios";
 import { Bike, CircleCheck, CreditCard, Landmark, RefreshCw, X, XCircle } from "lucide-react";
 
 import { panelClass } from "@/components/admin/AdminShell";
+import { CargoSelect } from "@/components/admin/orders/CargoSelect";
 import { ExpandToggle, sheetId } from "@/components/admin/orders/ExpandToggle";
 import { OrderSheet } from "@/components/admin/orders/OrderSheet";
-import { canApproveOrder, useOrderActions, type OrderPatch } from "@/components/admin/orders/useOrderActions";
+import { canApproveOrder, canShipOrder, useOrderActions, type OrderPatch } from "@/components/admin/orders/useOrderActions";
 import { StatusBadge } from "@/components/orders/StatusBadge";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
@@ -154,6 +155,25 @@ export function AdminOrdersView({ onClose }: { onClose?: () => void }) {
           </Button>
           {notice?.kind === "error" && (
             <p className="whitespace-normal text-left text-[11px] leading-4 text-red-600 dark:text-red-400">{notice.text}</p>
+          )}
+        </div>
+      );
+    }
+    // Approved and still here: the same two cargo decisions as the dashboard's
+    // KARGO column, so the "Onaylanan" filter is a working dispatch queue.
+    if (canShipOrder(order.status)) {
+      return (
+        <div className="flex flex-col items-stretch gap-1">
+          <CargoSelect order={order} actions={actions} />
+          {notice && (
+            <p
+              role="status"
+              className={`whitespace-normal text-left text-[11px] leading-4 ${
+                notice.kind === "error" ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"
+              }`}
+            >
+              {notice.text}
+            </p>
           )}
         </div>
       );

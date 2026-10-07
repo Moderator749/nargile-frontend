@@ -1,6 +1,6 @@
 import { api } from "@/lib/api";
 import { CATALOG_PAGE_SIZE } from "@/lib/config";
-import type { CatalogProduct, Category } from "@/types";
+import type { CatalogProduct, CatalogProductDetail, Category } from "@/types";
 
 export { CATALOG_PAGE_SIZE };
 
@@ -31,12 +31,13 @@ export async function fetchCategories(signal?: AbortSignal): Promise<Category[]>
 
 /** Products with a live flash sale, priced for the caller (segment-aware when logged in). */
 export async function fetchFlashSaleProducts(signal?: AbortSignal): Promise<CatalogProduct[]> {
-  const { data } = await api.get<CatalogProduct[]>("/products/flash-sales", { signal });
+  // Matches the server-rendered list: every live deal, for the grid.
+  const { data } = await api.get<CatalogProduct[]>("/products/flash-sales", { params: { limit: 50 }, signal });
   return data;
 }
 
 /** One product, priced for the caller (segment-aware when logged in). */
-export async function fetchProduct(id: string, signal?: AbortSignal): Promise<CatalogProduct> {
-  const { data } = await api.get<CatalogProduct>(`/products/${id}`, { signal });
+export async function fetchProduct(id: string, signal?: AbortSignal): Promise<CatalogProductDetail> {
+  const { data } = await api.get<CatalogProductDetail>(`/products/${id}`, { signal });
   return data;
 }

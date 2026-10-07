@@ -98,9 +98,10 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-6 sm:px-6 lg:flex-row lg:gap-10 lg:py-10">
-      {/* A distinct tinted panel, so navigation never blends into the white content. */}
-      <aside className="h-fit rounded-2xl border border-zinc-200/80 bg-zinc-100 p-2 lg:sticky lg:top-[calc(var(--header-height)+1.5rem)] lg:w-64 lg:shrink-0 lg:p-3 dark:border-white/10 dark:bg-zinc-900">
-        <p className="hidden px-3 pt-2 text-xs font-semibold uppercase tracking-[0.2em] text-red-600 lg:block dark:text-red-500">
+      {/* The same card the content area is made of, so navigation sits in the
+          layout rather than on top of it: white, a hairline border, soft shadow. */}
+      <aside className="h-fit rounded-2xl border border-slate-200/80 bg-white p-2 shadow-sm lg:sticky lg:top-[calc(var(--header-height)+1.5rem)] lg:w-64 lg:shrink-0 lg:p-3 dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-none">
+        <p className="hidden px-3 pt-2 pb-2 text-xs font-bold uppercase tracking-wider text-red-600 lg:block dark:text-red-500">
           Kontrol Merkezi
         </p>
         <nav aria-label="Yönetim menüsü" className="lg:mt-4">
@@ -112,14 +113,18 @@ export function AdminShell({ children }: { children: ReactNode }) {
                   <Link
                     href={href}
                     aria-current={active ? "page" : undefined}
-                    className={`group flex items-center gap-2.5 whitespace-nowrap rounded-xl px-3 py-2 text-sm font-medium transition-[background-color,color,box-shadow] duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500 ${
+                    className={`group flex items-center gap-2.5 whitespace-nowrap rounded-xl px-3 py-2.5 text-sm transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500 ${
                       active
-                        ? "bg-white text-zinc-900 shadow-sm ring-1 ring-black/[0.06] dark:bg-zinc-800 dark:text-white dark:ring-white/10"
-                        : "text-zinc-600 hover:bg-white/70 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-zinc-100"
+                        ? "bg-red-50 font-semibold text-red-700 dark:bg-red-950/40 dark:text-red-400"
+                        : "font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-zinc-400 dark:hover:bg-zinc-800/60 dark:hover:text-white"
                     }`}
                   >
                     <Icon
-                      className={`h-4 w-4 shrink-0 transition-colors ${active ? "text-red-600 dark:text-red-400" : "text-zinc-400 group-hover:text-zinc-600 dark:text-zinc-500 dark:group-hover:text-zinc-300"}`}
+                      className={`h-4 w-4 shrink-0 transition-colors ${
+                        active
+                          ? "text-red-600 dark:text-red-400"
+                          : "text-slate-400 group-hover:text-slate-600 dark:text-zinc-500 dark:group-hover:text-zinc-300"
+                      }`}
                       aria-hidden
                     />
                     {label}

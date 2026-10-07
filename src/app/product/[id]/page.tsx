@@ -57,7 +57,7 @@ export default async function ProductPage(props: PageProps<"/product/[id]">) {
     <main className="flex flex-1 flex-col">
       <JsonLd data={productJsonLd(product, category)} />
       <JsonLd data={breadcrumbJsonLd(crumbs)} />
-      <ProductDetail initialProduct={product} category={category} breadcrumbs={crumbs} />
+      <ProductDetail initialProduct={product} category={category} categories={categories} breadcrumbs={crumbs} />
     </main>
   );
 }

@@ -2,7 +2,7 @@
 // participate in Next.js caching. Always anonymous: public RETAIL prices only.
 
 import { API_URL, CATALOG_PAGE_SIZE } from "@/lib/config";
-import type { Brand, CatalogProduct, Category, HomeContent } from "@/types";
+import type { Brand, CatalogProduct, CatalogProductDetail, Category, HomeContent } from "@/types";
 
 /** Seconds a cached catalog response is served before revalidating. */
 export const CATALOG_REVALIDATE = 300;
@@ -33,10 +33,14 @@ export function getPublicProducts(
   return getJson<CatalogProduct[]>(`/products/?${params}`);
 }
 
+/** The server's ceiling for one page of deals. */
+export const FLASH_SALE_LIMIT = 50;
+
 /** Live flash sales, read per request (never cached): a sale must show the moment it starts. */
 export async function getFlashSaleProducts(): Promise<CatalogProduct[] | null> {
   try {
-    const res = await fetch(`${API_URL}/products/flash-sales`, { cache: "no-store" });
+    // The section is a grid now: ask for every live deal, not a rail's worth.
+    const res = await fetch(`${API_URL}/products/flash-sales?limit=${FLASH_SALE_LIMIT}`, { cache: "no-store" });
     return res.ok ? ((await res.json()) as CatalogProduct[]) : null;
   } catch {
     return null;
@@ -54,8 +58,8 @@ export function getHomeContent(): Promise<HomeContent | null> {
 }
 
 /** One product (anonymous RETAIL view) for its detail page; null if missing or the API is down. */
-export function getProduct(id: string): Promise<CatalogProduct | null> {
+export function getProduct(id: string): Promise<CatalogProductDetail | null> {
   // Product ids are UUIDs: don't even ask the API for anything else.
   if (!/^[0-9a-f-]{36}$/i.test(id)) return Promise.resolve(null);
-  return getJson<CatalogProduct>(`/products/${id}`);
+  return getJson<CatalogProductDetail>(`/products/${id}`);
 }

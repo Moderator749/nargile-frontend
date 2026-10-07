@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Check, Minus, Plus, Truck } from "lucide-react";
+import { Check, Hourglass, Minus, Plus, Truck } from "lucide-react";
 
 import { ProductImage } from "@/components/catalog/ProductImage";
 import { useDisplayMoney } from "@/hooks/useDisplayMoney";
@@ -10,6 +10,7 @@ import { useNow } from "@/hooks/useNow";
 import { countdownParts } from "@/lib/banner";
 import { categoryCopy } from "@/lib/categories";
 import { cartLineFor } from "@/lib/cartLine";
+import { normalizeHex, readableInk } from "@/lib/color";
 import { saleState } from "@/lib/flashSale";
 import { productHref } from "@/lib/seo";
 import { useCartStore } from "@/store/useCartStore";
@@ -61,8 +62,9 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
 
   // Ticks only for cards with a sale; at expiry the regular price comes back (checkout agrees).
   const now = useNow(!!variant?.flash_sale);
-  const sale = saleState(variant, now);
+  const sale = saleState(product, variant, now);
   const price = sale.kind === "live" ? sale.price : regular;
+  const dealColor = normalizeHex(product.opportunity_color);
   // "Was" price: the viewer's regular price during a sale, else the public RETAIL price.
   const wasPrice = sale.kind === "live" ? regular : listPrice;
   const discountPct =
@@ -126,14 +128,26 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
           {soldOut ? (
             <span className={`${badgeClass} bg-white/80 text-zinc-900 ring-1 ring-inset ring-black/10`}>Tükendi</span>
           ) : sale.kind === "live" ? (
-            <span className={`${badgeClass} bg-accent/90 text-white shadow-sm shadow-accent/30`}>
-              Şok
-              <span className="font-mono normal-case tracking-normal tabular-nums" role="timer" aria-label="Kalan süre">
-                {now === null ? "--:--:--" : formatCountdown(sale.endsAt - now)}
-              </span>
+            // The admin's "Fırsat rengi" is a free hex, so it goes in as an inline
+            // style (Tailwind only ships classes it saw at build time), with ink
+            // picked for contrast. Without a valid colour the brand accent stands.
+            <span
+              className={`${badgeClass} shadow-sm ${dealColor ? "" : "bg-accent/90 text-white shadow-accent/30"}`}
+              style={dealColor ? { backgroundColor: dealColor, color: readableInk(dealColor) } : undefined}
+            >
+              {/* Label, hourglass, then the clock it is counting. An offer with no
+                  deadline has nothing to count down to. */}
+              Fırsat Ürün <Hourglass className="h-3 w-3 shrink-0" aria-hidden />
+              {sale.endsAt !== null && (
+                <span className="font-mono normal-case tracking-normal tabular-nums" role="timer" aria-label="Kalan süre">
+                  {now === null ? "--:--:--" : formatCountdown(sale.endsAt - now)}
+                </span>
+              )}
             </span>
-          ) : sale.kind === "ended" ? (
-            <span className={`${badgeClass} bg-zinc-900/75 text-zinc-100`}>Zaman Doldu</span>
+          ) : sale.kind === "missed" ? (
+            <span className={`${badgeClass} bg-zinc-900/75 text-zinc-100`}>
+              Fırsat Kaçtı <Hourglass className="h-3 w-3 shrink-0" aria-hidden />
+            </span>
           ) : null}
         </div>
 
@@ -191,7 +205,7 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
           </button>
         )}
         <span className="sr-only" aria-live="polite">
-          {added ? `${product.name} sepete eklendi` : sale.kind === "ended" ? `${product.name}: kampanya süresi doldu` : ""}
+          {added ? `${product.name} sepete eklendi` : sale.kind === "missed" ? `${product.name}: fırsat kaçtı` : ""}
         </span>
       </div>
 

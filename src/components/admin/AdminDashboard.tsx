@@ -3,11 +3,12 @@
 import { Fragment, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import axios from "axios";
-import { ArrowRight, Bike, ClipboardList, Euro, DollarSign, Truck, UserCheck, Users, XCircle } from "lucide-react";
+import { ArrowRight, Bike, ClipboardList, Euro, DollarSign, UserCheck, Users } from "lucide-react";
 
 import { AdminOrdersView } from "@/components/admin/AdminOrdersView";
 import { AdminPageHeader, panelClass } from "@/components/admin/AdminShell";
 import { Pagination } from "@/components/admin/Pagination";
+import { CargoSelect } from "@/components/admin/orders/CargoSelect";
 import { ExpandToggle, sheetId } from "@/components/admin/orders/ExpandToggle";
 import { OrderSheet } from "@/components/admin/orders/OrderSheet";
 import { canShipOrder, useOrderActions, type OrderActions, type OrderPatch } from "@/components/admin/orders/useOrderActions";
@@ -40,74 +41,61 @@ const KPIS: { title: string; value: (t: PeriodTotals) => string }[] = [
  * status; the status is shown by the badge in the "Durum" column.
  */
 function rowTone(o: AdminOrder): string {
-  // Card grey is a step deeper than gray-50, which read as white on the white panel.
-  return o.payment_method === "BANK_TRANSFER" ? "bg-yellow-50 dark:bg-yellow-500/10" : "bg-zinc-100 dark:bg-zinc-800/60";
+  // Card orders are the plain case: clean white, with only havale tinted.
+  return o.payment_method === "BANK_TRANSFER" ? "bg-yellow-50 dark:bg-yellow-500/10" : "bg-white dark:bg-zinc-900";
 }
 
 const LEGEND = [
-  { label: "Kredi kartı", className: "bg-zinc-200 dark:bg-zinc-700" },
+  { label: "Kredi kartı", className: "border border-zinc-200 bg-white dark:border-white/15 dark:bg-zinc-900" },
   { label: "Havale / EFT", className: "bg-yellow-100 dark:bg-yellow-500/20" },
 ];
 
-/** How the order travels and who pays for it; carriage is never on the order. */
-function Cargo({ o }: { o: AdminOrder }) {
+/** A shipped order's carrier mark: the tracking code, or the courier run. */
+function ShippedMark({ o }: { o: AdminOrder }) {
   if (o.shipping_method === "COURIER_ISTANBUL")
     return (
       <span className="inline-flex items-center gap-1 whitespace-nowrap text-sky-700 dark:text-sky-300">
-        <Bike className="h-3.5 w-3.5" aria-hidden /> Kurye
+        <Bike className="h-3.5 w-3.5 shrink-0" aria-hidden /> Kurye
       </span>
     );
-  if (o.tracking_code) return <span className="font-mono text-xs">{o.tracking_code}</span>;
-  return (
-    <span className="whitespace-nowrap text-slate-500 dark:text-zinc-400">
-      {o.shipping_payer === "RECEIVER" ? "Alıcı öder" : "Ücretsiz"}
-    </span>
-  );
+  if (o.tracking_code)
+    return (
+      <span className="block truncate font-mono text-xs" title={o.tracking_code}>
+        {o.tracking_code}
+      </span>
+    );
+  return <span className="whitespace-nowrap text-slate-500 dark:text-zinc-400">Kargoya verildi</span>;
 }
 
-const cargoBtn =
-  "inline-flex h-7 w-full items-center justify-center gap-1 whitespace-nowrap rounded-md px-2 text-[11px] font-semibold transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-red-600 disabled:cursor-not-allowed disabled:opacity-50";
-
 /**
- * "Kargoya ver" hands the order to the carrier and e-mails the customer;
- * "Reddet" cancels it, returning the stock and voiding the points it earned.
- * Only a paid order that has not shipped gets them.
+ * The KARGO cell is the dispatch workflow: an approved order offers the two cargo
+ * decisions, anything still earlier just waits, and a shipped one shows its
+ * carrier mark. Carriage is never charged, so no price is shown here.
  */
-function CargoActions({ o, actions }: { o: AdminOrder; actions: OrderActions }) {
+function CargoCell({ o, actions }: { o: AdminOrder; actions: OrderActions }) {
   const notice = actions.notice(o.id);
-  if (!canShipOrder(o.status))
-    return notice ? (
-      <p
-        className={`mt-1 max-w-32 whitespace-normal text-[11px] leading-4 ${notice.kind === "error" ? "text-red-600 dark:text-red-400" : "text-emerald-700 dark:text-emerald-400"}`}
-        role="status"
-      >
-        {notice.text}
-      </p>
-    ) : null;
   return (
-    <div className="mt-1.5 flex flex-col items-stretch gap-1">
-      <button
-        type="button"
-        onClick={() => actions.ship(o)}
-        disabled={actions.busy(o.id)}
-        title="Kargoya ver: müşteriye bilgilendirme e-postası gönderilir"
-        className={`${cargoBtn} bg-emerald-600 text-white hover:bg-emerald-500`}
-      >
-        <Truck className="h-3.5 w-3.5 shrink-0" aria-hidden /> Kargoya ver
-      </button>
-      <button
-        type="button"
-        onClick={() => actions.cancel(o)}
-        disabled={actions.busy(o.id)}
-        title="Siparişi reddet: stok iade edilir, kazanılan puanlar geri alınır"
-        className={`${cargoBtn} bg-white text-red-700 ring-1 ring-red-300 hover:bg-red-50 dark:bg-zinc-900 dark:text-red-300 dark:ring-red-500/30 dark:hover:bg-red-500/10`}
-      >
-        <XCircle className="h-3.5 w-3.5 shrink-0" aria-hidden /> Reddet
-      </button>
-      {notice?.kind === "error" && (
-        <p className="max-w-32 text-[11px] leading-4 text-red-600 dark:text-red-400">{notice.text}</p>
+    <>
+      {o.status === "SHIPPED" ? (
+        <ShippedMark o={o} />
+      ) : canShipOrder(o.status) ? (
+        <CargoSelect order={o} actions={actions} />
+      ) : o.status === "CANCELLED" ? (
+        <span className="text-slate-400 dark:text-zinc-500">—</span>
+      ) : (
+        <span className="whitespace-nowrap text-slate-500 dark:text-zinc-400">Kargo bekliyor</span>
       )}
-    </div>
+      {notice && (
+        <p
+          role="status"
+          className={`mt-1 whitespace-normal text-[11px] leading-4 ${
+            notice.kind === "error" ? "text-red-600 dark:text-red-400" : "text-emerald-700 dark:text-emerald-400"
+          }`}
+        >
+          {notice.text}
+        </p>
+      )}
+    </>
   );
 }
 
@@ -318,12 +306,14 @@ export function AdminDashboard() {
             aria-hidden
           />
         </button>
+        {/* Lemon yellow on black: the queue has to be seen from across the room,
+            and it reads the same in either theme. */}
         {queue && (
           <ul className="flex flex-wrap items-center gap-2 text-xs font-medium">
-            <li className="rounded-full bg-amber-100 px-3 py-1.5 text-amber-900 ring-1 ring-inset ring-amber-300 dark:bg-amber-500/15 dark:text-amber-200 dark:ring-amber-500/30">
+            <li className="rounded-full bg-yellow-300 px-3 py-1.5 text-black ring-1 ring-inset ring-yellow-400">
               <strong className="font-mono">{queue.transfer}</strong> havale bekliyor
             </li>
-            <li className="rounded-full bg-orange-100 px-3 py-1.5 text-orange-900 ring-1 ring-inset ring-orange-300 dark:bg-orange-500/15 dark:text-orange-200 dark:ring-orange-500/30">
+            <li className="rounded-full bg-yellow-300 px-3 py-1.5 text-black ring-1 ring-inset ring-yellow-400">
               <strong className="font-mono">{queue.approval}</strong> onay bekliyor
             </li>
           </ul>
@@ -391,7 +381,7 @@ export function AdminDashboard() {
                   <th scope="col" className="hidden w-[13%] px-3 py-3 md:table-cell">Kargo</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white dark:divide-zinc-900">
+              <tbody className="divide-y divide-slate-200 dark:divide-white/10">
                 {orders.rows.map((o) => {
                   const expanded = open.has(o.id);
                   return (
@@ -444,8 +434,7 @@ export function AdminDashboard() {
                           <StatusBadge status={o.status} compact />
                         </td>
                         <td className="hidden px-3 py-2.5 align-top text-xs md:table-cell">
-                          <Cargo o={o} />
-                          <CargoActions o={o} actions={actions} />
+                          <CargoCell o={o} actions={actions} />
                         </td>
                       </tr>
                       {expanded && (

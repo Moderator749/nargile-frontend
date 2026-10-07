@@ -135,8 +135,23 @@ export interface Product {
   description: string | null;
   category_id: number | null;
   tags: string[] | null;
-  /** Absolute product photo URL; null when the product has no image. */
+  /** The cover photo (the first of `image_urls`); null when there is none. */
   image_url: string | null;
+  /**
+   * The whole gallery, cover first; contains the cover when there is one. Optional
+   * because a response cached before galleries existed simply has no such field.
+   */
+  image_urls?: string[];
+  youtube_video_url: string | null;
+  /** "Renk" labels, in the order the admin added them. */
+  color_names?: string[];
+  /**
+   * On the "Fırsat Ürünleri" list while true — even once the deal is over, when
+   * it shows as "Fırsat Kaçtı". A claimable deal also has `variants[].flash_sale`.
+   */
+  is_opportunity: boolean;
+  /** "Fırsat rengi": the badge colour for a product on offer, "#rrggbb". */
+  opportunity_color: string | null;
 }
 
 // Catalog listing (GET /products/): prices resolved for the caller's segment.
@@ -150,15 +165,24 @@ export interface CatalogPrice {
 /** A live flash sale ("Fırsat Ürünleri"): checkout charges `price` until `ends_at`. */
 export interface FlashSaleInfo {
   price: CatalogPrice;
-  ends_at: ISODateTime;
+  /** Null when the offer has no deadline: it runs until its stock or the admin ends it. */
+  ends_at: ISODateTime | null;
 }
 
 export interface CatalogVariant {
   id: UUID;
   sku: string;
   attributes: Record<string, unknown> | null;
-  /** Price for the caller's segment; null if not sold to that segment. */
+  /**
+   * Price for the caller's segment, always in TRY (what the cart charges); null
+   * if not sold to that segment, or if a foreign price could not be converted.
+   */
   price: CatalogPrice | null;
+  /**
+   * Set only when that segment's price was entered in USD/EUR: the amount as the
+   * admin typed it. `price` is this converted at the day's TCMB rate.
+   */
+  origin_price?: CatalogPrice | null;
   /** Public RETAIL price. */
   list_price: CatalogPrice | null;
   /** Live sale that beats `price` for this caller; null/absent when none. */
@@ -169,6 +193,12 @@ export interface CatalogVariant {
 
 export interface CatalogProduct extends Product {
   variants: CatalogVariant[];
+}
+
+/** `GET /products/{id}`: the product plus its "birlikte satılanlar". */
+export interface CatalogProductDetail extends CatalogProduct {
+  /** Priced for the same caller as the product itself; empty when none are pinned. */
+  cross_sells?: CatalogProduct[];
 }
 
 export interface ProductVariant {
@@ -372,6 +402,120 @@ export interface AdminVariant {
   inventory: { id: number; warehouse_type: WarehouseType; quantity: number }[];
 }
 
+// ── Product sheet ("Ürün Ekle / Düzenle") ────────────────────────────────────
+
+/** Sheet column order: Bayi, Toptan, Kafe, Perakende. */
+export type SheetSegment = "DEALER" | "WHOLESALE" | "CAFE" | "RETAIL";
+
+export interface SheetStock {
+  bayi: number;
+  toptan: number;
+  kafe: number;
+  perakende: number;
+}
+
+/** One cell of the price matrix; both sides empty means "not sold at this price". */
+export interface SheetPriceCell {
+  price_excl_tax?: DecimalString | null;
+  price_incl_tax?: DecimalString | null;
+  /** The KDV rate the form applied; the server derives it when absent. */
+  vat_rate?: DecimalString | null;
+}
+
+export interface SheetPriceRow {
+  currency: CurrencyType;
+  cells: Partial<Record<SheetSegment, SheetPriceCell>>;
+}
+
+export interface SheetRules {
+  is_free_shipping: boolean;
+  /** "Adet şartı": free carriage only from this many units; null = no condition. */
+  free_shipping_min_quantity?: number | null;
+  has_havale_discount: boolean;
+  /** "Ciro indirimi": counts towards, and is discounted by, the volume tiers. */
+  has_volume_discount: boolean;
+  gives_points: boolean;
+  can_use_points: boolean;
+  /** "Ağır Kargo rakamı 3.000 TL üzeri alışverişlerde sepetin %50'sini geçemez." */
+  is_cart_rule_applied: boolean;
+}
+
+export interface SheetOpportunity {
+  is_opportunity: boolean;
+  opportunity_price?: DecimalString | null;
+  opportunity_stock?: number | null;
+  /** ISO datetime, in the future. Null: the offer runs until its stock runs out. */
+  opportunity_end_date?: ISODateTime | null;
+  opportunity_color?: string | null;
+  /** The same rules, as they apply while the deal runs. */
+  opp_is_free_shipping: boolean;
+  opp_free_shipping_min_quantity?: number | null;
+  opp_has_havale_discount: boolean;
+  opp_has_volume_discount: boolean;
+  opp_gives_points: boolean;
+  opp_can_use_points: boolean;
+}
+
+/** Sortable columns of the admin products table. */
+export type ProductSort = "code" | "name" | "stock" | "price";
+export type SortDirection = "asc" | "desc";
+
+/** What a bulk delete managed; `refused` maps a product id to why it was kept. */
+export interface ProductDeleteResult {
+  deleted: UUID[];
+  refused: Record<UUID, string>;
+}
+
+/** A pinned "birlikte satılan" product, as the form's preview card shows it. */
+export interface CrossSellCard {
+  id: UUID;
+  base_code: string;
+  name: string;
+  image_url: string | null;
+  /** The public (RETAIL) price as entered; null when the product has no price. */
+  price_incl_tax: DecimalString | null;
+  currency: CurrencyType | null;
+}
+
+export interface ProductSheet {
+  base_code: string;
+  name: string;
+  brand?: string | null;
+  category_id?: number | null;
+  /** "Renk" labels, in the order the admin added them. */
+  color_names: string[];
+  description?: string | null;
+  /** Gallery in order; the server mirrors the first one into `image_url`. */
+  image_urls: string[];
+  youtube_video_url?: string | null;
+  /** Defaults to `base_code` on the server. */
+  sku?: string | null;
+  /** Unit weight in kg (the coal free-shipping rule); null = not recorded. */
+  weight_kg?: DecimalString | null;
+  is_published: boolean;
+  stock: SheetStock;
+  prices: SheetPriceRow[];
+  rules: SheetRules;
+  opportunity: SheetOpportunity;
+  /** "Birlikte satılanlar", in the admin's order; at most four. */
+  related_product_ids: UUID[];
+}
+
+export interface SavedProductSheet extends ProductSheet {
+  id: UUID;
+  variant_id: UUID;
+  sku: string;
+  stock_total: number;
+  /** The pinned products themselves, same order as `related_product_ids`. */
+  related_products: CrossSellCard[];
+}
+
+/** What `POST /admin/uploads` gives back for each stored file. */
+export interface UploadedImage {
+  url: string;
+  path: string;
+}
+
 export interface AdminProduct {
   id: UUID;
   base_code: string;
@@ -380,6 +524,8 @@ export interface AdminProduct {
   category_id: number | null;
   tags: string[] | null;
   image_url: string | null;
+  /** Off the storefront while false; toggled per row in the products list. */
+  is_published: boolean;
   variants: AdminVariant[];
 }
 

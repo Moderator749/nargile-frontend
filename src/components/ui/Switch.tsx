@@ -6,9 +6,15 @@ interface SwitchProps {
   labelledBy: string;
   describedBy?: string;
   disabled?: boolean;
+  /**
+   * What "on" looks like. "brand" (the default) is the crimson used across the
+   * admin; "success" is for a list of rules, where green reads as "evet" at a
+   * glance and crimson would read as a warning.
+   */
+  tone?: "brand" | "success";
 }
 
-export function Switch({ checked, onChange, labelledBy, describedBy, disabled }: SwitchProps) {
+export function Switch({ checked, onChange, labelledBy, describedBy, disabled, tone = "brand" }: SwitchProps) {
   return (
     <button
       type="button"
@@ -19,7 +25,11 @@ export function Switch({ checked, onChange, labelledBy, describedBy, disabled }:
       disabled={disabled}
       onClick={() => onChange(!checked)}
       className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500 disabled:cursor-not-allowed disabled:opacity-50 ${
-        checked ? "bg-red-600" : "bg-slate-300 dark:bg-zinc-700"
+        checked
+          ? tone === "success"
+            ? "bg-emerald-500"
+            : "bg-red-600"
+          : "bg-slate-300 dark:bg-zinc-700"
       }`}
     >
       <span

@@ -1,19 +1,33 @@
-// Flash-sale ("Fırsat Ürünleri") state for a variant at a given moment.
+// "Fırsat Ürünleri" state for a product/variant at a given moment.
 
-import type { CatalogPrice, CatalogVariant } from "@/types";
+import type { CatalogPrice, CatalogProduct, CatalogVariant } from "@/types";
 
 export type SaleState =
-  | { kind: "none" }
-  | { kind: "live"; price: CatalogPrice; endsAt: number }
-  /** The sale ended while the page was open: checkout now charges the regular price. */
-  | { kind: "ended" };
+  /** Claimable. `endsAt` is null for an offer with no deadline: no countdown. */
+  | { kind: "live"; price: CatalogPrice; endsAt: number | null }
+  /**
+   * "Fırsat Kaçtı": the product is still on the Fırsat list, but the deal is
+   * over — its deadline passed (possibly while this page was open) or its deal
+   * stock ran out. Checkout charges the regular price.
+   */
+  | { kind: "missed" }
+  | { kind: "none" };
 
-/** `now` is null before hydration: a live sale is then shown as live (server truth). */
-export function saleState(variant: CatalogVariant | undefined, now: number | null): SaleState {
+/**
+ * `now` is null before hydration: a live sale is then shown as live (server
+ * truth), so the server and the first client render agree.
+ */
+export function saleState(
+  product: Pick<CatalogProduct, "is_opportunity">,
+  variant: CatalogVariant | undefined,
+  now: number | null,
+): SaleState {
   const sale = variant?.flash_sale;
-  if (!sale) return { kind: "none" };
+  // No claimable price, but still an opportunity product: the deal was missed.
+  if (!sale) return product.is_opportunity ? { kind: "missed" } : { kind: "none" };
+  if (!sale.ends_at) return { kind: "live", price: sale.price, endsAt: null };
   const endsAt = Date.parse(sale.ends_at);
-  if (Number.isNaN(endsAt)) return { kind: "none" };
-  if (now !== null && now >= endsAt) return { kind: "ended" };
+  if (Number.isNaN(endsAt)) return { kind: "live", price: sale.price, endsAt: null };
+  if (now !== null && now >= endsAt) return { kind: "missed" };
   return { kind: "live", price: sale.price, endsAt };
 }
