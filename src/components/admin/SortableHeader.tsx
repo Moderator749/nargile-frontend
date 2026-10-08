@@ -2,15 +2,19 @@
 
 import { ChevronDown, ChevronUp, ChevronsUpDown } from "lucide-react";
 
-import type { ProductSort, SortDirection } from "@/types";
+import type { SortDirection } from "@/types";
 
-export interface SortState {
-  by: ProductSort | null;
+/** Which column a grid is sorted by, and which way. `null` is the server's own order. */
+export interface SortState<Column extends string> {
+  by: Column | null;
   dir: SortDirection;
 }
 
 /** Click through ascending → descending → the default order. */
-export function nextSort(current: SortState, column: ProductSort): SortState {
+export function nextSort<Column extends string>(
+  current: SortState<Column>,
+  column: Column,
+): SortState<Column> {
   if (current.by !== column) return { by: column, dir: "asc" };
   if (current.dir === "asc") return { by: column, dir: "desc" };
   return { by: null, dir: "asc" };
@@ -19,8 +23,11 @@ export function nextSort(current: SortState, column: ProductSort): SortState {
 /**
  * A column header that sorts. The chevron shows the state: paired when the column
  * is not the active one, single when it is.
+ *
+ * Generic over the column names, so every admin grid sorts the same way while
+ * each one keeps its own set of sortable columns.
  */
-export function SortableHeader({
+export function SortableHeader<Column extends string>({
   column,
   label,
   sort,
@@ -28,10 +35,10 @@ export function SortableHeader({
   align = "left",
   className = "",
 }: {
-  column: ProductSort;
+  column: Column;
   label: string;
-  sort: SortState;
-  onSort: (next: SortState) => void;
+  sort: SortState<Column>;
+  onSort: (next: SortState<Column>) => void;
   align?: "left" | "center" | "right";
   className?: string;
 }) {

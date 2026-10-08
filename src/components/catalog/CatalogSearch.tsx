@@ -10,9 +10,19 @@ interface CatalogSearchProps {
   onSearch: (query: string) => void;
   busy: boolean;
   placeholder: string;
+  /** What is being searched, for the screen reader and the field's id. */
+  label?: string;
+  id?: string;
 }
 
-function CatalogSearchField({ onSearch, busy, placeholder, initial }: CatalogSearchProps & { initial: string }) {
+function CatalogSearchField({
+  onSearch,
+  busy,
+  placeholder,
+  initial,
+  label = "Ürün ara",
+  id = "catalog-search",
+}: CatalogSearchProps & { initial: string }) {
   const [value, setValue] = useState(initial);
 
   // A search from the URL (?q=, e.g. the header search or a brand filter) applies at once.
@@ -27,15 +37,15 @@ function CatalogSearchField({ onSearch, busy, placeholder, initial }: CatalogSea
 
   return (
     <div role="search" className="relative w-full sm:w-72">
-      <label htmlFor="catalog-search" className="sr-only">
-        Ürün ara
+      <label htmlFor={id} className="sr-only">
+        {label}
       </label>
       <Search
         className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-zinc-500"
         aria-hidden
       />
       <input
-        id="catalog-search"
+        id={id}
         type="search"
         value={value}
         onChange={(e) => setValue(e.target.value)}

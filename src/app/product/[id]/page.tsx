@@ -22,16 +22,22 @@ export async function generateMetadata(props: PageProps<"/product/[id]">): Promi
   const { product, category } = await load(id);
   if (!product) return { title: "Ürün bulunamadı", robots: { index: false } };
 
+  // "Açıklama ve SEO" wins when the admin filled it in; otherwise the page falls
+  // back to the description, then to the category's standing copy.
+  // A meta title the admin wrote is the whole <title>, suffix included if they
+  // want one, so it bypasses the layout's "%s | <shop>" template (title.absolute).
+  const metaTitle = product.meta_title?.trim();
   const description =
+    product.meta_description?.trim() ||
     product.description?.slice(0, 160) ||
     `${product.name}${category ? ` · ${category.name}` : ""}. ${categoryCopy(category?.slug).description}`.slice(0, 160);
   const href = productHref(product.id);
   return {
-    title: product.name,
+    title: metaTitle ? { absolute: metaTitle } : product.name,
     description,
     alternates: { canonical: href },
     openGraph: {
-      title: `${product.name} | ${SITE_NAME}`,
+      title: metaTitle || `${product.name} | ${SITE_NAME}`,
       description,
       url: href,
       ...(product.image_url ? { images: [{ url: product.image_url }] } : {}),

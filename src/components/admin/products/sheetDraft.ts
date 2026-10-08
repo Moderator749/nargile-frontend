@@ -12,6 +12,9 @@ import type {
   SavedProductSheet,
   SheetPriceRow,
   SheetSegment,
+  SheetStock,
+  SheetVariant,
+  UUID,
 } from "@/types";
 
 /** Price-matrix rows, in sheet order. */
@@ -58,6 +61,34 @@ export interface StockDraft {
   perakende: string;
 }
 
+const emptyStock = (): StockDraft => ({ bayi: "", toptan: "", kafe: "", perakende: "" });
+
+/**
+ * One colour pill and the stock row it owns — the same object, so the "STOK"
+ * table cannot drift out of step with the pills in "Ürün Bilgileri".
+ *
+ * `id` is the saved variant this row is, so renaming a colour keeps its stock;
+ * a colour the admin has just added has none yet. `key` is for React, because a
+ * brand-new row has no id and a label is not stable while it is being typed.
+ */
+export interface ColorDraft {
+  key: string;
+  id: UUID | null;
+  label: string;
+  sku: string | null;
+  stock: StockDraft;
+}
+
+let colorKeySeed = 0;
+
+export function newColor(label: string): ColorDraft {
+  colorKeySeed += 1;
+  return { key: `c${colorKeySeed}`, id: null, label, sku: null, stock: emptyStock() };
+}
+
+/** How two colour labels are compared: trimmed, collapsed, Turkish-insensitive. */
+export const foldColor = (label: string) => label.trim().replace(/\s+/g, " ").toLocaleLowerCase("tr");
+
 export interface CellDraft {
   excl: string;
   incl: string;
@@ -68,17 +99,21 @@ export interface SheetDraft {
   name: string;
   brand: string;
   category_id: string;
-  /** "Renk" labels as pills; typed one at a time. */
-  color_names: string[];
+  /** "Renk" as pills, each owning its own stock row; typed one at a time. */
+  colors: ColorDraft[];
   /** One row per image input; blanks are dropped on save. */
   image_urls: string[];
   youtube_video_url: string;
+  /** "Açıklama ve SEO". */
   description: string;
+  metaTitle: string;
+  metaDescription: string;
   /** "KDV Oranı" for the whole sheet; KDV dahil is computed from it. */
   vatRate: VatRate;
   /** "Birlikte satılanlar", as cards so the grid can draw them without a lookup. */
   crossSells: CrossSellCard[];
   isPublished: boolean;
+  /** The quotas of a product with no colours; ignored once `colors` is non-empty. */
   stock: StockDraft;
   /** [currency][segment] → the two sides of one cell. */
   prices: Record<CurrencyType, Record<SheetSegment, CellDraft>>;
@@ -116,14 +151,16 @@ export function emptyDraft(): SheetDraft {
     name: "",
     brand: "",
     category_id: "",
-    color_names: [],
+    colors: [],
     image_urls: [],
     youtube_video_url: "",
     description: "",
+    metaTitle: "",
+    metaDescription: "",
     vatRate: 20,
     crossSells: [],
     isPublished: true,
-    stock: { bayi: "", toptan: "", kafe: "", perakende: "" },
+    stock: emptyStock(),
     prices: emptyMatrix(),
     rules: {
       is_free_shipping: false,
@@ -150,6 +187,16 @@ export function emptyDraft(): SheetDraft {
   };
 }
 
+const stockDraft = (stock: SheetStock | undefined): StockDraft =>
+  stock
+    ? {
+        bayi: String(stock.bayi),
+        toptan: String(stock.toptan),
+        kafe: String(stock.kafe),
+        perakende: String(stock.perakende),
+      }
+    : emptyStock();
+
 /** An ISO instant as a `datetime-local` value in the admin's own timezone. */
 export function toLocalInput(iso: string | null | undefined): string {
   if (!iso) return "";
@@ -169,25 +216,30 @@ export function draftFromSheet(sheet: SavedProductSheet): SheetDraft {
       draft.prices[row.currency][segment] = { excl: money(cell.price_excl_tax), incl: money(cell.price_incl_tax) };
     }
   }
+  // The server always sends one entry per colour (and one unnamed entry when
+  // there are none), so the pills and the stock rows come from the same list.
+  const saved = sheet.variants ?? [];
+  const standard = saved.find((v) => v.color == null);
   return {
     ...draft,
     base_code: sheet.base_code,
     name: sheet.name,
     brand: sheet.brand ?? "",
     category_id: sheet.category_id == null ? "" : String(sheet.category_id),
-    color_names: sheet.color_names,
+    colors: saved
+      .filter((v) => v.color != null)
+      .map((v) => ({ ...newColor(v.color as string), id: v.id ?? null, sku: v.sku ?? null, stock: stockDraft(v.stock) })),
     image_urls: sheet.image_urls,
     youtube_video_url: sheet.youtube_video_url ?? "",
     description: sheet.description ?? "",
+    metaTitle: sheet.meta_title ?? "",
+    metaDescription: sheet.meta_description ?? "",
     vatRate: savedVatRate(sheet),
     crossSells: sheet.related_products,
     isPublished: sheet.is_published,
-    stock: {
-      bayi: String(sheet.stock.bayi),
-      toptan: String(sheet.stock.toptan),
-      kafe: String(sheet.stock.kafe),
-      perakende: String(sheet.stock.perakende),
-    },
+    // On a coloured product the colours hold the stock and this is only the
+    // total the server computed, so it is not carried into the form.
+    stock: stockDraft(standard?.stock ?? sheet.stock),
     rules: { ...sheet.rules },
     opportunity: {
       is_opportunity: sheet.opportunity.is_opportunity,
@@ -205,6 +257,13 @@ export function draftFromSheet(sheet: SavedProductSheet): SheetDraft {
   };
 }
 
+const toStock = (stock: StockDraft): SheetStock => ({
+  bayi: count(stock.bayi),
+  toptan: count(stock.toptan),
+  kafe: count(stock.kafe),
+  perakende: count(stock.perakende),
+});
+
 const count = (raw: string) => {
   const n = Number.parseInt(raw.replace(/\D/g, ""), 10);
   return Number.isFinite(n) && n > 0 ? n : 0;
@@ -213,10 +272,19 @@ const count = (raw: string) => {
 export const stockTotal = (stock: StockDraft) =>
   count(stock.bayi) + count(stock.toptan) + count(stock.kafe) + count(stock.perakende);
 
+/** "Toplam Stok": every quota of every colour, or of the one standard row. */
+export const draftStockTotal = (draft: SheetDraft) =>
+  draft.colors.length > 0
+    ? draft.colors.reduce((sum, color) => sum + stockTotal(color.stock), 0)
+    : stockTotal(draft.stock);
+
 /** Client-side check mirroring the server's; null = ready to save. */
 export function draftProblem(draft: SheetDraft): string | null {
   if (!draft.base_code.trim()) return "Ürün kodu girin.";
   if (draft.name.trim().length < 2) return "Ürün adı girin.";
+  if (draft.colors.some((c) => !c.label.trim())) return "Renk adı boş olamaz.";
+  if (draft.metaTitle.length > 70) return "SEO başlığı en fazla 70 karakter olabilir.";
+  if (draft.metaDescription.length > 160) return "SEO açıklaması en fazla 160 karakter olabilir.";
   const anyPrice = SHEET_CURRENCIES.some((c) =>
     SHEET_COLUMNS.some(({ segment }) => cellFilled(draft.prices[c][segment])),
   );
@@ -249,21 +317,29 @@ export function toPayload(draft: SheetDraft): ProductSheet {
   });
 
   const opp = draft.opportunity;
+  const colors = draft.colors.map((c) => c.label.trim()).filter(Boolean);
+  // One stock block per colour, in pill order; a colourless product sends the
+  // single standard block instead. The server reconciles the two lists either way.
+  const variants: SheetVariant[] =
+    draft.colors.length > 0
+      ? draft.colors
+          .filter((c) => c.label.trim())
+          .map((c) => ({ id: c.id, color: c.label.trim(), stock: toStock(c.stock) }))
+      : [{ id: null, color: null, stock: toStock(draft.stock) }];
+
   return {
     base_code: draft.base_code.trim(),
     name: draft.name.trim(),
     brand: draft.brand.trim() || null,
     category_id: draft.category_id ? Number(draft.category_id) : null,
-    color_names: draft.color_names,
+    color_names: colors,
     image_urls: draft.image_urls.map((u) => u.trim()).filter(Boolean),
     youtube_video_url: draft.youtube_video_url.trim() || null,
     description: draft.description.trim() || null,
-    stock: {
-      bayi: count(draft.stock.bayi),
-      toptan: count(draft.stock.toptan),
-      kafe: count(draft.stock.kafe),
-      perakende: count(draft.stock.perakende),
-    },
+    meta_title: draft.metaTitle.trim() || null,
+    meta_description: draft.metaDescription.trim() || null,
+    stock: toStock(draft.stock),
+    variants,
     prices,
     rules: { ...draft.rules },
     related_product_ids: draft.crossSells.map((c) => c.id),

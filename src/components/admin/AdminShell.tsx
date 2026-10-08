@@ -25,7 +25,7 @@ import { useAuthHydrated } from "@/store/useHasHydrated";
 
 const NAV = [
   { href: "/admin", label: "Genel Bakış", icon: LayoutDashboard, exact: true },
-  { href: "/admin/customers", label: "Müşteriler & Puanlar", icon: Users },
+  { href: "/admin/customers", label: "Müşteriler", icon: Users },
   { href: "/admin/bank-accounts", label: "Banka Hesapları", icon: Landmark },
   { href: "/admin/products", label: "Ürünler & Stok", icon: Boxes },
   { href: "/admin/categories", label: "Menü & Kategoriler", icon: FolderTree },

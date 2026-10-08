@@ -147,6 +147,7 @@ export function CartView() {
                   key={item.variant_id}
                   item={item}
                   serverUnitPrice={line?.unit_price}
+                  serverColorName={line?.color_name}
                   serverImageUrl={line?.image_url}
                   productHref={line?.product_id ? productHref(line.product_id) : undefined}
                 />

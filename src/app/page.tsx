@@ -48,7 +48,8 @@ export default async function HomePage() {
 
   // Content tied to flash sales (a slide, the "Şok" promo box) only shows while one is live.
   // Managed in /admin/hero, /admin/promos and /admin/advantages.
-  const has = { flash_sales: (flashSales ?? []).some((p) => p.variants[0]?.flash_sale) };
+  // Any colour of any product carrying a claimable sale is enough.
+  const has = { flash_sales: (flashSales ?? []).some((p) => p.variants.some((v) => v.flash_sale)) };
   const cmsSlides = (content?.slides ?? []).filter((s) => meets(s.requires, has)).map(toHeroSlide);
   const slides = cmsSlides.length > 0 ? cmsSlides : [FALLBACK_SLIDE];
   const rows = promoRows(content?.promos ?? [], has);

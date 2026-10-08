@@ -146,7 +146,7 @@ export function CrossSellPicker({
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-medium">{product.name}</span>
                         <span className="block truncate font-mono text-[11px] text-slate-500 dark:text-zinc-400">
-                          {product.variants[0]?.sku ?? product.base_code}
+                          {product.base_code}
                         </span>
                       </span>
                       <span className="shrink-0 text-xs text-slate-500 dark:text-zinc-400">

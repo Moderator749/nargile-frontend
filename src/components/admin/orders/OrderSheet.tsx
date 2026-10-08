@@ -117,6 +117,8 @@ export function OrderSheet({
           <dl>
             <SheetField label="Adı" value={order.company_title ?? billingAddress?.full_name ?? order.customer_name ?? null} />
             <SheetField label="Adres" value={addressLines(billingAddress ?? null)} />
+            {/* Only an address abroad has one; a domestic sheet says nothing. */}
+            {billing?.country && <SheetField label="Ülke" value={billing.country} />}
             <SheetField label="Telefon" value={billingAddress?.phone ?? null} mono />
             <SheetField label="Mobil" value={order.customer_phone ?? null} mono />
           </dl>

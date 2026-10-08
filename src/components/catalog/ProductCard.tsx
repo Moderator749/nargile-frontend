@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Check, Hourglass, Minus, Plus, Truck } from "lucide-react";
+import { Check, Hourglass, Minus, Palette, Plus, Truck } from "lucide-react";
 
 import { ProductImage } from "@/components/catalog/ProductImage";
 import { useDisplayMoney } from "@/hooks/useDisplayMoney";
@@ -13,6 +13,7 @@ import { cartLineFor } from "@/lib/cartLine";
 import { normalizeHex, readableInk } from "@/lib/color";
 import { saleState } from "@/lib/flashSale";
 import { productHref } from "@/lib/seo";
+import { displayVariant, hasColorChoice, soldOut as allSoldOut } from "@/lib/variants";
 import { useCartStore } from "@/store/useCartStore";
 import { useCartHydrated } from "@/store/useHasHydrated";
 import type { CatalogProduct, Category } from "@/types";
@@ -52,10 +53,14 @@ function formatCountdown(ms: number): string {
 }
 
 export function ProductCard({ product, category, isLoggedIn, publicPrices, pricesPending }: ProductCardProps) {
-  const variant = product.variants[0];
+  // A coloured product is still one card. The colour it speaks for is the first
+  // that can be bought, so the price shown is one the visitor can actually get;
+  // the card only reads "Tükendi" once every colour is gone.
+  const variant = displayVariant(product);
+  const needsColorChoice = hasColorChoice(product);
   const regular = variant?.price ?? null;
   const listPrice = variant?.list_price ?? null;
-  const soldOut = variant?.in_stock === false;
+  const soldOut = allSoldOut(product);
   const isHeavy = product.tags?.includes("HEAVY_CARGO") ?? false;
   const Icon = categoryCopy(category?.slug).icon;
   const money = useDisplayMoney();
@@ -72,12 +77,14 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
       ? Math.round((1 - Number(price.price_incl_tax) / Number(wasPrice.price_incl_tax)) * 100)
       : 0;
   const hasDiscount = discountPct > 0;
-  const canAdd = !!variant && !!price && !pricesPending && !soldOut;
+  // Quick-add only makes sense when there is nothing to choose: picking a colour
+  // for the visitor would put the wrong thing in their cart.
+  const canAdd = !!variant && !!price && !pricesPending && !soldOut && !needsColorChoice;
 
   // How many of this variant are already in the cart (0 until the cart has loaded).
   const cartHydrated = useCartHydrated();
   const inCart = useCartStore((s) => (variant ? (s.items.find((i) => i.variant_id === variant.id)?.quantity ?? 0) : 0));
-  const inCartShown = cartHydrated ? inCart : 0;
+  const inCartShown = cartHydrated && !needsColorChoice ? inCart : 0;
 
   const [added, setAdded] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -179,6 +186,18 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
               <Plus className="h-4 w-4" strokeWidth={2} aria-hidden />
             </button>
           </div>
+        ) : needsColorChoice && !soldOut ? (
+          // Nothing to add yet: which colour is the visitor's to say, so the
+          // button opens the page where the pills are instead of guessing.
+          <Link
+            href={productHref(product.id)}
+            aria-label={`Renk seçin: ${product.name}`}
+            title="Renk seçin"
+            className="absolute bottom-3 right-3 z-10 flex h-11 items-center gap-1.5 rounded-full bg-black/80 px-3.5 text-xs font-medium text-white shadow-lg backdrop-blur-md transition-[background-color,transform] duration-300 ease-out hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-safe:active:scale-95"
+          >
+            <Palette className="h-4 w-4 shrink-0" strokeWidth={1.75} aria-hidden />
+            Renk seç
+          </Link>
         ) : (
           // Always visible (touch has no hover); frosted ink, crimson on hover. z-10: above
           // the card-wide product link.
@@ -210,8 +229,15 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
       </div>
 
       <div className={bodyClass}>
+        {/* Fixed height, one line: the colour count never shifts the card. */}
         <p className="h-4 truncate text-[11px] uppercase leading-4 tracking-widest text-muted-foreground">
           {product.brand ?? category?.name ?? ""}
+          {needsColorChoice && (
+            <>
+              {(product.brand ?? category?.name) && " · "}
+              {product.variants.length} renk
+            </>
+          )}
         </p>
         <h3 className="mt-2 line-clamp-2 min-h-10 text-[15px] font-medium leading-5 tracking-tight text-foreground">
           {/* Stretched link: the whole card opens the product page; the "+" sits above it. */}

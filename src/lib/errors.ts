@@ -7,6 +7,7 @@ const KNOWN_MESSAGES: Record<string, string> = {
   "Invalid credentials": "E-posta veya şifre hatalı.",
   "Account disabled": "Hesabınız devre dışı bırakılmış. Lütfen bizimle iletişime geçin.",
   "Email already registered": "Bu e-posta adresiyle kayıtlı bir hesap zaten var.",
+  "Username already taken": "Bu kullanıcı adı alınmış. Lütfen başka bir tane seçin.",
   "Invalid or expired token": "Oturumunuzun süresi doldu. Lütfen tekrar giriş yapın.",
   "Order not found": "Sipariş bulunamadı.",
   "Admin privileges required": "Bu işlem için yönetici yetkisi gerekiyor.",

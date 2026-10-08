@@ -8,6 +8,7 @@
 
 import { excludeVat, formatMoney } from "@/lib/format";
 import { orderNetTotal } from "@/lib/ordersApi";
+import { whatsappNumber as cleanNumber } from "@/lib/whatsapp";
 import type { AdminOrder } from "@/types";
 
 /** The Excel form's "Müşteri No": a short, quotable code cut from the user id. */
@@ -66,16 +67,11 @@ export function shippingStatus(order: AdminOrder): { label: string; detail: stri
 }
 
 /**
- * A Turkish mobile number as wa.me wants it: digits only, with the 90 country
- * code. Returns null when there is nothing dialable.
+ * The order's number for wa.me: the customer's own, or the one on the delivery
+ * address. Null when there is nothing dialable — see `lib/whatsapp`.
  */
 export function whatsappNumber(order: AdminOrder): string | null {
-  const raw = order.customer_phone ?? order.shipping_address?.phone ?? "";
-  let digits = raw.replace(/\D/g, "");
-  if (digits.startsWith("00")) digits = digits.slice(2);
-  else if (digits.startsWith("0")) digits = `90${digits.slice(1)}`;
-  else if (digits.length === 10) digits = `90${digits}`;
-  return digits.length >= 12 ? digits : null;
+  return cleanNumber(order.customer_phone ?? order.shipping_address?.phone);
 }
 
 export interface HistoryRow {

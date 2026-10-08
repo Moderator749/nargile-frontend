@@ -3,7 +3,9 @@ import type {
   AdminDashboardData,
   B2BApplication,
   B2BSegment,
+  AccountType,
   AdminCustomer,
+  AdminCustomerDetail,
   ShippingMethod,
   BankAccount,
   BankAccountWrite,
@@ -31,9 +33,11 @@ import type {
   OrderStatus,
   ProductDeleteResult,
   ProductSheet,
+  CustomerSort,
   ProductSort,
   SavedProductSheet,
   Segment,
+  SegmentType,
   SortDirection,
   UploadedImage,
 } from "@/types";
@@ -299,11 +303,48 @@ export async function adminCancelOrder(orderId: string, reason: string): Promise
   return data;
 }
 
-export async function adminListCustomers(params: { q?: string; skip?: number }, signal?: AbortSignal): Promise<AdminCustomer[]> {
-  const { data } = await api.get<AdminCustomer[]>("/admin/customers", {
-    params: { q: params.q || undefined, skip: params.skip ?? 0, limit: ADMIN_PAGE_SIZE },
+/** One page of customers plus the total number of matches (X-Total-Count), for page controls. */
+export async function adminListCustomersPage(
+  params: {
+    q?: string;
+    accountType?: AccountType | "";
+    segment?: SegmentType | "";
+    page: number;
+    pageSize?: number;
+    /** Omitted: the server's default order (newest first). */
+    orderBy?: CustomerSort | null;
+    orderDir?: SortDirection;
+  },
+  signal?: AbortSignal,
+): Promise<{ customers: AdminCustomer[]; total: number }> {
+  const pageSize = params.pageSize ?? ADMIN_PAGE_SIZE;
+  const { data, headers } = await api.get<AdminCustomer[]>("/admin/customers", {
+    params: {
+      q: params.q || undefined,
+      account_type: params.accountType || undefined,
+      segment: params.segment || undefined,
+      order_by: params.orderBy || undefined,
+      order_dir: params.orderBy ? (params.orderDir ?? "asc") : undefined,
+      skip: params.page * pageSize,
+      limit: pageSize,
+    },
     signal,
   });
+  return { customers: data, total: Number(headers["x-total-count"] ?? data.length) };
+}
+
+/** One customer in full: identity, invoice details, addresses, orders, price list. */
+export async function adminCustomerDetail(userId: string, signal?: AbortSignal): Promise<AdminCustomerDetail> {
+  const { data } = await api.get<AdminCustomerDetail>(`/admin/customers/${userId}`, { signal });
+  return data;
+}
+
+/**
+ * Puts the customer on a price list. Sign-up grants no tier, so this is how a
+ * kafe or a bayi gets theirs; it applies to their very next request.
+ */
+export async function adminAssignSegment(userId: string, segment: SegmentType): Promise<AdminCustomerDetail> {
+  const { data } = await api.put<AdminCustomerDetail>(`/admin/customers/${userId}/segment`, { segment });
   return data;
 }
 

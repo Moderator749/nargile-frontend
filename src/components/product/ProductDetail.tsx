@@ -6,7 +6,9 @@ import axios from "axios";
 import { Check, ChevronRight, Hourglass, ShoppingBag, Truck } from "lucide-react";
 
 import { QuantityStepper } from "@/components/cart/QuantityStepper";
+import { ColorPicker } from "@/components/product/ColorPicker";
 import { CrossSells } from "@/components/product/CrossSells";
+import { ProductDescription } from "@/components/product/ProductDescription";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { useDisplayMoney } from "@/hooks/useDisplayMoney";
 import { useNow } from "@/hooks/useNow";
@@ -17,6 +19,7 @@ import { categoryCopy } from "@/lib/categories";
 import { normalizeHex, readableInk } from "@/lib/color";
 import { saleState } from "@/lib/flashSale";
 import type { Breadcrumb } from "@/lib/seo";
+import { hasColorChoice, initialVariantId, resolveVariant, variantInStock } from "@/lib/variants";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useCartStore } from "@/store/useCartStore";
 import { useAuthHydrated, useCartHydrated } from "@/store/useHasHydrated";
@@ -40,6 +43,10 @@ function countdown(ms: number) {
 /**
  * Product page body. Logged-in visitors refetch so the price is their own
  * segment's; until then the public price is masked (as in the catalog).
+ *
+ * A product's colours are its variants, each with its own stock, so the colour
+ * pills are the choice of *what* is being bought: everything below them — the
+ * stock badge, the cart quantity, the button — reads the selected variant.
  */
 export function ProductDetail({ initialProduct, category, categories, breadcrumbs }: ProductDetailProps) {
   const hydrated = useAuthHydrated();
@@ -66,7 +73,11 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
   const product = mine ?? initialProduct;
   const pricesPending = loggedIn && !mine;
 
-  const variant = product.variants[0];
+  // The colour the visitor picked; null until they do, which means "the one the
+  // page opened on". Kept as an id rather than an index so a refetch — the
+  // logged-in price arriving — cannot silently move the selection.
+  const [colorId, setColorId] = useState<string | null>(null);
+  const variant = resolveVariant(product, colorId ?? initialVariantId(product));
   const now = useNow(!!variant?.flash_sale);
   const sale = saleState(product, variant, now);
   const regular = variant?.price ?? null;
@@ -76,7 +87,8 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
     price && was && Number(was.price_incl_tax) > Number(price.price_incl_tax)
       ? Math.round((1 - Number(price.price_incl_tax) / Number(was.price_incl_tax)) * 100)
       : 0;
-  const soldOut = variant?.in_stock === false;
+  // This colour's stock, not the product's: another colour may well be in stock.
+  const soldOut = !!variant && !variantInStock(variant);
   const canAdd = !!variant && !!price && !pricesPending && !soldOut;
 
   const cartHydrated = useCartHydrated();
@@ -99,7 +111,9 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
       cart.updateQuantity(variant.id, quantity);
     } else {
       if (!canAdd) return;
-      cart.addItem(cartLineFor(product, variant, price, { quantity, isLoggedIn: loggedIn, saleLive: sale.kind === "live" }));
+      cart.addItem(
+        cartLineFor(product, variant, price, { quantity, isLoggedIn: loggedIn, saleLive: sale.kind === "live" }),
+      );
     }
     setDraft(null);
     setAdded(true);
@@ -205,22 +219,21 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
             )}
           </div>
 
-          {/* "Renk": labels the admin typed, not a variant axis — one product, one
-              price, these colours. Absent in an older cached payload. */}
-          {(product.color_names?.length ?? 0) > 0 && (
-            <div className="mt-4">
-              <h2 className="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground">Renk</h2>
-              <ul className="mt-2 flex flex-wrap gap-1.5">
-                {product.color_names?.map((color) => (
-                  <li
-                    key={color}
-                    className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-foreground ring-1 ring-inset ring-border"
-                  >
-                    {color}
-                  </li>
-                ))}
-              </ul>
-            </div>
+          {/* One pill per colour, each its own stock. A single-colour product has
+              nothing to choose, so it gets no picker. */}
+          {hasColorChoice(product) && variant && (
+            <ColorPicker
+              variants={product.variants}
+              selectedId={variant.id}
+              onSelect={(id) => {
+                setColorId(id);
+                // Each colour is its own cart line, so the stepper goes back to
+                // reading the new colour's quantity rather than keeping a draft
+                // that was typed for the previous one.
+                setDraft(null);
+                setAdded(false);
+              }}
+            />
           )}
 
           <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -274,18 +287,9 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
             )}
           </p>
 
-          {product.description && (
-            <div className="mt-8 border-t border-border pt-6">
-              <h2 className="text-sm font-semibold text-foreground">Ürün açıklaması</h2>
-              <p className="mt-2 whitespace-pre-line text-sm leading-6 text-muted-foreground">{product.description}</p>
-            </div>
-          )}
-
-          <ul className="mt-8 space-y-1.5 border-t border-border pt-6 text-xs text-muted-foreground">
-            <li>₺3.000 üzeri kargo ücretsiz (kömür ağırlıklı siparişlerde en az 20 kg).</li>
-            <li>İstanbul içi aynı gün kurye, 10:00 – 20:00.</li>
-            <li>Havale/EFT ile %5 – %7 indirim.</li>
-          </ul>
+          {/* A three-line preview rather than a wall of text, so "Sepete Ekle"
+              stays the first thing below the price. */}
+          {product.description && <ProductDescription text={product.description} />}
         </div>
       </div>
 

@@ -1,27 +1,36 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 
 import { AuthCard } from "@/components/auth/AuthCard";
 import { RegisterForm } from "@/components/auth/RegisterForm";
+import { LinkButton } from "@/components/ui/LinkButton";
 import { PRIVATE_ROBOTS } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Kayıt Ol",
-  description: "Ücretsiz hesap oluşturun, siparişlerinizi takip edin ve ParaPuan kazanın.",
+  description:
+    "Bireysel, şahıs firması veya şirket olarak ücretsiz hesap oluşturun; siparişlerinizi takip edin ve ParaPuan kazanın.",
   robots: PRIVATE_ROBOTS,
 };
 
 export default function RegisterPage() {
   return (
     <AuthCard
+      size="lg"
       title="Hesap oluşturun"
-      subtitle="Ücretsiz kaydolun, siparişlerinizi kolayca takip edin."
+      subtitle="Hesap türünüzü seçin; yalnızca size uygun alanlar sorulur."
       footer={
+        /* A button, not a link in a sentence: somebody who already has an
+           account should not have to read their way out of a long form. */
         <>
-          Zaten hesabınız var mı?{" "}
-          <Link href="/login" className="font-semibold text-red-600 dark:text-red-400 hover:text-red-500 dark:hover:text-red-300">
+          <span className="block">Zaten hesabınız var mı?</span>
+          <LinkButton href="/login" variant="secondary" className="mt-3">
             Giriş yapın
-          </Link>
+            <ArrowRight
+              className="h-4 w-4 transition-transform duration-200 motion-safe:group-hover:translate-x-0.5"
+              aria-hidden
+            />
+          </LinkButton>
         </>
       }
     >

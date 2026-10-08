@@ -22,6 +22,8 @@ export function OrderSheetLines({ items }: { items: AdminOrderItem[] }) {
               <td className="px-3 py-2 font-mono text-xs">{item.product_code ?? item.sku ?? "—"}</td>
               <td className="px-3 py-2">
                 {item.product_name ?? <span className="text-slate-500 dark:text-zinc-400">Katalogdan kaldırılmış ürün</span>}
+                {/* The colour that was sold: what the warehouse has to pick. */}
+                {item.color_name && <span className="font-medium"> · {item.color_name}</span>}
                 {item.sku && item.product_code && item.sku !== item.product_code && (
                   <span className="block font-mono text-[11px] text-slate-500 dark:text-zinc-400">{item.sku}</span>
                 )}

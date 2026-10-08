@@ -13,14 +13,14 @@ import { CrossSellPicker, MAX_CROSS_SELLS } from "@/components/admin/products/Cr
 import { PricingGrid } from "@/components/admin/products/PricingGrid";
 import { QuantityCondition } from "@/components/admin/products/QuantityCondition";
 import { RuleSwitch } from "@/components/admin/products/RuleSwitch";
-import { SheetField, SheetSection, sheetInputClass, sheetLabelClass } from "@/components/admin/products/SheetParts";
+import { SheetField, SheetSection, sheetInputClass } from "@/components/admin/products/SheetParts";
+import { StockGrid } from "@/components/admin/products/StockGrid";
 import {
-  SHEET_COLUMNS,
   VAT_RATES,
   draftFromSheet,
   draftProblem,
+  draftStockTotal,
   emptyDraft,
-  stockTotal,
   toPayload,
   withVat,
   type CellDraft,
@@ -37,14 +37,34 @@ import type { Category, CurrencyType, SavedProductSheet, SheetSegment } from "@/
 /** The crimson of the site's primary buttons (red-600), as a one-click preset. */
 const CRIMSON = "#DC2626";
 
+// What a search result actually shows, and what the columns hold.
+const META_TITLE_MAX = 70;
+const META_DESCRIPTION_MAX = 160;
+const DESCRIPTION_MAX = 8000;
+
+/** "48 / 70" — amber from four fifths on, so the admin sees the ceiling coming. */
+function CharCount({ value, max }: { value: string; max: number }) {
+  const near = value.length >= max * 0.8;
+  return (
+    <p
+      className={`mt-1 text-right font-mono text-[11px] tabular-nums ${
+        near ? "text-amber-700 dark:text-amber-400" : "text-slate-400 dark:text-zinc-500"
+      }`}
+    >
+      {value.length} / {max}
+    </p>
+  );
+}
+
 /** Shared by the general rule and its Fırsat override, so the two always agree. */
 const VOLUME_DISCOUNT_HINT =
   "sepet indirim limitine gelindiğinde %5 ve %8 ciro indirimi otomatik olarak uygulansın";
 
 /**
  * "Ürün Ekle / Düzenle" — the admin's product sheet, one screen for everything
- * the Excel blueprint holds: product info, the four stock quotas, the price
- * matrix, the commercial rules and the Fırsat block. One save writes them all.
+ * the Excel blueprint holds: product info, the colours and their stock quotas,
+ * the price matrix, the description and SEO overrides, the commercial rules and
+ * the Fırsat block. One save writes them all.
  */
 export function ProductSheetForm({ productId }: { productId?: string }) {
   const router = useRouter();
@@ -103,7 +123,7 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
     }));
 
   const problem = useMemo(() => draftProblem(draft), [draft]);
-  const total = stockTotal(draft.stock);
+  const total = draftStockTotal(draft);
 
   async function save() {
     if (saving || problem) return;
@@ -142,7 +162,7 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
     <>
       <AdminPageHeader
         title={editing ? "Ürün Düzenle" : "Ürün Ekle"}
-        description="Ürün bilgisi, stok kotaları, fiyat tablosu, kurallar ve fırsat tek formda; kaydet dediğinizde hepsi birlikte yazılır."
+        description="Ürün bilgisi, renk bazlı stok kotaları, fiyat tablosu, açıklama, SEO, kurallar ve fırsat tek formda; kaydet dediğinizde hepsi birlikte yazılır."
       />
 
       <div className="space-y-4">
@@ -178,7 +198,7 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
                 ))}
               </select>
             </SheetField>
-            <ColorTags colors={draft.color_names} onChange={(colors) => set("color_names", colors)} />
+            <ColorTags colors={draft.colors} onChange={(colors) => set("colors", colors)} />
           </div>
         </SheetSection>
 
@@ -201,31 +221,67 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
           />
         </SheetSection>
 
-        <SheetSection title="Stok" hint="Her müşteri grubunun kendi kotası; toplam otomatik hesaplanır.">
-          <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-5">
-            {SHEET_COLUMNS.map(({ label, stockField }) => (
-              <SheetField key={stockField} id={`stock-${stockField}`} label={label}>
+        <SheetSection
+          title="Açıklama ve SEO"
+          hint="Açıklama ürün sayfasında katlanır bir bölümde görünür; SEO alanları boşsa ürün adı ve açıklaması kullanılır."
+        >
+          <div className="space-y-4">
+            <SheetField
+              id="sheet-description"
+              label="Ürün Açıklaması"
+              hint="Satır başları korunur. Ürün sayfasında “Ürün Açıklaması” başlığı altında açılır."
+            >
+              <textarea
+                id="sheet-description"
+                value={draft.description}
+                onChange={(e) => set("description", e.target.value)}
+                rows={6}
+                maxLength={DESCRIPTION_MAX}
+                placeholder="Malzeme, ölçüler, kutu içeriği, kullanım notları…"
+                className={`${sheetInputClass} h-auto! resize-y py-2 leading-6`}
+              />
+            </SheetField>
+            <div className="grid gap-4 lg:grid-cols-2">
+              <SheetField id="sheet-meta-title" label="SEO Başlığı">
                 <input
-                  id={`stock-${stockField}`}
-                  type="text"
-                  inputMode="numeric"
-                  value={draft.stock[stockField]}
-                  onChange={(e) => set("stock", { ...draft.stock, [stockField]: e.target.value })}
-                  placeholder="0"
-                  className={`${sheetInputClass} text-right tabular-nums`}
+                  id="sheet-meta-title"
+                  value={draft.metaTitle}
+                  onChange={(e) => set("metaTitle", e.target.value)}
+                  maxLength={META_TITLE_MAX}
+                  placeholder={draft.name || "Ürün adı"}
+                  className={sheetInputClass}
                 />
+                <CharCount value={draft.metaTitle} max={META_TITLE_MAX} />
               </SheetField>
-            ))}
-            <div>
-              <span className={sheetLabelClass}>Toplam Stok</span>
-              <output
-                className="flex h-10 items-center justify-end rounded-lg border border-slate-300 bg-slate-100 px-3 font-mono text-sm font-bold tabular-nums dark:border-white/15 dark:bg-white/[0.06]"
-                aria-live="polite"
-              >
-                {total.toLocaleString("tr-TR")}
-              </output>
+              <SheetField id="sheet-meta-description" label="SEO Açıklaması">
+                <input
+                  id="sheet-meta-description"
+                  value={draft.metaDescription}
+                  onChange={(e) => set("metaDescription", e.target.value)}
+                  maxLength={META_DESCRIPTION_MAX}
+                  placeholder="Arama sonuçlarında görünecek kısa tanıtım"
+                  className={sheetInputClass}
+                />
+                <CharCount value={draft.metaDescription} max={META_DESCRIPTION_MAX} />
+              </SheetField>
             </div>
           </div>
+        </SheetSection>
+
+        <SheetSection
+          title="Stok"
+          hint={
+            draft.colors.length > 0
+              ? `${draft.colors.length} renk · her renk kendi kotalarını taşır · toplam ${total.toLocaleString("tr-TR")}`
+              : "Her müşteri grubunun kendi kotası; toplam otomatik hesaplanır."
+          }
+        >
+          <StockGrid
+            colors={draft.colors}
+            stock={draft.stock}
+            onColorsChange={(colors) => set("colors", colors)}
+            onStockChange={(stock) => set("stock", stock)}
+          />
         </SheetSection>
 
         <SheetSection title="Fiyat Tablosu" hint="KDV hariç fiyatı yazın; KDV dahil otomatik hesaplanır.">

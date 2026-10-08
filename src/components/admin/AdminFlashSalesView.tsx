@@ -257,7 +257,13 @@ export function AdminFlashSalesView() {
               return (
                 <li key={sale.id} className="flex flex-wrap items-center gap-x-6 gap-y-2 px-5 py-4">
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{sale.product_name}</p>
+                    <p className="truncate text-sm font-medium">
+                      {sale.product_name}
+                      {/* A coloured product has one offer per colour: say which. */}
+                      {sale.color_name && (
+                        <span className="font-normal text-slate-500 dark:text-zinc-400"> · {sale.color_name}</span>
+                      )}
+                    </p>
                     <p className="mt-0.5 font-mono text-xs text-slate-500 dark:text-zinc-400">{sale.sku}</p>
                   </div>
                   <div className="font-mono text-sm tabular-nums">

@@ -10,12 +10,25 @@ import { fetchMe, login } from "@/lib/authApi";
 import { getApiErrorMessage } from "@/lib/errors";
 import { useAuthStore } from "@/store/useAuthStore";
 
+/** What to say above the form when the visitor has just registered. */
+const NOTICES = {
+  account: "Hesabınız oluşturuldu. Şimdi giriş yapabilirsiniz.",
+  review:
+    "Hesabınız oluşturuldu. Firma başvurunuz incelenecek; onaylanınca size özel fiyatlar tanımlanır. Şimdi giriş yapabilirsiniz.",
+  // In English, like the form this visitor came from.
+  export:
+    "Your account has been created. Our sales team will contact you about wholesale pricing and shipping rates. You can sign in now.",
+} as const;
+
+export type RegistrationNotice = keyof typeof NOTICES;
+
 interface LoginFormProps {
-  justRegistered: boolean;
+  /** Shown when they arrive straight from sign-up; which one depends on the account. */
+  notice: RegistrationNotice | null;
   redirectTo: string;
 }
 
-export function LoginForm({ justRegistered, redirectTo }: LoginFormProps) {
+export function LoginForm({ notice, redirectTo }: LoginFormProps) {
   const router = useRouter();
   const setAuth = useAuthStore((s) => s.setAuth);
 
@@ -44,17 +57,14 @@ export function LoginForm({ justRegistered, redirectTo }: LoginFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {justRegistered && !error && (
-        <Alert variant="success">Hesabınız oluşturuldu. Şimdi giriş yapabilirsiniz.</Alert>
-      )}
+      {notice && !error && <Alert variant="success">{NOTICES[notice]}</Alert>}
       {error && <Alert variant="error">{error}</Alert>}
 
       <Input
-        label="E-posta"
-        type="email"
+        // Either identifier is accepted, so the field cannot be type="email".
+        label="E-posta veya kullanıcı adı"
         name="email"
-        autoComplete="email"
-        inputMode="email"
+        autoComplete="username"
         required
         autoFocus
         value={email}

@@ -1,4 +1,5 @@
 import { SITE_URL } from "@/lib/site";
+import { displayVariant, soldOut } from "@/lib/variants";
 import type { CatalogProduct, Category } from "@/types";
 
 export interface Breadcrumb {
@@ -46,7 +47,8 @@ export function productListJsonLd(
     url: absolute(pageHref),
     numberOfItems: products.length,
     itemListElement: products.flatMap((product, i) => {
-      const variant = product.variants[0];
+      // The colour the card itself shows, so the markup and the page agree.
+      const variant = displayVariant(product);
       const price = variant?.list_price;
       if (!variant || !price) return [];
       const category = product.category_id != null ? categoryById.get(product.category_id) : undefined;
@@ -80,33 +82,56 @@ export function productListJsonLd(
 /**
  * A product detail page. The offer is the public price an anonymous visitor
  * (and crawler) sees: a live flash sale's price until it ends, else RETAIL.
+ *
+ * A product with colours is one `Product` with one `Offer` per colour — which is
+ * what they are: separately stocked things at the same price under one name. The
+ * colour goes in as `name` and `color` on the offer, and its own availability,
+ * so a sold-out colour is not advertised as in stock. Google penalises markup
+ * that disagrees with the page, and the page says exactly this.
  */
 export function productJsonLd(product: CatalogProduct, category: Category | undefined) {
-  const variant = product.variants[0];
-  const sale = variant?.flash_sale;
-  const price = sale?.price ?? variant?.list_price;
+  const lead = displayVariant(product);
+  const sale = lead?.flash_sale;
+  // Every colour carries the sheet's one price matrix, so the lead colour's
+  // price is the product's; `priceValidUntil` likewise comes from its sale.
+  const price = sale?.price ?? lead?.list_price;
+  const availability = (inStock: boolean) =>
+    inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock";
+
+  const offer = (variant: (typeof product.variants)[number]) => ({
+    "@type": "Offer",
+    price: price!.price_incl_tax,
+    priceCurrency: price!.currency,
+    url: absolute(productHref(product.id)),
+    sku: variant.sku,
+    availability: availability(variant.in_stock !== false),
+    ...(variant.color_name ? { name: variant.color_name, color: variant.color_name } : {}),
+    ...(sale?.ends_at ? { priceValidUntil: sale.ends_at.slice(0, 10) } : {}),
+  });
+
   return {
     "@context": "https://schema.org",
     "@type": "Product",
     name: product.name,
     url: absolute(productHref(product.id)),
     mpn: product.base_code,
-    ...(variant ? { sku: variant.sku } : {}),
+    ...(lead ? { sku: lead.sku } : {}),
     ...(productImages(product).length > 0 ? { image: productImages(product) } : {}),
     ...(product.description ? { description: product.description } : {}),
     ...(product.brand ? { brand: { "@type": "Brand", name: product.brand } } : {}),
     ...(category ? { category: category.name } : {}),
+    ...(product.color_names && product.color_names.length > 0 ? { color: product.color_names } : {}),
     ...(price
       ? {
-          offers: {
-            "@type": "Offer",
-            price: price.price_incl_tax,
-            priceCurrency: price.currency,
-            url: absolute(productHref(product.id)),
-            availability:
-              variant?.in_stock === false ? "https://schema.org/OutOfStock" : "https://schema.org/InStock",
-            ...(sale?.ends_at ? { priceValidUntil: sale.ends_at.slice(0, 10) } : {}),
-          },
+          offers:
+            product.variants.length > 1
+              ? product.variants.map(offer)
+              : {
+                  // One colour (or none): a lone object, as before, rather than a
+                  // list of one.
+                  ...offer(product.variants[0] ?? lead!),
+                  availability: availability(!soldOut(product)),
+                },
         }
       : {}),
   };

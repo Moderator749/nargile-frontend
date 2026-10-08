@@ -9,6 +9,29 @@ export type DecimalString = string;
 // ---- Enums ----
 
 export type UserRole = "SUPER_ADMIN" | "ADMIN" | "STAFF" | "CUSTOMER";
+/**
+ * Who the customer is, as the four sign-up cards put it: bireysel, a kafe, a
+ * tobacco shop, or a customer outside Turkey. It is a line of business, not a
+ * legal form — whether a firm is a şahıs firması or a şirket is `BillingEntity`,
+ * asked in its invoice section.
+ *
+ * "SOLE_PROPRIETOR" and "COMPANY" are the two cards this replaced; accounts
+ * created under them keep saying so, and the form never offers them again.
+ */
+export type AccountType =
+  | "INDIVIDUAL"
+  | "CAFE"
+  | "TOBACCO_SHOP"
+  | "INTERNATIONAL"
+  | "SOLE_PROPRIETOR"
+  | "COMPANY";
+/**
+ * What an international customer buys for — the counterpart of the two domestic
+ * business cards. Both are businesses; there is no private export customer.
+ */
+export type InternationalKind = "WHOLESALER" | "CAFE";
+/** Which kind of firm an invoice is made out to; mirrors the account type for a business account. */
+export type BillingEntity = "SOLE_PROPRIETOR" | "COMPANY";
 export type SegmentType = "RETAIL" | "CAFE" | "WHOLESALE" | "DEALER";
 export type CurrencyType = "TRY" | "USD" | "EUR";
 export type WarehouseType = "RETAIL_STOCK" | "B2B_STOCK";
@@ -19,6 +42,35 @@ export type OrderStatus = "PENDING_APPROVAL" | "AWAITING_TRANSFER" | "APPROVED" 
 export type ShippingMethod = "CARGO" | "COURIER_ISTANBUL";
 /** Who pays the carriage: the shop (free shipping) or the buyer on delivery. */
 export type ShippingPayer = "SHOP" | "RECEIVER";
+
+/**
+ * A Turkish address field by field, as sign-up asks for it. District and
+ * province are required (nothing ships without them), and one of neighbourhood
+ * or street — villages have no street names, new districts no neighbourhood.
+ */
+export interface StructuredAddress {
+  neighbourhood?: string | null;
+  street?: string | null;
+  building_no?: string | null;
+  building_name?: string | null;
+  door_no?: string | null;
+  district: string;
+  city: string;
+}
+
+/**
+ * An address outside Turkey: two lines, a city (or state, or province — one
+ * field, since which of them a country uses is its own business), an optional
+ * postal code and an ISO 3166-1 alpha-2 country. No national format is
+ * checked; the country is, because it decides carrier, duty and paperwork.
+ */
+export interface InternationalAddress {
+  country: string;
+  city: string;
+  postal_code?: string | null;
+  address_line1: string;
+  address_line2?: string | null;
+}
 
 export interface ShippingAddress {
   full_name: string;
@@ -36,6 +88,7 @@ export interface User {
   email: string;
   full_name: string | null;
   phone: string | null;
+  account_type: AccountType;
   role: UserRole;
   is_active: boolean;
   is_verified: boolean;
@@ -48,14 +101,54 @@ export interface User {
 
 export const B2B_SEGMENTS: readonly SegmentType[] = ["WHOLESALE", "DEALER"];
 
-export interface UserCreate {
+/** Whoever the invoice is made out to — the account's own firm, or another one. */
+export interface CompanyIdentityInput {
+  /** Required when an individual asks for a corporate invoice; set from the account type otherwise. */
+  entity_type?: BillingEntity | null;
+  title: string;
+  /** The name on the tax plate. Required for a Turkish business account, never sent otherwise. */
+  tax_plate_name?: string | null;
+  /** Vergi dairesi — Turkish accounts only. */
+  tax_office?: string | null;
+  /**
+   * Where the firm is. Required when the firm is somebody else's — an
+   * individual asking for a corporate invoice — and never sent by a business
+   * account, whose own `billing_address` is its firm's.
+   */
+  address?: StructuredAddress | null;
+  /** VKN (10) or TC (11) for a Turkish firm; an international VAT/EIN number in any shape. */
+  tax_number?: string | null;
+}
+
+/**
+ * The sign-up payload. What is required depends on `account_type`:
+ * an individual gives a name, a mobile number and an e-mail; a firm gives its
+ * tax identity, a contact person and a billing address.
+ *
+ * Nothing about delivery, which is settled at checkout on the order, and
+ * nothing about pricing: every self-service account is RETAIL until an admin
+ * grants a segment, from an application the customer makes once signed in.
+ */
+export interface RegistrationCreate {
+  account_type: AccountType;
   email: string;
   password: string;
+  /** Kullanıcı adı: optional, and a second way to log in once chosen. */
+  username?: string | null;
+  /** İsim soyisim (bireysel). */
   full_name?: string | null;
-  phone?: string | null;
-  // No segment_code: the backend always assigns RETAIL on self-registration.
-  /** Optional Kafe / Toptan / Bayi application, approved (or not) by an admin. */
-  b2b_application?: B2BApplicationInput | null;
+  /** Yetkili kişi (firma); becomes the account's display name. */
+  contact_name?: string | null;
+  /** Cep tel — required for every account type. */
+  phone: string;
+  landline_phone?: string | null;
+  /** TC kimlik no, individuals only. */
+  national_id?: string | null;
+  /** Wholesaler or kafe; asked of international accounts only. */
+  international_kind?: InternationalKind | null;
+  company?: CompanyIdentityInput | null;
+  /** Turkish accounts send the structured Turkish shape, international ones the global one. */
+  billing_address?: StructuredAddress | InternationalAddress | null;
 }
 
 export interface LoginRequest {
@@ -66,15 +159,6 @@ export interface LoginRequest {
 export interface Token {
   access_token: string;
   token_type: string;
-}
-
-export interface CompanyProfile {
-  id: number;
-  company_title: string;
-  tax_number: string | null;
-  tax_office: string | null;
-  billing_address: Record<string, unknown> | null;
-  delivery_address: Record<string, unknown> | null;
 }
 
 // ---- Catalog ----
@@ -133,6 +217,10 @@ export interface Product {
   name: string;
   brand: string | null;
   description: string | null;
+  /** "Açıklama ve SEO": overrides the page <title>; null falls back to the name. */
+  meta_title?: string | null;
+  /** Overrides the page meta description; null falls back to `description`. */
+  meta_description?: string | null;
   category_id: number | null;
   tags: string[] | null;
   /** The cover photo (the first of `image_urls`); null when there is none. */
@@ -143,7 +231,10 @@ export interface Product {
    */
   image_urls?: string[];
   youtube_video_url: string | null;
-  /** "Renk" labels, in the order the admin added them. */
+  /**
+   * "Renk" labels, in the order the admin added them. Each one is a variant with
+   * its own stock: `variants[].color_name` is what the picker chooses between.
+   */
   color_names?: string[];
   /**
    * On the "Fırsat Ürünleri" list while true — even once the deal is over, when
@@ -169,9 +260,16 @@ export interface FlashSaleInfo {
   ends_at: ISODateTime | null;
 }
 
+/**
+ * One buyable colour of a product: the thing stock and the cart are keyed on.
+ * A product with colour pills has one per colour, in the admin's order; a
+ * colourless one has a single entry whose `color_name` is null.
+ */
 export interface CatalogVariant {
   id: UUID;
   sku: string;
+  /** The "Renk" this variant is; null/absent on a product with no colour axis. */
+  color_name?: string | null;
   attributes: Record<string, unknown> | null;
   /**
    * Price for the caller's segment, always in TRY (what the cart charges); null
@@ -239,6 +337,8 @@ export interface CartItem {
  */
 export interface CartLineItem extends CartItem {
   product_name: string;
+  /** The colour that was added; null/absent on a colourless product. */
+  color_name?: string | null;
   /** Snapshot for the cart thumbnail (the server quote's image wins when present). */
   image_url?: string | null;
   price: DecimalString;
@@ -265,6 +365,8 @@ export interface CartItemBreakdown {
   product_id?: UUID | null;
   sku: string;
   product_name: string;
+  /** The colour in the cart; null on a colourless product. */
+  color_name?: string | null;
   quantity: number;
   unit_price: DecimalString;
   line_total: DecimalString;
@@ -394,6 +496,8 @@ export interface AdminVariantPrice {
 export interface AdminVariant {
   id: UUID;
   sku: string;
+  /** The "Renk" this variant is; null on a product with no colour axis. */
+  color_name?: string | null;
   attributes: Record<string, unknown> | null;
   cost_price: DecimalString | null;
   /** kg per unit (coal's 20 kg free-shipping rule); null = unknown. */
@@ -412,6 +516,21 @@ export interface SheetStock {
   toptan: number;
   kafe: number;
   perakende: number;
+}
+
+/**
+ * One colour of the product, with the four quotas that colour sells from.
+ *
+ * `color` is null on the single "Standart" variant a colourless product has.
+ * `id` names a variant that already exists, which is how renaming a colour keeps
+ * its stock instead of starting a new one; it is absent on a colour just added.
+ */
+export interface SheetVariant {
+  id?: UUID | null;
+  color: string | null;
+  /** Derived server-side from the product code; read-only. */
+  sku?: string | null;
+  stock: SheetStock;
 }
 
 /** One cell of the price matrix; both sides empty means "not sold at this price". */
@@ -482,9 +601,13 @@ export interface ProductSheet {
   name: string;
   brand?: string | null;
   category_id?: number | null;
-  /** "Renk" labels, in the order the admin added them. */
+  /** "Renk" labels, in the order the admin added them; one buyable colour each. */
   color_names: string[];
   description?: string | null;
+  /** Overrides the product page <title>; blank falls back to the product name. */
+  meta_title?: string | null;
+  /** Overrides its meta description; blank falls back to `description`. */
+  meta_description?: string | null;
   /** Gallery in order; the server mirrors the first one into `image_url`. */
   image_urls: string[];
   youtube_video_url?: string | null;
@@ -493,7 +616,14 @@ export interface ProductSheet {
   /** Unit weight in kg (the coal free-shipping rule); null = not recorded. */
   weight_kg?: DecimalString | null;
   is_published: boolean;
+  /**
+   * The four quotas as one block. On a colourless product it *is* the stock; on a
+   * coloured one the server reads it back as the total across the colours, and
+   * `variants` is what a save sets.
+   */
   stock: SheetStock;
+  /** One block of quotas per colour, in `color_names` order. */
+  variants: SheetVariant[];
   prices: SheetPriceRow[];
   rules: SheetRules;
   opportunity: SheetOpportunity;
@@ -503,6 +633,7 @@ export interface ProductSheet {
 
 export interface SavedProductSheet extends ProductSheet {
   id: UUID;
+  /** The first colour's variant (the only one on a colourless product). */
   variant_id: UUID;
   sku: string;
   stock_total: number;
@@ -535,6 +666,8 @@ export interface AdminOrderItem extends OrderItem {
   sku: string | null;
   product_code: string | null;
   product_name: string | null;
+  /** The colour that was sold; null on a colourless product. */
+  color_name?: string | null;
   /** Percent, e.g. "18.00"; `unit_price` already includes it. */
   vat_rate: DecimalString | null;
 }
@@ -546,7 +679,7 @@ export interface AdminOrder extends Omit<Order, "items"> {
   /** From the customer's company profile (B2B); null for retail buyers. */
   company_title: string | null;
   /** Free-form on the server, so every field is optional here. */
-  billing_address: Partial<ShippingAddress> | null;
+  billing_address: (Partial<ShippingAddress> & { country?: string | null }) | null;
   items: AdminOrderItem[];
 }
 
@@ -572,6 +705,8 @@ export interface AdminFlashSale {
   variant_id: UUID;
   sku: string;
   product_name: string;
+  /** Which colour is on offer; null on a colourless product. */
+  color_name?: string | null;
   sale_price_incl_tax: DecimalString;
   regular_price_incl_tax: DecimalString | null;
   starts_at: ISODateTime;
@@ -701,13 +836,82 @@ export interface BankAccount {
 
 export type BankAccountWrite = Omit<BankAccount, "id">;
 
+/** Which kind of address a stored row is; both are invoice addresses. */
+export type AddressKind = "BILLING" | "CORPORATE_BILLING";
+/** Sortable columns of the admin customers grid. */
+export type CustomerSort = "name" | "created" | "orders";
+
+/** One row of the customers grid. */
 export interface AdminCustomer {
   id: UUID;
   email: string;
   full_name: string | null;
+  /** Ünvan, when the account is a firm's or is invoiced as one. */
+  company_title: string | null;
+  account_type: AccountType;
+  phone: string | null;
   segment: SegmentType | null;
-  balance: number;
   order_count: number;
+  created_at: ISODateTime;
+  /** From their invoice address: şehir and ilçe at home, the country abroad. */
+  city: string | null;
+  district: string | null;
+  /** ISO 3166-1 alpha-2; "TR" for a domestic address. */
+  country: string | null;
+}
+
+/**
+ * A stored address, in whichever shape it was given: the Turkish fields or the
+ * international ones are filled, never both.
+ */
+export interface AdminCustomerAddress {
+  kind: AddressKind;
+  /** ISO 3166-1 alpha-2; "TR" for a domestic address. */
+  country: string;
+  city: string;
+  neighbourhood: string | null;
+  street: string | null;
+  building_no: string | null;
+  building_name: string | null;
+  door_no: string | null;
+  district: string | null;
+  postal_code: string | null;
+  address_line1: string | null;
+  address_line2: string | null;
+}
+
+/** Everything sign-up asked beyond the login. */
+export interface AdminCustomerProfile {
+  national_id: string | null;
+  billing_entity_type: BillingEntity | null;
+  company_title: string | null;
+  tax_plate_name: string | null;
+  tax_office: string | null;
+  tax_number: string | null;
+  international_kind: InternationalKind | null;
+  contact_name: string | null;
+}
+
+/** One customer in full, for their admin page. */
+export interface AdminCustomerDetail {
+  id: UUID;
+  email: string;
+  username: string | null;
+  full_name: string | null;
+  phone: string | null;
+  landline_phone: string | null;
+  account_type: AccountType;
+  is_active: boolean;
+  is_verified: boolean;
+  created_at: ISODateTime;
+  segment: SegmentType | null;
+  order_count: number;
+  loyalty_balance: number;
+  profile: AdminCustomerProfile | null;
+  addresses: AdminCustomerAddress[];
+  /** Their standing Kafe/Toptan/Bayi request, decided from the applications queue. */
+  application_status: string | null;
+  requested_segment: SegmentType | null;
 }
 
 // ── B2B applications & admin dashboard ───────────────────────────────────────

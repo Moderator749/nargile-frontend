@@ -7,7 +7,7 @@ import { Copy, ImageOff, Loader2, PackageX, Pencil, Plus, Trash2 } from "lucide-
 
 import { AdminPageHeader, panelClass } from "@/components/admin/AdminShell";
 import { Pagination } from "@/components/admin/Pagination";
-import { SortableHeader, type SortState } from "@/components/admin/products/SortableHeader";
+import { SortableHeader, type SortState } from "@/components/admin/SortableHeader";
 import { CatalogSearch } from "@/components/catalog/CatalogSearch";
 import { Alert } from "@/components/ui/Alert";
 import { Switch } from "@/components/ui/Switch";
@@ -22,7 +22,7 @@ import {
 import { fetchCategories } from "@/lib/catalogApi";
 import { getApiErrorMessage } from "@/lib/errors";
 import { formatMoney } from "@/lib/format";
-import type { AdminProduct, AdminVariant, Category, Segment } from "@/types";
+import type { AdminProduct, AdminVariant, Category, ProductSort, Segment } from "@/types";
 
 const LOW_STOCK = 10;
 
@@ -37,12 +37,17 @@ interface ListState {
   error: string | null;
 }
 
-/** The variant the product sheet edits: one product, one variant (first by SKU). */
+/**
+ * The colour the row speaks for: the first the server sent, which is the admin's
+ * own order. A product's price is the same in every colour, so this is where the
+ * row's price comes from; its stock is the sum of all of them (`retailStock`).
+ */
 function sheetVariant(product: AdminProduct): AdminVariant | null {
-  return product.variants.length ? [...product.variants].sort((a, b) => a.sku.localeCompare(b.sku))[0] : null;
+  return product.variants[0] ?? null;
 }
 
-function StockPill({ quantity }: { quantity: number }) {
+/** The retail stock of every colour together, and how many colours that was. */
+function StockPill({ quantity, colors }: { quantity: number; colors: number }) {
   const tone =
     quantity === 0
       ? "bg-red-600 text-white ring-red-600"
@@ -50,8 +55,13 @@ function StockPill({ quantity }: { quantity: number }) {
         ? "bg-red-50 text-red-700 ring-red-200 dark:bg-red-500/10 dark:text-red-300 dark:ring-red-500/30"
         : "bg-slate-100 text-slate-700 ring-slate-200 dark:bg-white/5 dark:text-zinc-300 dark:ring-white/10";
   return (
-    <span className={`inline-flex min-w-12 justify-center rounded-md px-2 py-0.5 text-xs font-semibold tabular-nums ring-1 ring-inset ${tone}`}>
-      {quantity === 0 ? "Yok" : quantity.toLocaleString("tr-TR")}
+    <span className="inline-flex flex-col items-center gap-0.5">
+      <span className={`inline-flex min-w-12 justify-center rounded-md px-2 py-0.5 text-xs font-semibold tabular-nums ring-1 ring-inset ${tone}`}>
+        {quantity === 0 ? "Yok" : quantity.toLocaleString("tr-TR")}
+      </span>
+      {colors > 1 && (
+        <span className="text-[10px] leading-none text-slate-500 dark:text-zinc-500">{colors} renk</span>
+      )}
     </span>
   );
 }
@@ -91,7 +101,7 @@ export function AdminProductsView() {
   const [paging, setPaging] = useState<{ filter: string; page: number }>({ filter: "|", page: 0 });
   const [publishing, setPublishing] = useState<ReadonlySet<string>>(new Set());
   const [publishError, setPublishError] = useState<string | null>(null);
-  const [sort, setSort] = useState<SortState>({ by: null, dir: "asc" });
+  const [sort, setSort] = useState<SortState<ProductSort>>({ by: null, dir: "asc" });
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState<"delete" | "duplicate" | null>(null);
   const [notice, setNotice] = useState<{ kind: "success" | "error"; text: string } | null>(null);
@@ -141,8 +151,12 @@ export function AdminProductsView() {
     return row ? formatMoney(row.price_incl_tax) : "—";
   }
 
-  function retailStock(variant: AdminVariant | null): number {
-    return variant?.inventory.find((i) => i.warehouse_type === "RETAIL_STOCK")?.quantity ?? 0;
+  /** The retail quota of every colour together — what the shop can actually sell. */
+  function retailStock(product: AdminProduct): number {
+    return product.variants.reduce(
+      (sum, v) => sum + (v.inventory.find((i) => i.warehouse_type === "RETAIL_STOCK")?.quantity ?? 0),
+      0,
+    );
   }
 
   /** Optimistic: the row flips at once and goes back if the server refuses. */
@@ -390,8 +404,10 @@ export function AdminProductsView() {
                         <Thumbnail product={product} />
                       </td>
                       <td className="px-3 py-2.5">
-                        <span className="block truncate font-mono text-xs font-medium" title={variant?.sku ?? product.base_code}>
-                          {variant?.sku ?? product.base_code}
+                        {/* The product code: a coloured product has one stock code
+                            per colour, which the sheet lists. */}
+                        <span className="block truncate font-mono text-xs font-medium" title={product.base_code}>
+                          {product.base_code}
                         </span>
                       </td>
                       <td className="px-3 py-2.5">
@@ -419,7 +435,7 @@ export function AdminProductsView() {
                         </div>
                       </td>
                       <td className="px-3 py-2.5 text-center">
-                        {variant ? <StockPill quantity={retailStock(variant)} /> : "—"}
+                        {variant ? <StockPill quantity={retailStock(product)} colors={product.variants.length} /> : "—"}
                       </td>
                       <td className="px-3 py-2.5 text-right tabular-nums">{retailPrice(variant)}</td>
                       <td className="px-3 py-2.5">

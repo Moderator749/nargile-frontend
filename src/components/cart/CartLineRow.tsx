@@ -14,17 +14,31 @@ interface CartLineRowProps {
   item: CartLineItem;
   /** Server-resolved unit price, when a quote is available. */
   serverUnitPrice?: DecimalString;
+  /** The colour from the server quote; wins over the snapshot the cart stored. */
+  serverColorName?: string | null;
   /** Product photo from the server quote (covers items added before photos were stored). */
   serverImageUrl?: string | null;
   /** Product page, when known. */
   productHref?: string;
 }
 
-export function CartLineRow({ item, serverUnitPrice, serverImageUrl, productHref }: CartLineRowProps) {
+export function CartLineRow({
+  item,
+  serverUnitPrice,
+  serverColorName,
+  serverImageUrl,
+  productHref,
+}: CartLineRowProps) {
   const image = serverImageUrl ?? item.image_url ?? null;
+  // Which colour this line is. The quote is authoritative; the snapshot covers a
+  // line added before the page had one.
+  const color = serverColorName ?? item.color_name ?? null;
   const updateQuantity = useCartStore((s) => s.updateQuantity);
   const removeItem = useCartStore((s) => s.removeItem);
 
+  // Two colours of one product are two rows, so the colour belongs in the name a
+  // screen reader hears on the stepper and the remove button.
+  const label = color ? `${item.product_name} (${color})` : item.product_name;
   const unitPrice = Number(serverUnitPrice ?? item.segment_price ?? item.price);
   const lineTotal = unitPrice * item.quantity;
 
@@ -57,6 +71,11 @@ export function CartLineRow({ item, serverUnitPrice, serverImageUrl, productHref
               item.product_name
             )}
           </h3>
+          {color && (
+            <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">
+              Renk: <span className="font-medium text-slate-700 dark:text-zinc-200">{color}</span>
+            </p>
+          )}
           <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">
             {formatMoney(unitPrice)} <span className="text-xs">/ adet</span>
           </p>
@@ -66,7 +85,7 @@ export function CartLineRow({ item, serverUnitPrice, serverImageUrl, productHref
           <QuantityStepper
             value={item.quantity}
             onChange={(q) => updateQuantity(item.variant_id, q)}
-            label={item.product_name}
+            label={label}
           />
           <p className="w-28 text-right text-sm font-semibold tabular-nums text-slate-900 dark:text-zinc-100">
             {formatMoney(lineTotal)}
@@ -75,7 +94,7 @@ export function CartLineRow({ item, serverUnitPrice, serverImageUrl, productHref
             type="button"
             onClick={() => removeItem(item.variant_id)}
             className="rounded-md p-2 text-slate-400 dark:text-zinc-500 transition-colors hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400"
-            aria-label={`${item.product_name} ürününü sepetten çıkar`}
+            aria-label={`${label} ürününü sepetten çıkar`}
           >
             <Trash2 className="h-4 w-4" aria-hidden />
           </button>

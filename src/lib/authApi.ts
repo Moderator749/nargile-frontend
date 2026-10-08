@@ -1,5 +1,5 @@
 import { api } from "@/lib/api";
-import type { LoginRequest, Token, User, UserCreate } from "@/types";
+import type { LoginRequest, RegistrationCreate, Token, User } from "@/types";
 
 export async function login(payload: LoginRequest): Promise<Token> {
   const { data } = await api.post<Token>("/auth/login", payload);
@@ -17,7 +17,7 @@ export async function fetchMe(token?: string): Promise<User> {
   return data;
 }
 
-export async function register(payload: UserCreate): Promise<User> {
+export async function register(payload: RegistrationCreate): Promise<User> {
   const { data } = await api.post<User>("/auth/register", payload);
   return data;
 }
