@@ -3,7 +3,7 @@
 import { Fragment, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import axios from "axios";
-import { ArrowRight, Bike, ClipboardList, Euro, DollarSign, UserCheck, Users } from "lucide-react";
+import { ArrowRight, ClipboardList, Euro, DollarSign, UserCheck, Users, Van } from "lucide-react";
 
 import { AdminOrdersView } from "@/components/admin/AdminOrdersView";
 import { AdminPageHeader, panelClass } from "@/components/admin/AdminShell";
@@ -50,12 +50,12 @@ const LEGEND = [
   { label: "Havale / EFT", className: "bg-yellow-100 dark:bg-yellow-500/20" },
 ];
 
-/** A shipped order's carrier mark: the tracking code, or the courier run. */
+/** A shipped order's carrier mark: the tracking code, or the shop's own run. */
 function ShippedMark({ o }: { o: AdminOrder }) {
-  if (o.shipping_method === "COURIER_ISTANBUL")
+  if (o.shipping_method === "ISTANBUL_FREE")
     return (
       <span className="inline-flex items-center gap-1 whitespace-nowrap text-sky-700 dark:text-sky-300">
-        <Bike className="h-3.5 w-3.5 shrink-0" aria-hidden /> Kurye
+        <Van className="h-3.5 w-3.5 shrink-0" aria-hidden /> İstanbul içi
       </span>
     );
   if (o.tracking_code)

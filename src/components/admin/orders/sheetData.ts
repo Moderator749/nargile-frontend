@@ -59,7 +59,8 @@ export function shippingStatus(order: AdminOrder): { label: string; detail: stri
       detail: `${formatMoney(order.shipping_cost)} sipariş toplamına eklenmiştir (eski tarife)`,
     };
   if (order.shipping_payer === "SHOP") return { label: "ÜCRETSİZ KARGO", detail: "Gönderim ücreti firmaya aittir" };
-  const who = order.shipping_method === "COURIER_ISTANBUL" ? "kuryeye" : "kargo görevlisine";
+  const who =
+    order.shipping_method === "NAKLIYE_AMBARI" ? "ambar görevlisine" : "kargo görevlisine";
   return {
     label: "ALICI ÖDER",
     detail: `Karşı ödemeli: gönderim ücreti teslimatta ${who} ödenir, sipariş toplamına dahil değildir`,
@@ -97,9 +98,14 @@ export function orderHistory(order: AdminOrder): HistoryRow[] {
   return rows;
 }
 
-/** One address block's lines, from a shipping or a billing address. */
-export function addressLines(address: Partial<{ city: string; district: string; line: string }> | null): string | null {
+/**
+ * One address block's lines, from a shipping or a billing address. An address
+ * abroad has no ilçe and often a postal code instead, so both are optional.
+ */
+export function addressLines(
+  address: Partial<{ city: string; district: string | null; postal_code: string | null; line: string }> | null,
+): string | null {
   if (!address) return null;
   const place = [address.district, address.city].filter(Boolean).join(" / ");
-  return [address.line, place].filter(Boolean).join(", ") || null;
+  return [address.line, address.postal_code, place].filter(Boolean).join(", ") || null;
 }

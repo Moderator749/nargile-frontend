@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   BadgeCheck,
   Boxes,
+  FileText,
   FolderTree,
   GalleryHorizontal,
   LayoutDashboard,
@@ -16,6 +17,7 @@ import {
   Landmark,
   Tags,
   Timer,
+  Truck,
 } from "lucide-react";
 
 import { fetchMe } from "@/lib/authApi";
@@ -35,6 +37,9 @@ const NAV = [
   { href: "/admin/advantages", label: "Avantajlar", icon: BadgeCheck },
   { href: "/admin/flash-sales", label: "Fırsat Ürünleri", icon: Timer },
   { href: "/admin/banner", label: "Özel Gün Duyurusu", icon: Megaphone },
+  // Exact, so this one does not also light up on /admin/settings/legal.
+  { href: "/admin/settings", label: "Teslimat Ayarları", icon: Truck, exact: true },
+  { href: "/admin/settings/legal", label: "Sözleşmeler & Metinler", icon: FileText },
 ];
 
 function Gate({ title, body, action }: { title: string; body: string; action?: ReactNode }) {

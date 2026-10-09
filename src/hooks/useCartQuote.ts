@@ -25,7 +25,7 @@ export function useCartQuote(
   paymentMethod: PaymentMethod,
   pointsToRedeem: number,
   enabled: boolean,
-  shippingMethod: ShippingMethod = "CARGO",
+  shippingMethod: ShippingMethod = "YURTICI_DOOR",
 ) {
   // The address isn't needed to price the cart (courier eligibility is enforced in the form).
   const payload = buildCheckoutRequest(items, paymentMethod, pointsToRedeem, shippingMethod);

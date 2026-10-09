@@ -2,7 +2,7 @@
 
 import { Fragment, useCallback, useEffect, useState } from "react";
 import axios from "axios";
-import { Bike, CircleCheck, CreditCard, Landmark, RefreshCw, X, XCircle } from "lucide-react";
+import { CircleCheck, CreditCard, Landmark, RefreshCw, Van, X, XCircle } from "lucide-react";
 
 import { panelClass } from "@/components/admin/AdminShell";
 import { CargoSelect } from "@/components/admin/orders/CargoSelect";
@@ -47,10 +47,11 @@ function PaymentLabel({ method }: { method: AdminOrder["payment_method"] }) {
 }
 
 /** Courier orders must leave the warehouse the same day: make them impossible to miss. */
-function CourierFlag() {
+/** The shop's own İstanbul run: loaded on the van, not handed to a carrier. */
+function IstanbulFlag() {
   return (
     <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-sky-600 px-2 py-0.5 text-[11px] font-semibold text-white">
-      <Bike className="h-3 w-3" aria-hidden /> İstanbul kurye · hemen gönder
+      <Van className="h-3 w-3" aria-hidden /> İstanbul içi · hemen gönder
     </span>
   );
 }
@@ -59,8 +60,11 @@ function AddressLine({ order }: { order: AdminOrder }) {
   const a = order.shipping_address;
   if (!a) return null;
   return (
-    <p className="mt-1 truncate text-xs text-slate-500 dark:text-zinc-500" title={`${a.line}, ${a.district} / ${a.city} · ${a.phone}`}>
-      {a.district} / {a.city} · {a.phone}
+    <p
+      className="mt-1 truncate text-xs text-slate-500 dark:text-zinc-500"
+      title={`${a.line}, ${[a.district, a.city].filter(Boolean).join(" / ")} · ${a.phone}`}
+    >
+      {[a.district, a.city].filter(Boolean).join(" / ")} · {a.phone}
     </p>
   );
 }
@@ -72,14 +76,14 @@ function AddressLine({ order }: { order: AdminOrder }) {
  */
 export function AdminOrdersView({ onClose }: { onClose?: () => void }) {
   const [status, setStatus] = useState<OrderStatus | null>(null);
-  const [courierOnly, setCourierOnly] = useState(false);
+  const [istanbulOnly, setIstanbulOnly] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [list, setList] = useState<ListState | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [open, setOpen] = useState<ReadonlySet<string>>(new Set());
 
-  const shippingMethod = courierOnly ? ("COURIER_ISTANBUL" as const) : null;
-  const key = `${status ?? "ALL"}:${courierOnly}:${attempt}`;
+  const shippingMethod = istanbulOnly ? ("ISTANBUL_FREE" as const) : null;
+  const key = `${status ?? "ALL"}:${istanbulOnly}:${attempt}`;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -250,8 +254,8 @@ export function AdminOrdersView({ onClose }: { onClose?: () => void }) {
           })}
         </div>
         <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3 py-1.5 text-sm font-medium text-sky-800 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-200">
-          <input type="checkbox" checked={courierOnly} onChange={(e) => setCourierOnly(e.target.checked)} className="accent-sky-600" />
-          <Bike className="h-4 w-4" aria-hidden /> Sadece kurye
+          <input type="checkbox" checked={istanbulOnly} onChange={(e) => setIstanbulOnly(e.target.checked)} className="accent-sky-600" />
+          <Van className="h-4 w-4" aria-hidden /> Sadece İstanbul içi
         </label>
       </div>
 
@@ -301,7 +305,7 @@ export function AdminOrdersView({ onClose }: { onClose?: () => void }) {
                     <Fragment key={o.id}>
                       <tr
                         className={`transition-colors ${
-                          o.shipping_method === "COURIER_ISTANBUL"
+                          o.shipping_method === "ISTANBUL_FREE"
                             ? "bg-sky-50/70 hover:bg-sky-50 dark:bg-sky-500/5"
                             : "hover:bg-slate-50/80 dark:hover:bg-white/[0.02]"
                         }`}
@@ -317,9 +321,9 @@ export function AdminOrdersView({ onClose }: { onClose?: () => void }) {
                         <td className="px-3 py-3 align-top">
                           <p className="truncate font-mono text-xs font-semibold" title={o.order_number}>{o.order_number}</p>
                           <p className="mt-0.5 truncate text-xs text-slate-500 dark:text-zinc-500">{formatDate(o.created_at)}</p>
-                          {o.shipping_method === "COURIER_ISTANBUL" && (
+                          {o.shipping_method === "ISTANBUL_FREE" && (
                             <div className="mt-1.5 flex">
-                              <CourierFlag />
+                              <IstanbulFlag />
                             </div>
                           )}
                         </td>
@@ -370,8 +374,8 @@ export function AdminOrdersView({ onClose }: { onClose?: () => void }) {
                 const expanded = open.has(o.id);
                 return (
                   <li key={o.id}>
-                    <div className={`space-y-3 p-4 ${o.shipping_method === "COURIER_ISTANBUL" ? "bg-sky-50/70 dark:bg-sky-500/5" : ""}`}>
-                      {o.shipping_method === "COURIER_ISTANBUL" && <CourierFlag />}
+                    <div className={`space-y-3 p-4 ${o.shipping_method === "ISTANBUL_FREE" ? "bg-sky-50/70 dark:bg-sky-500/5" : ""}`}>
+                      {o.shipping_method === "ISTANBUL_FREE" && <IstanbulFlag />}
                       <div className="flex items-start gap-2">
                         <ExpandToggle
                           expanded={expanded}

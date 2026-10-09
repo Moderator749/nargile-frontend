@@ -1,45 +1,48 @@
 import { api } from "@/lib/api";
 import type {
-  AdminDashboardData,
-  B2BApplication,
-  B2BSegment,
   AccountType,
+  AdminCategory,
   AdminCustomer,
   AdminCustomerDetail,
-  ShippingMethod,
-  BankAccount,
-  BankAccountWrite,
-  Wallet,
-  AdvantageContent,
-  AdvantageWrite,
-  HeroSlideContent,
-  HeroSlideWrite,
-  PromoBoxContent,
-  PromoBoxWrite,
-  AdminCategory,
+  AdminDashboardData,
   AdminFlashSale,
-  Brand,
-  BrandWrite,
-  CategoryWrite,
   AdminFlashSaleWrite,
   AdminOrder,
   AdminProduct,
   AdminVariantPrice,
+  AdvantageContent,
+  AdvantageWrite,
   Announcement,
   AnnouncementUpdate,
+  B2BApplication,
+  B2BSegment,
+  BankAccount,
+  BankAccountWrite,
+  Brand,
+  BrandWrite,
+  CategoryWrite,
   CurrencyType,
+  CustomerSort,
   DecimalString,
+  HeroSlideContent,
+  HeroSlideWrite,
+  LegalDocument,
+  LegalKey,
   OrderApproveResponse,
   OrderStatus,
   ProductDeleteResult,
   ProductSheet,
-  CustomerSort,
   ProductSort,
+  PromoBoxContent,
+  ShippingSettings,
+  PromoBoxWrite,
   SavedProductSheet,
   Segment,
   SegmentType,
+  ShippingMethod,
   SortDirection,
   UploadedImage,
+  Wallet,
 } from "@/types";
 
 export const ADMIN_PAGE_SIZE = 50;
@@ -309,6 +312,7 @@ export async function adminListCustomersPage(
     q?: string;
     accountType?: AccountType | "";
     segment?: SegmentType | "";
+    city?: string;
     page: number;
     pageSize?: number;
     /** Omitted: the server's default order (newest first). */
@@ -323,6 +327,7 @@ export async function adminListCustomersPage(
       q: params.q || undefined,
       account_type: params.accountType || undefined,
       segment: params.segment || undefined,
+      city: params.city || undefined,
       order_by: params.orderBy || undefined,
       order_dir: params.orderBy ? (params.orderDir ?? "asc") : undefined,
       skip: params.page * pageSize,
@@ -331,6 +336,12 @@ export async function adminListCustomersPage(
     signal,
   });
   return { customers: data, total: Number(headers["x-total-count"] ?? data.length) };
+}
+
+/** The cities customers are actually in, for the grid's İl filter. */
+export async function adminCustomerCities(signal?: AbortSignal): Promise<string[]> {
+  const { data } = await api.get<string[]>("/admin/customers/cities", { signal });
+  return data;
 }
 
 /** One customer in full: identity, invoice details, addresses, orders, price list. */
@@ -422,5 +433,33 @@ export async function adminApproveB2B(id: number, segment: B2BSegment | null): P
 
 export async function adminRejectB2B(id: number, note: string): Promise<B2BApplication> {
   const { data } = await api.post<B2BApplication>(`/admin/b2b-applications/${id}/reject`, { note });
+  return data;
+}
+
+export async function adminGetLegalDocuments(signal?: AbortSignal): Promise<LegalDocument[]> {
+  const { data } = await api.get<LegalDocument[]>("/admin/settings/legal", { signal });
+  return data;
+}
+
+/** The shipping limits the checkout engine applies; see `lib/settingsApi`. */
+export async function adminGetShippingSettings(signal?: AbortSignal): Promise<ShippingSettings> {
+  const { data } = await api.get<ShippingSettings>("/admin/settings/shipping", { signal });
+  return data;
+}
+
+/** Saves them. The next cart is quoted against what is saved here. */
+export async function adminUpdateShippingSettings(
+  body: { istanbul_free_min_subtotal: string },
+): Promise<ShippingSettings> {
+  const { data } = await api.put<ShippingSettings>("/admin/settings/shipping", body);
+  return data;
+}
+
+/** Saves one text. What the panel saves is what the next buyer accepts. */
+export async function adminUpdateLegalDocument(
+  key: LegalKey,
+  body: { title: string; body: string },
+): Promise<LegalDocument> {
+  const { data } = await api.put<LegalDocument>(`/admin/settings/legal/${key}`, body);
   return data;
 }

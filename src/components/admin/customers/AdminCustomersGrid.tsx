@@ -11,7 +11,7 @@ import { ACCOUNT_TYPE_LABELS, SEGMENT_LABELS, SegmentChip } from "@/components/a
 import { CatalogSearch } from "@/components/catalog/CatalogSearch";
 import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
 import { Alert } from "@/components/ui/Alert";
-import { ADMIN_PAGE_SIZE, adminListCustomersPage } from "@/lib/adminApi";
+import { ADMIN_PAGE_SIZE, adminCustomerCities, adminListCustomersPage } from "@/lib/adminApi";
 import { countryName } from "@/lib/countries";
 import { getApiErrorMessage } from "@/lib/errors";
 import { whatsappHref } from "@/lib/whatsapp";
@@ -87,20 +87,34 @@ export function AdminCustomersGrid() {
   const [query, setQuery] = useState("");
   const [accountType, setAccountType] = useState<AccountType | "">("");
   const [segment, setSegment] = useState<SegmentType | "">("");
+  const [city, setCity] = useState("");
+  // The cities customers are actually in; empty until they load, which just
+  // leaves the filter showing "Tüm iller".
+  const [cities, setCities] = useState<string[]>([]);
   const [sort, setSort] = useState<SortState<CustomerSort>>({ by: null, dir: "asc" });
   const [list, setList] = useState<ListState | null>(null);
   // The page belongs to one search/filter: a new one starts again at page 1.
   const [paging, setPaging] = useState<{ filter: string; page: number }>({ filter: "|", page: 0 });
   const tableTop = useRef<HTMLDivElement>(null);
 
-  const filter = `${query}|${accountType}|${segment}|${sort.by ?? ""}|${sort.dir}`;
+  const filter = `${query}|${accountType}|${city}|${segment}|${sort.by ?? ""}|${sort.dir}`;
   const page = paging.filter === filter ? paging.page : 0;
   const key = `${filter}|${page}`;
 
   useEffect(() => {
     const controller = new AbortController();
+    adminCustomerCities(controller.signal)
+      .then(setCities)
+      .catch(() => {
+        // Non-critical: the filter simply offers nothing.
+      });
+    return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
     adminListCustomersPage(
-      { q: query, accountType, segment, page, orderBy: sort.by, orderDir: sort.dir },
+      { q: query, accountType, segment, city, page, orderBy: sort.by, orderDir: sort.dir },
       controller.signal,
     )
       .then(({ customers, total }) => setList({ customers, total, key }))
@@ -110,7 +124,7 @@ export function AdminCustomersGrid() {
         }
       });
     return () => controller.abort();
-  }, [key, query, accountType, segment, page, sort.by, sort.dir]);
+  }, [key, query, accountType, segment, city, page, sort.by, sort.dir]);
 
   function goTo(next: number) {
     setPaging({ filter, page: next });
@@ -144,6 +158,22 @@ export function AdminCustomersGrid() {
           {FILTERABLE_TYPES.map((type) => (
             <option key={type} value={type}>
               {ACCOUNT_TYPE_LABELS[type]}
+            </option>
+          ))}
+        </select>
+        <label className="sr-only" htmlFor="admin-city">
+          İl
+        </label>
+        <select
+          id="admin-city"
+          value={city}
+          onChange={(e) => setCity(e.target.value)}
+          className={selectClass}
+        >
+          <option value="">Tüm iller</option>
+          {cities.map((name) => (
+            <option key={name} value={name}>
+              {name}
             </option>
           ))}
         </select>

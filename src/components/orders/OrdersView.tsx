@@ -9,6 +9,7 @@ import { StatusBadge } from "@/components/orders/StatusBadge";
 import { Alert } from "@/components/ui/Alert";
 import { getApiErrorMessage } from "@/lib/errors";
 import { formatDate, formatMoney } from "@/lib/format";
+import { shippingOption } from "@/lib/shipping";
 import { fetchMyOrders, orderNetTotal } from "@/lib/ordersApi";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useAuthHydrated } from "@/store/useHasHydrated";
@@ -110,7 +111,7 @@ export function OrdersView({ placedOrderNumber }: { placedOrderNumber: string | 
                   <p className="text-slate-600 dark:text-zinc-400">
                     {order.items.reduce((n, i) => n + i.quantity, 0)} ürün ·{" "}
                     {order.payment_method === "BANK_TRANSFER" ? "Havale / EFT" : "Kredi Kartı"}
-                    {order.shipping_method === "COURIER_ISTANBUL" && <> · İstanbul içi kurye</>}
+                    {order.shipping_method !== "YURTICI_DOOR" && <> · {shippingOption(order.shipping_method).title}</>}
                     {order.tracking_code && <> · Kargo takip: {order.tracking_code}</>}
                   </p>
                   <p className="text-base font-bold tabular-nums">{formatMoney(orderNetTotal(order))}</p>

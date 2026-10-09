@@ -2,13 +2,15 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Bike, Check, CircleCheck, Copy, Landmark, Truck } from "lucide-react";
+import { Check, CircleCheck, Copy, Landmark, UserCheck } from "lucide-react";
 
 import { Alert } from "@/components/ui/Alert";
+import { countryName } from "@/lib/countries";
 import { getApiErrorMessage } from "@/lib/errors";
 import { formatMoney } from "@/lib/format";
 import { fetchBankAccounts, fetchOrder, orderNetTotal } from "@/lib/ordersApi";
 import { formatIban } from "@/lib/provinces";
+import { shippingOption } from "@/lib/shipping";
 import { useAuthHydrated } from "@/store/useHasHydrated";
 import { useAuthStore } from "@/store/useAuthStore";
 import type { BankAccount, Order } from "@/types";
@@ -76,7 +78,8 @@ export function OrderConfirmation({ orderId }: { orderId: string }) {
 
   const net = orderNetTotal(order);
   const transfer = order.payment_method === "BANK_TRANSFER";
-  const courier = order.shipping_method === "COURIER_ISTANBUL";
+  const ownVan = order.shipping_method === "ISTANBUL_FREE";
+  const { Icon } = shippingOption(order.shipping_method);
   const a = order.shipping_address;
 
   return (
@@ -135,12 +138,14 @@ export function OrderConfirmation({ orderId }: { orderId: string }) {
 
       <section aria-labelledby="delivery-heading" className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 dark:border-white/10 dark:bg-zinc-900 sm:p-6">
         <h2 id="delivery-heading" className="flex items-center gap-2 text-lg font-bold tracking-tight">
-          {courier ? <Bike className="h-5 w-5" aria-hidden /> : <Truck className="h-5 w-5" aria-hidden />}
-          {courier ? "İstanbul içi kurye (10:00 – 20:00)" : "Kargo ile teslimat"}
+          {/* The method's own name, so the page says what will actually happen. */}
+          <Icon className="h-5 w-5" aria-hidden />
+          {shippingOption(order.shipping_method).title}
         </h2>
-        {courier ? (
-          <p className="mt-2 text-sm text-sky-800 dark:text-sky-200">
-            Kurye ücreti mesafeye göre kurye tarafından teslimatta alınır.
+        {ownVan ? (
+          <p className="mt-2 text-sm text-emerald-800 dark:text-emerald-300">
+            İstanbul içi teslimat ücretsizdir; siparişiniz kendi aracımızla, teslimattan önce aranarak
+            getirilir.
           </p>
         ) : order.shipping_payer === "RECEIVER" ? (
           // Carriage is never added to the order; the buyer accepted paying it on delivery.
@@ -153,14 +158,31 @@ export function OrderConfirmation({ orderId }: { orderId: string }) {
             Gönderim ücreti tarafımızca karşılanmıştır; teslimatta ödeme yapmanız gerekmez.
           </p>
         )}
+        {/* "Şubeme istiyorum": the branch the goods were sent to, named so the
+            firm can see which one this order was for. */}
+        {order.shipping_branch_name && (
+          <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-zinc-100">
+            {order.shipping_branch_name}
+          </p>
+        )}
         {a && (
-          <address className="mt-3 text-sm not-italic leading-6 text-slate-700 dark:text-zinc-300">
+          <address className="mt-1 text-sm not-italic leading-6 text-slate-700 dark:text-zinc-300">
             {a.full_name} · {a.phone}
             <br />
             {a.line}
             <br />
-            {a.district} / {a.city}
+            {[a.district, a.city].filter(Boolean).join(" / ")}
+            {a.country !== "TR" && <> · {countryName(a.country)}</>}
           </address>
+        )}
+        {order.receiver_name && (
+          <p className="mt-3 flex gap-2 rounded-xl bg-slate-50 px-3 py-2.5 text-xs leading-5 text-slate-600 dark:bg-white/5 dark:text-zinc-300">
+            <UserCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+            <span>
+              Teslim alacak kişi: <strong className="font-semibold">{order.receiver_name}</strong> ·{" "}
+              {order.receiver_phone}
+            </span>
+          </p>
         )}
         <dl className="mt-4 flex justify-between border-t border-slate-200 pt-4 text-base font-bold dark:border-white/10">
           <dt>Toplam</dt>

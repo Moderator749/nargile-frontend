@@ -9,6 +9,7 @@ import { SheetBlock, SheetField } from "@/components/admin/orders/SheetBlock";
 import { addressLines, customerCode, orderHistory, sheetTotals, shippingStatus } from "@/components/admin/orders/sheetData";
 import type { OrderNotice } from "@/components/admin/orders/useOrderActions";
 import { formatDate, formatMoney } from "@/lib/format";
+import { shippingOption } from "@/lib/shipping";
 import type { AdminOrder } from "@/types";
 
 const boxClass =
@@ -115,7 +116,25 @@ export function OrderSheet({
       <div className="grid gap-3 lg:grid-cols-2">
         <SheetBlock title="Fatura Adresi">
           <dl>
-            <SheetField label="Adı" value={order.company_title ?? billingAddress?.full_name ?? order.customer_name ?? null} />
+            {/* "Faturayı firmaya istiyorum": a personal order made out to a
+                firm. What the buyer typed wins over the account's own name. */}
+            <SheetField
+              label="Adı"
+              value={
+                order.invoice_company_title ??
+                order.company_title ??
+                billingAddress?.full_name ??
+                order.customer_name ??
+                null
+              }
+            />
+            {order.invoice_to_company && (
+              <SheetField
+                label="Vergi"
+                value={[order.invoice_tax_office, order.invoice_tax_number].filter(Boolean).join(" · ")}
+                mono
+              />
+            )}
             <SheetField label="Adres" value={addressLines(billingAddress ?? null)} />
             {/* Only an address abroad has one; a domestic sheet says nothing. */}
             {billing?.country && <SheetField label="Ülke" value={billing.country} />}
@@ -131,10 +150,32 @@ export function OrderSheet({
 
         <SheetBlock title="Teslimat Adresi">
           <dl>
+            {/* "Şubeme istiyorum": a firm's own branch, which is why this
+                address is not the one it is invoiced at. */}
+            {order.shipping_branch_name && (
+              <SheetField label="Şube" value={order.shipping_branch_name} />
+            )}
             <SheetField label="Alıcı Adı" value={delivery?.full_name ?? null} />
+            {/* "Başka biri teslim alacak": who to hand it to, and the number
+                the carrier calls. */}
+            {order.receiver_name && (
+              <SheetField label="Teslim Alacak" value={`${order.receiver_name} · ${order.receiver_phone ?? ""}`} />
+            )}
             <SheetField label="Adres" value={addressLines(delivery)} />
             <SheetField label="Telefon" value={delivery?.phone ?? null} mono />
             <SheetField label="Mobil" value={order.customer_phone ?? null} mono />
+            {/* How it travels, and what the customer asked for: the agreement to
+                bill the carriage to, or the ambar to hand the goods to. */}
+            <SheetField label="Gönderim" value={shippingOption(order.shipping_method).title} />
+            {order.shipping_contract_no && (
+              <SheetField label="Anlaşma No" value={order.shipping_contract_no} mono />
+            )}
+            {order.freight_company_name && (
+              <SheetField
+                label="Ambar"
+                value={[order.freight_company_name, order.freight_phone].filter(Boolean).join(" · ")}
+              />
+            )}
           </dl>
         </SheetBlock>
       </div>

@@ -1,18 +1,28 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Bike, Lock, TrendingUp, Truck } from "lucide-react";
+import { Building2, Lock, Ship, TrendingUp, Truck } from "lucide-react";
 
+import { LegalConsent, type Agreements } from "@/components/cart/LegalConsent";
 import { LoyaltyPointsInput } from "@/components/cart/LoyaltyPointsInput";
 import { PaymentMethodPicker } from "@/components/cart/PaymentMethodPicker";
 import { ShippingConsent } from "@/components/cart/ShippingConsent";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { formatMoney } from "@/lib/format";
-import type { Cart, PaymentMethod } from "@/types";
+import { shippingOption } from "@/lib/shipping";
+import type { Cart, LegalDocument, LegalKey, PaymentMethod, ShippingMethod } from "@/types";
 
 interface OrderSummaryProps {
   isLoggedIn: boolean;
+  /**
+   * Whether this account gets the retail promotions. False hides the points
+   * box and the discount nudges rather than offering what will not be given;
+   * the server decides the amounts either way.
+   */
+  perks: boolean;
+  /** The chosen method, for the shipping line's label. */
+  shippingMethod: ShippingMethod;
   /** Local subtotal from cart snapshots; used until the server quote arrives. */
   estimatedSubtotal: number;
   quote: Cart | null;
@@ -27,6 +37,13 @@ interface OrderSummaryProps {
   /** "Karşı ödemeli" consent; required before checkout when the receiver pays. */
   shippingConsent: boolean;
   onShippingConsentChange: (checked: boolean) => void;
+  /** "Kart bilgilerimi … güvenle kaydet", for the card payment section. */
+  saveCard: boolean;
+  onSaveCardChange: (checked: boolean) => void;
+  /** The two agreements, and the texts behind them. */
+  agreements: Agreements;
+  onAgreementsChange: (patch: Partial<Agreements>) => void;
+  legalDocuments: Partial<Record<LegalKey, LegalDocument>> | null;
   submitting: boolean;
   checkoutError: string | null;
   /** Why the order can't be placed yet (e.g. incomplete address); null = ready. */
@@ -55,11 +72,16 @@ const kg = (value: string) => Number(value).toLocaleString("tr-TR", { maximumFra
  */
 function ShippingNote({ quote }: { quote: Cart }) {
   const s = quote.shipping;
-  if (s.reason === "courier") {
+  if (s.reason === "freight" || s.reason === "international") {
+    const note =
+      s.reason === "freight"
+        ? "Nakliye ambarı ücreti, malı teslim alırken ambara ödenir."
+        : "Uluslararası navlun ve gümrük bedeli sipariş sonrasında belirlenir, ayrıca faturalandırılır.";
+    const Icon = s.reason === "freight" ? Building2 : Ship;
     return (
       <div className="flex gap-2 rounded-xl bg-sky-50 px-3 py-2.5 text-xs leading-5 text-sky-800 ring-1 ring-inset ring-sky-200 dark:bg-sky-500/10 dark:text-sky-200 dark:ring-sky-500/30">
-        <Bike className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
-        <p>Kurye ücreti mesafeye göre kurye tarafından teslimatta alınır.</p>
+        <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+        <p>{note}</p>
       </div>
     );
   }
@@ -67,9 +89,13 @@ function ShippingNote({ quote }: { quote: Cart }) {
   const message =
     s.reason === "free"
       ? null
-      : s.reason === "below_threshold"
-        ? `Gönderim ücreti sipariş tutarınıza eklenmez; teslimatta kargo görevlisine ödenir. ${formatMoney(remaining)} daha ekleyin, kargonuz ücretsiz olsun.`
-        : `Kömür ağırlıklı siparişlerde ücretsiz kargo için en az ${kg(s.coal_min_kg)} kg kömür gereklidir. Sepetinizde ${kg(s.coal_weight_kg)} kg var; gönderim ücreti teslimatta alıcı tarafından ödenir.`;
+      : s.reason === "tier_price"
+        ? // Free shipping is a retail promotion: a tier price does not include
+          // carriage, so there is no threshold to nudge towards.
+          "Gönderim ücreti sipariş tutarınıza eklenmez; teslimatta kargo görevlisine ödenir. Fiyat listenize kargo dahil değildir."
+        : s.reason === "below_threshold"
+          ? `Gönderim ücreti sipariş tutarınıza eklenmez; teslimatta kargo görevlisine ödenir. ${formatMoney(remaining)} daha ekleyin, kargonuz ücretsiz olsun.`
+          : `Kömür ağırlıklı siparişlerde ücretsiz kargo için en az ${kg(s.coal_min_kg)} kg kömür gereklidir. Sepetinizde ${kg(s.coal_weight_kg)} kg var; gönderim ücreti teslimatta alıcı tarafından ödenir.`;
   if (!message) return null;
 
   const coal = s.reason === "coal_weight";
@@ -92,10 +118,11 @@ function ShippingNote({ quote }: { quote: Cart }) {
   );
 }
 
-/** "₺X more for the next volume tier", only when it's within reach. */
+/** "₺X more for the next volume tier", only when it's within reach — and only
+ * for an account that would actually get it. */
 function VolumeNudge({ quote }: { quote: Cart }) {
   const next = quote.volume_next_tier;
-  if (!next) return null;
+  if (!next || !quote.perks_eligible) return null;
   const remaining = Number(next.threshold) - Number(quote.subtotal);
   if (remaining > Number(next.threshold) / 3) return null; // too far to be a useful nudge
   return (
@@ -122,8 +149,20 @@ export function OrderSummary(props: OrderSummaryProps) {
 
       {isLoggedIn && (
         <div className="mt-5 space-y-5">
-          <PaymentMethodPicker value={props.paymentMethod} onChange={props.onPaymentMethodChange} />
-          <LoyaltyPointsInput balance={props.balance} value={props.points} onChange={props.onPointsChange} />
+          <PaymentMethodPicker
+            value={props.paymentMethod}
+            onChange={props.onPaymentMethodChange}
+            /* The havale discount is a retail promotion: a B2B account pays its
+               tier price whichever way it pays. */
+            transferDiscount={props.perks}
+            saveCard={props.saveCard}
+            onSaveCardChange={props.onSaveCardChange}
+          />
+          {/* ParaPuan is a retail promotion too, so it is not offered to an
+              account that cannot spend it. */}
+          {props.perks && (
+            <LoyaltyPointsInput balance={props.balance} value={props.points} onChange={props.onPointsChange} />
+          )}
         </div>
       )}
 
@@ -157,8 +196,14 @@ export function OrderSummary(props: OrderSummaryProps) {
             )}
             {/* Never a charge: either the shop covers it or the buyer pays on delivery. */}
             <Row
-              label={quote.shipping.reason === "courier" ? "İstanbul içi kurye" : "Kargo"}
-              value={quote.shipping.free ? "Ücretsiz" : "Teslimatta alıcı öder"}
+              label={shippingOption(props.shippingMethod).title}
+              value={
+                quote.shipping.free
+                  ? "Ücretsiz"
+                  : quote.shipping.reason === "international"
+                    ? "Sipariş sonrası"
+                    : "Teslimatta alıcı öder"
+              }
             />
             {Number(quote.points_discount) > 0 && (
               <Row label="ParaPuan" value={`−${formatMoney(quote.points_discount)}`} tone="discount" />
@@ -175,6 +220,12 @@ export function OrderSummary(props: OrderSummaryProps) {
               <p className="text-xs text-zinc-600 dark:text-zinc-400">
                 Siparişiniz onaylandığında {quote.loyalty_points_to_earn.toLocaleString("tr-TR")} ParaPuan
                 kazanacaksınız.
+              </p>
+            )}
+            {!quote.perks_eligible && (
+              <p className="text-xs text-slate-500 dark:text-zinc-400">
+                Fiyatlarınız hesabınıza tanımlı fiyat listesinden gelir; ciro, havale ve ParaPuan indirimleri
+                bireysel (perakende) hesaplara tanımlıdır.
               </p>
             )}
           </>
@@ -197,6 +248,15 @@ export function OrderSummary(props: OrderSummaryProps) {
 
         {isLoggedIn && needsConsent && (
           <ShippingConsent checked={props.shippingConsent} onChange={props.onShippingConsentChange} />
+        )}
+
+        {/* Both agreements, or no order — the server refuses one without them. */}
+        {isLoggedIn && (
+          <LegalConsent
+            value={props.agreements}
+            onChange={props.onAgreementsChange}
+            documents={props.legalDocuments}
+          />
         )}
 
         <Button type="button" onClick={props.onCheckout} loading={submitting} disabled={!canCheckout}>

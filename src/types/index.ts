@@ -38,8 +38,24 @@ export type WarehouseType = "RETAIL_STOCK" | "B2B_STOCK";
 export type PaymentMethod = "CREDIT_CARD" | "BANK_TRANSFER";
 /** AWAITING_TRANSFER = "Havale Bekliyor": a bank-transfer order waiting for the money. */
 export type OrderStatus = "PENDING_APPROVAL" | "AWAITING_TRANSFER" | "APPROVED" | "SHIPPED" | "CANCELLED";
-/** COURIER_ISTANBUL: same-day courier, 10:00–20:00, paid to the courier on delivery. */
-export type ShippingMethod = "CARGO" | "COURIER_ISTANBUL";
+/**
+ * How an order travels. Which of these a customer may pick depends on what kind
+ * of account they have — see `src/lib/shipping.ts`, which mirrors the server's
+ * `METHODS_BY_ACCOUNT_TYPE`.
+ *
+ * YURTICI_DOOR: Yurtiçi Kargo, to the address.
+ * YURTICI_BRANCH: Yurtiçi Kargo, collected from a branch (bireysel only).
+ * NAKLIYE_AMBARI: a freight depot delivers and collects its own fee.
+ * ISTANBUL_FREE: the shop's own İstanbul run — free, and only for a firm
+ * registered there.
+ * INTERNATIONAL_FREIGHT: export; freight and customs are quoted after the order.
+ */
+export type ShippingMethod =
+  | "YURTICI_DOOR"
+  | "YURTICI_BRANCH"
+  | "NAKLIYE_AMBARI"
+  | "ISTANBUL_FREE"
+  | "INTERNATIONAL_FREIGHT";
 /** Who pays the carriage: the shop (free shipping) or the buyer on delivery. */
 export type ShippingPayer = "SHOP" | "RECEIVER";
 
@@ -72,12 +88,35 @@ export interface InternationalAddress {
   address_line2?: string | null;
 }
 
+/**
+ * Where one order goes, frozen onto the order itself.
+ *
+ * Turkish by default, and then `city` is one of the 81 provinces and `district`
+ * is required. For an export order the country changes, `city` is whatever
+ * subdivision that country uses, and there is no ilçe.
+ */
 export interface ShippingAddress {
   full_name: string;
   phone: string;
-  /** One of the 81 provinces (canonical spelling, e.g. "İstanbul"). */
+  /** ISO 3166-1 alpha-2; "TR" unless the order is an export. */
+  country: string;
+  /** One of the 81 provinces at home (canonical spelling, e.g. "İstanbul"). */
   city: string;
-  district: string;
+  district: string | null;
+  postal_code: string | null;
+  line: string;
+}
+
+/** An address from sign-up, offered at checkout as somewhere to ship to. */
+export interface SavedAddress {
+  kind: AddressKind;
+  label: string;
+  full_name: string | null;
+  phone: string | null;
+  country: string;
+  city: string;
+  district: string | null;
+  postal_code: string | null;
   line: string;
 }
 
@@ -358,6 +397,27 @@ export interface CartCalculateRequest {
    * onayladım." Required to check out whenever the shop does not cover carriage.
    */
   shipping_consent?: boolean;
+  /** "Başka biri teslim alacak": both or neither. */
+  receiver_name?: string | null;
+  receiver_phone?: string | null;
+  /** The buyer's own Yurtiçi Kargo agreement; only with a Yurtiçi method. */
+  shipping_contract_no?: string | null;
+  /** The nakliye ambarı to hand the goods to; only with NAKLIYE_AMBARI. */
+  freight_company_name?: string | null;
+  freight_phone?: string | null;
+  /** "Şubeme istiyorum": the firm's own branch this order is for. It is what
+      lets the delivery address be somewhere other than the registered one. */
+  shipping_branch_name?: string | null;
+  /** "Faturayı firmaya/şirkete istiyorum", and who to make it out to. */
+  invoice_to_company?: boolean;
+  invoice_company_title?: string | null;
+  invoice_tax_office?: string | null;
+  invoice_tax_number?: string | null;
+  /** "Kart bilgilerimi sonraki alışverişlerim için güvenle kaydet". */
+  save_card?: boolean;
+  /** Both are required to place an order; a price preview needs neither. */
+  distance_sales_accepted?: boolean;
+  terms_accepted?: boolean;
 }
 
 export interface CartItemBreakdown {
@@ -381,8 +441,14 @@ export interface ShippingBreakdown {
   free: boolean;
   /** "Karşı ödemeli": the buyer pays the carrier (or courier) on delivery. */
   receiver_pays: boolean;
-  /** coal_weight: coal is over coal_max_ratio of the cart and under coal_min_kg. */
-  reason: "free" | "below_threshold" | "coal_weight" | "courier";
+  /**
+   * coal_weight: coal is over coal_max_ratio of the cart and under coal_min_kg.
+   * freight: a nakliye ambarı, which collects its own fee from the receiver.
+   * international: freight and customs, quoted after the order.
+   * tier_price: a B2B account, whose price list does not include carriage, so
+   * the free-shipping threshold never applies to it.
+   */
+  reason: "free" | "below_threshold" | "coal_weight" | "freight" | "international" | "tier_price";
   free_threshold: DecimalString;
   coal_total: DecimalString;
   /** Coal share of the subtotal, 0..1. */
@@ -396,6 +462,12 @@ export interface ShippingBreakdown {
 
 export interface Cart {
   subtotal: DecimalString;
+  /**
+   * Whether this account gets the retail promotions (ParaPuan, the ciro and
+   * havale discounts). False means every discount below is zero by rule: a B2B
+   * account pays its tier price net.
+   */
+  perks_eligible: boolean;
   cargo_cost: DecimalString;
   shipping: ShippingBreakdown;
   /** Volume ("ciro") discount, on the subtotal. */
@@ -442,6 +514,23 @@ export interface Order {
   shipping_consent_at: ISODateTime | null;
   /** Null on orders from before addresses were collected. */
   shipping_address: ShippingAddress | null;
+  /** "Başka biri teslim alacak": who signs for the parcel, when not the buyer. */
+  receiver_name: string | null;
+  receiver_phone: string | null;
+  /** What the buyer asked for: their Yurtiçi agreement, or the ambar to use. */
+  shipping_contract_no: string | null;
+  freight_company_name: string | null;
+  freight_phone: string | null;
+  /** The firm's own branch this order went to, when not the invoice address. */
+  shipping_branch_name: string | null;
+  /** Who the invoice is made out to, when it is not the customer themselves. */
+  invoice_to_company: boolean;
+  invoice_company_title: string | null;
+  invoice_tax_office: string | null;
+  invoice_tax_number: string | null;
+  save_card: boolean;
+  /** When the two agreements were accepted; no order is placed without them. */
+  agreements_accepted_at: ISODateTime | null;
   paid_at: ISODateTime | null;
   cancelled_at: ISODateTime | null;
   cancel_reason: string | null;
@@ -960,4 +1049,28 @@ export interface AdminDashboardData {
   weekly: PeriodTotals;
   monthly: PeriodTotals;
   yearly: PeriodTotals;
+}
+
+/**
+ * The shipping numbers the admin panel sets, read by the cart without a login.
+ *
+ * The limit is a Decimal string like every other amount: the server is the
+ * authority on money, and the cart formats what it is given.
+ */
+export interface ShippingSettings {
+  /** "İstanbul İçi B2B Ücretsiz Teslimat Alt Limiti (TL)"; ₺20.000 by default. */
+  istanbul_free_min_subtotal: DecimalString;
+}
+
+/** Which legal text. PRIVACY_NOTICE is the short framed notice in the cart. */
+export type LegalKey = "PRIVACY_NOTICE" | "PRIVACY" | "DISTANCE_SALES" | "TERMS";
+
+export interface LegalDocument {
+  key: LegalKey;
+  title: string;
+  /** Plain text with `## ` headings and blank-line paragraphs. */
+  body: string;
+  updated_at: ISODateTime | null;
+  /** False while this is still the text the shop was set up with. */
+  edited: boolean;
 }

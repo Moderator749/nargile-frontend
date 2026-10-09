@@ -1,29 +1,43 @@
-import { CreditCard, Landmark } from "lucide-react";
+import { CreditCard, Landmark, ShieldCheck } from "lucide-react";
 
 import type { PaymentMethod } from "@/types";
-
-const OPTIONS: { value: PaymentMethod; title: string; hint: string; Icon: typeof CreditCard }[] = [
-  { value: "CREDIT_CARD", title: "Kredi Kartı", hint: "Anında onay", Icon: CreditCard },
-  {
-    value: "BANK_TRANSFER",
-    title: "Havale / EFT",
-    // Mirrors checkout_engine: 5% below ₺30.000, 7% from ₺30.000.
-    hint: "%5 indirim (₺30.000 üzeri %7)",
-    Icon: Landmark,
-  },
-];
 
 interface PaymentMethodPickerProps {
   value: PaymentMethod;
   onChange: (value: PaymentMethod) => void;
+  /**
+   * Whether to advertise the havale discount. It is a retail promotion, so a
+   * B2B account is not promised one it would not receive — it pays its tier
+   * price either way.
+   */
+  transferDiscount: boolean;
+  /** "Kart bilgilerimi sonraki alışverişlerim için güvenle kaydet". */
+  saveCard: boolean;
+  onSaveCardChange: (checked: boolean) => void;
 }
 
-export function PaymentMethodPicker({ value, onChange }: PaymentMethodPickerProps) {
+export function PaymentMethodPicker({
+  value,
+  onChange,
+  transferDiscount,
+  saveCard,
+  onSaveCardChange,
+}: PaymentMethodPickerProps) {
+  const options: { value: PaymentMethod; title: string; hint: string; Icon: typeof CreditCard }[] = [
+    { value: "CREDIT_CARD", title: "Kredi Kartı", hint: "Anında onay", Icon: CreditCard },
+    {
+      value: "BANK_TRANSFER",
+      title: "Havale / EFT",
+      // Mirrors checkout_engine: 5% below ₺30.000, 7% from ₺30.000.
+      hint: transferDiscount ? "%5 indirim (₺30.000 üzeri %7)" : "Banka hesabımıza ödeme",
+      Icon: Landmark,
+    },
+  ];
   return (
     <fieldset>
       <legend className="text-sm font-medium text-slate-700 dark:text-zinc-300">Ödeme yöntemi</legend>
       <div className="mt-2 grid grid-cols-2 gap-2">
-        {OPTIONS.map(({ value: option, title, hint, Icon }) => (
+        {options.map(({ value: option, title, hint, Icon }) => (
           <label
             key={option}
             className={`flex cursor-pointer flex-col gap-1 rounded-lg border p-3 text-sm transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-red-500/40 ${
@@ -47,6 +61,26 @@ export function PaymentMethodPicker({ value, onChange }: PaymentMethodPickerProp
           </label>
         ))}
       </div>
+      {/* Only the card has anything to save. The card itself never reaches us:
+          the payment provider keeps the token, and the order only remembers
+          that it was asked for. */}
+      {value === "CREDIT_CARD" && (
+        <label className="mt-3 flex cursor-pointer items-start gap-2.5 text-xs leading-5">
+          <input
+            type="checkbox"
+            checked={saveCard}
+            onChange={(e) => onSaveCardChange(e.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0 accent-red-600"
+          />
+          <span className="text-slate-600 dark:text-zinc-300">
+            <span className="flex items-center gap-1.5 font-medium text-slate-900 dark:text-zinc-100">
+              <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" aria-hidden />
+              Kart bilgilerimi sonraki alışverişlerim için güvenle kaydet
+            </span>
+            Kart bilgileri tarafımızdan görülmez; ödeme altyapısında saklanır.
+          </span>
+        </label>
+      )}
     </fieldset>
   );
 }
