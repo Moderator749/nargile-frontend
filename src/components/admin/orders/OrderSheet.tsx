@@ -128,6 +128,9 @@ export function OrderSheet({
                 null
               }
             />
+            {order.invoice_trade_name && (
+              <SheetField label="Firma Adı" value={order.invoice_trade_name} />
+            )}
             {order.invoice_to_company && (
               <SheetField
                 label="Vergi"

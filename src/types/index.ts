@@ -384,6 +384,38 @@ export interface CartLineItem extends CartItem {
   segment_price: DecimalString | null;
 }
 
+/**
+ * The official billing address of the firm an order is invoiced to.
+ *
+ * Only what an invoice has to print, and Turkish: a personal order invoiced to
+ * a firm is a Turkish tax document. Where the parcel goes is a separate
+ * question — see `ShippingAddress`.
+ */
+export interface InvoiceAddress {
+  city: string;
+  district: string;
+  line: string;
+}
+
+/**
+ * The firm a retail customer keeps on file to be invoiced instead.
+ *
+ * Saved from the cart's "Düzenle", so the next order starts filled in. Placing
+ * an order does not write it: one order's invoice is not a decision about the
+ * account, which is why the order keeps its own frozen copy.
+ */
+export interface CorporateInvoiceDetails {
+  /** Firma Ünvanı: the registered trade name on the tax certificate. */
+  company_title: string;
+  /** Firma Adı: what it is called day to day; null when that is the ünvan. */
+  trade_name: string | null;
+  /** Şirket resmi adresi, with its il and ilçe. */
+  address: InvoiceAddress;
+  tax_office: string;
+  /** VKN (10 digits) or a sole proprietor's TCKN (11). */
+  tax_number: string;
+}
+
 /** The customer is always the authenticated user (from the token), never the body. */
 export interface CartCalculateRequest {
   payment_method: PaymentMethod;
@@ -411,8 +443,13 @@ export interface CartCalculateRequest {
   /** "Faturayı firmaya/şirkete istiyorum", and who to make it out to. */
   invoice_to_company?: boolean;
   invoice_company_title?: string | null;
+  /** "Firma Adı": what the firm trades under, when that is not its ünvan. */
+  invoice_trade_name?: string | null;
   invoice_tax_office?: string | null;
   invoice_tax_number?: string | null;
+  /** The firm's official billing address — what the invoice prints. Separate
+      from `shipping_address`, even when they name the same place. */
+  invoice_address?: InvoiceAddress | null;
   /** "Kart bilgilerimi sonraki alışverişlerim için güvenle kaydet". */
   save_card?: boolean;
   /** Both are required to place an order; a price preview needs neither. */
@@ -526,8 +563,11 @@ export interface Order {
   /** Who the invoice is made out to, when it is not the customer themselves. */
   invoice_to_company: boolean;
   invoice_company_title: string | null;
+  invoice_trade_name: string | null;
   invoice_tax_office: string | null;
   invoice_tax_number: string | null;
+  /** The firm's registered address, as this order recorded it. */
+  invoice_address: InvoiceAddress | null;
   save_card: boolean;
   /** When the two agreements were accepted; no order is placed without them. */
   agreements_accepted_at: ISODateTime | null;

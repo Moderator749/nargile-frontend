@@ -19,9 +19,12 @@ interface DeliveryStepProps {
   saved: SavedAddress[] | null;
   /** Whether the registered address is in İstanbul, where our own van goes. */
   registeredInIstanbul: boolean;
-  /** Bireysel: which of the four cards. Null while the saved list is loading. */
+  /** Bireysel: which of the three cards. Null while the saved list is loading. */
   choice: AddressChoice | null;
   onChoiceChange: (choice: AddressChoice) => void;
+  /** Bireysel: the firm the invoice is made out to, which has a delivery card
+      of its own. Null for an order invoiced personally. */
+  invoiceTarget: { summary: string; notice: string | null } | null;
   /** A firm: which of the five cards. */
   card: FirmCard;
   onCardChange: (card: FirmCard) => void;
@@ -41,15 +44,19 @@ interface DeliveryStepProps {
   /** What the cart is worth, and what the İstanbul van asks for, in TRY. */
   subtotal: number;
   istanbulMinimum: number;
+  /** Whether the address on file can be shipped to as it stands; when it
+      cannot, the one step that has no form for it grows one. */
+  onFileAddressReady: boolean;
 }
 
 /**
  * Teslimat bilgileri: where the order goes, how it travels, and who signs for
  * it. There are three shapes of this step, and an account sees exactly one.
  *
- * A bireysel customer picks one of four cards and confirms it: an address on
- * file, a Yurtiçi branch to collect from, or a new address typed for this
- * order. A firm picks one of five: its invoice address, a branch of its own,
+ * A bireysel customer picks one of three cards and confirms it: the invoice
+ * address — their own, or the firm's when the invoice is made out to one — a
+ * Yurtiçi branch to collect from, or a new address typed for this order. A firm
+ * picks one of five: its invoice address, a branch of its own,
  * Yurtiçi to the door, a nakliye ambarı, or — in İstanbul, above a limit the
  * panel sets — the shop's own van. In both the card is also the shipping
  * method, so nothing on screen can disagree with the order.
@@ -90,10 +97,12 @@ export function DeliveryStep(props: DeliveryStepProps) {
           onDetailsChange={props.onDetailsChange}
           subtotal={props.subtotal}
           istanbulMinimum={props.istanbulMinimum}
+          onFileAddressReady={props.onFileAddressReady}
         />
       ) : (
         <BireyselDelivery
           saved={props.saved}
+          invoiceTarget={props.invoiceTarget}
           choice={props.choice}
           onChoiceChange={props.onChoiceChange}
           address={props.address}

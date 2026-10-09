@@ -12,6 +12,25 @@ export function formatMoney(amount: DecimalString | number, currency: CurrencyTy
   return fmt.format(Number(amount));
 }
 
+/**
+ * The same, without the kuruş when there are none: "₺20.000" rather than
+ * "₺20.000,00". For round figures the shop quotes as round figures — a free
+ * delivery limit, a threshold on a card — where ",00" is just noise. An amount
+ * with kuruş in it still shows them.
+ */
+export function formatMoneyCompact(
+  amount: DecimalString | number,
+  currency: CurrencyType = "TRY",
+): string {
+  const value = Number(amount);
+  if (!Number.isInteger(value)) return formatMoney(value, currency);
+  return new Intl.NumberFormat("tr-TR", {
+    style: "currency",
+    currency,
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
 export function formatPrice(price: CatalogPrice): string {
   return formatMoney(price.price_incl_tax, price.currency);
 }

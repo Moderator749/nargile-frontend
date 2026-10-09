@@ -2,7 +2,11 @@
 
 import { Building2, ReceiptText } from "lucide-react";
 
+import { CorporateInvoiceFields } from "@/components/cart/invoice/CorporateInvoiceFields";
+import { PersonalInvoicePanel } from "@/components/cart/invoice/PersonalInvoicePanel";
+import { labelClass } from "@/components/cart/invoice/fields";
 import type { InvoiceDraft } from "@/components/cart/invoiceDraft";
+import type { CorporateInvoiceDetails, SavedAddress } from "@/types";
 
 const cardClass = (selected: boolean) =>
   `flex cursor-pointer gap-3 rounded-lg border p-3 text-sm transition-[color,background-color,border-color,opacity] duration-200 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-red-500/40 ${
@@ -11,38 +15,50 @@ const cardClass = (selected: boolean) =>
       : "border-slate-200 bg-slate-50 opacity-70 hover:border-slate-400 hover:opacity-100 dark:border-white/10 dark:bg-white/[0.02] dark:hover:border-white/25"
   }`;
 
-const inputClass =
-  "block h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20 dark:border-white/15 dark:bg-zinc-900 dark:text-zinc-100";
-const labelClass = "block text-sm font-medium text-slate-700 dark:text-zinc-300";
-
 const OPTIONS = [
   {
     toCompany: false,
     title: "Fatura adresim",
-    hint: "Fatura kendi adınıza düzenlenir.",
+    hint: "Fatura, kayıtlı ad ve adresinizle kendi adınıza düzenlenir.",
     Icon: ReceiptText,
   },
   {
     toCompany: true,
     title: "Faturayı firmaya/şirkete istiyorum",
-    hint: "Fatura, aşağıda belirttiğiniz firma adına düzenlenir.",
+    hint: "Fatura, aşağıda belirttiğiniz firma adına ve adresine düzenlenir.",
     Icon: Building2,
   },
 ] as const;
 
 /**
- * Fatura bilgileri: whose name the invoice is made out to.
+ * Fatura bilgileri: whose name the invoice is made out to, and where.
  *
- * A personal order invoiced to a firm needs the three things an invoice cannot
- * be issued without. They are asked for only when that option is chosen, and
- * they change nothing about the account itself — this is one order's invoice.
+ * It comes first in the cart because it is the first decision: a buyer writing
+ * the purchase off to their firm settles that before deciding where the goods
+ * go — and the delivery step below then offers that firm's address as one of
+ * its cards, alongside home, a branch and a one-off address.
+ *
+ * Either side can be corrected here and saved to the account, so the next cart
+ * starts from it. What the order records is a copy taken at checkout, which is
+ * what keeps an invoice issued in March from changing in April.
  */
 export function InvoicePicker({
   value,
   onChange,
+  billingAddress,
+  addressesLoading,
+  onBillingAddressSaved,
+  corporateOnFile,
+  onCorporateSaved,
 }: {
   value: InvoiceDraft;
   onChange: (patch: Partial<InvoiceDraft>) => void;
+  /** The customer's own invoice address, as the account has it. */
+  billingAddress: SavedAddress | null;
+  addressesLoading: boolean;
+  onBillingAddressSaved: () => void;
+  corporateOnFile: CorporateInvoiceDetails | null;
+  onCorporateSaved: (details: CorporateInvoiceDetails) => void;
 }) {
   return (
     <section
@@ -81,52 +97,19 @@ export function InvoicePicker({
         </div>
       </fieldset>
 
-      {value.toCompany && (
-        <div className="mt-5 grid gap-4 sm:grid-cols-2">
-          <div className="space-y-1.5 sm:col-span-2">
-            <label htmlFor="invoice-title" className={labelClass}>
-              Firma Ünvanı
-            </label>
-            <input
-              id="invoice-title"
-              maxLength={200}
-              required
-              autoComplete="organization"
-              value={value.companyTitle}
-              onChange={(e) => onChange({ companyTitle: e.target.value })}
-              placeholder="Fatura üzerinde görünecek tam ünvan"
-              className={inputClass}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <label htmlFor="invoice-tax-office" className={labelClass}>
-              Vergi Dairesi
-            </label>
-            <input
-              id="invoice-tax-office"
-              maxLength={100}
-              required
-              value={value.taxOffice}
-              onChange={(e) => onChange({ taxOffice: e.target.value })}
-              className={inputClass}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <label htmlFor="invoice-tax-number" className={labelClass}>
-              Vergi No / VKN
-            </label>
-            <input
-              id="invoice-tax-number"
-              inputMode="numeric"
-              maxLength={20}
-              required
-              value={value.taxNumber}
-              onChange={(e) => onChange({ taxNumber: e.target.value })}
-              placeholder="10 haneli"
-              className={inputClass}
-            />
-          </div>
-        </div>
+      {value.toCompany ? (
+        <CorporateInvoiceFields
+          value={value}
+          onChange={onChange}
+          onFile={corporateOnFile}
+          onSaved={onCorporateSaved}
+        />
+      ) : (
+        <PersonalInvoicePanel
+          address={billingAddress}
+          loading={addressesLoading}
+          onSaved={onBillingAddressSaved}
+        />
       )}
     </section>
   );

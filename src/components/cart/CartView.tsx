@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { CartLineRow } from "@/components/cart/CartLineRow";
@@ -11,6 +11,7 @@ import {
   NEW_ADDRESS,
   TURKEY,
   addressProblem,
+  billingIndex,
   freightProblem,
   fromSaved,
   savedIndex,
@@ -31,7 +32,16 @@ import {
 } from "@/components/cart/delivery/firmCards";
 import type { MethodDetails } from "@/components/cart/delivery/MethodFields";
 import { InvoicePicker } from "@/components/cart/InvoicePicker";
-import { EMPTY_INVOICE, invoiceProblem, toInvoicePayload, type InvoiceDraft } from "@/components/cart/invoiceDraft";
+import {
+  hasInvoiceAddress,
+  initialInvoice,
+  invoiceAddressSummary,
+  invoiceFirmName,
+  invoiceProblem,
+  invoiceShippingAddress,
+  toInvoicePayload,
+  type InvoiceDraft,
+} from "@/components/cart/invoiceDraft";
 import { PrivacyNotice } from "@/components/cart/PrivacyNotice";
 import { OrderSummary } from "@/components/cart/OrderSummary";
 import { useCartQuote } from "@/hooks/useCartQuote";
@@ -40,13 +50,25 @@ import { useIstanbulFreeMinimum } from "@/hooks/useShippingSettings";
 import { fetchMe } from "@/lib/authApi";
 import { getApiErrorMessage } from "@/lib/errors";
 import { retailPerks } from "@/lib/perks";
-import { buildCheckoutRequest, checkout, fetchLastAddress, fetchSavedAddresses } from "@/lib/ordersApi";
+import {
+  buildCheckoutRequest,
+  checkout,
+  fetchCorporateInvoice,
+  fetchLastAddress,
+  fetchSavedAddresses,
+} from "@/lib/ordersApi";
 import { ISTANBUL } from "@/lib/provinces";
 import { productHref } from "@/lib/seo";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useCartStore } from "@/store/useCartStore";
 import { useAuthHydrated, useCartHydrated } from "@/store/useHasHydrated";
-import type { AccountType, PaymentMethod, SavedAddress, ShippingMethod } from "@/types";
+import type {
+  AccountType,
+  CorporateInvoiceDetails,
+  PaymentMethod,
+  SavedAddress,
+  ShippingMethod,
+} from "@/types";
 
 /** Refresh the profile so the ParaPuan balance and segment are current. */
 function refreshProfile() {
@@ -90,7 +112,11 @@ export function CartView() {
     freightPhone: "",
   });
   // Whose name the invoice is made out to; a firm already invoices to itself.
-  const [invoice, setInvoice] = useState<InvoiceDraft>(EMPTY_INVOICE);
+  // Null until the customer touches it, when the draft below applies instead.
+  const [invoiceTyped, setInvoiceTyped] = useState<InvoiceDraft | null>(null);
+  // The firm the account keeps on file, if any; null while it loads as well,
+  // which is why the draft below is derived rather than seeded once.
+  const [corporateOnFile, setCorporateOnFile] = useState<CorporateInvoiceDetails | null>(null);
   // "Kart bilgilerimi sonraki alışverişlerim için güvenle kaydet": a wish we
   // pass on to the payment provider; no card data reaches us.
   const [saveCard, setSaveCard] = useState(false);
@@ -117,9 +143,23 @@ export function CartView() {
     if (token) refreshProfile();
   }, [token]);
 
+  /** Re-read the addresses after one is corrected here, so the cards follow. */
+  const reloadAddresses = useCallback(() => {
+    fetchSavedAddresses()
+      .then(setSaved)
+      .catch(() => {
+        // Non-critical: what is on screen stays, and the order carries its own copy.
+      });
+  }, []);
+
   useEffect(() => {
     if (!token) return;
     const controller = new AbortController();
+    fetchCorporateInvoice(controller.signal)
+      .then(setCorporateOnFile)
+      .catch(() => {
+        // Non-critical: the invoice section is then filled in by hand.
+      });
     fetchSavedAddresses(controller.signal)
       .then(setSaved)
       .catch(() => {
@@ -137,15 +177,32 @@ export function CartView() {
   }, [token]);
 
   /**
+   * Fatura bilgileri, the cart's first decision — and the first thing derived,
+   * because the delivery cards below follow from it.
+   *
+   * Derived rather than stored, so the firm the account keeps on file can
+   * arrive late and fill the section in without overwriting anything already
+   * typed.
+   */
+  const invoice: InvoiceDraft = useMemo(
+    () => invoiceTyped ?? initialInvoice(corporateOnFile),
+    [invoiceTyped, corporateOnFile],
+  );
+
+  /**
    * An address on file is the frictionless default; with none, the form.
    * Derived rather than stored, so a list that arrives late cannot overwrite a
    * choice the customer has already made — and null while it is still loading,
    * which is what keeps the section from selecting something and then moving.
    */
-  const selected: AddressChoice | null = useMemo(
-    () => choice ?? (saved === null ? null : saved.length > 0 ? { kind: "saved", index: 0 } : NEW_ADDRESS),
-    [choice, saved],
-  );
+  const selected: AddressChoice | null = useMemo(() => {
+    // The firm's card goes when the invoice stops being a firm's, so the
+    // customer is never left confirming a card that is no longer there.
+    const held = choice?.kind === "corporate" && !invoice.toCompany ? null : choice;
+    if (held) return held;
+    if (saved === null) return null;
+    return saved.length > 0 ? { kind: "saved", index: billingIndex(saved) } : NEW_ADDRESS;
+  }, [choice, invoice.toCompany, saved]);
 
   // A firm is held to its registered address, so editing a field there is a
   // correction to that address rather than a different one.
@@ -155,26 +212,25 @@ export function CartView() {
   const firmFlow = locked && !abroad;
 
   /**
-   * What ships: whatever has been typed, else the chosen card, else a blank form
-   * with whatever the profile knows. `typed` is cleared when another card is
-   * picked, so a card's own address is what a card shows.
+   * "Fatura adresime istiyorum" with the invoice made out to a firm: the
+   * parcel goes to that firm's registered address, which the section above is
+   * the one place to edit. A firm's own order is not affected — its invoice
+   * and its delivery were always the address it registered.
    */
-  const draft: AddressDraft = useMemo(() => {
-    const blank: AddressDraft = {
-      ...EMPTY_ADDRESS,
-      country: abroad ? "" : TURKEY,
-      full_name: user?.full_name ?? "",
-      phone: user?.phone ?? "",
-    };
-    if (typed) return typed;
-    // A branch collection is addressed to the customer, so it travels under the
-    // address on file; with nothing on file it is typed like any other.
-    const index = savedIndex(selected, saved);
-    if (index !== null && saved?.[index]) {
-      return fromSaved(saved[index], { full_name: blank.full_name, phone: blank.phone });
-    }
-    return blank;
-  }, [selected, saved, typed, user, abroad]);
+  const invoicedToFirm = !locked && invoice.toCompany;
+  const corporateDelivery = invoicedToFirm && selected?.kind === "corporate";
+  // The card's preview, said whether or not it is the chosen one: the firm, its
+  // open address and its il / ilçe, exactly as the section above left them.
+  const invoiceTarget = invoicedToFirm
+    ? {
+        summary: hasInvoiceAddress(invoice)
+          ? [invoiceFirmName(invoice), invoiceAddressSummary(invoice)].filter(Boolean).join(" · ")
+          : "Firmanın resmi adresi girilince bu adrese teslim edilebilir.",
+        notice: hasInvoiceAddress(invoice)
+          ? null
+          : "Şirketin resmi adresini yukarıdaki Fatura Bilgileri bölümünde doldurun.",
+      }
+    : null;
 
   /**
    * Our own İstanbul van is offered on the *registered* address rather than on
@@ -216,6 +272,71 @@ export function CartView() {
     firmCard === "ISTANBUL_FREE" && !vanAvailable ? DEFAULT_FIRM_CARD : firmCard;
 
   /**
+   * The address on file, and whether a parcel could be sent to it as it stands.
+   *
+   * A firm's cards do not ask for an address — they deliver to the one it
+   * registered — so this is what they deliver to. An account whose row is too
+   * thin to post anything to (one from before the current sign-up form) gets
+   * the fields back instead of a button it cannot use.
+   */
+  const onFile = useMemo(() => {
+    if (saved === null || saved.length === 0) return null;
+    return fromSaved(saved[billingIndex(saved)], {
+      full_name: user?.full_name ?? "",
+      phone: user?.phone ?? "",
+    });
+  }, [saved, user]);
+  const onFileAddressReady = onFile !== null && addressProblem(onFile) === null;
+
+  /**
+   * What ships: whatever has been typed, else the chosen card, else a blank form
+   * with whatever the profile knows. `typed` is cleared when another card is
+   * picked, so a card's own address is what a card shows.
+   */
+  const draft: AddressDraft = useMemo(() => {
+    const blank: AddressDraft = {
+      ...EMPTY_ADDRESS,
+      country: abroad ? "" : TURKEY,
+      full_name: user?.full_name ?? "",
+      phone: user?.phone ?? "",
+    };
+    // A branch collection is addressed to the customer, so it travels under the
+    // address on file; with nothing on file it is typed like any other.
+    const index = savedIndex(selected, saved);
+    const chosen = index !== null ? saved?.[index] : undefined;
+    // A firm's order goes to the address it registered, and every card but
+    // "Şubeme istiyorum" says only that: no form, nothing typed, and nothing
+    // left behind by another card. The account with nothing usable on file is
+    // the exception, and types one like anyone else.
+    if (firmFlow && card !== "BRANCH" && onFileAddressReady && onFile) return onFile;
+    if (typed) return typed;
+    // Invoiced to a firm: the parcel is addressed to the firm, at the address
+    // the invoice shows, and the number is still the buyer's own.
+    if (corporateDelivery) {
+      return invoiceShippingAddress(invoice, {
+        full_name: blank.full_name,
+        phone: chosen?.phone ?? blank.phone,
+      });
+    }
+    if (chosen) {
+      return fromSaved(chosen, { full_name: blank.full_name, phone: blank.phone });
+    }
+    return blank;
+  }, [
+    selected,
+    saved,
+    typed,
+    user,
+    abroad,
+    corporateDelivery,
+    invoice,
+    firmFlow,
+    card,
+    onFile,
+    onFileAddressReady,
+  ]);
+
+  /**
    * How it travels. Every account decides that by picking a card — the branch
    * card *is* the branch delivery, the ambar card *is* the ambar — so there is
    * nothing separate to choose and nothing that can disagree with what is
@@ -229,12 +350,14 @@ export function CartView() {
         ? "YURTICI_BRANCH"
         : "YURTICI_DOOR";
 
+  const addressFault = addressProblem(draft);
+
   const deliveryProblem =
+    invoiceProblem(invoice) ??
     (firmFlow && card === "BRANCH" ? branchProblem(branchName) : null) ??
-    addressProblem(draft) ??
+    addressFault ??
     (otherReceiver ? receiverProblem(receiverName, receiverPhone, abroad) : null) ??
-    (method === "NAKLIYE_AMBARI" ? freightProblem(details.freightPhone) : null) ??
-    invoiceProblem(invoice);
+    (method === "NAKLIYE_AMBARI" ? freightProblem(details.freightPhone) : null);
 
   const { quote, loading: quoteLoading, error: quoteError } = useCartQuote(
     items,
@@ -328,11 +451,28 @@ export function CartView() {
               );
             })}
           </ul>
+          {/* Fatura first: how the invoice is issued decides what the delivery
+              cards below offer. A firm's invoice is already made out to the
+              firm, so only a personal order has a choice to make here. */}
+          {isLoggedIn && !locked && (
+            <div className="mt-6">
+              <InvoicePicker
+                value={invoice}
+                onChange={(patch) => setInvoiceTyped({ ...invoice, ...patch })}
+                billingAddress={saved === null ? null : (saved[billingIndex(saved)] ?? null)}
+                addressesLoading={saved === null}
+                onBillingAddressSaved={reloadAddresses}
+                corporateOnFile={corporateOnFile}
+                onCorporateSaved={setCorporateOnFile}
+              />
+            </div>
+          )}
           {isLoggedIn && (
             <div className="mt-6">
               <DeliveryStep
                 accountType={accountType}
                 saved={saved}
+                invoiceTarget={invoiceTarget}
                 registeredInIstanbul={registeredInIstanbul}
                 choice={selected}
                 onChoiceChange={(next) => {
@@ -368,7 +508,11 @@ export function CartView() {
                   // A branch is typed out; every other card delivers to the
                   // address on file, so it goes back to reading that one.
                   setChoice(
-                    next === "BRANCH" ? NEW_ADDRESS : saved?.length ? { kind: "saved", index: 0 } : NEW_ADDRESS,
+                    next === "BRANCH"
+                      ? NEW_ADDRESS
+                      : saved?.length
+                        ? { kind: "saved", index: billingIndex(saved) }
+                        : NEW_ADDRESS,
                   );
                   setTyped(
                     next === "BRANCH"
@@ -386,6 +530,7 @@ export function CartView() {
                 onBranchNameChange={setBranchName}
                 subtotal={estimatedSubtotal}
                 istanbulMinimum={istanbulMinimum}
+                onFileAddressReady={onFileAddressReady}
                 otherReceiver={otherReceiver}
                 onOtherReceiverChange={setOtherReceiver}
                 receiverName={receiverName}
@@ -396,16 +541,6 @@ export function CartView() {
                 }}
                 details={details}
                 onDetailsChange={(patch) => setDetails((current) => ({ ...current, ...patch }))}
-              />
-            </div>
-          )}
-          {/* A firm's invoice is already made out to the firm; only a personal
-              order has a choice to make here. */}
-          {isLoggedIn && !locked && (
-            <div className="mt-6">
-              <InvoicePicker
-                value={invoice}
-                onChange={(patch) => setInvoice((current) => ({ ...current, ...patch }))}
               />
             </div>
           )}

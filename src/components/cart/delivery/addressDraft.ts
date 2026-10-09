@@ -37,23 +37,29 @@ export const EMPTY_ADDRESS: AddressDraft = {
 };
 
 /**
- * What this order's delivery is: an address on file, the one being typed, or a
- * Yurtiçi branch the customer collects from themselves.
+ * What this order's delivery is: an address on file, the firm the invoice is
+ * being made out to, a Yurtiçi branch the customer collects from themselves, or
+ * the one being typed.
  *
  * "branch" is one of the four cards a bireysel customer picks from, so the
  * choice and the shipping method are the same decision there — picking it is
- * what makes the order YURTICI_BRANCH.
+ * what makes the order YURTICI_BRANCH. "corporate" is the card that delivers to
+ * the firm's registered address, which the invoice section above collects and
+ * is the only place to edit; the order still keeps the two apart.
  */
 export type AddressChoice =
   | { kind: "saved"; index: number }
+  | { kind: "corporate" }
   | { kind: "branch" }
   | { kind: "new" };
 
 export const NEW_ADDRESS: AddressChoice = { kind: "new" };
 export const BRANCH_DELIVERY: AddressChoice = { kind: "branch" };
+export const CORPORATE_DELIVERY: AddressChoice = { kind: "corporate" };
 
 /**
- * Which saved address a choice reads from, or null for one that is typed.
+ * Which saved address a choice reads from, or null when the address comes from
+ * somewhere else — typed, or the firm's own from the invoice section.
  *
  * A branch collection is addressed to the customer, so it travels under the
  * address on file; with nothing on file, it is typed like any other.
@@ -62,6 +68,21 @@ export function savedIndex(choice: AddressChoice | null, saved: SavedAddress[] |
   if (choice?.kind === "saved") return choice.index;
   if (choice?.kind === "branch" && saved?.length) return 0;
   return null;
+}
+
+/**
+ * Which address on file the delivery step opens on: the customer's own invoice
+ * address.
+ *
+ * A bireysel account can also have a "Kurumsal Fatura Adresi" on file — the
+ * firm it asked to be invoiced instead — and that one has no card of its own:
+ * it is reached by asking for a corporate invoice, which is what makes the
+ * first card deliver there. The list comes back in no particular order, so the
+ * row is found rather than assumed.
+ */
+export function billingIndex(saved: SavedAddress[]): number {
+  const found = saved.findIndex((entry) => entry.kind === "BILLING");
+  return found === -1 ? 0 : found;
 }
 
 /** An export customer's own address is abroad; everyone else's is Turkish. */

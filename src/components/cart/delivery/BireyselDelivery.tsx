@@ -1,10 +1,11 @@
 "use client";
 
-import { MapPin, Package, Plus, ReceiptText } from "lucide-react";
+import { Building2, MapPin, Package, Plus } from "lucide-react";
 
 import { AddressFields } from "@/components/cart/delivery/AddressFields";
 import {
   BRANCH_DELIVERY,
+  CORPORATE_DELIVERY,
   NEW_ADDRESS,
   addressSummary,
   type AddressChoice,
@@ -20,15 +21,18 @@ const inputClass =
 const labelClass = "block text-sm font-medium text-slate-700 dark:text-zinc-300";
 const noteClass = "text-xs text-slate-500 dark:text-zinc-400";
 
-/** What to call an address on file, in the words the card uses. */
-const TITLES: Record<SavedAddress["kind"], string> = {
-  BILLING: "Fatura adresime istiyorum",
-  CORPORATE_BILLING: "Kurumsal fatura adresime istiyorum",
-};
+/** The card for the address on file, in the words the blueprint uses. */
+const BILLING_TITLE = "Fatura adresime istiyorum";
 
 interface BireyselDeliveryProps {
   /** Addresses on file; null while they load. */
   saved: SavedAddress[] | null;
+  /**
+   * The firm the invoice is being made out to, when it is: what its own
+   * delivery card previews. Null for an order invoiced personally, which has no
+   * such card — the invoice section above is what brings it into being.
+   */
+  invoiceTarget: { summary: string; notice: string | null } | null;
   choice: AddressChoice | null;
   onChoiceChange: (choice: AddressChoice) => void;
   address: AddressDraft;
@@ -47,10 +51,14 @@ interface BireyselDeliveryProps {
  * The bireysel delivery choice: one of four cards, each confirmed with its own
  * "Onay" button.
  *
- * An address already on file is one click. A branch collection is addressed to
- * the customer and travels under that same address, so it asks for nothing
- * except — optionally — their own Yurtiçi agreement. A new address is typed for
- * this order alone and is never written back to the account.
+ * Billing and shipping stay separate here, which is the point of the second
+ * card: the invoice can be made out to a firm while the goods go home, to a
+ * branch, or to an address typed once. The first card is always the customer's
+ * own address; the second appears when there is a firm to deliver to and
+ * previews it as the invoice section above left it. A branch collection is
+ * addressed to the customer and travels under their own address, so it asks for
+ * nothing except — optionally — their own Yurtiçi agreement. A new address is
+ * typed for this order alone and is never written back to the account.
  *
  * Picking the branch is what makes the order a branch delivery: here the
  * address and the way it travels are the same decision, which is why there is
@@ -84,17 +92,36 @@ export function BireyselDelivery(props: BireyselDeliveryProps) {
             aria-busy
           />
         ) : (
-          saved.map((entry, index) => (
-            <DeliveryCard
-              key={`${entry.kind}-${index}`}
-              name="delivery_choice"
-              selected={choice?.kind === "saved" && choice.index === index}
-              onSelect={() => props.onChoiceChange({ kind: "saved", index })}
-              title={TITLES[entry.kind] ?? entry.label}
-              summary={addressSummary(entry, countryName)}
-              Icon={entry.kind === "CORPORATE_BILLING" ? ReceiptText : MapPin}
-            />
-          ))
+          // The customer's own invoice address. A firm's has its own card
+          // below, built from the invoice section rather than from this list.
+          saved.map((entry, index) =>
+            entry.kind === "BILLING" ? (
+              <DeliveryCard
+                key={`${entry.kind}-${index}`}
+                name="delivery_choice"
+                selected={choice?.kind === "saved" && choice.index === index}
+                onSelect={() => props.onChoiceChange({ kind: "saved", index })}
+                title={BILLING_TITLE}
+                summary={addressSummary(entry, countryName)}
+                Icon={MapPin}
+              />
+            ) : null,
+          )
+        )}
+
+        {/* The firm from the invoice section: shown only when there is one,
+            since a personal invoice has no corporate address to deliver to. */}
+        {props.invoiceTarget && (
+          <DeliveryCard
+            name="delivery_choice"
+            selected={choice?.kind === "corporate"}
+            onSelect={() => props.onChoiceChange(CORPORATE_DELIVERY)}
+            title="Kurumsal fatura adresime istiyorum"
+            summary={props.invoiceTarget.summary}
+            notice={props.invoiceTarget.notice ?? undefined}
+            disabled={props.invoiceTarget.notice !== null}
+            Icon={Building2}
+          />
         )}
 
         <DeliveryCard

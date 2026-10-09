@@ -6,6 +6,8 @@ import type {
   Cart,
   CartLineItem,
   CheckoutRequest,
+  CorporateInvoiceDetails,
+  InvoiceAddress,
   Order,
   PaymentMethod,
   SavedAddress,
@@ -34,12 +36,15 @@ export function buildCheckoutRequest(
     /** "Şubeme istiyorum": the branch a firm's order goes to. Naming it is
         what lets the address be somewhere other than the registered one. */
     shippingBranchName?: string | null;
-    /** Who the invoice is made out to; see `cart/invoiceDraft`. */
+    /** Who the invoice is made out to, and where that firm is registered;
+        see `cart/invoiceDraft`. */
     invoice?: {
       invoice_to_company: boolean;
       invoice_company_title?: string;
       invoice_tax_office?: string;
+      invoice_trade_name?: string | null;
       invoice_tax_number?: string;
+      invoice_address?: InvoiceAddress;
     };
     /** "Kart bilgilerimi … güvenle kaydet": passed on, never held here. */
     saveCard?: boolean;
@@ -101,6 +106,31 @@ export async function fetchMyWallet(signal?: AbortSignal): Promise<Wallet> {
 /** The address of the customer's latest order, to prefill checkout (null if none). */
 export async function fetchLastAddress(signal?: AbortSignal): Promise<ShippingAddress | null> {
   const { data } = await api.get<ShippingAddress | null>("/me/last-address", { signal });
+  return data;
+}
+
+/**
+ * The firm the customer keeps on file to be invoiced instead, or null when
+ * there is none. What the cart's invoice section starts from.
+ */
+export async function fetchCorporateInvoice(
+  signal?: AbortSignal,
+): Promise<CorporateInvoiceDetails | null> {
+  const { data } = await api.get<CorporateInvoiceDetails | null>("/me/corporate-invoice", { signal });
+  return data;
+}
+
+/** Keeps it on file, so the next order is already filled in. */
+export async function saveCorporateInvoice(
+  body: CorporateInvoiceDetails,
+): Promise<CorporateInvoiceDetails> {
+  const { data } = await api.put<CorporateInvoiceDetails>("/me/corporate-invoice", body);
+  return data;
+}
+
+/** Corrects the customer's own invoice address on their account. */
+export async function saveBillingAddress(body: InvoiceAddress): Promise<InvoiceAddress> {
+  const { data } = await api.put<InvoiceAddress>("/me/billing-address", body);
   return data;
 }
 

@@ -14,7 +14,7 @@ import {
 } from "@/components/cart/delivery/firmCards";
 import { MethodFields, type MethodDetails } from "@/components/cart/delivery/MethodFields";
 import { countryName } from "@/lib/countries";
-import { formatMoney } from "@/lib/format";
+import { formatMoneyCompact } from "@/lib/format";
 import type { SavedAddress } from "@/types";
 
 const inputClass =
@@ -40,6 +40,15 @@ interface FirmDeliveryProps {
   /** What the cart is worth, and what the van asks for, both in TRY. */
   subtotal: number;
   istanbulMinimum: number;
+  /**
+   * Whether the address on file can be shipped to as it stands.
+   *
+   * Every card but "Şubeme istiyorum" delivers to the registered address, and
+   * none of them asks for it: the card is the whole decision. The exception is
+   * an address too incomplete to send a parcel to, which would otherwise leave
+   * the customer blocked with nothing to correct — then the fields come back.
+   */
+  onFileAddressReady: boolean;
 }
 
 /**
@@ -63,6 +72,9 @@ export function FirmDelivery(props: FirmDeliveryProps) {
   const lockPlace = hasSaved && card !== "BRANCH";
   const shortfall = istanbulShortfall(subtotal, istanbulMinimum);
   const cards = firmCards(registeredInIstanbul);
+  // The registered address is read off the account, so there is nothing to fill
+  // in — unless there is nothing usable there to read. See `onFileAddressReady`.
+  const typedAddressNeeded = !hasSaved || !props.onFileAddressReady;
 
   const addressForm = (
     <AddressFields
@@ -114,14 +126,14 @@ export function FirmDelivery(props: FirmDeliveryProps) {
                   value === "BILLING" && registered
                     ? addressSummary(registered, countryName)
                     : value === "ISTANBUL_FREE"
-                      ? `${formatMoney(istanbulMinimum)} ve üzeri alışverişlerde ücretsiz teslimat.`
+                      ? `${formatMoneyCompact(istanbulMinimum)} ve üzeri siparişlerde kayıtlı fatura adresinize ücretsiz teslimat.`
                       : summary
                 }
                 Icon={Icon}
                 disabled={vanWaiting}
                 notice={
                   vanWaiting
-                    ? `Ücretsiz teslimat için sepetinize ${formatMoney(shortfall)} daha ekleyin.`
+                    ? `Ücretsiz teslimat için sepetinize ${formatMoneyCompact(shortfall)} daha ekleyin.`
                     : undefined
                 }
               >
@@ -146,6 +158,19 @@ export function FirmDelivery(props: FirmDeliveryProps) {
                       </p>
                     </div>
                     {addressForm}
+                  </div>
+                ) : value === "ISTANBUL_FREE" ? (
+                  <div className="space-y-1.5 text-sm">
+                    <p className="font-medium text-slate-700 dark:text-zinc-300">
+                      Kayıtlı fatura adresiniz
+                    </p>
+                    <p className={noteClass}>
+                      {registered ? addressSummary(registered, countryName) : "—"}
+                    </p>
+                    <p className={noteClass}>
+                      Teslimat öncesi aranarak kendi aracımızla getirilir; doldurmanız gereken bir
+                      alan yok.
+                    </p>
                   </div>
                 ) : value === "YURTICI_DOOR" || value === "NAKLIYE_AMBARI" ? (
                   /* The agreement number and the ambar belong to the two cards
@@ -172,10 +197,17 @@ export function FirmDelivery(props: FirmDeliveryProps) {
       </fieldset>
 
       {/* A branch carries its own address inside its card; every other card
-          delivers to the one on file, which is corrected here. */}
-      {card !== "BRANCH" && (
+          delivers to the registered one, which is read off the account rather
+          than retyped. These fields are the one exception: an account with
+          nothing usable on file has to be able to give an address somewhere. */}
+      {card !== "BRANCH" && typedAddressNeeded && (
         <fieldset className="mt-5 border-t border-slate-200 pt-5 dark:border-white/10">
           <legend className={labelClass}>Teslimat adresi</legend>
+          <p className={`mt-1 ${noteClass}`}>
+            {hasSaved
+              ? "Kayıtlı fatura adresiniz teslimat için yeterli değil; aşağıdaki alanları tamamlayın."
+              : "Hesabınızda kayıtlı fatura adresi yok; teslimat adresinizi girin."}
+          </p>
           <div className="mt-2">{addressForm}</div>
         </fieldset>
       )}
