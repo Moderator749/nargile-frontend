@@ -4,17 +4,19 @@ import { Suspense, useEffect, useRef } from "react";
 import Form from "next/form";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { LogOut, PackageSearch, Search, ShoppingBag, UserRound } from "lucide-react";
+import { PackageSearch, Search, ShoppingCart } from "lucide-react";
 
 import { Logo } from "@/components/brand/Logo";
 import { CurrencySelect } from "@/components/layout/CurrencySelect";
-import { MegaMenu, type MenuLink } from "@/components/layout/MegaMenu";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
-import { categoryTree } from "@/lib/categories";
+import { TopNav } from "@/components/layout/TopNav";
+import { UserMenu } from "@/components/layout/UserMenu";
 import { isAdminRole } from "@/lib/roles";
 import { useAuthStore } from "@/store/useAuthStore";
 import { selectCartCount, useCartStore } from "@/store/useCartStore";
-import { B2B_SEGMENTS, type Brand, type Category } from "@/types";
+import { SIDEBAR_WIDTH_LG } from "@/components/layout/CategorySidebar";
+import type { ResolvedNav } from "@/lib/storefrontNav";
+import { B2B_SEGMENTS } from "@/types";
 
 const iconButton =
   "relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors duration-200 hover:bg-foreground/[0.06] hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
@@ -64,9 +66,24 @@ function HeaderSearch(props: SearchProps) {
   );
 }
 
-export function Navbar({ categories, brands }: { categories: Category[]; brands: Brand[] }) {
+/**
+ * The storefront header: the shop's name, one search field, and the tools a
+ * visitor reaches for — currency, cargo tracking, their account, their cart.
+ *
+ * Below it sits the horizontal menu (`TopNav`), whose every item is a link.
+ * There is no hover menu and nothing that floats over the page: the categories
+ * are in the column down the left of the storefront, open at all times.
+ */
+export function Navbar({
+  categories,
+  links,
+}: {
+  /** The sidebar's fifteen, for the bar's drawer on a phone. */
+  categories: ResolvedNav[];
+  /** The horizontal bar's own items. */
+  links: ResolvedNav[];
+}) {
   const user = useAuthStore((s) => s.user);
-  const logout = useAuthStore((s) => s.logout);
   const cartCount = useCartStore(selectCartCount);
   const headerRef = useRef<HTMLElement>(null);
 
@@ -81,9 +98,8 @@ export function Navbar({ categories, brands }: { categories: Category[]; brands:
   }, []);
 
   const isB2B = !!user?.segment_code && B2B_SEGMENTS.includes(user.segment_code);
-  const links: MenuLink[] = [
-    { href: "/#firsat-urunleri", label: "Fırsat Ürünleri", accent: true },
-    { href: "/#avantajlar", label: "Avantajlar" },
+  // Doors only some accounts have; the menu below is the same for everyone.
+  const accountLinks = [
     ...(isB2B ? [{ href: "/b2b", label: "B2B Portal" }] : []),
     ...(isAdminRole(user?.role) ? [{ href: "/admin", label: "Yönetim" }] : []),
   ];
@@ -96,42 +112,43 @@ export function Navbar({ categories, brands }: { categories: Category[]; brands:
     >
       {/* Module 2: logo · search · currency · order tracking · account · cart */}
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-1.5 px-4 sm:gap-2 sm:px-6">
-        <Link
-          href="/"
-          aria-label="Nargile Malzemesi ana sayfa"
-          className="mr-2 shrink-0 rounded-sm text-foreground focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
-        >
-          <Logo />
-        </Link>
+        {/* The logo sits in the category column's width, so what follows it
+            starts exactly on that column's line — which is where
+            "KAMPANYALAR" starts in the bar below. */}
+        <div className={`mr-2 shrink-0 lg:mr-0 ${SIDEBAR_WIDTH_LG}`}>
+          <Link
+            href="/"
+            aria-label="Nargile Malzemesi ana sayfa"
+            className="inline-block rounded-sm text-foreground focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+          >
+            <Logo />
+          </Link>
+        </div>
 
-        <HeaderSearch id="header-search" className="mx-auto hidden max-w-xl flex-1 md:block" />
+        <HeaderSearch id="header-search" className="hidden max-w-2xl flex-1 md:block lg:mr-4" />
         <div className="flex-1 md:hidden" />
 
         <CurrencySelect />
 
-        <Link href={trackHref} className={`${iconButton} lg:w-auto lg:gap-1.5 lg:px-3`} title="Sipariş takibi">
+        <Link href={trackHref} className={`${iconButton} lg:w-auto lg:gap-1.5 lg:px-3`} title="Kargo takip">
           <PackageSearch className="h-[18px] w-[18px]" strokeWidth={1.5} aria-hidden />
-          <span className="sr-only lg:not-sr-only lg:text-[13px]">Sipariş Takibi</span>
+          <span className="sr-only lg:not-sr-only lg:text-[13px]">Kargo Takip</span>
         </Link>
+
+        {accountLinks.map(({ href, label }) => (
+          <Link
+            key={href}
+            href={href}
+            className="hidden whitespace-nowrap rounded-full px-2 py-1 text-[13px] text-muted-foreground transition-colors duration-200 hover:text-foreground focus-visible:outline-2 focus-visible:outline-accent lg:block"
+          >
+            {label}
+          </Link>
+        ))}
 
         <ThemeToggle />
 
         {user ? (
-          <>
-            <Link
-              href="/account"
-              className="hidden max-w-36 truncate rounded-full px-2 py-1 text-[13px] text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-accent xl:block"
-              title="Hesabım ve puanlarım"
-            >
-              {user.full_name || user.email}
-            </Link>
-            <Link href="/account" aria-label="Hesabım" title="Hesabım ve puanlarım" className={`${iconButton} xl:hidden`}>
-              <UserRound className="h-4 w-4" strokeWidth={1.5} aria-hidden />
-            </Link>
-            <button type="button" onClick={() => logout()} aria-label="Çıkış yap" title="Çıkış yap" className={iconButton}>
-              <LogOut className="h-4 w-4" strokeWidth={1.5} aria-hidden />
-            </button>
-          </>
+          <UserMenu user={user} />
         ) : (
           <Link
             href="/login"
@@ -141,10 +158,14 @@ export function Navbar({ categories, brands }: { categories: Category[]; brands:
           </Link>
         )}
 
-        <Link href="/cart" aria-label={`Sepet (${cartCount} ürün)`} className={iconButton}>
-          <ShoppingBag className="h-[18px] w-[18px]" strokeWidth={1.5} aria-hidden />
+        <Link
+          href="/cart"
+          aria-label={`Sepet (${cartCount} ürün)`}
+          className={`${iconButton} text-accent hover:bg-accent/10 hover:text-accent`}
+        >
+          <ShoppingCart className="h-[21px] w-[21px]" strokeWidth={2} aria-hidden />
           {cartCount > 0 && (
-            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 font-mono text-[10px] font-medium leading-none text-white tabular-nums">
+            <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-accent px-1 font-mono text-[10px] font-bold leading-none text-white ring-2 ring-background tabular-nums">
               {cartCount > 99 ? "99+" : cartCount}
             </span>
           )}
@@ -156,8 +177,8 @@ export function Navbar({ categories, brands }: { categories: Category[]; brands:
         <HeaderSearch id="header-search-mobile" />
       </div>
 
-      {/* Module 3: two-level category dropdowns, brands, then deals. */}
-      <MegaMenu groups={categoryTree(categories)} brands={brands} links={links} />
+      {/* Module 3: the horizontal menu. Links only — no dropdowns. */}
+      <TopNav categories={categories} links={links} />
     </header>
   );
 }

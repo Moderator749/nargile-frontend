@@ -1,79 +1,108 @@
-import { advantageIcon } from "@/lib/advantageIcons";
-import type { AdvantageContent } from "@/types";
+import Image from "next/image";
+
+import { ADVANTAGES } from "@/lib/advantages";
+import { canOptimiseImage } from "@/lib/home";
+
+const CARD = [
+  // A hair of padding, so the photograph reads as a canvas set into the card
+  // rather than a block severed from it — the card's footprint is unchanged,
+  // the picture simply stops short of the edge and rounds its own corners.
+  "group relative flex w-full min-h-[170px] flex-row items-stretch overflow-hidden rounded-2xl p-2 sm:min-h-[190px]",
+  "border border-neutral-200/80 bg-white shadow-sm dark:border-white/10 dark:bg-zinc-900",
+  // The glow is thrown downwards, pooling under the card rather than ringing it.
+  "transition-all duration-300 hover:shadow-xl hover:border-red-500/40",
+  "hover:shadow-[0_20px_40px_-10px_rgba(220,38,38,0.3)]",
+  "motion-safe:hover:-translate-y-1",
+].join(" ");
 
 /**
- * "Avantajlar": the B2B value proposition as a bento of charcoal tiles, always
- * dark (kept apart from the charcoal footer by the section's own padding). The first tile leads,
- * double size. Content is managed in /admin/advantages.
+ * "Avantajlar": what buying here is worth, as eight slim cards two to a row.
+ *
+ * Each one is half photograph, half copy: the picture takes the left of the
+ * card edge to edge, which is what gives the row its weight, and the figure and
+ * the rule behind it sit on the right, short enough to read at a glance.
+ * Content and images come from `lib/advantages`.
  */
-export function AdvantagesSection({ advantages }: { advantages: AdvantageContent[] }) {
-  if (advantages.length === 0) return null;
-
+export function AdvantagesSection() {
   return (
     <section
       id="avantajlar"
       aria-labelledby="advantages-heading"
-      className="mx-auto w-full max-w-7xl scroll-mt-[var(--header-height)] px-4 py-24 sm:px-6"
+      // The bottom space belongs to the section that follows: this one used to
+      // be the last before the footer and still carried the padding for it.
+      className="mx-auto w-full max-w-7xl scroll-mt-[var(--header-height)] px-4 pb-4 pt-5 sm:px-6 sm:pt-6"
     >
-      <p className="text-[11px] font-medium uppercase tracking-[0.3em] text-muted-foreground">Avantajlar</p>
-      <h2 id="advantages-heading" className="mt-4 max-w-3xl text-balance text-4xl font-semibold tracking-tighter text-foreground sm:text-5xl">
-        Hacim büyür. Maliyet küçülür.
-      </h2>
+      <div className="text-center">
+        <p className="inline-flex items-center gap-2 rounded-full border border-red-200 bg-red-50/70 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-red-600 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
+          <span aria-hidden>•</span> Ayrıcalıklar &amp; Avantajlar <span aria-hidden>•</span>
+        </p>
+        <h2
+          id="advantages-heading"
+          className="mt-2 text-balance text-3xl font-semibold tracking-tighter text-foreground md:text-4xl"
+        >
+          Hacim büyür. Maliyet küçülür.
+        </h2>
+        <p className="mx-auto mb-8 mt-2 max-w-2xl text-sm text-muted-foreground">
+          Sultan Nargile ile alışverişlerinizde toptan ve perakende ayrıcalıklarından yararlanın.
+        </p>
+      </div>
 
-      <ul className="mt-14 grid auto-rows-fr grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {advantages.map(({ id, icon, title, highlight, highlight_label, details, footnote }, i) => {
-          const Icon = advantageIcon(icon);
-          const lead = i === 0;
-          return (
-            <li
-              key={id}
-              className={`dark group relative isolate flex flex-col overflow-hidden rounded-[2rem] bg-[#1d1d1f] p-7 text-foreground ring-1 ring-inset ring-white/[0.06] transition-[transform,box-shadow] duration-500 ease-out hover:shadow-2xl hover:shadow-black/20 motion-safe:hover:-translate-y-1 sm:p-8 ${
-                lead ? "sm:col-span-2 lg:row-span-2" : ""
-              }`}
-            >
-              {/* Titanium sheen; the lead tile also carries a faint crimson glow. */}
-              <span
-                aria-hidden
-                className="absolute inset-0 -z-10 bg-[linear-gradient(135deg,rgb(255_255_255/0.06),transparent_45%)]"
-              />
-              {lead && (
+      <ul className="grid auto-rows-fr grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
+        {ADVANTAGES.map(({ badge, title, description, note, image, Icon }) => (
+          <li key={title} className="flex min-w-0">
+            <div className={CARD}>
+              {/* Half the card, full height: the photograph is the thing the
+                  eye lands on, and the scrim on its inner edge stops it ending
+                  in a hard line against the copy. */}
+              <div className="relative w-[45%] shrink-0 overflow-hidden rounded-xl bg-neutral-100 sm:w-1/2 dark:bg-white/[0.04]">
+                {image ? (
+                  <Image
+                    src={image}
+                    alt=""
+                    fill
+                    sizes="(min-width: 768px) 25vw, 45vw"
+                    unoptimized={!canOptimiseImage(image)}
+                    className="object-cover object-center transition-transform duration-500 ease-out motion-safe:group-hover:scale-[1.08]"
+                  />
+                ) : (
+                  <Icon
+                    className="absolute inset-0 m-auto h-10 w-10 text-red-600/70 dark:text-red-400/70"
+                    strokeWidth={1.25}
+                    aria-hidden
+                  />
+                )}
                 <span
                   aria-hidden
-                  className="absolute -bottom-1/3 -right-1/4 -z-10 h-2/3 w-2/3 rounded-full bg-[radial-gradient(closest-side,rgb(200_16_46/0.25),transparent)]"
+                  className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/0 via-black/0 to-black/10"
                 />
-              )}
+              </div>
 
-              <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/[0.06] ring-1 ring-inset ring-white/10">
-                <Icon className="h-5 w-5 text-zinc-300" strokeWidth={1.5} aria-hidden />
-              </span>
-              <h3 className="mt-6 text-[11px] font-medium uppercase tracking-[0.2em] text-zinc-400">{title}</h3>
-              <p
-                className={`mt-3 font-mono font-medium tracking-tighter text-white tabular-nums ${
-                  lead ? "text-5xl sm:text-6xl lg:text-7xl" : "text-3xl"
-                }`}
-              >
-                {highlight}
-              </p>
-              {highlight_label && (
-                <p className={`mt-2 font-light text-zinc-400 ${lead ? "text-base sm:text-lg" : "text-sm"}`}>
-                  {highlight_label}
+              {/* The badge and the title are pinned; everything under them
+                  scrolls in place. A long description then costs the card
+                  nothing — no stretched tile, no row of mismatched heights, and
+                  nothing cut off mid-sentence either. */}
+              <div className="flex min-w-0 flex-1 flex-col justify-center bg-white p-3 sm:p-4 dark:bg-zinc-900">
+                <p className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-red-600 dark:text-red-400">
+                  {badge}
                 </p>
-              )}
-              {details.length > 0 && (
-                <ul className="mt-6 space-y-1.5 text-xs font-light leading-5 text-zinc-400">
-                  {details.map((line) => (
-                    <li key={line}>{line}</li>
-                  ))}
-                </ul>
-              )}
-              {footnote && (
-                <p className="mt-auto border-t border-white/10 pt-5 text-[11px] font-light leading-4 text-zinc-500">
-                  {footnote}
-                </p>
-              )}
-            </li>
-          );
-        })}
+                <h3 className="text-sm font-semibold leading-snug tracking-tight text-foreground transition-colors duration-300 group-hover:text-red-600 sm:text-base dark:group-hover:text-red-400">
+                  {title}
+                </h3>
+
+                <div className="scroll-slim mt-1 max-h-[120px] overflow-y-auto overscroll-contain pr-1.5 sm:max-h-[140px]">
+                  <p className="text-xs font-medium leading-relaxed text-neutral-500 dark:text-zinc-400">
+                    {description}
+                  </p>
+                  {note && (
+                    <p className="mt-2 border-t border-neutral-100 pt-2 text-[10px] font-medium leading-4 text-neutral-400 sm:text-[11px] dark:border-white/10 dark:text-zinc-500">
+                      {note}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </li>
+        ))}
       </ul>
     </section>
   );

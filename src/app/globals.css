@@ -214,3 +214,106 @@ html[data-auth] .guest-only {
     display: none !important;
   }
 }
+
+/* Funnel smoke, carried over from sultannargile.com's own stylesheet: wisps
+   that drift up off the floor of the deals card. Each one sets its own
+   --smoke-dur, so they never move in step. */
+@keyframes smoke-rise {
+  0% {
+    transform: translateY(10px) scale(0.9);
+    opacity: 0;
+  }
+  35% {
+    opacity: 0.55;
+  }
+  100% {
+    transform: translateY(-70px) scale(1.5);
+    opacity: 0;
+  }
+}
+
+.animate-smoke {
+  animation: smoke-rise var(--smoke-dur, 7s) ease-out infinite;
+}
+
+/* ------------------------------------------------- CATEGORY COLUMN
+   Collapsible and remembered per visitor (see lib/sidebar). The column is
+   given up by width rather than by display, so the content beside it — a flex
+   child with flex-1 — widens into the space instead of jumping into it. */
+.category-sidebar {
+  transition:
+    width 300ms ease,
+    margin 300ms ease,
+    opacity 200ms ease;
+}
+
+html[data-sidebar="collapsed"] .category-sidebar {
+  width: 0;
+  margin-right: 0;
+  opacity: 0;
+  overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .category-sidebar {
+    transition: none;
+  }
+}
+
+/*
+ * A scrollbar that stays out of the way: a hairline thumb that only shows
+ * against the content it scrolls, and no track at all. For the small panes
+ * that scroll inside a card (see the advantages tiles), where the admin
+ * tables' always-visible bar would be louder than the text it sits beside.
+ */
+.scroll-slim {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(0 0 0 / 0.15) transparent;
+}
+.scroll-slim::-webkit-scrollbar {
+  width: 4px;
+}
+.scroll-slim::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scroll-slim::-webkit-scrollbar-thumb {
+  background: rgb(0 0 0 / 0.15);
+  border-radius: 9999px;
+}
+.dark .scroll-slim {
+  scrollbar-color: rgb(255 255 255 / 0.2) transparent;
+}
+.dark .scroll-slim::-webkit-scrollbar-thumb {
+  background: rgb(255 255 255 / 0.2);
+}
+
+
+/*
+ * The category column travels down the page and docks at the foot of the
+ * window, beside the last rank of promo boxes.
+ *
+ * Pinned by its top, which looks backwards and is not: a sticky box with a
+ * `bottom` inset is only ever held up at the foot of the window when its flow
+ * position is below it. This column's flow position is the top of its row, so
+ * `bottom` never moved it at all. Offsetting the top by the window's height
+ * less the column's does what `bottom` appears to promise — the last pill
+ * lands a finger's width above the fold — and the row it sits in clamps the
+ * travel, so it comes to rest beside the promos and leaves with them.
+ *
+ * On a window too short to hold the whole column, max() falls back to pinning
+ * it under the header instead, first pill first: a cut-off top is the one
+ * thing worse than a little space at the bottom.
+ */
+@media (min-width: 1024px) {
+  .category-sidebar {
+    /* Fifteen 36px pills, fourteen 8px gaps, and the shell's 2 × 12px. */
+    --category-column: 676px;
+    position: sticky;
+    top: max(
+      calc(100vh - var(--category-column) - 1rem),
+      calc(var(--header-height, 4rem) + 1rem)
+    );
+  }
+}

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { CatalogScreen } from "@/components/catalog/CatalogScreen";
-import { getCategories, getPublicProducts } from "@/lib/server/catalog";
+import { getBrands, getCategories, getPublicProducts } from "@/lib/server/catalog";
 import { DEFAULT_DESCRIPTION, SITE_NAME } from "@/lib/site";
 
 // Re-render the public catalog at most every 5 minutes (matches CATALOG_REVALIDATE).
@@ -20,7 +20,11 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function CatalogPage() {
-  const [categories, products] = await Promise.all([getCategories(), getPublicProducts()]);
+  const [categories, products, brands] = await Promise.all([
+    getCategories(),
+    getPublicProducts(),
+    getBrands(),
+  ]);
 
   return (
     <CatalogScreen
@@ -32,6 +36,7 @@ export default async function CatalogPage() {
       categories={categories ?? []}
       activeCategory={null}
       products={products}
+      brands={brands ?? []}
     />
   );
 }

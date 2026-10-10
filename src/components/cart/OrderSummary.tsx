@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Building2, Lock, Ship, TrendingUp, Truck } from "lucide-react";
+import { Building2, Lock, Send, Ship, TrendingUp, Truck } from "lucide-react";
 
 import { LegalConsent, type Agreements } from "@/components/cart/LegalConsent";
 import { LoyaltyPointsInput } from "@/components/cart/LoyaltyPointsInput";
@@ -21,6 +21,9 @@ interface OrderSummaryProps {
    * the server decides the amounts either way.
    */
   perks: boolean;
+  /** An export account: no gateway, no points, and a request rather than an
+      order. The server enforces all three (`is_quote_account`). */
+  quoteOnly?: boolean;
   /** The chosen method, for the shipping line's label. */
   shippingMethod: ShippingMethod;
   /** Local subtotal from cart snapshots; used until the server quote arrives. */
@@ -147,7 +150,17 @@ export function OrderSummary(props: OrderSummaryProps) {
         Sipariş Özeti
       </h2>
 
-      {isLoggedIn && (
+      {/* An export account has no payment step at all: no gateway, no havale,
+          no card to save, and no ParaPuan to spend. What it gets instead is a
+          line saying what happens after the request. */}
+      {isLoggedIn && props.quoteOnly && (
+        <p className="mt-5 rounded-xl bg-amber-50 px-3.5 py-3 text-[13px] leading-relaxed text-amber-950 dark:bg-amber-500/10 dark:text-amber-100">
+          No payment is taken for this request. We will reply with a freight quote and
+          estimated delivery once the packages and total weight are known.
+        </p>
+      )}
+
+      {isLoggedIn && !props.quoteOnly && (
         <div className="mt-5 space-y-5">
           <PaymentMethodPicker
             value={props.paymentMethod}
@@ -212,17 +225,19 @@ export function OrderSummary(props: OrderSummaryProps) {
               <dt>Toplam</dt>
               <dd className="tabular-nums">{formatMoney(quote.net_total)}</dd>
             </div>
-            <div className="space-y-2 pt-1">
-              <ShippingNote quote={quote} />
-              <VolumeNudge quote={quote} />
-            </div>
-            {quote.loyalty_points_to_earn > 0 && (
+            {!props.quoteOnly && (
+              <div className="space-y-2 pt-1">
+                <ShippingNote quote={quote} />
+                <VolumeNudge quote={quote} />
+              </div>
+            )}
+            {!props.quoteOnly && quote.loyalty_points_to_earn > 0 && (
               <p className="text-xs text-zinc-600 dark:text-zinc-400">
                 Siparişiniz onaylandığında {quote.loyalty_points_to_earn.toLocaleString("tr-TR")} ParaPuan
                 kazanacaksınız.
               </p>
             )}
-            {!quote.perks_eligible && (
+            {!props.quoteOnly && !quote.perks_eligible && (
               <p className="text-xs text-slate-500 dark:text-zinc-400">
                 Fiyatlarınız hesabınıza tanımlı fiyat listesinden gelir; ciro, havale ve ParaPuan indirimleri
                 bireysel (perakende) hesaplara tanımlıdır.
@@ -246,12 +261,16 @@ export function OrderSummary(props: OrderSummaryProps) {
         {props.blocker && isLoggedIn && <p className="text-center text-xs text-slate-500 dark:text-zinc-400">{props.blocker}</p>}
         {checkoutError && <Alert variant="error">{checkoutError}</Alert>}
 
-        {isLoggedIn && needsConsent && (
+        {/* A request consents to nothing: no carriage price has been named, and
+            the agreements belong to the sale that may follow it. The server
+            agrees — see `is_quote_account` in the checkout engine. */}
+        {isLoggedIn && needsConsent && !props.quoteOnly && (
           <ShippingConsent checked={props.shippingConsent} onChange={props.onShippingConsentChange} />
         )}
 
-        {/* Both agreements, or no order — the server refuses one without them. */}
-        {isLoggedIn && (
+        {/* Both agreements, or no order — the server refuses one without them.
+            A request is not an order, and is not asked. */}
+        {isLoggedIn && !props.quoteOnly && (
           <LegalConsent
             value={props.agreements}
             onChange={props.onAgreementsChange}
@@ -260,21 +279,33 @@ export function OrderSummary(props: OrderSummaryProps) {
         )}
 
         <Button type="button" onClick={props.onCheckout} loading={submitting} disabled={!canCheckout}>
-          {isLoggedIn ? (
+          {!isLoggedIn ? (
+            props.quoteOnly ? (
+              "Sign in to submit your request"
+            ) : (
+              "Siparişi tamamlamak için giriş yapın"
+            )
+          ) : props.quoteOnly ? (
             submitting ? (
-              "Sipariş oluşturuluyor…"
+              "Submitting your request…"
             ) : (
               <>
-                <Lock className="h-4 w-4" aria-hidden /> Siparişi Tamamla
+                <Send className="h-4 w-4" aria-hidden /> Submit Quote Request
               </>
             )
+          ) : submitting ? (
+            "Sipariş oluşturuluyor…"
           ) : (
-            "Siparişi tamamlamak için giriş yapın"
+            <>
+              <Lock className="h-4 w-4" aria-hidden /> Siparişi Tamamla
+            </>
           )}
         </Button>
-        <p className="text-center text-xs text-slate-500 dark:text-zinc-400">
-          Fiyatlara KDV dahildir. Nihai tutar sipariş anında sunucuda hesaplanır.
-        </p>
+        {!props.quoteOnly && (
+          <p className="text-center text-xs text-slate-500 dark:text-zinc-400">
+            Fiyatlara KDV dahildir. Nihai tutar sipariş anında sunucuda hesaplanır.
+          </p>
+        )}
       </div>
     </section>
   );

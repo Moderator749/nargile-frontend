@@ -10,6 +10,7 @@ import { addressLines, customerCode, orderHistory, sheetTotals, shippingStatus }
 import type { OrderNotice } from "@/components/admin/orders/useOrderActions";
 import { formatDate, formatMoney } from "@/lib/format";
 import { shippingOption } from "@/lib/shipping";
+import { useFreshOrder } from "@/components/admin/orders/useFreshOrder";
 import type { AdminOrder } from "@/types";
 
 const boxClass =
@@ -41,18 +42,22 @@ function TotalRow({ label, value, strong = false }: { label: string; value: stri
  * note) keep their slot and print an em dash rather than being dropped.
  */
 export function OrderSheet({
-  order,
+  order: row,
   busy,
   notice,
   onApprove,
   onCancel,
 }: {
+  /** The row the panel has; the sheet re-reads the order itself. */
   order: AdminOrder;
   busy: boolean;
   notice?: OrderNotice;
   onApprove: () => void;
   onCancel: () => void;
 }) {
+  // What the order says now, not what the listing said when it was fetched —
+  // see `useFreshOrder`. Everything below reads this.
+  const order = useFreshOrder(row);
   const root = useRef<HTMLDivElement>(null);
   const totals = sheetTotals(order);
   const shipping = shippingStatus(order);
@@ -184,8 +189,17 @@ export function OrderSheet({
       </div>
 
       <SheetBlock title="Sipariş Notu">
-        {/* Checkout does not collect a note yet; the slot stays so the form matches. */}
-        <p className="px-3 py-2 text-sm text-slate-500 dark:text-zinc-400">—</p>
+        {/* As the customer typed it, line breaks and all; a dash when there was
+            nothing to say. */}
+        <p
+          className={`whitespace-pre-line px-3 py-2 text-sm ${
+            order.order_note
+              ? "text-slate-900 dark:text-zinc-100"
+              : "text-slate-500 dark:text-zinc-400"
+          }`}
+        >
+          {order.order_note || "—"}
+        </p>
       </SheetBlock>
 
       <div className={boxClass}>

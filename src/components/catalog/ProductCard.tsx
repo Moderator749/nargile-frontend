@@ -10,10 +10,12 @@ import { useNow } from "@/hooks/useNow";
 import { countdownParts } from "@/lib/banner";
 import { categoryCopy } from "@/lib/categories";
 import { cartLineFor } from "@/lib/cartLine";
+import { isExportAccount } from "@/lib/exportAccount";
 import { normalizeHex, readableInk } from "@/lib/color";
 import { saleState } from "@/lib/flashSale";
 import { productHref } from "@/lib/seo";
 import { displayVariant, hasColorChoice, soldOut as allSoldOut } from "@/lib/variants";
+import { useAuthStore } from "@/store/useAuthStore";
 import { useCartStore } from "@/store/useCartStore";
 import { useCartHydrated } from "@/store/useHasHydrated";
 import type { CatalogProduct, Category } from "@/types";
@@ -61,6 +63,8 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
   const regular = variant?.price ?? null;
   const listPrice = variant?.list_price ?? null;
   const soldOut = allSoldOut(product);
+  // Subscribed, not read once: the card re-renders when the account changes.
+  const quoteOnly = isExportAccount(useAuthStore((s) => s.user));
   const isHeavy = product.tags?.includes("HEAVY_CARGO") ?? false;
   const Icon = categoryCopy(category?.slug).icon;
   const money = useDisplayMoney();
@@ -79,7 +83,10 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
   const hasDiscount = discountPct > 0;
   // Quick-add only makes sense when there is nothing to choose: picking a colour
   // for the visitor would put the wrong thing in their cart.
-  const canAdd = !!variant && !!price && !pricesPending && !soldOut && !needsColorChoice;
+  // An export account is building a request, so an empty shelf does not stop
+  // it adding the line; the shop answers with a quote (see `lib/exportAccount`).
+  const canAdd =
+    !!variant && !!price && !pricesPending && (!soldOut || quoteOnly) && !needsColorChoice;
 
   // How many of this variant are already in the cart (0 until the cart has loaded).
   const cartHydrated = useCartHydrated();

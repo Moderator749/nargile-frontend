@@ -43,12 +43,15 @@ import {
   type InvoiceDraft,
 } from "@/components/cart/invoiceDraft";
 import { PrivacyNotice } from "@/components/cart/PrivacyNotice";
+import { ExportRequestNotice } from "@/components/cart/ExportRequestNotice";
+import { OrderNote } from "@/components/cart/OrderNote";
 import { OrderSummary } from "@/components/cart/OrderSummary";
 import { useCartQuote } from "@/hooks/useCartQuote";
 import { useLegalDocuments } from "@/hooks/useLegalDocuments";
 import { useIstanbulFreeMinimum } from "@/hooks/useShippingSettings";
 import { fetchMe } from "@/lib/authApi";
 import { getApiErrorMessage } from "@/lib/errors";
+import { isExportAccount } from "@/lib/exportAccount";
 import { retailPerks } from "@/lib/perks";
 import {
   buildCheckoutRequest,
@@ -68,6 +71,7 @@ import type {
   PaymentMethod,
   SavedAddress,
   ShippingMethod,
+  TransportMode,
 } from "@/types";
 
 /** Refresh the profile so the ParaPuan balance and segment are current. */
@@ -120,6 +124,10 @@ export function CartView() {
   // "Kart bilgilerimi sonraki alışverişlerim için güvenle kaydet": a wish we
   // pass on to the payment provider; no card data reaches us.
   const [saveCard, setSaveCard] = useState(false);
+  // "Sipariş Notu": optional, free text, read by a person and nothing else.
+  const [orderNote, setOrderNote] = useState("");
+  // An export account chooses how the shipment travels; nobody else may.
+  const [transportMode, setTransportMode] = useState<TransportMode | null>(null);
   // The two agreements. The server refuses an order without both.
   const [agreements, setAgreements] = useState<Agreements>(NO_AGREEMENTS);
   const [submitting, setSubmitting] = useState(false);
@@ -133,6 +141,8 @@ export function CartView() {
   const isLoggedIn = authHydrated && !!user;
   const accountType: AccountType = user?.account_type ?? "INDIVIDUAL";
   const abroad = shipsAbroad(accountType);
+  // The export account: no payment screen, and an order that is a request.
+  const quoteOnly = isExportAccount(user);
   // ParaPuan and the cart discounts are retail promotions; the server decides
   // the amounts, this decides what is on screen.
   const perks = retailPerks(user ?? null);
@@ -309,6 +319,11 @@ export function CartView() {
     // left behind by another card. The account with nothing usable on file is
     // the exception, and types one like anyone else.
     if (firmFlow && card !== "BRANCH" && onFileAddressReady && onFile) return onFile;
+    // An export order is read off the account for the same reason, and with no
+    // card to pick: its cart shows the registered address instead of a form,
+    // so this is where that address comes from. An account with nothing usable
+    // on file still types one, which is what `typed` then holds.
+    if (abroad && onFileAddressReady && onFile) return onFile;
     if (typed) return typed;
     // Invoiced to a firm: the parcel is addressed to the firm, at the address
     // the invoice shows, and the number is still the buyer's own.
@@ -367,15 +382,18 @@ export function CartView() {
     method,
   );
   const needsConsent = !!quote?.shipping.receiver_pays;
-  const checkoutBlocker =
-    deliveryProblem ??
-    (needsConsent && !shippingConsent
-      ? "Gönderim ücretinin teslimatta alıcı tarafından ödeneceğini onaylayın."
-      : null) ??
-    // An order is a contract: both agreements, or no order.
-    (agreements.distanceSales && agreements.terms
-      ? null
-      : "Siparişi tamamlamak için her iki sözleşmeyi de onaylayın.");
+  const checkoutBlocker = quoteOnly
+    ? // A request asks for one thing the cart cannot supply: how it travels.
+      (deliveryProblem ??
+      (transportMode === null ? "Please confirm how your order should travel." : null))
+    : (deliveryProblem ??
+      (needsConsent && !shippingConsent
+        ? "Gönderim ücretinin teslimatta alıcı tarafından ödeneceğini onaylayın."
+        : null) ??
+      // An order is a contract: both agreements, or no order.
+      (agreements.distanceSales && agreements.terms
+        ? null
+        : "Siparişi tamamlamak için her iki sözleşmeyi de onaylayın."));
   const serverLines = new Map(quote?.items.map((i) => [i.variant_id, i]));
 
   async function handleCheckout() {
@@ -398,6 +416,8 @@ export function CartView() {
           shippingBranchName: firmFlow && card === "BRANCH" ? branchName : null,
           invoice: toInvoicePayload(invoice),
           saveCard: paymentMethod === "CREDIT_CARD" && saveCard,
+          orderNote,
+          transportMode: quoteOnly ? transportMode : null,
           agreements,
         }),
       );
@@ -428,8 +448,19 @@ export function CartView() {
 
   return (
     <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6">
-      <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Sepetim</h1>
-      <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">{itemCount.toLocaleString("tr-TR")} ürün</p>
+      <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{quoteOnly ? "My Cart" : "Sepetim"}</h1>
+      <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">
+        {quoteOnly
+          ? `${itemCount.toLocaleString("en-US")} item${itemCount === 1 ? "" : "s"}`
+          : `${itemCount.toLocaleString("tr-TR")} ürün`}
+      </p>
+
+      {/* The terms first: everything below behaves differently because of them. */}
+      {quoteOnly && (
+        <div className="mt-5">
+          <ExportRequestNotice />
+        </div>
+      )}
 
       <div className="mt-6 grid grid-cols-1 items-start gap-8 lg:grid-cols-3">
         <section aria-labelledby="cart-items-heading" className="lg:col-span-2">
@@ -470,6 +501,8 @@ export function CartView() {
           {isLoggedIn && (
             <div className="mt-6">
               <DeliveryStep
+                transportMode={transportMode}
+                onTransportModeChange={setTransportMode}
                 accountType={accountType}
                 saved={saved}
                 invoiceTarget={invoiceTarget}
@@ -546,6 +579,11 @@ export function CartView() {
           )}
           {isLoggedIn && (
             <div className="mt-6">
+              <OrderNote value={orderNote} onChange={setOrderNote} english={quoteOnly} />
+            </div>
+          )}
+          {isLoggedIn && (
+            <div className="mt-6">
               <PrivacyNotice document={legalDocuments?.PRIVACY_NOTICE} />
             </div>
           )}
@@ -554,6 +592,7 @@ export function CartView() {
         <OrderSummary
           isLoggedIn={isLoggedIn}
           perks={perks}
+          quoteOnly={quoteOnly}
           shippingMethod={method}
           estimatedSubtotal={estimatedSubtotal}
           quote={quote}

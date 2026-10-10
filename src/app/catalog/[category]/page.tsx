@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 
 import { CatalogScreen } from "@/components/catalog/CatalogScreen";
 import { categoryCopy } from "@/lib/categories";
-import { getCategories, getPublicProducts } from "@/lib/server/catalog";
+import { getBrands, getCategories, getPublicProducts } from "@/lib/server/catalog";
 import { SITE_NAME } from "@/lib/site";
 
 export const revalidate = 300;
@@ -37,9 +37,10 @@ export async function generateMetadata(props: PageProps<"/catalog/[category]">):
 
 export default async function CategoryPage(props: PageProps<"/catalog/[category]">) {
   const { category: slug } = await props.params;
-  const [{ categories, category }, products] = await Promise.all([
+  const [{ categories, category }, products, brands] = await Promise.all([
     findCategory(slug),
     getPublicProducts(slug),
+    getBrands(),
   ]);
   // Only 404 when the category list loaded and the slug isn't in it; if the API is
   // down we can't tell, so render the shell and let the client retry.
@@ -59,6 +60,7 @@ export default async function CategoryPage(props: PageProps<"/catalog/[category]
       categories={categories ?? []}
       activeCategory={category ?? { id: -1, name, slug, parent_id: null }}
       products={products}
+      brands={brands ?? []}
     />
   );
 }

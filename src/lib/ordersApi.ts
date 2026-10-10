@@ -13,6 +13,7 @@ import type {
   SavedAddress,
   ShippingAddress,
   ShippingMethod,
+  TransportMode,
   Wallet,
 } from "@/types";
 
@@ -48,6 +49,11 @@ export function buildCheckoutRequest(
     };
     /** "Kart bilgilerimi … güvenle kaydet": passed on, never held here. */
     saveCard?: boolean;
+    /** "Sipariş Notu": free text for the shop, or nothing at all. */
+    orderNote?: string | null;
+    /** Road, air or sea: an export request only. The server refuses it from
+        anyone else, so it is sent as null rather than omitted by accident. */
+    transportMode?: TransportMode | null;
     /** The two agreements; an order without both is refused by the server. */
     agreements?: { distanceSales: boolean; terms: boolean };
   } = {},
@@ -67,6 +73,8 @@ export function buildCheckoutRequest(
     shipping_branch_name: options.shippingBranchName ?? null,
     ...(options.invoice ?? { invoice_to_company: false }),
     save_card: options.saveCard ?? false,
+    order_note: options.orderNote?.trim() || null,
+    transport_mode: options.transportMode ?? null,
     distance_sales_accepted: options.agreements?.distanceSales ?? false,
     terms_accepted: options.agreements?.terms ?? false,
   };

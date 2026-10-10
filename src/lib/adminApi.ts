@@ -63,6 +63,19 @@ export async function adminListOrders(
   return data;
 }
 
+/**
+ * One order as it stands now.
+ *
+ * The listing is a page read at a moment; the sheet shows an order, and an
+ * order changes — a note arrives with it, an admin corrects an address. The
+ * sheet asks for this when it opens so what is on screen is never a row the
+ * panel happened to fetch earlier.
+ */
+export async function adminGetOrder(orderId: string, signal?: AbortSignal): Promise<AdminOrder> {
+  const { data } = await api.get<AdminOrder>(`/admin/orders/${orderId}`, { signal });
+  return data;
+}
+
 export async function adminApproveOrder(orderId: string): Promise<OrderApproveResponse> {
   const { data } = await api.post<OrderApproveResponse>(`/admin/orders/${orderId}/approve`);
   return data;

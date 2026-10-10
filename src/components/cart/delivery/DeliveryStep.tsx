@@ -11,7 +11,7 @@ import { ExportDelivery } from "@/components/cart/delivery/ExportDelivery";
 import { FirmDelivery } from "@/components/cart/delivery/FirmDelivery";
 import type { FirmCard } from "@/components/cart/delivery/firmCards";
 import type { MethodDetails } from "@/components/cart/delivery/MethodFields";
-import type { AccountType, SavedAddress } from "@/types";
+import type { AccountType, SavedAddress, TransportMode } from "@/types";
 
 interface DeliveryStepProps {
   accountType: AccountType;
@@ -47,6 +47,9 @@ interface DeliveryStepProps {
   /** Whether the address on file can be shipped to as it stands; when it
       cannot, the one step that has no form for it grows one. */
   onFileAddressReady: boolean;
+  /** Export only: how the shipment should travel, and the choice being made. */
+  transportMode: TransportMode | null;
+  onTransportModeChange: (mode: TransportMode) => void;
 }
 
 /**
@@ -61,8 +64,9 @@ interface DeliveryStepProps {
  * panel sets — the shop's own van. In both the card is also the shipping
  * method, so nothing on screen can disagree with the order.
  *
- * An export customer has one address and one way to travel, so it is told
- * rather than asked.
+ * An export customer does not type an address at all: theirs is read off the
+ * account, and what they choose instead is how the shipment leaves — road, air
+ * or sea — which is what the freight will be quoted against.
  */
 export function DeliveryStep(props: DeliveryStepProps) {
   const abroad = shipsAbroad(props.accountType);
@@ -79,9 +83,12 @@ export function DeliveryStep(props: DeliveryStepProps) {
 
       {abroad ? (
         <ExportDelivery
+          saved={props.saved}
           address={props.address}
           onAddressChange={props.onAddressChange}
-          lockPlace={(props.saved?.length ?? 0) > 0}
+          addressReady={props.onFileAddressReady}
+          transportMode={props.transportMode}
+          onTransportModeChange={props.onTransportModeChange}
         />
       ) : firmFlow ? (
         <FirmDelivery

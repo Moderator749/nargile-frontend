@@ -5,9 +5,13 @@ import "./globals.css";
 import { StoreHydration } from "@/components/StoreHydration";
 import { Navbar } from "@/components/layout/Navbar";
 import { SiteFooter } from "@/components/layout/SiteFooter";
+import { TopBanner } from "@/components/layout/TopBanner";
+import { ExportNotice } from "@/components/auth/ExportNotice";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { AUTH_HINT_SCRIPT } from "@/lib/auth";
+import { SIDEBAR_SCRIPT } from "@/lib/sidebar";
 import { getBrands, getCategories } from "@/lib/server/catalog";
+import { SIDEBAR_NAV, TOP_NAV, resolveNav } from "@/lib/storefrontNav";
 import { DEFAULT_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 import { THEME_SCRIPT } from "@/lib/theme";
 
@@ -55,6 +59,9 @@ const organizationJsonLd = {
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   // Cached for CATALOG_REVALIDATE like the catalog, so pages stay static/ISR.
   const [categories, brands] = await Promise.all([getCategories(), getBrands()]);
+  // The two fixed menus, pointed at the catalog as it stands (see lib/storefrontNav).
+  const menu = resolveNav(TOP_NAV, categories ?? [], brands ?? []);
+  const sidebar = resolveNav(SIDEBAR_NAV, categories ?? [], brands ?? []);
 
   return (
     <html
@@ -66,11 +73,17 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
         <script dangerouslySetInnerHTML={{ __html: AUTH_HINT_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: SIDEBAR_SCRIPT }} />
       </head>
       <body className="flex min-h-full flex-col bg-background font-sans text-foreground selection:bg-accent selection:text-white">
         <JsonLd data={organizationJsonLd} />
         <StoreHydration />
-        <Navbar categories={categories ?? []} brands={brands ?? []} />
+        {/* Shown to an export account on its first page after signing in, and
+            not dismissable any other way. Renders nothing for everyone else. */}
+        <ExportNotice />
+        {/* Module 1: the welcome / special-day strip, above everything. */}
+        <TopBanner />
+        <Navbar categories={sidebar} links={menu} />
         {children}
         <SiteFooter categories={categories ?? []} />
       </body>

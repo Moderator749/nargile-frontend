@@ -57,6 +57,22 @@ export function getHomeContent(): Promise<HomeContent | null> {
   return getJson<HomeContent>("/home/content");
 }
 
+/**
+ * One product's photo from a corner of the catalog, for a showcase tile's
+ * artwork. Null when that corner is empty — a category the shop has not stocked
+ * yet — and the tile then falls back to its icon.
+ *
+ * Cached like every other catalog read (five minutes, `catalog` tag), so the
+ * twelve tiles cost twelve requests per window rather than per visitor.
+ */
+export async function getTileArtwork(tile: { slug?: string; search?: string }): Promise<string | null> {
+  const params = new URLSearchParams({ limit: "1" });
+  if (tile.slug) params.set("category", tile.slug);
+  else if (tile.search) params.set("q", tile.search);
+  const rows = await getJson<CatalogProduct[]>(`/products/?${params}`);
+  return rows?.[0]?.image_url ?? null;
+}
+
 /** One product (anonymous RETAIL view) for its detail page; null if missing or the API is down. */
 export function getProduct(id: string): Promise<CatalogProductDetail | null> {
   // Product ids are UUIDs: don't even ask the API for anything else.

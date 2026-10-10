@@ -9,6 +9,8 @@ import { QuantityStepper } from "@/components/cart/QuantityStepper";
 import { ColorPicker } from "@/components/product/ColorPicker";
 import { CrossSells } from "@/components/product/CrossSells";
 import { ProductDescription } from "@/components/product/ProductDescription";
+import { RetailPerks, showsRetailPerks } from "@/components/product/RetailPerks";
+import { isExportAccount } from "@/lib/exportAccount";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { useDisplayMoney } from "@/hooks/useDisplayMoney";
 import { useNow } from "@/hooks/useNow";
@@ -51,11 +53,14 @@ function countdown(ms: number) {
 export function ProductDetail({ initialProduct, category, categories, breadcrumbs }: ProductDetailProps) {
   const hydrated = useAuthHydrated();
   const token = useAuthStore((s) => s.token);
+  const user = useAuthStore((s) => s.user);
   const [own, setOwn] = useState<{ token: string; product: CatalogProductDetail } | null>(null);
   // The stepper shows the cart's quantity until the visitor changes it (a draft).
   const [draft, setDraft] = useState<number | null>(null);
   const [added, setAdded] = useState(false);
   const money = useDisplayMoney();
+  // The dock decides the shape of the row above the colour pills.
+  const perksShown = showsRetailPerks(user);
 
   useEffect(() => {
     if (!hydrated || !token) return;
@@ -89,7 +94,11 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
       : 0;
   // This colour's stock, not the product's: another colour may well be in stock.
   const soldOut = !!variant && !variantInStock(variant);
-  const canAdd = !!variant && !!price && !pricesPending && !soldOut;
+  // An export cart is a request for a quote, not a claim on the warehouse: it
+  // may ask for a colour that is out of stock, and for more of it than exists.
+  // The server agrees — nothing is deducted for a request (`is_quote_account`).
+  const quoteOnly = isExportAccount(user);
+  const canAdd = !!variant && !!price && !pricesPending && (!soldOut || quoteOnly);
 
   const cartHydrated = useCartHydrated();
   const inCartRaw = useCartStore((s) => (variant ? (s.items.find((i) => i.variant_id === variant.id)?.quantity ?? 0) : 0));
@@ -155,6 +164,11 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
         />
 
         <div className="flex flex-col">
+          {/* Title, price and stock on the left; the retail terms in the space
+              beside them, which was empty. Without the dock there is nothing to
+              share the row with, so the block keeps the full width. */}
+          <div className={perksShown ? "grid grid-cols-1 items-start gap-6 md:grid-cols-2" : ""}>
+          <div className="min-w-0">
           <p className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground">
             {product.brand ?? category?.name ?? "Nargile Malzemesi"}
           </p>
@@ -217,6 +231,10 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
                 <Truck className="h-3 w-3" aria-hidden /> Ağır kargo
               </span>
             )}
+          </div>
+          </div>
+
+          {perksShown && <RetailPerks />}
           </div>
 
           {/* One pill per colour, each its own stock. A single-colour product has

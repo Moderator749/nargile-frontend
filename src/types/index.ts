@@ -35,7 +35,10 @@ export type BillingEntity = "SOLE_PROPRIETOR" | "COMPANY";
 export type SegmentType = "RETAIL" | "CAFE" | "WHOLESALE" | "DEALER";
 export type CurrencyType = "TRY" | "USD" | "EUR";
 export type WarehouseType = "RETAIL_STOCK" | "B2B_STOCK";
-export type PaymentMethod = "CREDIT_CARD" | "BANK_TRANSFER";
+/** QUOTE: an export order request — nothing was charged; see `lib/exportAccount`. */
+export type PaymentMethod = "CREDIT_CARD" | "BANK_TRANSFER" | "QUOTE";
+/** How an export shipment leaves the country; quoted after the order. */
+export type TransportMode = "ROAD" | "AIR" | "SEA";
 /** AWAITING_TRANSFER = "Havale Bekliyor": a bank-transfer order waiting for the money. */
 export type OrderStatus = "PENDING_APPROVAL" | "AWAITING_TRANSFER" | "APPROVED" | "SHIPPED" | "CANCELLED";
 /**
@@ -452,6 +455,11 @@ export interface CartCalculateRequest {
   invoice_address?: InvoiceAddress | null;
   /** "Kart bilgilerimi sonraki alışverişlerim için güvenle kaydet". */
   save_card?: boolean;
+  /** "Sipariş Notu" (opsiyonel): the customer's message about this order. */
+  order_note?: string | null;
+  /** Road, air or sea: required of an export order request, refused of any
+      other account. The server decides both (`is_quote_account`). */
+  transport_mode?: TransportMode | null;
   /** Both are required to place an order; a price preview needs neither. */
   distance_sales_accepted?: boolean;
   terms_accepted?: boolean;
@@ -569,6 +577,12 @@ export interface Order {
   /** The firm's registered address, as this order recorded it. */
   invoice_address: InvoiceAddress | null;
   save_card: boolean;
+  /** "Sipariş Notu": what the customer wrote at checkout, as they wrote it. */
+  order_note: string | null;
+  /** An export order request: priced at export rates, charged nothing, and no
+      stock taken until someone agrees a freight price with the customer. */
+  is_quote?: boolean;
+  transport_mode?: TransportMode | null;
   /** When the two agreements were accepted; no order is placed without them. */
   agreements_accepted_at: ISODateTime | null;
   paid_at: ISODateTime | null;
