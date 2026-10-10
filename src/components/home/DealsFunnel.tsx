@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import axios from "axios";
-import { ArrowRight, Package } from "lucide-react";
+import { ArrowRight, ChevronLeft, ChevronRight, Package } from "lucide-react";
 
 import { ProductImage } from "@/components/catalog/ProductImage";
 import { useDisplayMoney } from "@/hooks/useDisplayMoney";
@@ -23,7 +23,7 @@ import type { CatalogPrice, CatalogProduct, Category } from "@/types";
  * — a floating near-black card with 28px corners and a red glow thrown
  * downwards, three stacked background layers (two radial washes, a diagonal
  * sheen, a masked 52px grid), rising smoke, and a centred title. What sits
- * inside it is this shop's own: the live deals, five across, each a white
+ * inside it is this shop's own: the live deals, four across, each a white
  * card whose photo runs flush across the top of it.
  *
  * It renders only while there is something to show. A dark panel announcing
@@ -43,15 +43,25 @@ import type { CatalogPrice, CatalogProduct, Category } from "@/types";
 
 /** Where the smoke rises from, as percentages across the card. */
 const SMOKE = [12, 38, 64, 86];
+/** Four fit the row at once; a fifth deal is a scroll away, not a cut. */
+const VISIBLE = 4;
 /**
- * Five across on a desktop, every column strictly equal: Tailwind's grid-cols-*
- * are `minmax(0,1fr)`, so a card with a short name cannot end up narrower than
- * one with a long name — which is what a flex track, sizing to its content,
- * does. The cells carry `min-w-0` for the same reason: a grid item defaults to
- * `min-width:auto`, and a long unbroken word would otherwise push its column
- * wider than its share.
+ * A snapping track rather than a grid: four cards fill the row on a desktop
+ * and the rest wait just off the right edge, where a swipe, a trackpad or the
+ * arrows bring them in. Slicing the list at four was the alternative, and it
+ * quietly hid live deals from the one section that exists to show them.
+ *
+ * The widths are arithmetic, not guesses: with a 24px gap, four across is
+ * `calc(25% - 18px)` (three gaps shared between four cards) and two across is
+ * `calc(50% - 12px)`. On a phone a card takes 82% of the track, so the next
+ * one shows at the edge — the only hint a touch screen needs that there is
+ * more to the right.
  */
-const GRID = "grid w-full grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5";
+const TRACK = [
+  "relative flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-2 sm:gap-6",
+  "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+].join(" ");
+const SLIDE = "w-[82%] shrink-0 snap-start sm:w-[calc(50%-12px)] lg:w-[calc(25%-18px)]";
 /**
  * One white body, and the photo's canvas is the same white: nothing to see
  * between them, which is what the flush layout was for. The product reads as
@@ -93,6 +103,16 @@ export function DealsFunnel({ initialProducts, categories }: DealsFunnelProps) {
   const money = useDisplayMoney();
   const now = useNow(true);
   const [own, setOwn] = useState<{ token: string; products: CatalogProduct[] } | null>(null);
+  const track = useRef<HTMLUListElement>(null);
+
+  /** One card and one gap, measured off the track rather than assumed. */
+  function slide(direction: 1 | -1) {
+    const element = track.current;
+    const card = element?.firstElementChild as HTMLElement | undefined;
+    if (!element || !card) return;
+    const gap = Number.parseFloat(getComputedStyle(element).columnGap) || 0;
+    element.scrollBy({ left: direction * (card.offsetWidth + gap), behavior: "smooth" });
+  }
 
   useEffect(() => {
     if (!hydrated || !token) return;
@@ -123,7 +143,7 @@ export function DealsFunnel({ initialProducts, categories }: DealsFunnelProps) {
       className="relative scroll-mt-[var(--header-height)] py-6 sm:py-8"
     >
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6">
-        <div className="relative overflow-hidden rounded-[28px] bg-[#0a0a0c] px-6 py-6 text-white shadow-[0_40px_90px_-45px_rgba(183,10,33,0.85)] sm:px-10 sm:py-8">
+        <div className="relative overflow-hidden rounded-[28px] bg-[#0a0a0c] px-6 py-5 text-white shadow-[0_40px_90px_-45px_rgba(183,10,33,0.85)] sm:px-10 sm:py-6">
           {/* Background: two washes, a diagonal sheen, a grid masked to the
               middle, and smoke rising off the floor. */}
           <div className="pointer-events-none absolute inset-0" aria-hidden>
@@ -148,27 +168,68 @@ export function DealsFunnel({ initialProducts, categories }: DealsFunnelProps) {
           <div className="relative text-center">
             <h2
               id="deals-funnel-heading"
-              // font-semibold, like the hero and the advantages heading: the
-              // original site set this in Roboto Black, which in Geist comes
-              // out as a different voice from the rest of the storefront.
-              className="text-[28px] font-semibold leading-[0.95] tracking-tighter text-white sm:text-[46px]"
+              // One line, which is what took the row's height back: two lines
+              // of 46px pushed the cards below the fold on a laptop. The type
+              // is font-semibold, like the hero and the advantages heading —
+              // the original site set this in Roboto Black, which in Geist
+              // comes out as a different voice from the rest of the storefront.
+              //
+              // `bg-clip-text` paints the gradient across the element's own
+              // box, so anything a glyph puts outside it — the cedilla under
+              // the Ç — gets no paint and vanishes. The line-height and the
+              // padding below give the tail somewhere to be.
+              className={[
+                "whitespace-nowrap pb-1.5 text-xl font-semibold leading-tight tracking-tight sm:text-3xl lg:text-4xl",
+                // Brushed titanium, lit from one side: zinc at both ends, a
+                // white band through the middle, and the whole ramp two and a
+                // half times the width of the text so there is somewhere for
+                // it to travel. `inline-block` is what gives the background a
+                // box of its own to be positioned within.
+                "inline-block bg-[linear-gradient(110deg,#71717a_20%,#e4e4e7_40%,#ffffff_50%,#e4e4e7_60%,#71717a_80%)]",
+                "bg-[length:250%_100%] bg-clip-text text-transparent",
+                // The sweep itself: 4s, linear, and only for a visitor who has
+                // not asked for less motion.
+                "motion-safe:animate-chrome-sweep",
+                // One filter, two shadows: the dark one cuts the letters out
+                // of the crimson behind them, the white one is the bloom off
+                // the metal. Two `drop-shadow-*` utilities would not stack —
+                // the second would replace the first.
+                "[filter:drop-shadow(0_1px_2px_rgba(0,0,0,0.6))_drop-shadow(0_0_18px_rgba(255,255,255,0.14))]",
+              ].join(" ")}
             >
-              FIRSATLARI
-              {/* `bg-clip-text` paints the gradient across this element's own
-                  box, so anything a glyph puts outside that box — the cedilla
-                  under the Ç — gets no paint and vanishes. Its own line-height
-                  plus a little padding give the tail somewhere to be. */}
-              <span className="block bg-gradient-to-r from-[#fa5f6c] via-white to-[#fa5f6c] bg-clip-text pb-2 pt-0.5 leading-tight text-transparent">
-                KAÇIRMA
-              </span>
+              FIRSATLARI KAÇIRMA
             </h2>
-            <p className="mx-auto mt-2 max-w-lg text-[13px] leading-relaxed text-white/70">
+            <p className="mx-auto mt-1 max-w-lg text-[13px] leading-relaxed text-white/70">
               nargilemalzemesi.com&apos;da her sipariş ayrıcalıklı. Fırsat ürünleri stoklarla
               sınırlıdır.
             </p>
+
+            {/* Only when there is something past the fourth card: a control
+                that cannot do anything is worse than no control. A touch
+                screen scrolls the track itself, and sees the next card
+                peeking at the edge, so these are for the pointer. */}
+            {products.length > VISIBLE && (
+              <div className="absolute right-0 top-1 hidden gap-2 lg:flex">
+                {([-1, 1] as const).map((direction) => (
+                  <button
+                    key={direction}
+                    type="button"
+                    onClick={() => slide(direction)}
+                    aria-label={direction === -1 ? "Önceki fırsatlar" : "Sonraki fırsatlar"}
+                    className="flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white transition-colors duration-200 hover:border-white/40 hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                  >
+                    {direction === -1 ? (
+                      <ChevronLeft className="h-4 w-4" aria-hidden />
+                    ) : (
+                      <ChevronRight className="h-4 w-4" aria-hidden />
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          <ul className={`relative mt-6 ${GRID}`}>
+          <ul ref={track} className={`mt-5 ${TRACK}`}>
             {products.map((product) => {
               const variant = displayVariant(product);
               const sale = saleState(product, variant, now);
@@ -183,7 +244,7 @@ export function DealsFunnel({ initialProducts, categories }: DealsFunnelProps) {
               const category = product.category_id != null ? categoryById.get(product.category_id) : undefined;
 
               return (
-                <li key={product.id} className="flex min-w-0">
+                <li key={product.id} className={`flex min-w-0 ${SLIDE}`}>
                   <Link href={productHref(product.id)} className={CARD}>
                     {/* The photo's canvas: flush to the card's top and sides,
                         and the same white as the card, so there is no seam to

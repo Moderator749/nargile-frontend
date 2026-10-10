@@ -16,6 +16,13 @@
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 
+  /* Animations Tailwind owns, so that `motion-safe:animate-*` compiles. A
+     hand-written `.animate-x` class cannot be prefixed by a variant: Tailwind
+     only generates variants for utilities it knows about, which is why the
+     smoke under the deals panel never moved. */
+  --animate-smoke: smoke-rise var(--smoke-dur, 7s) ease-out infinite;
+  --animate-chrome-sweep: chrome-sweep 4s linear infinite;
+
   /* Semantic colour tokens ("industrial luxury"): bg-background, text-muted-foreground, border-border… */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -232,8 +239,21 @@ html[data-auth] .guest-only {
   }
 }
 
-.animate-smoke {
-  animation: smoke-rise var(--smoke-dur, 7s) ease-out infinite;
+/*
+ * The light that travels across the deals heading.
+ *
+ * The letters are a metal ramp two and a half times wider than its box, and
+ * this walks that ramp past them; the highlight is the white stop at 50%
+ * crossing the text. Nothing moves but a background position, so it costs the
+ * compositor nothing and never reflows the line.
+ */
+@keyframes chrome-sweep {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 /* ------------------------------------------------- CATEGORY COLUMN

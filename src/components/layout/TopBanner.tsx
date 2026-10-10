@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { PartyPopper } from "lucide-react";
 
+import { LiveAnnouncementBar } from "@/components/banner/LiveAnnouncementBar";
+import { AnnouncementBar } from "@/components/home/AnnouncementBar";
+import { DEFAULT_BANNER_STYLE } from "@/lib/banner";
 import { API_URL } from "@/lib/config";
 import type { Announcement } from "@/types";
 
@@ -12,24 +14,30 @@ export const WELCOME = "SULTAN NARGİLE'YE HOŞGELDİNİZ / ÖZEL GÜN KUTLAMA A
 /**
  * The strip across the very top of the storefront.
  *
- * It is always there and always one line tall, so it can never push the page
- * around: the welcome is rendered with the HTML, and the special-day message an
- * admin sets in /admin/banner replaces the text once it is read. Reading it
- * from the browser rather than on the server is what keeps every page
- * statically rendered while the message stays current.
+ * It renders through the same `AnnouncementBar` the admin panel previews, so
+ * what /admin/banner shows is what the shop gets: its background (a preset, a
+ * colour of the admin's own, or an image), its icon — the flags of a memorial
+ * day as readily as a party popper — and its countdown. Nothing here decides
+ * how a banner looks; that was the bug this replaced, a hard-coded red strip
+ * with a party popper on it, celebrating 10 Kasım.
+ *
+ * The strip is always there and always one line tall, so it can never push the
+ * page around: the welcome renders with the HTML, and the live banner replaces
+ * it once it is read. Reading it in the browser rather than on the server is
+ * what keeps every page statically rendered while the message stays current.
  */
 export function TopBanner() {
-  const [message, setMessage] = useState<string | null>(null);
+  const [live, setLive] = useState<Announcement | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
     fetch(`${API_URL}/banners/active`, { cache: "no-store", signal: controller.signal })
       .then((res) => (res.ok ? (res.json() as Promise<Announcement | null>) : null))
-      .then((live) => {
-        if (!live?.is_active || !live.message) return;
+      .then((announcement) => {
+        if (!announcement?.is_active || !announcement.message) return;
         // The API drops expired banners; this covers the clock drifting in between.
-        if (live.expires_at && Date.parse(live.expires_at) <= Date.now()) return;
-        setMessage(live.message);
+        if (announcement.expires_at && Date.parse(announcement.expires_at) <= Date.now()) return;
+        setLive(announcement);
       })
       .catch(() => {
         // Non-critical: the welcome stands.
@@ -37,15 +45,16 @@ export function TopBanner() {
     return () => controller.abort();
   }, []);
 
+  if (live) return <LiveAnnouncementBar announcement={live} />;
+
+  // The greeting is not an announcement: the house gradient, and no icon to
+  // read anything into.
   return (
-    <div className="w-full bg-gradient-to-r from-accent to-red-700 text-white">
-      {/* Half again as tall as a toolbar row, and the type with it: this is the
-          shop's own greeting, not a footnote. One line at every width, so the
-          page below it never moves. */}
-      <p className="mx-auto flex min-h-[3.375rem] max-w-7xl items-center justify-center gap-2.5 overflow-hidden px-4 py-2.5 text-center text-sm font-semibold uppercase leading-tight tracking-[0.12em] sm:gap-3 sm:px-6 sm:text-base">
-        <PartyPopper className="h-5 w-5 shrink-0 sm:h-[22px] sm:w-[22px]" aria-hidden />
-        <span className="truncate">{message ?? WELCOME}</span>
-      </p>
-    </div>
+    <AnnouncementBar
+      message={WELCOME}
+      backgroundStyle={DEFAULT_BANNER_STYLE}
+      bgImageUrl={null}
+      icon="none"
+    />
   );
 }

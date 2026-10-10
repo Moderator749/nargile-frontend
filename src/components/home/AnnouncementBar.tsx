@@ -90,13 +90,17 @@ export function AnnouncementBar({ message, backgroundStyle, bgImageUrl, icon, as
         }`}
       />
 
+      {/* The shop's own strip, not a footnote: it carries the greeting on an
+          ordinary day and a commemoration on others, and it is given the
+          height to say so. One line at every width, so the page below never
+          moves when the message changes. */}
       <div
-        className={`mx-auto flex min-h-10 max-w-7xl flex-wrap items-center justify-center gap-x-5 gap-y-1 py-2 text-center ${onDismiss ? "pl-4 pr-12 sm:px-12" : "px-4 sm:px-6"}`}
+        className={`mx-auto flex min-h-12 max-w-7xl flex-wrap items-center justify-center gap-x-5 gap-y-1 py-3.5 text-center sm:min-h-[3.25rem] sm:py-4 ${onDismiss ? "pl-4 pr-12 sm:px-12" : "px-4 sm:px-6"}`}
       >
-        <div className="flex items-center gap-2.5">
-          <BannerMoodIcon icon={mood} className={iconClass} small />
-          <p className="text-pretty text-xs font-medium tracking-wide sm:text-[13px]">{message}</p>
-          <BannerMoodIcon icon={mood} className={iconClass} small mirrored />
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <BannerMoodIcon icon={mood} className={iconClass} />
+          <p className="text-pretty text-xs font-semibold tracking-wide sm:text-sm">{message}</p>
+          <BannerMoodIcon icon={mood} className={iconClass} mirrored />
         </div>
         {aside}
       </div>
