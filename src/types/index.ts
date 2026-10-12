@@ -213,6 +213,8 @@ export interface Category {
   parent_id: number | null;
   /** Order among siblings (ascending). */
   sort_order?: number;
+  /** Cover photo for its showcase tile; null = a product photo is borrowed. */
+  image_url?: string | null;
 }
 
 /** A top-level category with its subcategories (menu, tabs). */
@@ -234,6 +236,8 @@ export interface Brand {
 
 export interface AdminCategory extends Category {
   sort_order: number;
+  /** Off = hidden from the storefront (with its subcategories); products stay. */
+  is_active: boolean;
   /** Products assigned directly (not via subcategories). */
   product_count: number;
 }
@@ -243,6 +247,8 @@ export interface CategoryWrite {
   slug?: string | null;
   parent_id: number | null;
   sort_order: number;
+  is_active: boolean;
+  image_url: string | null;
 }
 
 export interface BrandWrite {
@@ -885,9 +891,18 @@ export interface HeroSlideContent {
   image_url: string | null;
   has_upload: boolean;
   requires: ContentRequirement | null;
+  /** The text block's alignment over the slide. */
+  text_align: HeroTextAlign;
+  /** The photo's focal point, 0–100 % across and down. */
+  image_focus_x: number;
+  image_focus_y: number;
+  /** 100 = fills the slide; up to 200 crops in. */
+  image_zoom: number;
   is_active: boolean;
   sort_order: number;
 }
+
+export type HeroTextAlign = "left" | "center" | "right";
 
 export type PromoVariant = "image" | "text" | "transparent";
 
@@ -1127,4 +1142,102 @@ export interface LegalDocument {
   updated_at: ISODateTime | null;
   /** False while this is still the text the shop was set up with. */
   edited: boolean;
+}
+
+// ── Ana Sayfa Düzenleme (homepage editor document) ───────────────────────────
+// Mirrors app/schemas/homepage.py. The API returns only the sections the admin
+// has saved; `lib/homepage` fills the rest from the storefront's defaults.
+
+export type HomeIconKey =
+  | "wind" | "wrench" | "flame" | "layers" | "sparkles" | "shield" | "package" | "gamepad"
+  | "truck" | "bike" | "credit-card" | "landmark" | "trending-up" | "badge-check" | "headset" | "store";
+
+export interface HomeSections {
+  hero: boolean;
+  promos: boolean;
+  deals: boolean;
+  brands: boolean;
+  showcase: boolean;
+  advantages: boolean;
+  about: boolean;
+  footer: boolean;
+}
+
+/** A menu entry: a category (`slug`), a brand, or a link of its own; else a search for its label. */
+export interface HomeNavItem {
+  label: string;
+  slug?: string | null;
+  brand?: string | null;
+  search?: string | null;
+  href?: string | null;
+  accent?: boolean;
+}
+
+export interface HomeShowcaseTile extends HomeNavItem {
+  eyebrow: string;
+  wide: boolean;
+  icon: HomeIconKey;
+  /** Overrides the product photo the tile otherwise borrows from its category. */
+  image?: string | null;
+}
+
+export interface HomeAdvantageCard {
+  badge: string;
+  title: string;
+  description: string;
+  note: string;
+  image?: string | null;
+  icon: HomeIconKey;
+}
+
+export interface HomeFooterLink {
+  label: string;
+  href: string;
+}
+
+export interface HomeFooterColumn {
+  title: string;
+  links: HomeFooterLink[];
+  cta_label: string;
+  cta_href?: string | null;
+}
+
+export type HomeSocialKind = "youtube" | "instagram" | "facebook" | "tiktok" | "x" | "link";
+
+export interface HomeFooter {
+  brand_name: string;
+  tagline: string;
+  phone: string;
+  email: string;
+  whatsapp_href: string;
+  branches: { name: string; address: string }[];
+  hours: string;
+  social: { label: string; href: string; kind: HomeSocialKind }[];
+  blog: HomeFooterColumn;
+  info: HomeFooterColumn;
+  faq: HomeFooterColumn;
+  copyright: string;
+  price_note: string;
+  warning: string;
+}
+
+export interface Homepage {
+  sections: HomeSections;
+  navigation: {
+    top: HomeNavItem[];
+    /** "auto": every active category, live; "custom": the `sidebar` list. */
+    sidebar_mode: "auto" | "custom";
+    sidebar: HomeNavItem[];
+  };
+  deals: { title: string; subtitle: string };
+  brands: { items: string[] };
+  showcase: { title: string; subtitle: string; tiles: HomeShowcaseTile[] };
+  advantages: { eyebrow: string; title: string; subtitle: string; cards: HomeAdvantageCard[] };
+  about: { stats: { value: string; label: string }[]; text: string; badges: string[] };
+  footer: HomeFooter;
+}
+
+export interface HomepageSettingsResponse {
+  data: Partial<Homepage>;
+  updated_at?: string | null;
 }

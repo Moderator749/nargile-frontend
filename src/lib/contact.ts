@@ -13,8 +13,14 @@
 export const PHONE = "0212 553 05 92";
 export const EMAIL = "turhan@sultannargile.com";
 
-/** `tel:` wants no spaces; Turkey's code, since that is where the shop is. */
-export const PHONE_HREF = `tel:+90${PHONE.replace(/\D/g, "").replace(/^0/, "")}`;
+/** `tel:` wants no spaces; Turkey's code for a number written the Turkish way. */
+export function telHref(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  if (phone.trim().startsWith("+")) return `tel:+${digits}`;
+  return `tel:+90${digits.replace(/^0/, "")}`;
+}
+
+export const PHONE_HREF = telHref(PHONE);
 export const EMAIL_HREF = `mailto:${EMAIL}`;
 /** The switchboard on wa.me. Swap in a mobile if WhatsApp lives elsewhere. */
 export const WHATSAPP_HREF = `https://wa.me/90${PHONE.replace(/\D/g, "").replace(/^0/, "")}`;

@@ -1,5 +1,9 @@
 import type { MetadataRoute } from "next";
 
+import { BILGI_HREF } from "@/lib/bilgi";
+import { ARTICLES, BLOG_HREF, articleHref } from "@/lib/blog";
+import { FAQ_HREF } from "@/lib/faq";
+import { INFO_LINKS } from "@/lib/footer";
 import { productHref } from "@/lib/seo";
 import { getCategories, getPublicProducts } from "@/lib/server/catalog";
 import { SITE_URL } from "@/lib/site";
@@ -31,6 +35,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: `${SITE_URL}${productHref(id)}`,
       changeFrequency: "weekly" as const,
       priority: 0.6,
+    })),
+    // The Bilgi Sayfaları, the FAQ and the blog.
+    ...[BILGI_HREF, ...INFO_LINKS.map((l) => l.href), FAQ_HREF, BLOG_HREF, ...ARTICLES.map(articleHref)].map((href) => ({
+      url: `${SITE_URL}${href}`,
+      changeFrequency: "monthly" as const,
+      priority: 0.4,
     })),
   ];
 }

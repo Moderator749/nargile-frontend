@@ -65,7 +65,7 @@ export function getHomeContent(): Promise<HomeContent | null> {
  * Cached like every other catalog read (five minutes, `catalog` tag), so the
  * twelve tiles cost twelve requests per window rather than per visitor.
  */
-export async function getTileArtwork(tile: { slug?: string; search?: string }): Promise<string | null> {
+export async function getTileArtwork(tile: { slug?: string | null; search?: string | null }): Promise<string | null> {
   const params = new URLSearchParams({ limit: "1" });
   if (tile.slug) params.set("category", tile.slug);
   else if (tile.search) params.set("q", tile.search);

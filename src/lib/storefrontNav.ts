@@ -14,30 +14,27 @@
  */
 
 import { catalogSearchHref } from "@/lib/home";
-import type { Brand, Category } from "@/types";
+import type { Brand, Category, HomeNavItem } from "@/types";
 
-export interface NavEntry {
-  /** As the wireframe prints it. */
-  label: string;
-  /** The category this entry means, by slug. */
-  slug?: string;
-  /** The brand this entry means, by slug. */
-  brand?: string;
-  /** What to search for while neither is on file; the label by default. */
-  search?: string;
-  /** A destination that is neither: campaigns, the whole catalog. */
-  href?: string;
-  /** Carried in the shop's red: the one item in the bar that is an offer. */
-  accent?: boolean;
-}
+/**
+ * One entry, as the homepage editor stores it: a label, and what it means —
+ * a category slug, a brand, or a destination of its own (`href`). With none
+ * of them it searches the catalog for its label (or `search`). `accent`
+ * carries it in the shop's red.
+ */
+export type NavEntry = HomeNavItem;
 
 export interface ResolvedNav {
   label: string;
   href: string;
   accent?: boolean;
+  /** 1 for a subcategory listed under its parent (the automatic sidebar). */
+  depth?: number;
 }
 
 /**
+ * The default lists, shown until "Ana Sayfa Düzenleme" saves its own.
+ *
  * The horizontal bar. "KATAGORİLER" is not here: it is the header cell above
  * the sidebar (and the drawer's handle on a phone) — see `TopNav`.
  */
@@ -89,7 +86,11 @@ export function navHref(
   return catalogSearchHref(entry.search ?? entry.label);
 }
 
-/** The entries as links, against the catalog as it stands. */
+/**
+ * The entries as links, against the catalog as it stands. An entry that names
+ * a category or brand but leaves its label blank takes that one's current
+ * name, so renaming the category renames the menu too.
+ */
 export function resolveNav(
   entries: NavEntry[],
   categories: Category[],
@@ -97,9 +98,39 @@ export function resolveNav(
 ): ResolvedNav[] {
   const bySlug = new Map(categories.map((c) => [c.slug, c]));
   const brandBySlug = new Map(brands.map((b) => [b.slug, b]));
-  return entries.map((entry) => ({
-    label: entry.label,
-    href: navHref(entry, bySlug, brandBySlug),
-    accent: entry.accent,
-  }));
+  return entries.flatMap((entry) => {
+    const label =
+      entry.label.trim() ||
+      (entry.slug ? bySlug.get(entry.slug)?.name : undefined) ||
+      (entry.brand ? brandBySlug.get(entry.brand)?.name : undefined);
+    // A nameless entry whose category is gone (or switched off) has nothing to say.
+    if (!label) return [];
+    return [{ label: label.toLocaleUpperCase("tr-TR"), href: navHref(entry, bySlug, brandBySlug), accent: entry.accent || undefined }];
+  });
+}
+
+/**
+ * The automatic sidebar: every active category in the catalog's own order,
+ * each top-level one followed by its subcategories. A category added in
+ * "Menü & Kategoriler" appears here with nothing else to edit.
+ */
+export function autoSidebar(categories: Category[]): ResolvedNav[] {
+  const order = (a: Category, b: Category) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.name.localeCompare(b.name, "tr");
+  const tops = categories.filter((c) => c.parent_id === null).sort(order);
+  return tops.flatMap((top) => [
+    { label: top.name.toLocaleUpperCase("tr-TR"), href: `/catalog/${top.slug}` },
+    ...categories
+      .filter((c) => c.parent_id === top.id)
+      .sort(order)
+      .map((c) => ({ label: c.name.toLocaleUpperCase("tr-TR"), href: `/catalog/${c.slug}`, depth: 1 })),
+  ]);
+}
+
+/** The left column as configured: automatic, or the admin's own list. */
+export function sidebarNav(
+  navigation: { sidebar_mode: "auto" | "custom"; sidebar: NavEntry[] },
+  categories: Category[],
+  brands: Brand[],
+): ResolvedNav[] {
+  return navigation.sidebar_mode === "auto" ? autoSidebar(categories) : resolveNav(navigation.sidebar, categories, brands);
 }

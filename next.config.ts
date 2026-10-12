@@ -18,7 +18,17 @@ const MEDIA_IS_LOCAL = ["localhost", "127.0.0.1", "[::1]", "::1"].includes(MEDIA
 const nextConfig: NextConfig = {
   // The dashboard ("Genel Bakış") lives at /admin; keep /admin/overview working too.
   async redirects() {
-    return [{ source: "/admin/overview", destination: "/admin", permanent: false }];
+    return [
+      { source: "/admin/overview", destination: "/admin", permanent: false },
+      // `/catalog?category=<slug>` is how other shops (and old links) name a
+      // category; ours live at /catalog/<slug>.
+      {
+        source: "/catalog",
+        has: [{ type: "query", key: "category", value: "(?<slug>[a-z0-9-]+)" }],
+        destination: "/catalog/:slug",
+        permanent: false,
+      },
+    ];
   },
   images: {
     remotePatterns: [

@@ -20,9 +20,11 @@ import {
   getPublicProducts,
   getTileArtwork,
 } from "@/lib/server/catalog";
-import { SHOWCASE_TILES, resolveShowcase } from "@/lib/showcase";
-import { SIDEBAR_NAV, resolveNav } from "@/lib/storefrontNav";
+import { getHomepage } from "@/lib/server/homepage";
+import { resolveShowcase } from "@/lib/showcase";
+import { sidebarNav } from "@/lib/storefrontNav";
 import { DEFAULT_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
+import { PAGE_CONTAINER } from "@/lib/layout";
 
 // Rendered per request so a flash sale that starts or ends is reflected at once
 // (its countdowns and the slides that depend on one). Catalog fetches keep their
@@ -45,24 +47,30 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function HomePage() {
+  // What to show and what it says: "Ana Sayfa Düzenleme" (/admin/homepage).
+  const home = await getHomepage();
+  const { sections } = home;
   const [categories, featured, flashSales, brands, content, artwork] = await Promise.all([
     getCategories(),
     getPublicProducts(FEATURED_CATEGORY_SLUG, FEATURED_PRODUCTS_COUNT),
     getFlashSaleProducts(),
     getBrands(),
     getHomeContent(),
-    // One photo per showcase tile; cached with the rest of the catalog reads.
-    Promise.all(SHOWCASE_TILES.map(getTileArtwork)),
+    // One photo per showcase tile that has none of its own; cached with the
+    // rest of the catalog reads, and not asked for at all while it is hidden.
+    sections.showcase
+      ? Promise.all(home.showcase.tiles.map((tile) => (tile.image ? null : getTileArtwork(tile))))
+      : [],
   ]);
   const allCategories = categories ?? [];
-  const sidebar = resolveNav(SIDEBAR_NAV, allCategories, brands ?? []);
-  const showcase = resolveShowcase(allCategories, brands ?? [], artwork);
+  const sidebar = sidebarNav(home.navigation, allCategories, brands ?? []);
+  const showcase = resolveShowcase(home.showcase.tiles, allCategories, brands ?? [], artwork);
   // The deals funnel is the page's only deals section, and it is there only
   // when there is a deal to put in it.
   const deals = (flashSales ?? []).filter((p) => p.is_opportunity);
 
   // Content tied to flash sales (a slide, the "Şok" promo box) only shows while one is live.
-  // Managed in /admin/hero, /admin/promos and /admin/advantages.
+  // Managed in /admin/hero and /admin/promos.
   // Any colour of any product carrying a claimable sale is enough.
   const has = { flash_sales: (flashSales ?? []).some((p) => p.variants.some((v) => v.flash_sale)) };
   const cmsSlides = (content?.slides ?? []).filter((s) => meets(s.requires, has)).map(toHeroSlide);
@@ -89,36 +97,56 @@ export default async function HomePage() {
           />
         )}
 
+        {/* The first slide's title is the page's h1; with the slider switched
+            off, the page still needs one. */}
+        {!sections.hero && <h1 className="sr-only">{TITLE}</h1>}
+
         {/* Module 4: the category column, open at all times, with the hero and
-            the showcase beside it — the wireframe's shape. */}
-        <div className="mx-auto w-full max-w-7xl px-4 pt-3 sm:px-6 sm:pt-4 lg:flex lg:items-start">
-          <CategorySidebar items={sidebar} />
-          <div className="min-w-0 flex-1 space-y-4">
-            {/* Module 5: hero slider. */}
-            <HeroSlider slides={slides} />
-            {/* Modules 6 & 7: smart promo grids. */}
-            <PromoGrid boxes={rows[0]} label="Öne çıkan kampanyalar" />
-            <PromoGrid boxes={rows[1]} label="Koleksiyonlar" />
+            the showcase beside it — the wireframe's shape. Either half can be
+            switched off; the promos then take the full width. */}
+        {(sections.hero || sections.promos) && (
+          <div className={`${PAGE_CONTAINER} pt-3 sm:pt-4 lg:flex lg:items-start`}>
+            {sections.hero && <CategorySidebar items={sidebar} />}
+            <div className="min-w-0 flex-1 space-y-4">
+              {/* Module 5: hero slider. */}
+              {sections.hero && <HeroSlider slides={slides} />}
+              {/* Modules 6 & 7: smart promo grids. */}
+              {sections.promos && (
+                <>
+                  <PromoGrid boxes={rows[0]} label="Öne çıkan kampanyalar" />
+                  <PromoGrid boxes={rows[1]} label="Koleksiyonlar" />
+                </>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Module 9: "Fırsatları Kaçırma" — the deals, and the page's only
             deals section. It renders nothing when none are running. */}
-        <DealsFunnel initialProducts={deals} categories={allCategories} />
+        {sections.deals && (
+          <DealsFunnel
+            initialProducts={deals}
+            categories={allCategories}
+            title={home.deals.title}
+            subtitle={home.deals.subtitle}
+          />
+        )}
 
         {/* Module 9b: the brand ticker between the deals and the gallery. No
             heading — the names are the content. */}
-        <BrandTicker />
+        {sections.brands && <BrandTicker brands={home.brands.items} />}
 
         {/* Module 10: the catalog as a gallery, in place of the old
             "Öne çıkanlar" carousel. */}
-        <CatalogShowcase tiles={showcase} />
+        {sections.showcase && (
+          <CatalogShowcase title={home.showcase.title} subtitle={home.showcase.subtitle} tiles={showcase} />
+        )}
 
-        {/* Module 11: the advantages, from lib/advantages. */}
-        <AdvantagesSection />
+        {/* Module 11: the advantages. */}
+        {sections.advantages && <AdvantagesSection content={home.advantages} />}
 
         {/* Module 12: the corporate close, between the advantages and the footer. */}
-        <CorporateTrust />
+        {sections.about && <CorporateTrust content={home.about} />}
       </main>
     </>
   );

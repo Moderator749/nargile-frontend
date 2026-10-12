@@ -311,29 +311,31 @@ html[data-sidebar="collapsed"] .category-sidebar {
 
 
 /*
- * The category column travels down the page and docks at the foot of the
- * window, beside the last rank of promo boxes.
+ * The category column hangs from the top of its row, level with the hero, and
+ * stays under the header as the page scrolls — at every window height and
+ * zoom level.
  *
- * Pinned by its top, which looks backwards and is not: a sticky box with a
- * `bottom` inset is only ever held up at the foot of the window when its flow
- * position is below it. This column's flow position is the top of its row, so
- * `bottom` never moved it at all. Offsetting the top by the window's height
- * less the column's does what `bottom` appears to promise — the last pill
- * lands a finger's width above the fold — and the row it sits in clamps the
- * travel, so it comes to rest beside the promos and leaves with them.
+ * Its sticky offset is the row's own top padding (1rem) below the header, so
+ * at rest it sits exactly where the flow puts it: nothing pushes it down.
  *
- * On a window too short to hold the whole column, max() falls back to pinning
- * it under the header instead, first pill first: a cut-off top is the one
- * thing worse than a little space at the bottom.
+ * The column is 676px of pills (fifteen 36px, fourteen 8px gaps, the shell's
+ * 2 × 12px). Where the window cannot show all of it under the header — a
+ * laptop, or any window zoomed past ~110% — it is capped to the space that is
+ * there and its list scrolls inside it, so it stays pinned and every
+ * category is still reachable. The scrollbar is hidden; the wheel, trackpad
+ * and keyboard still scroll it.
  */
 @media (min-width: 1024px) {
   .category-sidebar {
-    /* Fifteen 36px pills, fourteen 8px gaps, and the shell's 2 × 12px. */
-    --category-column: 676px;
     position: sticky;
-    top: max(
-      calc(100vh - var(--category-column) - 1rem),
-      calc(var(--header-height, 4rem) + 1rem)
-    );
+    top: calc(var(--header-height, 4rem) + 1rem);
+    max-height: calc(100vh - var(--header-height, 4rem) - 2rem);
+    overflow-y: auto;
+    scrollbar-width: none;
+  }
+  .category-sidebar::-webkit-scrollbar {
+    display: none;
   }
 }
+
+

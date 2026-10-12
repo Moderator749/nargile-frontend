@@ -87,6 +87,9 @@ interface DealsFunnelProps {
   /** Live deals, server-rendered at anonymous (RETAIL) prices. */
   initialProducts: CatalogProduct[];
   categories: Category[];
+  /** The heading and the line under it, from "Ana Sayfa Düzenleme". */
+  title: string;
+  subtitle: string;
 }
 
 /** How much off, from the price shown against what it was. 0 = no saving. */
@@ -97,7 +100,7 @@ function savingPercent(now: CatalogPrice | null, was: CatalogPrice | null): numb
   return Math.round((1 - Number(now.price_incl_tax) / before) * 100);
 }
 
-export function DealsFunnel({ initialProducts, categories }: DealsFunnelProps) {
+export function DealsFunnel({ initialProducts, categories, title, subtitle }: DealsFunnelProps) {
   const hydrated = useAuthHydrated();
   const token = useAuthStore((s) => s.token);
   const money = useDisplayMoney();
@@ -197,12 +200,11 @@ export function DealsFunnel({ initialProducts, categories }: DealsFunnelProps) {
                 "[filter:drop-shadow(0_1px_2px_rgba(0,0,0,0.6))_drop-shadow(0_0_18px_rgba(255,255,255,0.14))]",
               ].join(" ")}
             >
-              FIRSATLARI KAÇIRMA
+              {title}
             </h2>
-            <p className="mx-auto mt-1 max-w-lg text-[13px] leading-relaxed text-white/70">
-              nargilemalzemesi.com&apos;da her sipariş ayrıcalıklı. Fırsat ürünleri stoklarla
-              sınırlıdır.
-            </p>
+            {subtitle && (
+              <p className="mx-auto mt-1 max-w-lg text-[13px] leading-relaxed text-white/70">{subtitle}</p>
+            )}
 
             {/* Only when there is something past the fourth card: a control
                 that cannot do anything is worse than no control. A touch

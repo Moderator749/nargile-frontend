@@ -50,25 +50,11 @@ export const NAV_SURFACE = [
  * deals. Below `lg` it steps aside, where the same list is one tap away in
  * the bar's drawer.
  *
- * It is stuck to the foot of the window rather than the head of the page:
- * `self-start h-max` gives the column its own height inside the row — a flex
- * item stretched to the row's height has no room to travel — and `globals.css`
- * pins it by its top at an offset that puts its last pill just above the fold.
- * It travels down with the page until the row ends beside the second rank of
- * promo boxes, then leaves with the row.
- *
- * Pinned by `top`, counter-intuitively, because `bottom` cannot do this: a
- * sticky box with a `bottom` inset is only ever held UP at the foot of the
- * window when its flow position is below it. This column's flow position is
- * the top of the row, which is never below the fold, so `bottom` moved it by
- * nothing at all — the column simply ended where its own height ran out.
- *
- * The column's height is deliberate arithmetic, not a loose stack: fifteen
- * 36px pills, fourteen 8px gaps and the shell's two 12px edges come to 676px,
- * which is the number `globals.css` offsets the pin by. Change a pill's height
- * or the gap and that number has to change with it — otherwise the column
- * docks a few pixels off the fold. A window with less than 700px under the
- * header falls back to a pin beneath it, first pill first.
+ * It hangs from the top of its row, level with the hero: `self-start h-max`
+ * gives it its own height instead of the row's, and the empty space falls
+ * below it. It stays under the header while the row scrolls by, and on a
+ * window too short to show all of it the list scrolls inside the column
+ * instead (see `globals.css`).
  *
  * "KATAGORİLER" in that bar collapses it, and the choice is remembered (see
  * `lib/sidebar`): the `category-sidebar` class is what the CSS gives up the
@@ -80,10 +66,13 @@ export function CategorySidebar({ items }: { items: ResolvedNav[] }) {
   return (
     <nav
       aria-label="Kategoriler"
-      className={`category-sidebar hidden shrink-0 ${SIDEBAR_WIDTH} lg:mr-6 lg:block lg:h-max lg:self-start`}
+      className={`category-sidebar hidden shrink-0 rounded-3xl ${SIDEBAR_WIDTH} lg:mr-6 lg:block lg:h-max lg:self-start`}
     >
       {/* The shell the pills sit in: soft, rounded and a shade off the page,
-          so the column reads as one object rather than a list against nothing. */}
+          so the column reads as one object rather than a list against nothing.
+          The column scrolls on short windows, which makes it a clipping box;
+          its own rounded-3xl is what keeps that clip from cutting the shell's
+          shadow into square corners. */}
       <div className={`space-y-2 rounded-3xl p-3 ${NAV_SURFACE}`}>
         {/* The list reads the current search to mark a brand row; on a static
             page that is known after hydration, so it waits for it. */}

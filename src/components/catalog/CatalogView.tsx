@@ -18,6 +18,7 @@ import {
 } from "@/lib/catalogFilters";
 import { useAuthStore } from "@/store/useAuthStore";
 import type { CatalogProduct, Category, SegmentType } from "@/types";
+import { PAGE_CONTAINER } from "@/lib/layout";
 
 const SEGMENT_LABELS: Record<SegmentType, string> = {
   RETAIL: "Perakende",
@@ -90,7 +91,7 @@ function CatalogGrid({
   // The bottom space belongs to whatever follows the grid — the advantages
   // section does — so this row keeps only enough to clear its own cards.
   return (
-    <section className="mx-auto w-full max-w-7xl flex-1 px-4 pb-2 pt-4 sm:px-6 sm:pt-6">
+    <section className={`${PAGE_CONTAINER} flex-1 pb-2 pt-4 sm:pt-6`}>
       <div className="lg:flex lg:items-start">
         {/* Kategoriler, beside the grid and open at all times. */}
         {sidebar}

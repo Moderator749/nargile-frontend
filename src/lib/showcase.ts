@@ -12,37 +12,30 @@
  * catalog endpoint does not — see the note in the pull request.
  */
 
-import { Flame, Gamepad2, Layers, Package, Shield, Sparkles, Wind, Wrench, type LucideIcon } from "lucide-react";
+import { navHref } from "@/lib/storefrontNav";
+import type { Brand, Category, HomeShowcaseTile } from "@/types";
 
-import { navHref, type NavEntry } from "@/lib/storefrontNav";
-import type { Brand, Category } from "@/types";
+/** A tile as the homepage editor stores it; see `HomeShowcaseTile`. */
+export type ShowcaseTile = HomeShowcaseTile;
 
-export interface ShowcaseTile extends NavEntry {
-  /** The small red line above the title. */
-  eyebrow: string;
-  /** Two columns on a desktop; the rhythm of the grid. */
-  wide?: boolean;
-  /** Stands in for the artwork while the category has no product to show. */
-  Icon: LucideIcon;
-}
-
+/** The default gallery, shown until the homepage editor saves its own. */
 export const SHOWCASE_TILES: ShowcaseTile[] = [
   // Row 1 — wide, square, square
-  { label: "İthal Nargile Takımları", eyebrow: "İthal seçki", slug: "nargile-takimlari", wide: true, Icon: Wind },
-  { label: "Nargile Marpuçları", eyebrow: "Marpuç çeşitleri", slug: "marpuclar", Icon: Wrench },
-  { label: "Nargile Kömürleri", eyebrow: "Tüketim & sarf", slug: "komurler", Icon: Flame },
+  { label: "İthal Nargile Takımları", eyebrow: "İthal seçki", slug: "nargile-takimlari", wide: true, icon: "wind" },
+  { label: "Nargile Marpuçları", eyebrow: "Marpuç çeşitleri", slug: "marpuclar", wide: false, icon: "wrench" },
+  { label: "Nargile Kömürleri", eyebrow: "Tüketim & sarf", slug: "komurler", wide: false, icon: "flame" },
   // Row 2 — square, square, wide
-  { label: "Lüle Çeşitleri", eyebrow: "Lüle seçkisi", slug: "luleler", Icon: Layers },
-  { label: "Közlükler & Folyo", eyebrow: "Köz & folyo", slug: "kozlukler", Icon: Flame },
-  { label: "Legend Hookah Koleksiyonu", eyebrow: "Marka koleksiyonu", brand: "legend", search: "legend", wide: true, Icon: Sparkles },
+  { label: "Lüle Çeşitleri", eyebrow: "Lüle seçkisi", slug: "luleler", wide: false, icon: "layers" },
+  { label: "Közlükler & Folyo", eyebrow: "Köz & folyo", slug: "kozlukler", wide: false, icon: "flame" },
+  { label: "Legend Hookah Koleksiyonu", eyebrow: "Marka koleksiyonu", brand: "legend", search: "legend", wide: true, icon: "sparkles" },
   // Row 3 — wide, square, square
-  { label: "Çelik Nargile Takımları", eyebrow: "Çelik gövde", slug: "celik-takimlar", wide: true, Icon: Shield },
-  { label: "Yedek Nargile Şişeleri", eyebrow: "Yedek parça", slug: "yedek-siseler", Icon: Package },
-  { label: "Sipsiler & Hijyen", eyebrow: "Hijyen & sarf", slug: "sipsiler", Icon: Wrench },
+  { label: "Çelik Nargile Takımları", eyebrow: "Çelik gövde", slug: "celik-takimlar", wide: true, icon: "shield" },
+  { label: "Yedek Nargile Şişeleri", eyebrow: "Yedek parça", slug: "yedek-siseler", wide: false, icon: "package" },
+  { label: "Sipsiler & Hijyen", eyebrow: "Hijyen & sarf", slug: "sipsiler", wide: false, icon: "wrench" },
   // Row 4 — square, square, wide
-  { label: "Klasik Nargileler", eyebrow: "Klasik seçki", slug: "klasik-takimlar", Icon: Wind },
-  { label: "Oyun Aletleri & Tavla", eyebrow: "Oyun & keyif", slug: "oyun-aletleri", search: "oyun aleti", Icon: Gamepad2 },
-  { label: "Özel Tasarım Nargile Takımları", eyebrow: "Özel koleksiyon", search: "özel tasarım", wide: true, Icon: Sparkles },
+  { label: "Klasik Nargileler", eyebrow: "Klasik seçki", slug: "klasik-takimlar", wide: false, icon: "wind" },
+  { label: "Oyun Aletleri & Tavla", eyebrow: "Oyun & keyif", slug: "oyun-aletleri", search: "oyun aleti", wide: false, icon: "gamepad" },
+  { label: "Özel Tasarım Nargile Takımları", eyebrow: "Özel koleksiyon", search: "özel tasarım", wide: true, icon: "sparkles" },
 ];
 
 export interface ResolvedTile extends ShowcaseTile {
@@ -53,15 +46,18 @@ export interface ResolvedTile extends ShowcaseTile {
 
 /** The tiles with their links and their artwork, in grid order. */
 export function resolveShowcase(
+  tiles: ShowcaseTile[],
   categories: Category[],
   brands: Brand[],
   artwork: (string | null)[],
 ): ResolvedTile[] {
   const bySlug = new Map(categories.map((c) => [c.slug, c]));
   const brandBySlug = new Map(brands.map((b) => [b.slug, b]));
-  return SHOWCASE_TILES.map((tile, i) => ({
+  return tiles.map((tile, i) => ({
     ...tile,
     href: navHref(tile, bySlug, brandBySlug),
-    image: artwork[i] ?? null,
+    // A photo chosen on the tile wins, then the category's own cover photo
+    // (Menü & Kategoriler), then one borrowed from its products.
+    image: tile.image || (tile.slug ? bySlug.get(tile.slug)?.image_url : null) || artwork[i] || null,
   }));
 }

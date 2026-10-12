@@ -10,6 +10,7 @@ import { SIDEBAR_WIDTH } from "@/components/layout/CategorySidebar";
 
 import { isSidebarCollapsed, setSidebarCollapsed, subscribeSidebar } from "@/lib/sidebar";
 import type { ResolvedNav } from "@/lib/storefrontNav";
+import { PAGE_CONTAINER } from "@/lib/layout";
 
 /**
  * One link, one white pill — the same object the category column is built
@@ -71,7 +72,7 @@ export function TopNav({ categories, links }: { categories: ResolvedNav[]; links
         aria-label="Alışverişe dön"
         className="border-t border-white/50 bg-[#82848a]/25 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4),0_6px_20px_rgba(0,0,0,0.05)] backdrop-blur-xl backdrop-saturate-150 dark:border-white/15"
       >
-        <div className="mx-auto flex max-w-7xl items-center px-4 py-2 sm:px-6">
+        <div className={`${PAGE_CONTAINER} flex items-center py-2`}>
           <Link
             href="/"
             className="flex shrink-0 items-center gap-2 rounded-2xl border border-red-700/50 bg-gradient-to-b from-red-600 to-red-700 px-5 py-2.5 text-[11px] font-bold uppercase tracking-wider text-white shadow-md shadow-red-600/20 transition-all duration-200 hover:from-red-700 hover:to-red-800 hover:shadow-[0_4px_16px_rgba(220,38,38,0.35)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
@@ -96,7 +97,7 @@ export function TopNav({ categories, links }: { categories: ResolvedNav[]; links
           not a gap of its own choosing: 16rem of button plus 1.5rem of gap is
           what puts the first pill on the hero's left edge, exactly as the
           column below puts the hero there. */}
-      <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-2 sm:px-6 lg:gap-6">
+      <div className={`${PAGE_CONTAINER} flex items-center gap-3 py-2 lg:gap-6`}>
         {/* The column's header cell, and the button that gives up its width. */}
         <button
           type="button"

@@ -11,7 +11,8 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { AUTH_HINT_SCRIPT } from "@/lib/auth";
 import { SIDEBAR_SCRIPT } from "@/lib/sidebar";
 import { getBrands, getCategories } from "@/lib/server/catalog";
-import { SIDEBAR_NAV, TOP_NAV, resolveNav } from "@/lib/storefrontNav";
+import { getHomepage } from "@/lib/server/homepage";
+import { resolveNav, sidebarNav } from "@/lib/storefrontNav";
 import { DEFAULT_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 import { THEME_SCRIPT } from "@/lib/theme";
 
@@ -58,10 +59,11 @@ const organizationJsonLd = {
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   // Cached for CATALOG_REVALIDATE like the catalog, so pages stay static/ISR.
-  const [categories, brands] = await Promise.all([getCategories(), getBrands()]);
-  // The two fixed menus, pointed at the catalog as it stands (see lib/storefrontNav).
-  const menu = resolveNav(TOP_NAV, categories ?? [], brands ?? []);
-  const sidebar = resolveNav(SIDEBAR_NAV, categories ?? [], brands ?? []);
+  const [categories, brands, home] = await Promise.all([getCategories(), getBrands(), getHomepage()]);
+  // The two menus from "Ana Sayfa Düzenleme", pointed at the catalog as it
+  // stands (see lib/storefrontNav).
+  const menu = resolveNav(home.navigation.top, categories ?? [], brands ?? []);
+  const sidebar = sidebarNav(home.navigation, categories ?? [], brands ?? []);
 
   return (
     <html
@@ -85,7 +87,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <TopBanner />
         <Navbar categories={sidebar} links={menu} />
         {children}
-        <SiteFooter categories={categories ?? []} />
+        {home.sections.footer && <SiteFooter footer={home.footer} />}
       </body>
     </html>
   );

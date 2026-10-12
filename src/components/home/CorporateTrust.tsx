@@ -1,24 +1,9 @@
 import { Check } from "lucide-react";
 
-/** The figures the shop stands on. */
-const STATS = [
-  { value: "17+", label: "Yıllık Tecrübe" },
-  { value: "2", label: "Şube & Kurye Merkezi" },
-  { value: "2.500+", label: "Ürün Çeşidi" },
-  { value: "60+", label: "Global Marka" },
-];
-
-const TRUST = ["Orijinal Ürün Garantisi", "Aynı Gün Sevkiyat", "Toptan & Perakende"];
-
-const MANIFESTO =
-  "Dünyadaki tüm sektörel gelişmeleri ve yenilikleri yakından takip ediyoruz. " +
-  "Küresel ölçekte kabul görmüş, kalitesi kanıtlanmış dünya markalarını da zengin " +
-  "stoklarımıza katarak, nargile severlere geniş ve premium bir ürün yelpazesi " +
-  "sunuyoruz. Toptan ve perakende nargile malzemesi tedariğinde Türkiye'nin öncü " +
-  "adresiyiz.";
+import type { Homepage } from "@/types";
 
 /**
- * The corporate close: the figures on the left, what the shop says about itself
+ * The corporate close ("Ana Sayfa Düzenleme" → Hakkımızda): the figures on the left, what the shop says about itself
  * on the right, and the three promises under both.
  *
  * The manifesto is rendered as ordinary prose in the markup rather than loaded
@@ -26,7 +11,8 @@ const MANIFESTO =
  * it is there to be read by a crawler as much as by a visitor. The pane scrolls
  * if the copy outgrows it, so a longer text never stretches the card.
  */
-export function CorporateTrust() {
+export function CorporateTrust({ content }: { content: Homepage["about"] }) {
+  const { stats, text, badges } = content;
   return (
     <section
       aria-label="Sultan Nargile hakkında"
@@ -42,9 +28,9 @@ export function CorporateTrust() {
 
         <div className="relative grid gap-6 lg:grid-cols-[45%_1fr] lg:items-center">
           <div className="grid grid-cols-2 gap-3 sm:gap-4">
-            {STATS.map(({ value, label }) => (
+            {stats.map(({ value, label }, i) => (
               <div
-                key={label}
+                key={`${label}-${i}`}
                 className="flex flex-col items-center justify-center rounded-2xl border border-neutral-200/60 bg-white p-4 text-center shadow-sm transition-all duration-300 hover:shadow-md sm:p-5 dark:border-neutral-700/60 dark:bg-neutral-800/80"
               >
                 <p className="text-2xl font-bold tracking-tight tabular-nums text-red-600 sm:text-3xl dark:text-red-400">
@@ -66,16 +52,17 @@ export function CorporateTrust() {
             </span>
             <div className="scroll-slim max-h-[170px] overflow-y-auto overscroll-contain pr-3 sm:max-h-[190px]">
               <p className="text-sm font-medium leading-relaxed text-neutral-700 sm:text-base dark:text-neutral-300">
-                {MANIFESTO}
+                {text}
               </p>
             </div>
           </div>
         </div>
 
+        {badges.length > 0 && (
         <div className="relative mt-6 flex flex-wrap items-center gap-5 border-t border-neutral-200/60 pt-5 sm:gap-8 dark:border-neutral-800">
-          {TRUST.map((badge) => (
+          {badges.map((badge, i) => (
             <span
-              key={badge}
+              key={`${badge}-${i}`}
               className="flex items-center gap-1.5 text-xs font-bold text-neutral-600 dark:text-neutral-400"
             >
               <Check className="h-3.5 w-3.5 shrink-0 text-red-600 dark:text-red-400" strokeWidth={2.5} aria-hidden />
@@ -83,6 +70,7 @@ export function CorporateTrust() {
             </span>
           ))}
         </div>
+        )}
       </div>
     </section>
   );

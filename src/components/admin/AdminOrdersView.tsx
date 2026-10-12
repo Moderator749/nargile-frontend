@@ -2,9 +2,9 @@
 
 import { Fragment, useCallback, useEffect, useState } from "react";
 import axios from "axios";
-import { CircleCheck, CreditCard, Landmark, RefreshCw, Van, X, XCircle } from "lucide-react";
+import { CircleCheck, CreditCard, Landmark, RefreshCw, Van, XCircle } from "lucide-react";
 
-import { panelClass } from "@/components/admin/AdminShell";
+import { AdminPageHeader, panelClass } from "@/components/admin/AdminShell";
 import { CargoSelect } from "@/components/admin/orders/CargoSelect";
 import { ExpandToggle, sheetId } from "@/components/admin/orders/ExpandToggle";
 import { OrderSheet } from "@/components/admin/orders/OrderSheet";
@@ -70,11 +70,11 @@ function AddressLine({ order }: { order: AdminOrder }) {
 }
 
 /**
- * The order management panel. It lives inside Genel Bakış as a sub-view (there is
- * no standalone /admin/orders route), so its heading is an h2 under the
- * dashboard's h1 and `onClose` takes the admin back to the overview.
+ * The order management page, /admin/orders ("Siparişler" in the sidebar): every
+ * order, filtered by status and İstanbul delivery, with approval, cancellation
+ * and dispatch on each row. Genel Bakış links here rather than embedding it.
  */
-export function AdminOrdersView({ onClose }: { onClose?: () => void }) {
+export function AdminOrdersView() {
   const [status, setStatus] = useState<OrderStatus | null>(null);
   const [istanbulOnly, setIstanbulOnly] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -200,36 +200,20 @@ export function AdminOrdersView({ onClose }: { onClose?: () => void }) {
   );
 
   return (
-    <section aria-labelledby="orders-heading">
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h2 id="orders-heading" className="text-2xl font-semibold tracking-tight">
-            Sipariş Yönetimi
-          </h2>
-          <p className="mt-1.5 text-sm text-slate-600 dark:text-zinc-400">
-            Havalesi hesaba geçen siparişleri “Ödendi” ile onaylayın (ParaPuan/Kumbarapuan o an tanımlanır) veya gerekçeyle
-            iptal edin; iptal stoğu ve kullanılan puanları iade eder. Kurye siparişleri aynı gün çıkmalıdır.
-          </p>
-        </div>
-        <div className="flex shrink-0 gap-2">
+    <>
+      <AdminPageHeader
+        title="Siparişler"
+        description="Havalesi hesaba geçen siparişleri “Ödendi” ile onaylayın (ParaPuan/Kumbarapuan o an tanımlanır) veya gerekçeyle iptal edin; iptal stoğu ve kullanılan puanları iade eder. Kurye siparişleri aynı gün çıkmalıdır."
+        actions={
           <button
             type="button"
             onClick={() => setAttempt((a) => a + 1)}
-            className="inline-flex h-9 items-center gap-2 self-start rounded-lg border border-slate-200 px-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 dark:border-white/10 dark:text-zinc-300 dark:hover:bg-white/5"
+            className="inline-flex h-9 shrink-0 items-center gap-2 self-start rounded-lg border border-slate-200 px-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 sm:self-auto dark:border-white/10 dark:text-zinc-300 dark:hover:bg-white/5"
           >
             <RefreshCw className="h-4 w-4" aria-hidden /> Yenile
           </button>
-          {onClose && (
-            <button
-              type="button"
-              onClick={onClose}
-              className="inline-flex h-9 items-center gap-2 self-start rounded-lg border border-slate-200 px-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 dark:border-white/10 dark:text-zinc-300 dark:hover:bg-white/5"
-            >
-              <X className="h-4 w-4" aria-hidden /> Kapat
-            </button>
-          )}
-        </div>
-      </div>
+        }
+      />
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div role="tablist" aria-label="Sipariş durumu" className="flex gap-1 overflow-x-auto [scrollbar-width:none]">
@@ -419,6 +403,6 @@ export function AdminOrdersView({ onClose }: { onClose?: () => void }) {
           </>
         )}
       </div>
-    </section>
+    </>
   );
 }

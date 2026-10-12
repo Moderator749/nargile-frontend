@@ -53,10 +53,12 @@ export function CategoryList({
 
   return (
     <ul className="space-y-2">
-      {items.map((item) => {
+      {items.map((item, i) => {
         const current = isCurrent(item);
         return (
-          <li key={item.label}>
+          // A subcategory sits a step in from its parent, so the automatic
+          // list still reads as a tree.
+          <li key={`${item.href}-${i}`} className={item.depth ? "pl-3" : undefined}>
             <Link
               href={item.href}
               onClick={onNavigate}

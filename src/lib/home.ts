@@ -2,7 +2,7 @@
 // /admin/promos, /admin/advantages) and served by /home/content; this file maps
 // it to what the components render.
 
-import type { ContentRequirement, HeroSlideContent, PromoBoxContent } from "@/types";
+import type { ContentRequirement, HeroSlideContent, HeroTextAlign, PromoBoxContent } from "@/types";
 
 export type Requirement = ContentRequirement;
 
@@ -24,6 +24,10 @@ export interface HeroSlide {
   guestCta?: { label: string; href: string };
   /** Optional background photo, shown at 30% under a vignette; null = CSS spotlight only. */
   image: string | null;
+  align: HeroTextAlign;
+  /** The photo's focal point (0–100 %) and zoom (100 = fills the slide). */
+  focus: { x: number; y: number };
+  zoom: number;
 }
 
 export const toHeroSlide = (s: HeroSlideContent): HeroSlide => ({
@@ -34,6 +38,9 @@ export const toHeroSlide = (s: HeroSlideContent): HeroSlide => ({
   cta: { label: s.cta_label, href: s.cta_href },
   guestCta: s.guest_cta_label && s.guest_cta_href ? { label: s.guest_cta_label, href: s.guest_cta_href } : undefined,
   image: s.image,
+  align: s.text_align ?? "center",
+  focus: { x: s.image_focus_x ?? 50, y: s.image_focus_y ?? 50 },
+  zoom: s.image_zoom ?? 100,
 });
 
 /** Shown only if the CMS is unreachable, so the homepage never loses its hero. */
@@ -44,6 +51,9 @@ export const FALLBACK_SLIDE: HeroSlide = {
   subtitle: "Endüstriyel Nargile ve Premium Sarf Malzemeleri.",
   cta: { label: "Kataloğu Keşfet", href: "/catalog" },
   image: null,
+  align: "center",
+  focus: { x: 50, y: 50 },
+  zoom: 100,
 };
 
 // ── Modules 6 & 7: smart promo grids ──────────────────────────────────────────

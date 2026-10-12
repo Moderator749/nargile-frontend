@@ -29,10 +29,10 @@ import {
 } from "@/components/admin/products/sheetDraft";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
-import { adminCreateProductSheet, adminGetProductSheet, adminUpdateProductSheet } from "@/lib/adminApi";
-import { fetchCategories } from "@/lib/catalogApi";
+import { adminCreateProductSheet, adminGetProductSheet, adminListCategories, adminUpdateProductSheet } from "@/lib/adminApi";
+import { categoryTree } from "@/lib/categories";
 import { getApiErrorMessage } from "@/lib/errors";
-import type { Category, CurrencyType, SavedProductSheet, SheetSegment } from "@/types";
+import type { AdminCategory, CurrencyType, SavedProductSheet, SheetSegment } from "@/types";
 
 /** The crimson of the site's primary buttons (red-600), as a one-click preset. */
 const CRIMSON = "#DC2626";
@@ -70,7 +70,8 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
   const router = useRouter();
   const editing = !!productId;
   const [draft, setDraft] = useState<SheetDraft>(emptyDraft);
-  const [categories, setCategories] = useState<Category[]>([]);
+  // The admin list, so a category switched off in the storefront can still be chosen.
+  const [categories, setCategories] = useState<AdminCategory[]>([]);
   const [loading, setLoading] = useState(editing);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -78,7 +79,7 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchCategories(controller.signal)
+    adminListCategories(controller.signal)
       .then(setCategories)
       .catch(() => {
         // Non-critical: the category select stays empty.
@@ -191,11 +192,19 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
                 className={sheetInputClass}
               >
                 <option value="">Kategorisiz</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
+                {/* Groups with their subcategories under them, as the menu shows them. */}
+                {categoryTree(categories).flatMap((group) =>
+                  [group, ...group.children].map((c) => {
+                    const row = categories.find((x) => x.id === c.id);
+                    return (
+                      <option key={c.id} value={c.id}>
+                        {c.parent_id !== null ? "— " : ""}
+                        {c.name}
+                        {row && !row.is_active ? " (pasif)" : ""}
+                      </option>
+                    );
+                  }),
+                )}
               </select>
             </SheetField>
             <ColorTags colors={draft.colors} onChange={(colors) => set("colors", colors)} />

@@ -6,12 +6,12 @@
  * and anything richer would be a way to put arbitrary HTML on the page from the
  * panel.
  */
-export function LegalText({ body, headingLevel = 3 }: { body: string; headingLevel?: 3 | 4 }) {
+export function LegalText({ body, headingLevel = 3 }: { body: string; headingLevel?: 2 | 3 | 4 }) {
   const blocks = body
     .split(/\n{2,}/)
     .map((block) => block.trim())
     .filter(Boolean);
-  const Heading = `h${headingLevel}` as "h3" | "h4";
+  const Heading = `h${headingLevel}` as "h2" | "h3" | "h4";
 
   return (
     <div className="space-y-3 text-sm leading-6 text-slate-700 dark:text-zinc-300">

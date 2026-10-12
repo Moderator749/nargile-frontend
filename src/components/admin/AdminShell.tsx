@@ -6,9 +6,11 @@ import { usePathname } from "next/navigation";
 import {
   BadgeCheck,
   Boxes,
+  ClipboardList,
   FileText,
   FolderTree,
   GalleryHorizontal,
+  House,
   LayoutDashboard,
   LayoutGrid,
   Megaphone,
@@ -27,9 +29,11 @@ import { useAuthHydrated } from "@/store/useHasHydrated";
 
 const NAV = [
   { href: "/admin", label: "Genel Bakış", icon: LayoutDashboard, exact: true },
+  { href: "/admin/orders", label: "Siparişler", icon: ClipboardList },
+  { href: "/admin/products", label: "Ürünler & Stok", icon: Boxes },
   { href: "/admin/customers", label: "Müşteriler", icon: Users },
   { href: "/admin/bank-accounts", label: "Banka Hesapları", icon: Landmark },
-  { href: "/admin/products", label: "Ürünler & Stok", icon: Boxes },
+  { href: "/admin/homepage", label: "Ana Sayfa Düzenleme", icon: House },
   { href: "/admin/categories", label: "Menü & Kategoriler", icon: FolderTree },
   { href: "/admin/brands", label: "Markalar", icon: Tags },
   { href: "/admin/hero", label: "Hero Slider", icon: GalleryHorizontal },

@@ -5,7 +5,6 @@ import Link from "next/link";
 import axios from "axios";
 import { ArrowRight, ClipboardList, Euro, DollarSign, UserCheck, Users, Van } from "lucide-react";
 
-import { AdminOrdersView } from "@/components/admin/AdminOrdersView";
 import { AdminPageHeader, panelClass } from "@/components/admin/AdminShell";
 import { Pagination } from "@/components/admin/Pagination";
 import { CargoSelect } from "@/components/admin/orders/CargoSelect";
@@ -166,8 +165,6 @@ export function AdminDashboard() {
   const [page, setPage] = useState(0);
   const [orders, setOrders] = useState<{ page: number; rows: AdminOrder[]; total: number } | null>(null);
   const [ordersError, setOrdersError] = useState<string | null>(null);
-  // The order management panel is a sub-view of this page, not a route of its own.
-  const [managing, setManaging] = useState(false);
   const [open, setOpen] = useState<ReadonlySet<string>>(new Set());
 
   useEffect(() => {
@@ -288,24 +285,19 @@ export function AdminDashboard() {
         </p>
       </section>
 
-      {/* A real button, not a banner: it opens the order panel in place, below. */}
+      {/* The way into Siparişler, with the queue that is waiting there beside it. */}
       <div className="mt-6 flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          onClick={() => setManaging((v) => !v)}
-          aria-expanded={managing}
-          aria-controls="orders-panel"
+        <Link
+          href="/admin/orders"
           className="group inline-flex items-center gap-2.5 rounded-lg bg-red-600 px-6 py-3.5 text-sm font-semibold text-white shadow-lg shadow-red-600/25 transition-colors duration-200 hover:bg-red-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 active:translate-y-px motion-reduce:transform-none dark:bg-red-500 dark:shadow-red-500/20 dark:hover:bg-red-400"
         >
           <ClipboardList className="h-5 w-5 shrink-0" aria-hidden />
-          {managing ? "Sipariş Yönetimi Panelini Kapat" : "Sipariş Yönetimi Paneline Git"}
+          Sipariş Yönetimine Git
           <ArrowRight
-            className={`h-4 w-4 shrink-0 transition-transform duration-200 motion-reduce:transition-none ${
-              managing ? "rotate-90" : "group-hover:translate-x-0.5"
-            }`}
+            className="h-4 w-4 shrink-0 transition-transform duration-200 group-hover:translate-x-0.5 motion-reduce:transition-none"
             aria-hidden
           />
-        </button>
+        </Link>
         {/* Lemon yellow on black: the queue has to be seen from across the room,
             and it reads the same in either theme. */}
         {queue && (
@@ -323,18 +315,8 @@ export function AdminDashboard() {
         </p>
       </div>
 
-      {managing && (
-        <div id="orders-panel" className="mt-6">
-          <AdminOrdersView onClose={() => setManaging(false)} />
-        </div>
-      )}
-
       {/* Latest orders */}
-      <section
-        aria-labelledby="recent-heading"
-        hidden={managing}
-        className={`${panelClass} mt-6 overflow-hidden`}
-      >
+      <section aria-labelledby="recent-heading" className={`${panelClass} mt-6 overflow-hidden`}>
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-5 py-3 dark:border-white/10">
           <h2 id="recent-heading" className="text-sm font-semibold">
             Son siparişler

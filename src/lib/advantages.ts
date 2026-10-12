@@ -1,47 +1,23 @@
 /**
- * "Avantajlar": the eight things the shop wants a buyer to know.
+ * "Avantajlar": the eight cards the homepage shows by default, until they are
+ * edited in "Ana Sayfa Düzenleme" (/admin/homepage).
  *
- * Written here rather than read from /admin/advantages, because the cards carry
- * an image each and that CMS row has no image to give — see the note below. The
- * five figures that describe how checkout behaves are the ones the engine
+ * The five figures that describe how checkout behaves are the ones the engine
  * actually applies (`app/services/checkout_engine.py`): ₺3.000 for free
  * carriage with the 20 kg coal rule, the 30.000/50.000 ciro tiers at 5% and 8%,
- * and the havale discount at 5% and 7%.
+ * and the havale discount at 5% and 7% — an edit to the copy does not change
+ * what checkout charges, so the two have to be kept in step by hand.
  *
- * The photographs are the shop's own, carried over from sultannargile.com's
- * asset folder into /public/images. Four of them say what their card says —
- * boxed coal ready to ship, the ornate set behind the authenticity promise, the
- * parts flat-lay behind technical support, a premium set for the trade — and
- * four stand in, because neither project has a photograph of a courier, a bank
- * transfer, a card terminal or a warehouse. Swapping those four is one line
- * each once the pictures exist; the icon stays as the fallback for an item
- * whose `image` is null.
+ * The photographs are the shop's own, in /public/images; the icon stands in
+ * for a card whose `image` is empty.
  */
 
-import {
-  BadgeCheck,
-  Bike,
-  CreditCard,
-  Headset,
-  Landmark,
-  Store,
-  TrendingUp,
-  Truck,
-  type LucideIcon,
-} from "lucide-react";
+import type { HomeAdvantageCard } from "@/types";
 
-export interface AdvantageItem {
-  /** The small red line above the title; the figure, where there is one. */
-  badge: string;
-  title: string;
-  description: string;
-  /** The condition under it, in smaller, quieter type. */
-  note?: string;
-  /** A photograph for the card's left box; the icon stands in while it is null. */
-  image?: string | null;
-  Icon: LucideIcon;
-}
+/** A card as the homepage editor stores it; see `HomeAdvantageCard`. */
+export type AdvantageItem = HomeAdvantageCard;
 
+/** The default cards, shown until the homepage editor saves its own. */
 export const ADVANTAGES: AdvantageItem[] = [
   {
     badge: "₺3.000+",
@@ -49,7 +25,7 @@ export const ADVANTAGES: AdvantageItem[] = [
     description: "3.000 TL ve üzeri tüm siparişlerinizde kargo tamamen ücretsizdir.",
     note: "Kömür siparişlerinde minimum 20 kg kuralı geçerlidir.",
     image: "/images/avantaj-cat-komur.jpg",
-    Icon: Truck,
+    icon: "truck",
   },
   {
     badge: "İstanbul içi",
@@ -57,7 +33,7 @@ export const ADVANTAGES: AdvantageItem[] = [
     description: "İstanbul içi aynı gün mağazadan kapınıza VIP kurye servisi.",
     note: "En yakın şubemizden anında sevk.",
     image: "/images/avantaj-oduman.jpg",
-    Icon: Bike,
+    icon: "bike",
   },
   {
     badge: "3 Taksit",
@@ -65,7 +41,7 @@ export const ADVANTAGES: AdvantageItem[] = [
     description: "Anlaşmalı tüm banka kartlarında vade farksız taksit avantajı.",
     note: "Ödeme adımında anında uygulanır.",
     image: "/images/avantaj-cat-nargile.jpg",
-    Icon: CreditCard,
+    icon: "credit-card",
   },
   {
     badge: "%5 – %8",
@@ -73,7 +49,7 @@ export const ADVANTAGES: AdvantageItem[] = [
     description: "Sepet tutarınız büyüdükçe otomatik tanımlanan ekstra toptan iskonto.",
     note: "30.000 TL ve 50.000 TL üzeri baremler.",
     image: "/images/avantaj-cat-tutun.jpg",
-    Icon: TrendingUp,
+    icon: "trending-up",
   },
   {
     badge: "%5 – %7",
@@ -81,7 +57,7 @@ export const ADVANTAGES: AdvantageItem[] = [
     description: "Banka havalesi ile yapılan siparişlerde anında net indirim.",
     note: "Tüm sipariş baremlerinde geçerli.",
     image: "/images/avantaj-cat-aksesuar.jpg",
-    Icon: Landmark,
+    icon: "landmark",
   },
   {
     badge: "%100 Orijinal",
@@ -90,7 +66,7 @@ export const ADVANTAGES: AdvantageItem[] = [
       "Tüm nargile takımları ve tütün markalarında doğrudan distribütör garantisi.",
     note: "Barkodlu ve faturalı sevkiyat.",
     image: "/images/avantaj-hero-1.jpg",
-    Icon: BadgeCheck,
+    icon: "badge-check",
   },
   {
     badge: "Teknik destek",
@@ -98,7 +74,7 @@ export const ADVANTAGES: AdvantageItem[] = [
     description: "Nargile ustalarımızdan canlı ürün, lüle ve kömür kullanım danışmanlığı.",
     note: "Haftanın 7 günü WhatsApp hattı aktif.",
     image: "/images/avantaj-hero-3.jpg",
-    Icon: Headset,
+    icon: "headset",
   },
   {
     badge: "Toptan tedarik",
@@ -107,6 +83,6 @@ export const ADVANTAGES: AdvantageItem[] = [
       "Kafeler ve tobacco shoplar için özel toptan fiyat listeleri ve düzenli sevkiyat.",
     note: "Kurumsal üyelik ile anında toptan fiyatlar.",
     image: "/images/avantaj-legend.jpg",
-    Icon: Store,
+    icon: "store",
   },
 ];

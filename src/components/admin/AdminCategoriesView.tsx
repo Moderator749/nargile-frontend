@@ -7,6 +7,8 @@ import { AdminPageHeader, panelClass } from "@/components/admin/AdminShell";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { Switch } from "@/components/ui/Switch";
+import { ImageField } from "@/components/admin/homepage/fields";
 import {
   adminAssignProductCategory,
   adminCreateCategory,
@@ -30,9 +32,11 @@ interface FormState {
   slug: string;
   parentId: string; // "" = top-level
   sortOrder: string;
+  isActive: boolean;
+  imageUrl: string | null;
 }
 
-const EMPTY: FormState = { name: "", slug: "", parentId: "", sortOrder: "0" };
+const EMPTY: FormState = { name: "", slug: "", parentId: "", sortOrder: "0", isActive: true, imageUrl: null };
 
 /** Admin: the two-level menu (groups → subcategories) and product → category mapping. */
 export function AdminCategoriesView() {
@@ -71,7 +75,14 @@ export function AdminCategoriesView() {
 
   function startEdit(c: AdminCategory) {
     setEditing(c);
-    setForm({ name: c.name, slug: c.slug, parentId: c.parent_id ? String(c.parent_id) : "", sortOrder: String(c.sort_order) });
+    setForm({
+      name: c.name,
+      slug: c.slug,
+      parentId: c.parent_id ? String(c.parent_id) : "",
+      sortOrder: String(c.sort_order),
+      isActive: c.is_active,
+      imageUrl: c.image_url ?? null,
+    });
     setResult(null);
   }
 
@@ -90,6 +101,8 @@ export function AdminCategoriesView() {
       slug: form.slug.trim() || null,
       parent_id: form.parentId ? Number(form.parentId) : null,
       sort_order: Math.max(0, Number.parseInt(form.sortOrder, 10) || 0),
+      is_active: form.isActive,
+      image_url: form.imageUrl?.trim() || null,
     };
     try {
       const saved = editing ? await adminUpdateCategory(editing.id, body) : await adminCreateCategory(body);
@@ -120,7 +133,14 @@ export function AdminCategoriesView() {
   const row = (c: AdminCategory, depth: 0 | 1) => (
     <li key={c.id} className={`flex items-center gap-3 py-2.5 ${depth ? "pl-8" : ""}`}>
       <div className="min-w-0 flex-1">
-        <p className={`truncate text-sm ${depth ? "" : "font-semibold"}`}>{c.name}</p>
+        <p className={`truncate text-sm ${depth ? "" : "font-semibold"} ${c.is_active ? "" : "text-slate-400 line-through dark:text-zinc-500"}`}>
+          {c.name}
+          {!c.is_active && (
+            <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 no-underline dark:bg-white/10 dark:text-zinc-400">
+              Pasif
+            </span>
+          )}
+        </p>
         <p className="font-mono text-xs text-slate-500 dark:text-zinc-400">/catalog/{c.slug}</p>
       </div>
       <span className="text-xs tabular-nums text-slate-500 dark:text-zinc-400" title="Doğrudan bu kategorideki ürünler">
@@ -228,6 +248,28 @@ export function AdminCategoriesView() {
             value={form.sortOrder}
             onChange={(e) => set("sortOrder", e.target.value)}
             hint="Küçük sayı önce gösterilir."
+          />
+          <div className="flex items-start justify-between gap-4 rounded-lg border border-slate-200 p-3 dark:border-white/10">
+            <div>
+              <p id="cat-active" className="text-sm font-medium text-slate-700 dark:text-zinc-300">
+                Mağazada göster
+              </p>
+              <p id="cat-active-hint" className="text-xs text-slate-500 dark:text-zinc-400">
+                Kapalıyken menülerde ve katalogda görünmez (alt kategorileriyle); ürünleri silinmez.
+              </p>
+            </div>
+            <Switch
+              checked={form.isActive}
+              onChange={(on) => set("isActive", on)}
+              labelledBy="cat-active"
+              describedBy="cat-active-hint"
+            />
+          </div>
+          <ImageField
+            label="Kapak görseli"
+            value={form.imageUrl}
+            onChange={(url) => set("imageUrl", url)}
+            hint="Ana sayfadaki “Premium Ürün Yelpazesi” kutusunda kullanılır; boşsa bir ürün fotoğrafı alınır."
           />
           {result && <Alert variant={result.kind}>{result.text}</Alert>}
           <Button type="submit" loading={saving} disabled={!form.name.trim()}>

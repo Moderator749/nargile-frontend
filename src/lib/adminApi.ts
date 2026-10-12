@@ -41,6 +41,8 @@ import type {
   SegmentType,
   ShippingMethod,
   SortDirection,
+  Homepage,
+  HomepageSettingsResponse,
   UploadedImage,
   Wallet,
 } from "@/types";
@@ -474,5 +476,19 @@ export async function adminUpdateLegalDocument(
   body: { title: string; body: string },
 ): Promise<LegalDocument> {
   const { data } = await api.put<LegalDocument>(`/admin/settings/legal/${key}`, body);
+  return data;
+}
+
+// ── Ana Sayfa Düzenleme ───────────────────────────────────────────────────────
+
+/** The saved homepage document: only the sections an admin has saved. */
+export async function adminGetHomepage(signal?: AbortSignal): Promise<HomepageSettingsResponse> {
+  const { data } = await api.get<HomepageSettingsResponse>("/admin/home/settings", { signal });
+  return data;
+}
+
+/** Replaces the document; sections left out go back to the storefront default. */
+export async function adminSaveHomepage(body: Partial<Homepage>): Promise<HomepageSettingsResponse> {
+  const { data } = await api.put<HomepageSettingsResponse>("/admin/home/settings", body);
   return data;
 }

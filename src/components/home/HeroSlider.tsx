@@ -6,8 +6,16 @@ import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 
 import { LinkButton } from "@/components/ui/LinkButton";
 import { canOptimiseImage, type HeroSlide } from "@/lib/home";
+import type { HeroTextAlign } from "@/types";
 
 const AUTOPLAY_MS = 7000;
+
+/** Where a slide's text block and buttons sit, as set in /admin/hero. */
+const ALIGN: Record<HeroTextAlign, { block: string; actions: string }> = {
+  left: { block: "items-start text-left", actions: "items-start sm:justify-start" },
+  center: { block: "items-center text-center", actions: "items-center sm:justify-center" },
+  right: { block: "items-end text-right", actions: "items-end sm:justify-end" },
+};
 
 const controlClass =
   "flex h-9 w-9 items-center justify-center rounded-full bg-white/[0.06] text-zinc-300 ring-1 ring-inset ring-white/10 backdrop-blur-md transition-colors duration-200 hover:bg-white/[0.12] hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
@@ -69,7 +77,7 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
               aria-roledescription="slide"
               aria-label={`${i + 1} / ${count}`}
               inert={!active}
-              className={`relative isolate flex flex-col items-center justify-center px-6 pb-24 pt-20 text-center transition-opacity duration-700 ease-out [grid-area:stack] sm:px-12 sm:pb-28 sm:pt-24 ${
+              className={`relative isolate flex flex-col justify-center px-6 pb-24 pt-20 transition-opacity duration-700 ease-out [grid-area:stack] sm:px-12 sm:pb-28 sm:pt-24 ${ALIGN[slide.align].block} ${
                 active ? "opacity-100" : "pointer-events-none opacity-0"
               }`}
             >
@@ -83,6 +91,13 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
                     unoptimized={!canOptimiseImage(slide.image)}
                     sizes="(min-width: 1280px) 1024px, 100vw"
                     className="-z-20 object-cover"
+                    // The admin's crop: the focal point stays put as the zoom
+                    // pushes in on it.
+                    style={{
+                      objectPosition: `${slide.focus.x}% ${slide.focus.y}%`,
+                      transform: slide.zoom > 100 ? `scale(${slide.zoom / 100})` : undefined,
+                      transformOrigin: `${slide.focus.x}% ${slide.focus.y}%`,
+                    }}
                   />
                   {/* A light wash keeps white text legible while the photo stays vivid; the
                       bottom fade only darkens behind the slide controls. */}
@@ -110,7 +125,7 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
                   {slide.subtitle}
                 </span>
               </Heading>
-              <div className="mt-10 flex flex-col items-center gap-3 sm:flex-row">
+              <div className={`mt-10 flex flex-col gap-3 sm:flex-row ${ALIGN[slide.align].actions}`}>
                 <LinkButton href={slide.cta.href} variant="primary">
                   {slide.cta.label}
                   <ArrowRight

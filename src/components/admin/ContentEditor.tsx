@@ -50,8 +50,8 @@ interface ContentEditorProps<Row extends BaseRow, Write extends BaseWrite> {
   toWrite: (row: Row) => Write;
   /** Row summary in the list. */
   summary: (row: Row) => { primary: string; secondary?: string };
-  /** The type-specific form fields. */
-  fields: (value: Write, set: (patch: Partial<Write>) => void) => ReactNode;
+  /** The type-specific form fields; `current` is the row being edited, if any. */
+  fields: (value: Write, set: (patch: Partial<Write>) => void, current: Row | null) => ReactNode;
   /** Client-side check; null = OK. The server validates again. */
   validate: (value: Write) => string | null;
   /** Extra note under the list (e.g. how rows are grouped). */
@@ -252,7 +252,7 @@ export function ContentEditor<Row extends BaseRow, Write extends BaseWrite>({
             )}
           </div>
 
-          {fields(form, set)}
+          {fields(form, set, editing)}
 
           {api.uploadImage && (
             <div className="space-y-2">

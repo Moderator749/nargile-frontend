@@ -17,6 +17,7 @@ import { selectCartCount, useCartStore } from "@/store/useCartStore";
 import { SIDEBAR_WIDTH_LG } from "@/components/layout/CategorySidebar";
 import type { ResolvedNav } from "@/lib/storefrontNav";
 import { B2B_SEGMENTS } from "@/types";
+import { PAGE_CONTAINER } from "@/lib/layout";
 
 const iconButton =
   "relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors duration-200 hover:bg-foreground/[0.06] hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
@@ -111,7 +112,7 @@ export function Navbar({
       className="sticky top-0 z-50 w-full border-b border-border bg-background/80 text-foreground backdrop-blur-lg backdrop-saturate-150"
     >
       {/* Module 2: logo · search · currency · order tracking · account · cart */}
-      <div className="mx-auto flex h-16 max-w-7xl items-center gap-1.5 px-4 sm:gap-2 sm:px-6">
+      <div className={`${PAGE_CONTAINER} flex h-16 items-center gap-1.5 sm:gap-2`}>
         {/* The logo sits in the category column's width, so what follows it
             starts exactly on that column's line — which is where
             "KAMPANYALAR" starts in the bar below. */}

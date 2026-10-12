@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { canOptimiseImage } from "@/lib/home";
+import { homeIcon } from "@/lib/homeIcons";
 import type { ResolvedTile } from "@/lib/showcase";
 
 /**
@@ -35,7 +36,7 @@ const TILE = [
  * The whole tile is the link; there is no button, which is also what gives the
  * longer names room to be written out in full.
  */
-export function CatalogShowcase({ tiles }: { tiles: ResolvedTile[] }) {
+export function CatalogShowcase({ title, subtitle, tiles }: { title: string; subtitle: string; tiles: ResolvedTile[] }) {
   if (tiles.length === 0) return null;
 
   return (
@@ -48,13 +49,18 @@ export function CatalogShowcase({ tiles }: { tiles: ResolvedTile[] }) {
           // 600 with tight tracking, and 900 reads as a different typeface.
           className="text-balance text-center text-3xl font-semibold tracking-tighter text-foreground md:text-5xl"
         >
-          Premium Ürün Yelpazesi
+          {title}
         </h2>
+        {subtitle && (
+          <p className="mx-auto mt-3 max-w-2xl text-balance text-center text-sm text-muted-foreground">{subtitle}</p>
+        )}
         <span aria-hidden className="mx-auto mb-10 mt-4 block h-1.5 w-14 rounded-full bg-red-600" />
 
         <ul className="grid w-full grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-4">
-          {tiles.map((tile) => (
-            <li key={tile.label} className={`flex min-w-0${tile.wide ? " md:col-span-2" : ""}`}>
+          {tiles.map((tile, i) => {
+            const Icon = homeIcon(tile.icon);
+            return (
+            <li key={`${tile.label}-${i}`} className={`flex min-w-0${tile.wide ? " md:col-span-2" : ""}`}>
               <Link href={tile.href} className={TILE}>
                 {/* The photograph, filling the tile. Decorative: the title is
                     what names the tile, so it carries no alt text of its own. */}
@@ -68,7 +74,7 @@ export function CatalogShowcase({ tiles }: { tiles: ResolvedTile[] }) {
                     className="object-cover object-center transition-transform duration-700 ease-out motion-safe:group-hover:scale-[1.08]"
                   />
                 ) : (
-                  <tile.Icon
+                  <Icon
                     className="absolute inset-0 m-auto h-28 w-28 text-white/10 transition-transform duration-700 ease-out motion-safe:group-hover:scale-[1.08]"
                     strokeWidth={0.75}
                     aria-hidden
@@ -92,7 +98,8 @@ export function CatalogShowcase({ tiles }: { tiles: ResolvedTile[] }) {
                 </div>
               </Link>
             </li>
-          ))}
+            );
+          })}
         </ul>
       </div>
     </section>
