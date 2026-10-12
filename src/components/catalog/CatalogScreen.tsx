@@ -5,7 +5,7 @@ import { CategorySidebar } from "@/components/layout/CategorySidebar";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { breadcrumbJsonLd, productListJsonLd, type Breadcrumb } from "@/lib/seo";
 import { getHomepage } from "@/lib/server/homepage";
-import { sidebarNav } from "@/lib/storefrontNav";
+import { resolveNav } from "@/lib/storefrontNav";
 import type { Brand, CatalogProduct, Category } from "@/types";
 
 interface CatalogScreenProps {
@@ -48,7 +48,7 @@ export async function CatalogScreen({
         activeCategory={activeCategory}
         initialProducts={products}
         heading={<CatalogHeading title={title} breadcrumbs={breadcrumbs} />}
-        sidebar={<CategorySidebar items={sidebarNav(home.navigation, categories, brands)} />}
+        sidebar={<CategorySidebar items={resolveNav(home.navigation.sidebar, categories, brands)} />}
       />
 
       {/* The same eight cards the homepage closes with, below the grid and

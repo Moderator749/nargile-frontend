@@ -12,13 +12,14 @@ const variants = {
 
 type LinkButtonProps = ComponentProps<typeof Link> & { variant?: keyof typeof variants };
 
+/** The button's look, for a stand-in that must match it without being a link (an editor preview). */
+export const linkButtonClass = (variant: keyof typeof variants = "primary") =>
+  `group inline-flex h-12 items-center justify-center gap-2 rounded-full px-7 text-sm font-medium tracking-tight transition-[background-color,box-shadow,transform] duration-200 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-safe:active:scale-[0.98] ${variants[variant]}`;
+
 /** A navigation link styled as a call-to-action button. */
 export function LinkButton({ variant = "primary", className = "", children, ...props }: LinkButtonProps) {
   return (
-    <Link
-      {...props}
-      className={`group inline-flex h-12 items-center justify-center gap-2 rounded-full px-7 text-sm font-medium tracking-tight transition-[background-color,box-shadow,transform] duration-200 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-safe:active:scale-[0.98] ${variants[variant]} ${className}`}
-    >
+    <Link {...props} className={`${linkButtonClass(variant)} ${className}`}>
       {children}
     </Link>
   );

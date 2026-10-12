@@ -8,38 +8,41 @@ interface CategoryCopy {
   description: string;
 }
 
-// Keyed by backend category slug. Unknown slugs fall back to DEFAULT_COPY.
+// Keyed by backend category slug (the taxonomy in the e7c4b19a2f60 migration):
+// the seven groups and the sub-categories with something of their own to say.
+// Unknown slugs fall back to DEFAULT_COPY.
 const COPY: Record<string, CategoryCopy> = {
   "nargile-takimlari": {
     icon: Wind,
-    description:
-      "Kafe ve işletmeler için dayanıklı, endüstriyel nargile takımları. Toptan ve bayi fiyatlarıyla hızlı tedarik.",
-  },
-  komurler: {
-    icon: Flame,
-    description:
-      "Uzun yanan, kokusuz nargile kömürleri. Kilogram ve koli seçenekleriyle toptan kömür tedariki.",
-  },
-  luleler: {
-    icon: Layers,
-    description:
-      "Seramik, silikon ve kil nargile lüleleri. Isıyı dengeli dağıtan profesyonel lüle modelleri.",
+    description: "Çelik, klasik, Rus ve masaüstü nargile takımları. Kafe ve işletmelere toptan ve bayi fiyatlarıyla hızlı tedarik.",
   },
   "celik-takimlar": {
     icon: Shield,
     description: "Paslanmaz çelik nargile takımları: yoğun kullanıma dayanıklı, uzun ömürlü gövdeler.",
   },
-  "tuketim-sarf": {
-    icon: Leaf,
-    description: "Nargile kömürleri ve sarf malzemeleri: işletmenizin günlük tüketimi için toptan tedarik.",
+  luleler: {
+    icon: Layers,
+    description: "Phunnel ve killer, sırlı ve sırsız, toprak, seramik, cam ve silikon lüleler. Isıyı dengeli dağıtan profesyonel modeller.",
   },
-  "donanim-parcalar": {
-    icon: Cog,
-    description: "Lüleler, közlükler, marpuçlar, yedek şişeler ve aksesuarlar: nargileniz için tüm parçalar.",
+  "kozlukler-isi-yonetimi": {
+    icon: Flame,
+    description: "Közlükler (HMD), folyo, rüzgarlık ve maşalar: içim boyunca ısıyı sabit tutan ekipmanlar.",
   },
-  aksesuarlar: {
+  "marpuc-ve-hortumlar": {
     icon: Wrench,
-    description: "Hortum, maşa, rüzgarlık ve yedek parçalar: işletmenizin ihtiyaç duyduğu tüm nargile aksesuarları.",
+    description: "Silikon ve klasik marpuçlar, uçlar ve adaptörler: rahat çekim için doğru hortum.",
+  },
+  "sipsiler-ve-aksesuarlar": {
+    icon: Cog,
+    description: "Sipsiler, contalar, yedek parçalar, temizlik ürünleri ve taşıma çantaları.",
+  },
+  "nargile-komurleri": {
+    icon: Flame,
+    description: "Uzun yanan, kokusuz hindistan cevizi ve hızlı yanan nargile kömürleri; kilogram ve koli seçenekleriyle toptan tedarik.",
+  },
+  "tutun-bitkisel-ve-sarf": {
+    icon: Leaf,
+    description: "Bitkisel karışımlar ve sarf malzemeleri: işletmenizin günlük tüketimi için toptan tedarik.",
   },
 };
 

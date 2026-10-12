@@ -66,6 +66,8 @@ export function getHomeContent(): Promise<HomeContent | null> {
  * twelve tiles cost twelve requests per window rather than per visitor.
  */
 export async function getTileArtwork(tile: { slug?: string | null; search?: string | null }): Promise<string | null> {
+  // Nothing to look in: no photo, rather than the catalog's first product.
+  if (!tile.slug && !tile.search) return null;
   const params = new URLSearchParams({ limit: "1" });
   if (tile.slug) params.set("category", tile.slug);
   else if (tile.search) params.set("q", tile.search);

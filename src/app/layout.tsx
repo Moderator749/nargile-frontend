@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 
 import { StoreHydration } from "@/components/StoreHydration";
@@ -7,12 +8,11 @@ import { Navbar } from "@/components/layout/Navbar";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { TopBanner } from "@/components/layout/TopBanner";
 import { ExportNotice } from "@/components/auth/ExportNotice";
-import { JsonLd } from "@/components/seo/JsonLd";
 import { AUTH_HINT_SCRIPT } from "@/lib/auth";
 import { SIDEBAR_SCRIPT } from "@/lib/sidebar";
 import { getBrands, getCategories } from "@/lib/server/catalog";
 import { getHomepage } from "@/lib/server/homepage";
-import { resolveNav, sidebarNav } from "@/lib/storefrontNav";
+import { resolveNav } from "@/lib/storefrontNav";
 import { DEFAULT_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 import { THEME_SCRIPT } from "@/lib/theme";
 
@@ -49,13 +49,6 @@ export const viewport: Viewport = {
   ],
 };
 
-const organizationJsonLd = {
-  "@context": "https://schema.org",
-  "@type": "Organization",
-  name: SITE_NAME,
-  url: SITE_URL,
-  logo: `${SITE_URL}/icon.svg`,
-};
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   // Cached for CATALOG_REVALIDATE like the catalog, so pages stay static/ISR.
@@ -63,7 +56,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   // The two menus from "Ana Sayfa Düzenleme", pointed at the catalog as it
   // stands (see lib/storefrontNav).
   const menu = resolveNav(home.navigation.top, categories ?? [], brands ?? []);
-  const sidebar = sidebarNav(home.navigation, categories ?? [], brands ?? []);
+  const sidebar = resolveNav(home.navigation.sidebar, categories ?? [], brands ?? []);
 
   return (
     <html
@@ -72,13 +65,14 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       // The pre-paint scripts below set the theme class and data-auth before hydration.
       suppressHydrationWarning
     >
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
-        <script dangerouslySetInnerHTML={{ __html: AUTH_HINT_SCRIPT }} />
-        <script dangerouslySetInnerHTML={{ __html: SIDEBAR_SCRIPT }} />
-      </head>
       <body className="flex min-h-full flex-col bg-background font-sans text-foreground selection:bg-accent selection:text-white">
-        <JsonLd data={organizationJsonLd} />
+        {/* Pre-paint: theme class, signed-in hint and sidebar state, set from
+            storage before anything renders. `beforeInteractive` puts them in the
+            initial HTML's <head>; a bare <script> element here would be rendered
+            again by React on the client (e.g. for a 404) and warn. */}
+        <Script id="theme" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+        <Script id="auth-hint" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: AUTH_HINT_SCRIPT }} />
+        <Script id="sidebar-state" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: SIDEBAR_SCRIPT }} />
         <StoreHydration />
         {/* Shown to an export account on its first page after signing in, and
             not dismissable any other way. Renders nothing for everyone else. */}

@@ -42,7 +42,7 @@ export const DEFAULT_HOMEPAGE: Homepage = {
     about: true,
     footer: true,
   },
-  navigation: { top: TOP_NAV, sidebar_mode: "custom", sidebar: SIDEBAR_NAV },
+  navigation: { top: TOP_NAV, sidebar: SIDEBAR_NAV },
   deals: {
     title: "FIRSATLARI KAÇIRMA",
     subtitle: "nargilemalzemesi.com'da her sipariş ayrıcalıklı. Fırsat ürünleri stoklarla sınırlıdır.",

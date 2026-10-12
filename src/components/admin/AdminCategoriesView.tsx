@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, type SubmitEvent } from "react";
 import { FolderTree, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 
-import { AdminPageHeader, panelClass } from "@/components/admin/AdminShell";
+import { panelClass } from "@/components/admin/AdminShell";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -38,8 +38,14 @@ interface FormState {
 
 const EMPTY: FormState = { name: "", slug: "", parentId: "", sortOrder: "0", isActive: true, imageUrl: null };
 
-/** Admin: the two-level menu (groups → subcategories) and product → category mapping. */
-export function AdminCategoriesView() {
+/**
+ * The catalog's categories: the two-level tree (groups → sub-categories) with
+ * add, rename, delete, on/off and cover image, and product → category moves.
+ * Lives in "Ana Sayfa Düzenleme" › Katalog Kategorileri; `onChange` tells the
+ * editor around it when the tree changed, so its pickers and link checks
+ * see the new categories at once.
+ */
+export function AdminCategoriesView({ onChange }: { onChange?: () => void } = {}) {
   const [categories, setCategories] = useState<AdminCategory[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY);
@@ -49,7 +55,10 @@ export function AdminCategoriesView() {
 
   const reload = () =>
     adminListCategories()
-      .then(setCategories)
+      .then((rows) => {
+        setCategories(rows);
+        onChange?.();
+      })
       .catch((err: unknown) => setLoadError(getApiErrorMessage(err, "Kategoriler yüklenemedi.")));
 
   useEffect(() => {
@@ -167,10 +176,10 @@ export function AdminCategoriesView() {
 
   return (
     <>
-      <AdminPageHeader
-        title="Menü & Kategoriler"
-        description="Ana menüdeki gruplar ve alt kategoriler. Bir grup sayfası, alt kategorilerindeki tüm ürünleri de listeler."
-      />
+      <p className="mb-6 text-sm text-slate-600 dark:text-zinc-400">
+        Katalogdaki gruplar ve alt kategoriler: ürün formundaki kategori listesi ve mağazadaki kategori sayfaları
+        (/catalog/…) buradan gelir. Bir grup sayfası, alt kategorilerindeki ürünleri de listeler.
+      </p>
 
       <div className="grid gap-6 xl:grid-cols-[1fr_24rem]">
         <section aria-labelledby="tree-heading" className={`${panelClass} p-5 sm:p-6`}>

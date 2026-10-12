@@ -15,11 +15,34 @@ const MEDIA = mediaUrl();
 /** The API is on this machine, so uploads are served from a loopback address. */
 const MEDIA_IS_LOCAL = ["localhost", "127.0.0.1", "[::1]", "::1"].includes(MEDIA.hostname);
 
+/** Old category slug → the category its products moved to. */
+const RETIRED_CATEGORIES: Record<string, string> = {
+  komurler: "nargile-komurleri",
+  "tuketim-sarf": "tutun-bitkisel-ve-sarf",
+  "donanim-parcalar": "sipsiler-ve-aksesuarlar",
+  aksesuarlar: "sipsiler-ve-aksesuarlar",
+  "rus-takimlar": "rus-takimlari",
+  "masaustu-takimlar": "mini-masaustu-takimlar",
+  "bitkisel-urunler": "bitkisel-karisimlar",
+  marpuclar: "marpuc-ve-hortumlar",
+  "yedek-siseler": "yedek-sise-ve-govde",
+};
+
 const nextConfig: NextConfig = {
   // The dashboard ("Genel Bakış") lives at /admin; keep /admin/overview working too.
   async redirects() {
     return [
       { source: "/admin/overview", destination: "/admin", permanent: false },
+      // Category pages retired with the clean taxonomy (migration e7c4b19a2f60),
+      // forwarded for good to where their products went, so an old link or a
+      // search result never lands on a 404.
+      ...Object.entries(RETIRED_CATEGORIES).map(([from, to]) => ({
+        source: `/catalog/${from}`,
+        destination: `/catalog/${to}`,
+        permanent: true,
+      })),
+      // Category management moved into Ana Sayfa Düzenleme.
+      { source: "/admin/categories", destination: "/admin/homepage?tab=katalog-kategorileri", permanent: true },
       // `/catalog?category=<slug>` is how other shops (and old links) name a
       // category; ours live at /catalog/<slug>.
       {

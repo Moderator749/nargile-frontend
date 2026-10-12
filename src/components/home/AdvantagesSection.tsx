@@ -1,5 +1,6 @@
 import Image from "next/image";
 
+import { AdvantageCopy } from "@/components/home/AdvantageCopy";
 import { canOptimiseImage } from "@/lib/home";
 import { homeIcon } from "@/lib/homeIcons";
 import type { Homepage } from "@/types";
@@ -81,28 +82,10 @@ export function AdvantagesSection({ content }: { content: Homepage["advantages"]
                 />
               </div>
 
-              {/* The badge and the title are pinned; everything under them
-                  scrolls in place. A long description then costs the card
-                  nothing — no stretched tile, no row of mismatched heights, and
-                  nothing cut off mid-sentence either. */}
+              {/* The words, clamped to keep every card the same height; the
+                  whole text is a "Devamını oku" away when it does not fit. */}
               <div className="flex min-w-0 flex-1 flex-col justify-center self-stretch bg-white px-3.5 py-2 sm:px-4 sm:py-2.5 dark:bg-zinc-900">
-                <p className="mb-0.5 block text-[10px] font-bold uppercase tracking-wider text-red-600 dark:text-red-400">
-                  {badge}
-                </p>
-                <h3 className="text-sm font-semibold leading-snug tracking-tight text-foreground transition-colors duration-300 group-hover:text-red-600 sm:text-base dark:group-hover:text-red-400">
-                  {title}
-                </h3>
-
-                <div className="scroll-slim mt-0.5 max-h-[120px] overflow-y-auto overscroll-contain pr-1.5 sm:max-h-[140px]">
-                  <p className="text-xs font-medium leading-relaxed text-neutral-500 dark:text-zinc-400">
-                    {description}
-                  </p>
-                  {note && (
-                    <p className="mt-1.5 border-t border-neutral-100 pt-1.5 text-[10px] font-medium leading-4 text-neutral-400 sm:text-[11px] dark:border-white/10 dark:text-zinc-500">
-                      {note}
-                    </p>
-                  )}
-                </div>
+                <AdvantageCopy badge={badge} title={title} description={description} note={note} />
               </div>
             </div>
           </li>

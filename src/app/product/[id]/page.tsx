@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 
 import { ProductDetail } from "@/components/product/ProductDetail";
 import { JsonLd } from "@/components/seo/JsonLd";
-import { categoryCopy, topLevelOf } from "@/lib/categories";
+import { categoryCopy } from "@/lib/categories";
 import { breadcrumbJsonLd, productHref, productJsonLd, type Breadcrumb } from "@/lib/seo";
 import { getCategories, getProduct } from "@/lib/server/catalog";
 import { SITE_NAME } from "@/lib/site";
@@ -50,11 +50,9 @@ export default async function ProductPage(props: PageProps<"/product/[id]">) {
   const { product, categories, category } = await load(id);
   if (!product) notFound();
 
-  const group = category ? topLevelOf(category, categories) : undefined;
+  // Ana Sayfa > Kategori > Ürün: the path a visitor takes from a menu to here.
   const crumbs: Breadcrumb[] = [
     { name: "Ana Sayfa", href: "/" },
-    { name: "Katalog", href: "/catalog" },
-    ...(group && group.id !== category?.id ? [{ name: group.name, href: `/catalog/${group.slug}` }] : []),
     ...(category ? [{ name: category.name, href: `/catalog/${category.slug}` }] : []),
     { name: product.name, href: productHref(product.id) },
   ];

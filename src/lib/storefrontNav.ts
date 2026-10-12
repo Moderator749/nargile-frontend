@@ -28,8 +28,6 @@ export interface ResolvedNav {
   label: string;
   href: string;
   accent?: boolean;
-  /** 1 for a subcategory listed under its parent (the automatic sidebar). */
-  depth?: number;
 }
 
 /**
@@ -40,31 +38,32 @@ export interface ResolvedNav {
  */
 export const TOP_NAV: NavEntry[] = [
   { label: "KAMPANYALAR", href: "/#firsat-urunleri", accent: true },
-  { label: "NARGİLE KÖMÜRLERİ", slug: "komurler" },
+  { label: "NARGİLE TAKIMLARI", slug: "nargile-takimlari" },
   { label: "LÜLELER", slug: "luleler" },
-  { label: "KÖZLÜKLER", slug: "kozlukler" },
-  { label: "MARPUÇLAR", slug: "marpuclar" },
-  { label: "SİPSİLER", slug: "sipsiler" },
-  { label: "NARGİLE MALZEMELERİ", slug: "donanim-parcalar" },
+  { label: "KÖZLÜKLER", slug: "kozlukler-isi-yonetimi" },
+  { label: "MARPUÇLAR", slug: "marpuc-ve-hortumlar" },
+  { label: "SİPSİ & AKSESUAR", slug: "sipsiler-ve-aksesuarlar" },
+  { label: "KÖMÜRLER", slug: "nargile-komurleri" },
 ];
 
-/** The left column, in the wireframe's order: the fifteen the shop leads with. */
+/** The left column: fifteen entries the shop leads with. */
 export const SIDEBAR_NAV: NavEntry[] = [
+  // The house brands first, then the catalog's own groups and the takım types.
   { label: "SULTAN NARGİLE", brand: "sultan", search: "sultan" },
   { label: "LEGEND HOOKAH", brand: "legend", search: "legend" },
   { label: "ODUMAN NARGİLE", brand: "oduman", search: "oduman" },
   { label: "MR.WOOD NARGİLE", brand: "mr-wood", search: "mr.wood" },
-  { label: "KLASİK NARGİLE TAKIMLARI", slug: "klasik-takimlar" },
-  { label: "ÇELİK NARGİLE TAKIMLARI", slug: "celik-takimlar" },
-  { label: "MASAÜSTÜ NARGİLE TAKIMLARI", slug: "masaustu-takimlar" },
-  { label: "RUS NARGİLE TAKIMLARI", slug: "rus-takimlar" },
-  { label: "STEAMULATION", brand: "steamulation", search: "steamulation" },
-  { label: "QUASAR ARGUİLE", brand: "quasar", search: "quasar" },
-  { label: "MEDUSE NARGİLE TAKIMLARI", brand: "meduse", search: "meduse" },
-  { label: "PANADA HOOKAH", brand: "panada", search: "panada" },
-  { label: "BİTKİSEL ÜRÜNLER", slug: "bitkisel-urunler" },
-  { label: "YEDEK NARGİLE ŞİŞELERİ", slug: "yedek-siseler" },
-  { label: "OYUN ALETLERİ", slug: "oyun-aletleri", search: "oyun aleti" },
+  { label: "ÇELİK TAKIMLAR", slug: "celik-takimlar" },
+  { label: "KLASİK TAKIMLAR", slug: "klasik-takimlar" },
+  { label: "RUS TAKIMLARI", slug: "rus-takimlari" },
+  { label: "MİNİ & MASAÜSTÜ TAKIMLAR", slug: "mini-masaustu-takimlar" },
+  { label: "LÜLELER", slug: "luleler" },
+  { label: "KÖZLÜK & ISI YÖNETİMİ", slug: "kozlukler-isi-yonetimi" },
+  { label: "MARPUÇ & HORTUMLAR", slug: "marpuc-ve-hortumlar" },
+  { label: "SİPSİLER & AKSESUARLAR", slug: "sipsiler-ve-aksesuarlar" },
+  { label: "NARGİLE KÖMÜRLERİ", slug: "nargile-komurleri" },
+  { label: "TÜTÜN, BİTKİSEL & SARF", slug: "tutun-bitkisel-ve-sarf" },
+  { label: "YEDEK ŞİŞE & GÖVDE", slug: "yedek-sise-ve-govde" },
 ];
 
 /**
@@ -99,6 +98,8 @@ export function resolveNav(
   const bySlug = new Map(categories.map((c) => [c.slug, c]));
   const brandBySlug = new Map(brands.map((b) => [b.slug, b]));
   return entries.flatMap((entry) => {
+    // Switched off in "Kategori Düzenle": kept in the list, not shown.
+    if (entry.enabled === false) return [];
     const label =
       entry.label.trim() ||
       (entry.slug ? bySlug.get(entry.slug)?.name : undefined) ||
@@ -107,30 +108,4 @@ export function resolveNav(
     if (!label) return [];
     return [{ label: label.toLocaleUpperCase("tr-TR"), href: navHref(entry, bySlug, brandBySlug), accent: entry.accent || undefined }];
   });
-}
-
-/**
- * The automatic sidebar: every active category in the catalog's own order,
- * each top-level one followed by its subcategories. A category added in
- * "Menü & Kategoriler" appears here with nothing else to edit.
- */
-export function autoSidebar(categories: Category[]): ResolvedNav[] {
-  const order = (a: Category, b: Category) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.name.localeCompare(b.name, "tr");
-  const tops = categories.filter((c) => c.parent_id === null).sort(order);
-  return tops.flatMap((top) => [
-    { label: top.name.toLocaleUpperCase("tr-TR"), href: `/catalog/${top.slug}` },
-    ...categories
-      .filter((c) => c.parent_id === top.id)
-      .sort(order)
-      .map((c) => ({ label: c.name.toLocaleUpperCase("tr-TR"), href: `/catalog/${c.slug}`, depth: 1 })),
-  ]);
-}
-
-/** The left column as configured: automatic, or the admin's own list. */
-export function sidebarNav(
-  navigation: { sidebar_mode: "auto" | "custom"; sidebar: NavEntry[] },
-  categories: Category[],
-  brands: Brand[],
-): ResolvedNav[] {
-  return navigation.sidebar_mode === "auto" ? autoSidebar(categories) : resolveNav(navigation.sidebar, categories, brands);
 }

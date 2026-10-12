@@ -898,13 +898,29 @@ export interface HeroSlideContent {
   image_focus_y: number;
   /** 100 = fills the slide; up to 200 crops in. */
   image_zoom: number;
+  /** Free positions of the four parts on a wide screen; null = centred stack. */
+  layout: HeroLayout | null;
   is_active: boolean;
   sort_order: number;
 }
 
 export type HeroTextAlign = "left" | "center" | "right";
 
-export type PromoVariant = "image" | "text" | "transparent";
+export type HeroPart = "eyebrow" | "title" | "subtitle" | "button";
+
+/** Each part's centre, in % of the slide's width (x) and height (y). */
+export type HeroLayout = Record<HeroPart, { x: number; y: number }>;
+
+export type PromoVariant = "image" | "text" | "transparent" | "social";
+
+/** The "social" card's channels (left half) and its jump button's text (right half, linking to `href`). */
+export interface SocialWidget {
+  instagram_href: string | null;
+  instagram_label: string;
+  youtube_href: string | null;
+  youtube_label: string;
+  anchor_label: string;
+}
 
 export interface PromoBoxContent {
   id: number;
@@ -920,9 +936,26 @@ export interface PromoBoxContent {
   has_upload: boolean;
   badge: "sok" | null;
   requires: ContentRequirement | null;
+  /** Free positions of the card's parts on a wide screen; null = the stacked card. */
+  layout: PromoLayout | null;
+  /** Which way the photo's dark veil runs ("to-t" = dark at the foot). */
+  overlay_direction: OverlayDirection;
+  /** The photo's focal point (0–100 %) and zoom (100 = cover, up to 200). */
+  image_focus_x: number;
+  image_focus_y: number;
+  image_zoom: number;
+  /** The "social" variant's links and labels; null for other cards. */
+  widget: SocialWidget | null;
   is_active: boolean;
   sort_order: number;
 }
+
+export type OverlayDirection = "to-r" | "to-l" | "to-b" | "to-t";
+
+export type PromoPart = "eyebrow" | "title" | "text" | "button";
+
+/** Each text part's centre, in % of the card. (`image` is a retired key, ignored.) */
+export type PromoLayout = Record<PromoPart, { x: number; y: number }> & { image?: { x: number; y: number } | null };
 
 export interface AdvantageContent {
   id: number;
@@ -1171,6 +1204,8 @@ export interface HomeNavItem {
   search?: string | null;
   href?: string | null;
   accent?: boolean;
+  /** false = kept in the list but not shown on the storefront. */
+  enabled?: boolean;
 }
 
 export interface HomeShowcaseTile extends HomeNavItem {
@@ -1223,12 +1258,7 @@ export interface HomeFooter {
 
 export interface Homepage {
   sections: HomeSections;
-  navigation: {
-    top: HomeNavItem[];
-    /** "auto": every active category, live; "custom": the `sidebar` list. */
-    sidebar_mode: "auto" | "custom";
-    sidebar: HomeNavItem[];
-  };
+  navigation: { top: HomeNavItem[]; sidebar: HomeNavItem[] };
   deals: { title: string; subtitle: string };
   brands: { items: string[] };
   showcase: { title: string; subtitle: string; tiles: HomeShowcaseTile[] };

@@ -2,8 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
+import { useSearchParams } from "next/navigation";
 import { ExternalLink, Loader2, RotateCcw, Save } from "lucide-react";
 
+import { AdminCategoriesView } from "@/components/admin/AdminCategoriesView";
 import { AdminPageHeader } from "@/components/admin/AdminShell";
 import { isSiteOrHttpsLink } from "@/components/admin/ContentEditor";
 import {
@@ -21,16 +23,31 @@ import { Alert } from "@/components/ui/Alert";
 import { adminGetHomepage, adminListBrands, adminSaveHomepage } from "@/lib/adminApi";
 import { fetchCategories } from "@/lib/catalogApi";
 import { getApiErrorMessage } from "@/lib/errors";
+import { brokenCategoryLink } from "@/lib/catalogLinks";
 import { DEFAULT_HOMEPAGE, resolveHomepage } from "@/lib/homepage";
 import { refreshStorefront } from "@/lib/revalidate";
 import type { Brand, Category, Homepage, HomeSections } from "@/types";
 
-type TabKey = "sections" | "navigation" | "hero" | "deals" | "brands" | "showcase" | "advantages" | "about" | "footer";
+type TabKey =
+  | "sections"
+  | "catalog"
+  | "navigation"
+  | "hero"
+  | "deals"
+  | "brands"
+  | "showcase"
+  | "advantages"
+  | "about"
+  | "footer";
+
+/** Deep links (/admin/homepage?tab=katalog-kategorileri), e.g. from the retired /admin/categories. */
+const TAB_PARAM: Record<string, TabKey> = { "katalog-kategorileri": "catalog", "kategori-duzenle": "navigation" };
 
 /** Each tab, and the part of the document it edits (none for the two that link out). */
 const TABS: { key: TabKey; label: string; doc?: keyof Homepage; section?: keyof HomeSections }[] = [
   { key: "sections", label: "Bölümler" },
-  { key: "navigation", label: "Menüler", doc: "navigation" },
+  { key: "catalog", label: "Katalog Kategorileri" },
+  { key: "navigation", label: "Kategori Düzenle", doc: "navigation" },
   { key: "hero", label: "Hero & Kutular", section: "hero" },
   { key: "deals", label: "Fırsatlar", doc: "deals", section: "deals" },
   { key: "brands", label: "Markalar Şeridi", doc: "brands", section: "brands" },
@@ -56,7 +73,7 @@ function toPayload(doc: Homepage): Partial<Homepage> {
 }
 
 const SECTION_NAMES: Record<string, string> = {
-  navigation: "Menüler",
+  navigation: "Kategori Düzenle",
   deals: "Fırsatlar",
   brands: "Markalar Şeridi",
   showcase: "Premium Yelpaze",
@@ -79,16 +96,23 @@ function saveError(err: unknown): string {
   return getApiErrorMessage(err, "Kaydedilemedi.");
 }
 
-/** Links the server will refuse, caught before the request with a readable message. */
-function checkLinks(doc: Homepage): string | null {
+/** Links the server will refuse, or that would 404, caught before the request with a readable message. */
+function checkLinks(doc: Homepage, categories: Category[]): string | null {
   const bad = (href: string | null | undefined) => !!href && !isSiteOrHttpsLink(href);
   for (const [name, list] of [
-    ["Üst menü", doc.navigation.top],
-    ["Sol menü", doc.navigation.sidebar],
+    ["Üst Kategori", doc.navigation.top],
+    ["Sol Kategori", doc.navigation.sidebar],
     ["Premium Yelpaze", doc.showcase.tiles],
   ] as const) {
     const i = list.findIndex((item) => bad(item.href));
     if (i >= 0) return `${name}, ${i + 1}. öğe: bağlantı / ile ya da https:// ile başlamalı.`;
+    // A cleared link with nothing else behind it would quietly become a search.
+    const empty = list.findIndex((item) => item.href === "" && !item.slug && !item.brand);
+    if (empty >= 0) return `${name}, ${empty + 1}. öğe: bağlantı boş.`;
+    const nameless = list.findIndex((item) => !item.label.trim() && !item.slug && !item.brand);
+    if (nameless >= 0) return `${name}, ${nameless + 1}. öğe: isim boş.`;
+    const dead = list.findIndex((item) => brokenCategoryLink(item.href, categories));
+    if (dead >= 0) return `${name}, ${dead + 1}. öğe: “${list[dead].href}” var olmayan bir kategoriye gidiyor (404).`;
   }
   const f = doc.footer;
   for (const column of [f.blog, f.info, f.faq]) {
@@ -106,13 +130,22 @@ function checkLinks(doc: Homepage): string | null {
 export function AdminHomepageView() {
   const [saved, setSaved] = useState<Homepage | null>(null);
   const [doc, setDoc] = useState<Homepage | null>(null);
-  const [tab, setTab] = useState<TabKey>("sections");
+  // Open on the tab a link asked for, else the switches.
+  const requested = TAB_PARAM[useSearchParams().get("tab") ?? ""];
+  const [tab, setTab] = useState<TabKey>(requested ?? "sections");
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [toggling, setToggling] = useState<keyof HomeSections | null>(null);
   const [result, setResult] = useState<{ kind: "success" | "error"; text: string } | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
+
+  /** The category tree changed (Katalog Kategorileri): the pickers and link checks follow it. */
+  const reloadCategories = () => {
+    fetchCategories()
+      .then(setCategories)
+      .catch(() => {});
+  };
 
   useEffect(() => {
     const controller = new AbortController();
@@ -171,7 +204,7 @@ export function AdminHomepageView() {
 
   async function save() {
     if (!doc) return;
-    const problem = checkLinks(doc);
+    const problem = checkLinks(doc, categories);
     if (problem) return setResult({ kind: "error", text: problem });
     setSaving(true);
     setResult(null);
@@ -251,7 +284,15 @@ export function AdminHomepageView() {
 
           <div role="tabpanel" aria-label={current.label}>
             {tab === "sections" && <SectionsTab sections={saved.sections} busy={toggling} onToggle={(k, on) => void toggle(k, on)} />}
-            {tab === "navigation" && <NavigationTab value={doc.navigation} set={set("navigation")} categories={categories} brands={brands} />}
+            {tab === "catalog" && <AdminCategoriesView onChange={reloadCategories} />}
+            {tab === "navigation" && (
+              <NavigationTab
+                value={doc.navigation}
+                set={set("navigation")}
+                categories={categories}
+                brands={brands}
+              />
+            )}
             {tab === "hero" && <HeroTab />}
             {tab === "deals" && <DealsTab value={doc.deals} set={set("deals")} />}
             {tab === "brands" && <BrandsTab value={doc.brands} set={set("brands")} />}
@@ -277,8 +318,10 @@ export function AdminHomepageView() {
             </div>
           )}
 
-          {/* The save bar: always reachable, and loud only when there is something to save. */}
-          <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/90 backdrop-blur-md dark:border-white/10 dark:bg-zinc-950/90">
+          {/* The save bar: always reachable, and loud only when there is something to save.
+              Katalog Kategorileri saves each change itself, so it shows only
+              if other tabs have unsaved edits. */}
+          <div className={`${tab === "catalog" && !dirty ? "hidden" : ""} fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/90 backdrop-blur-md dark:border-white/10 dark:bg-zinc-950/90`}>
             <div className="mx-auto flex max-w-7xl items-center justify-end gap-3 px-4 py-3 sm:px-6">
               <p className="mr-auto text-xs text-slate-500 dark:text-zinc-400">
                 {dirty ? "Kaydedilmemiş değişiklikler var." : "Tüm değişiklikler kaydedildi."}

@@ -21,8 +21,8 @@ import {
   getTileArtwork,
 } from "@/lib/server/catalog";
 import { getHomepage } from "@/lib/server/homepage";
-import { resolveShowcase } from "@/lib/showcase";
-import { sidebarNav } from "@/lib/storefrontNav";
+import { resolveShowcase, tileSlug } from "@/lib/showcase";
+import { resolveNav } from "@/lib/storefrontNav";
 import { DEFAULT_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 import { PAGE_CONTAINER } from "@/lib/layout";
 
@@ -59,11 +59,18 @@ export default async function HomePage() {
     // One photo per showcase tile that has none of its own; cached with the
     // rest of the catalog reads, and not asked for at all while it is hidden.
     sections.showcase
-      ? Promise.all(home.showcase.tiles.map((tile) => (tile.image ? null : getTileArtwork(tile))))
+      ? Promise.all(
+          home.showcase.tiles.map((tile) => {
+            // Only a tile with a category (or a search) has products to borrow a
+            // photo from; an unfiltered query would return any product at all.
+            const slug = tileSlug(tile);
+            return tile.image || (!slug && !tile.search) ? null : getTileArtwork({ slug, search: tile.search });
+          }),
+        )
       : [],
   ]);
   const allCategories = categories ?? [];
-  const sidebar = sidebarNav(home.navigation, allCategories, brands ?? []);
+  const sidebar = resolveNav(home.navigation.sidebar, allCategories, brands ?? []);
   const showcase = resolveShowcase(home.showcase.tiles, allCategories, brands ?? [], artwork);
   // The deals funnel is the page's only deals section, and it is there only
   // when there is a deal to put in it.
@@ -82,6 +89,17 @@ export default async function HomePage() {
       {/* Follows the visitor's theme; the slider and advantage tiles are always dark,
           the brand strip always light. */}
       <main className="flex flex-1 flex-col bg-background text-foreground">
+        {/* The shop as an Organization: stated once, on the page search
+            engines read it from, rather than on every page (including 404s). */}
+        <JsonLd
+          data={{
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            name: SITE_NAME,
+            url: SITE_URL,
+            logo: `${SITE_URL}/icon.svg`,
+          }}
+        />
         <JsonLd
           data={{
             "@context": "https://schema.org",

@@ -1,30 +1,29 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowUpRight, GalleryHorizontal, LayoutGrid } from "lucide-react";
+import { ArrowUpRight, GalleryHorizontal, LayoutGrid, Tags, Timer } from "lucide-react";
 
 import { adminSelectClass } from "@/components/admin/ContentEditor";
+import { CategoryMenuEditor } from "@/components/admin/homepage/CategoryMenuEditor";
 import {
   IconSelect,
   ImageField,
   ListEditor,
-  NavTargetFields,
+  LinkField,
   Panel,
   StringList,
   TextArea,
   TextField,
 } from "@/components/admin/homepage/fields";
 import { Switch } from "@/components/ui/Switch";
-import { categoryTree } from "@/lib/categories";
 import { SECTION_LABELS } from "@/lib/homepage";
-import { autoSidebar } from "@/lib/storefrontNav";
+import { navHref } from "@/lib/storefrontNav";
 import type {
   Brand,
   Category,
   Homepage,
   HomeAdvantageCard,
   HomeFooterColumn,
-  HomeNavItem,
   HomeSections,
   HomeShowcaseTile,
   HomeSocialKind,
@@ -75,89 +74,7 @@ export function SectionsTab({
   );
 }
 
-// ── Menüler ──────────────────────────────────────────────────────────────────
-
-const blankNav = (): HomeNavItem => ({ label: "YENİ BAĞLANTI", href: "/catalog" });
-
-/** Categories in menu order, groups first with their subcategories under them. */
-function categoryOptions(categories: Category[]) {
-  return categoryTree(categories).flatMap((group) => [group, ...group.children]);
-}
-
-function NavList({
-  items,
-  onChange,
-  max,
-  accent,
-  categories,
-  brands,
-}: {
-  items: HomeNavItem[];
-  onChange: (items: HomeNavItem[]) => void;
-  max: number;
-  accent: boolean;
-  categories: Category[];
-  brands: Brand[];
-}) {
-  const nameOf = (item: HomeNavItem) =>
-    (item.slug && categories.find((c) => c.slug === item.slug)?.name) ||
-    (item.brand && brands.find((b) => b.slug === item.brand)?.name) ||
-    "";
-  return (
-    <div className="space-y-3">
-      <ListEditor
-        items={items}
-        onChange={onChange}
-        blank={blankNav}
-        max={max}
-        addLabel="Özel bağlantı ekle"
-        itemLabel={(item) => item.label || nameOf(item) || "(adsız)"}
-        render={(item, update) => (
-          <div className="space-y-3">
-            <TextField
-              label="Görünen ad"
-              value={item.label}
-              max={60}
-              onChange={(label) => update({ label })}
-              placeholder={nameOf(item) || undefined}
-              hint={item.slug || item.brand ? "Boş bırakılırsa kategorinin / markanın güncel adı kullanılır." : undefined}
-            />
-            <NavTargetFields item={item} update={update} categories={categories} brands={brands} />
-            {accent && (
-              <label className="flex items-center gap-2 text-xs font-medium text-slate-600 dark:text-zinc-400">
-                <input
-                  type="checkbox"
-                  checked={!!item.accent}
-                  onChange={(e) => update({ accent: e.target.checked })}
-                  className="h-4 w-4 accent-red-600"
-                />
-                Kırmızı vurgula (kampanya)
-              </label>
-            )}
-          </div>
-        )}
-      />
-      {/* The other way in: straight from the catalog, linked by its slug. */}
-      <select
-        value=""
-        disabled={items.length >= max || categories.length === 0}
-        aria-label="Var olan kategorilerden ekle"
-        onChange={(e) => {
-          if (e.target.value) onChange([...items, { label: "", slug: e.target.value }]);
-        }}
-        className={`${adminSelectClass} h-10 max-w-sm`}
-      >
-        <option value="">＋ Var olan kategorilerden seç…</option>
-        {categoryOptions(categories).map((c) => (
-          <option key={c.id} value={c.slug}>
-            {c.parent_id !== null ? "— " : ""}
-            {c.name}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
-}
+// ── Kategori Düzenle ─────────────────────────────────────────────────────────
 
 export function NavigationTab({
   value,
@@ -170,32 +87,23 @@ export function NavigationTab({
   categories: Category[];
   brands: Brand[];
 }) {
-  const auto = value.sidebar_mode === "auto";
-  const preview = autoSidebar(categories);
-  const modeButton = (mode: "auto" | "custom", title: string, hint: string) => {
-    const active = value.sidebar_mode === mode;
-    return (
-      <button
-        type="button"
-        role="radio"
-        aria-checked={active}
-        onClick={() => set({ ...value, sidebar_mode: mode })}
-        className={`flex-1 rounded-xl border p-3 text-left transition-colors ${
-          active
-            ? "border-red-500 bg-red-50 dark:bg-red-500/10"
-            : "border-slate-200 hover:bg-slate-50 dark:border-white/10 dark:hover:bg-white/5"
-        }`}
-      >
-        <span className={`block text-sm font-semibold ${active ? "text-red-700 dark:text-red-300" : ""}`}>{title}</span>
-        <span className="mt-0.5 block text-xs text-slate-500 dark:text-zinc-400">{hint}</span>
-      </button>
-    );
-  };
-
   return (
-    <div className="grid gap-6 xl:grid-cols-2">
-      <Panel title="Üst menü çubuğu" hint="“KATAGORİLER” düğmesinin yanındaki beyaz butonlar. En fazla 12.">
-        <NavList
+    <div className="grid items-start gap-6 xl:grid-cols-2">
+      <Panel
+        title="Sol Kategori"
+        hint="Slider’ın yanındaki dikey kategori sütunu (kategori sayfalarında da). En fazla 30."
+      >
+        <CategoryMenuEditor
+          items={value.sidebar}
+          onChange={(sidebar) => set({ ...value, sidebar })}
+          max={30}
+          accent={false}
+          categories={categories}
+          brands={brands}
+        />
+      </Panel>
+      <Panel title="Üst Kategori" hint="Slider’ın üstündeki yatay buton çubuğu. En fazla 12.">
+        <CategoryMenuEditor
           items={value.top}
           onChange={(top) => set({ ...value, top })}
           max={12}
@@ -203,42 +111,6 @@ export function NavigationTab({
           categories={categories}
           brands={brands}
         />
-      </Panel>
-      <Panel title="Sol kategori menüsü" hint="Ana sayfa ve katalogdaki kategori sütunu.">
-        <div role="radiogroup" aria-label="Sol menü modu" className="flex flex-col gap-2 sm:flex-row">
-          {modeButton("auto", "Otomatik", "Tüm aktif kategoriler, Menü & Kategoriler’deki sırayla. Yeni kategori kendiliğinden eklenir.")}
-          {modeButton("custom", "Özel sıralama", "Kategorileri, markaları ve özel bağlantıları kendiniz seçip sıralayın.")}
-        </div>
-        {auto ? (
-          <div className="rounded-xl border border-slate-200 p-4 dark:border-white/10">
-            <p className="mb-3 text-xs text-slate-500 dark:text-zinc-400">
-              Şu an gösterilecek {preview.length} kategori. Eklemek, yeniden adlandırmak, sıralamak veya gizlemek için{" "}
-              <Link href="/admin/categories" className="font-medium text-red-600 hover:underline dark:text-red-400">
-                Menü & Kategoriler
-              </Link>
-              ’e gidin.
-            </p>
-            <ul className="space-y-1.5">
-              {preview.map((item, i) => (
-                <li
-                  key={`${item.href}-${i}`}
-                  className={`rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider dark:border-white/10 dark:bg-zinc-900 ${item.depth ? "ml-4" : ""}`}
-                >
-                  {item.label}
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : (
-          <NavList
-            items={value.sidebar}
-            onChange={(sidebar) => set({ ...value, sidebar })}
-            max={30}
-            accent={false}
-            categories={categories}
-            brands={brands}
-          />
-        )}
       </Panel>
     </div>
   );
@@ -256,7 +128,8 @@ export function HeroTab() {
         <GalleryHorizontal className="mt-0.5 h-6 w-6 shrink-0 text-red-600" aria-hidden />
         <span>
           <span className="flex items-center gap-1 font-semibold">
-            Hero Slider <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
+            Hero Slider{" "}
+            <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
           </span>
           <span className="mt-1 block text-sm text-slate-500 dark:text-zinc-400">
             Slayt başlıkları, alt metinler ve butonlar; metin hizası (sol / orta / sağ); görsel yükleme, odak noktası ve
@@ -268,7 +141,8 @@ export function HeroTab() {
         <LayoutGrid className="mt-0.5 h-6 w-6 shrink-0 text-red-600" aria-hidden />
         <span>
           <span className="flex items-center gap-1 font-semibold">
-            Kategori Kutuları <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
+            Kategori Kutuları{" "}
+            <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
           </span>
           <span className="mt-1 block text-sm text-slate-500 dark:text-zinc-400">
             Slider’ın altındaki iki sıra kutu: görsel, başlık, açıklama ve bağlantı.
@@ -281,27 +155,64 @@ export function HeroTab() {
 
 // ── Fırsatlar & Markalar ─────────────────────────────────────────────────────
 
+/** A card into one of the editors that live on their own page. */
+function EditorLink({ href, title, text, Icon }: { href: string; title: string; text: string; Icon: typeof Timer }) {
+  return (
+    <Link href={href} className={editorLink}>
+      <Icon className="mt-0.5 h-6 w-6 shrink-0 text-red-600" aria-hidden />
+      <span>
+        <span className="flex items-center gap-1 font-semibold">
+          {title} <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
+        </span>
+        <span className="mt-1 block text-sm text-slate-500 dark:text-zinc-400">{text}</span>
+      </span>
+    </Link>
+  );
+}
+
 export function DealsTab({ value, set }: { value: Homepage["deals"]; set: Set<"deals"> }) {
   return (
-    <Panel title="Fırsatları Kaçırma" hint="Kırmızı vitrinin başlığı ve altındaki satır. Ürünler “Fırsat Ürünleri”nden gelir.">
-      <TextField label="Başlık" value={value.title} max={60} onChange={(title) => set({ ...value, title })} />
-      <TextArea label="Alt metin" value={value.subtitle} max={200} rows={2} onChange={(subtitle) => set({ ...value, subtitle })} />
-    </Panel>
+    <div className="space-y-6">
+      <EditorLink
+        href="/admin/flash-sales"
+        title="Fırsat Ürünleri"
+        text="Vitrinde hangi ürünlerin, hangi fırsat fiyatı ve bitiş tarihiyle görüneceği."
+        Icon={Timer}
+      />
+      <Panel title="Fırsatları Kaçırma" hint="Kırmızı vitrinin başlığı ve altındaki satır.">
+        <TextField label="Başlık" value={value.title} max={60} onChange={(title) => set({ ...value, title })} />
+        <TextArea
+          label="Alt metin"
+          value={value.subtitle}
+          max={200}
+          rows={2}
+          onChange={(subtitle) => set({ ...value, subtitle })}
+        />
+      </Panel>
+    </div>
   );
 }
 
 export function BrandsTab({ value, set }: { value: Homepage["brands"]; set: Set<"brands"> }) {
   return (
-    <Panel title="Markalar Şeridi" hint="Kapsülde kayan marka adları, bu sırayla. En fazla 40.">
-      <StringList
-        items={value.items}
-        onChange={(items) => set({ items })}
-        max={40}
-        maxLength={40}
-        addLabel="Marka ekle"
-        placeholder="ör. Oduman"
+    <div className="space-y-6">
+      <EditorLink
+        href="/admin/brands"
+        title="Markalar (katalog)"
+        text="Marka kayıtları, logoları ve arama terimleri: menülerdeki marka bağlantıları ve katalog araması bunları kullanır."
+        Icon={Tags}
       />
-    </Panel>
+      <Panel title="Markalar Şeridi" hint="Kapsülde kayan marka adları, bu sırayla. En fazla 40.">
+        <StringList
+          items={value.items}
+          onChange={(items) => set({ items })}
+          max={40}
+          maxLength={40}
+          addLabel="Marka ekle"
+          placeholder="ör. Oduman"
+        />
+      </Panel>
+    </div>
   );
 }
 
@@ -318,17 +229,34 @@ export function ShowcaseTab({
   categories: Category[];
   brands: Brand[];
 }) {
+  const bySlug = new Map(categories.map((c) => [c.slug, c]));
+  const brandBySlug = new Map(brands.map((b) => [b.slug, b]));
   return (
     <div className="space-y-6">
       <Panel title="Başlık">
         <TextField label="Başlık" value={value.title} max={80} onChange={(title) => set({ ...value, title })} />
-        <TextArea label="Alt metin (isteğe bağlı)" value={value.subtitle} max={240} rows={2} onChange={(subtitle) => set({ ...value, subtitle })} />
+        <TextArea
+          label="Alt metin (isteğe bağlı)"
+          value={value.subtitle}
+          max={240}
+          rows={2}
+          onChange={(subtitle) => set({ ...value, subtitle })}
+        />
       </Panel>
-      <Panel title="Kutular" hint="Geniş kutu iki sütun kaplar. Görsel boşsa kategoriden bir ürün fotoğrafı kullanılır.">
+      <Panel
+        title="Kutular"
+        hint="Geniş kutu iki sütun kaplar. Görsel boşsa, bağlantı bir kategori sayfasıysa (/catalog/…) o kategorinin kapak ya da ürün fotoğrafı kullanılır."
+      >
         <ListEditor
           items={value.tiles}
           onChange={(tiles) => set({ ...value, tiles })}
-          blank={(): HomeShowcaseTile => ({ label: "Yeni kutu", eyebrow: "", wide: false, icon: "package", href: "/catalog" })}
+          blank={(): HomeShowcaseTile => ({
+            label: "Yeni kutu",
+            eyebrow: "",
+            wide: false,
+            icon: "package",
+            href: "/catalog",
+          })}
           max={24}
           addLabel="Kutu ekle"
           itemLabel={(t) => `${t.label}${t.wide ? " · geniş" : ""}`}
@@ -337,9 +265,18 @@ export function ShowcaseTab({
               <div className="space-y-3">
                 <div className="grid gap-3 sm:grid-cols-2">
                   <TextField label="Başlık" value={tile.label} max={80} onChange={(label) => update({ label })} />
-                  <TextField label="Kırmızı üst etiket" value={tile.eyebrow} max={40} onChange={(eyebrow) => update({ eyebrow })} />
+                  <TextField
+                    label="Kırmızı üst etiket"
+                    value={tile.eyebrow}
+                    max={40}
+                    onChange={(eyebrow) => update({ eyebrow })}
+                  />
                 </div>
-                <NavTargetFields item={tile} update={update} categories={categories} brands={brands} />
+                <LinkField
+                  categories={categories}
+                  value={tile.href ?? navHref(tile, bySlug, brandBySlug)}
+                  onChange={(href) => update({ slug: null, brand: null, search: null, href })}
+                />
                 <div className="grid items-end gap-3 sm:grid-cols-2">
                   <IconSelect value={tile.icon} onChange={(icon) => update({ icon })} />
                   <label className="flex h-10 items-center gap-2 text-sm text-slate-700 dark:text-zinc-300">
@@ -353,7 +290,12 @@ export function ShowcaseTab({
                   </label>
                 </div>
               </div>
-              <ImageField label="Görsel" value={tile.image} onChange={(image) => update({ image })} hint="Boş: kategoriden otomatik." />
+              <ImageField
+                label="Görsel"
+                value={tile.image}
+                onChange={(image) => update({ image })}
+                hint="Boş: kategoriden otomatik."
+              />
             </div>
           )}
         />
@@ -368,15 +310,36 @@ export function AdvantagesTab({ value, set }: { value: Homepage["advantages"]; s
   return (
     <div className="space-y-6">
       <Panel title="Başlık" hint="Ana sayfada ve kategori sayfalarının altında aynı kartlar gösterilir.">
-        <TextField label="Kırmızı etiket" value={value.eyebrow} max={60} onChange={(eyebrow) => set({ ...value, eyebrow })} />
+        <TextField
+          label="Kırmızı etiket"
+          value={value.eyebrow}
+          max={60}
+          onChange={(eyebrow) => set({ ...value, eyebrow })}
+        />
         <TextField label="Başlık" value={value.title} max={80} onChange={(title) => set({ ...value, title })} />
-        <TextArea label="Alt metin" value={value.subtitle} max={240} rows={2} onChange={(subtitle) => set({ ...value, subtitle })} />
+        <TextArea
+          label="Alt metin"
+          value={value.subtitle}
+          max={240}
+          rows={2}
+          onChange={(subtitle) => set({ ...value, subtitle })}
+        />
       </Panel>
-      <Panel title="Kartlar" hint="Ücretsiz kargo, ciro ve havale oranları ödeme adımının uyguladığı kurallardır; metni değiştirmek kuralı değiştirmez.">
+      <Panel
+        title="Kartlar"
+        hint="Ücretsiz kargo, ciro ve havale oranları ödeme adımının uyguladığı kurallardır; metni değiştirmek kuralı değiştirmez."
+      >
         <ListEditor
           items={value.cards}
           onChange={(cards) => set({ ...value, cards })}
-          blank={(): HomeAdvantageCard => ({ badge: "", title: "Yeni avantaj", description: "", note: "", icon: "badge-check", image: null })}
+          blank={(): HomeAdvantageCard => ({
+            badge: "",
+            title: "Yeni avantaj",
+            description: "",
+            note: "",
+            icon: "badge-check",
+            image: null,
+          })}
           max={12}
           addLabel="Kart ekle"
           itemLabel={(c) => c.title}
@@ -384,14 +347,30 @@ export function AdvantagesTab({ value, set }: { value: Homepage["advantages"]; s
             <div className="grid gap-3 lg:grid-cols-[1fr_16rem]">
               <div className="space-y-3">
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <TextField label="Kırmızı rozet" value={card.badge} max={30} onChange={(badge) => update({ badge })} />
+                  <TextField
+                    label="Kırmızı rozet"
+                    value={card.badge}
+                    max={30}
+                    onChange={(badge) => update({ badge })}
+                  />
                   <TextField label="Başlık" value={card.title} max={80} onChange={(title) => update({ title })} />
                 </div>
-                <TextArea label="Açıklama" value={card.description} max={240} rows={2} onChange={(description) => update({ description })} />
+                <TextArea
+                  label="Açıklama"
+                  value={card.description}
+                  max={240}
+                  rows={2}
+                  onChange={(description) => update({ description })}
+                />
                 <TextField label="Dipnot" value={card.note} max={200} onChange={(note) => update({ note })} />
                 <IconSelect value={card.icon} onChange={(icon) => update({ icon })} />
               </div>
-              <ImageField label="Görsel" value={card.image} onChange={(image) => update({ image })} hint="Dikey (4:5) fotoğraf en iyisi." />
+              <ImageField
+                label="Görsel"
+                value={card.image}
+                onChange={(image) => update({ image })}
+                hint="Dikey (4:5) fotoğraf en iyisi."
+              />
             </div>
           )}
         />
@@ -415,8 +394,20 @@ export function AboutTab({ value, set }: { value: Homepage["about"]; set: Set<"a
           itemLabel={(s) => [s.value, s.label].filter(Boolean).join(" · ") || "(boş)"}
           render={(stat, update) => (
             <div className="grid gap-3 sm:grid-cols-[8rem_1fr]">
-              <TextField label="Değer" value={stat.value} max={12} onChange={(v) => update({ value: v })} placeholder="17+" />
-              <TextField label="Açıklama" value={stat.label} max={40} onChange={(label) => update({ label })} placeholder="Yıllık Tecrübe" />
+              <TextField
+                label="Değer"
+                value={stat.value}
+                max={12}
+                onChange={(v) => update({ value: v })}
+                placeholder="17+"
+              />
+              <TextField
+                label="Açıklama"
+                value={stat.label}
+                max={40}
+                onChange={(label) => update({ label })}
+                placeholder="Yıllık Tecrübe"
+              />
             </div>
           )}
         />
@@ -425,7 +416,13 @@ export function AboutTab({ value, set }: { value: Homepage["about"]; set: Set<"a
         <TextArea label="Metin" value={value.text} max={1500} rows={6} onChange={(text) => set({ ...value, text })} />
       </Panel>
       <Panel title="Güvence rozetleri" hint="Alt satırdaki onay işaretli ifadeler. En fazla 6.">
-        <StringList items={value.badges} onChange={(badges) => set({ ...value, badges })} max={6} maxLength={40} addLabel="Rozet ekle" />
+        <StringList
+          items={value.badges}
+          onChange={(badges) => set({ ...value, badges })}
+          max={6}
+          maxLength={40}
+          addLabel="Rozet ekle"
+        />
       </Panel>
     </div>
   );
@@ -455,7 +452,12 @@ function FooterColumnEditor({
 }) {
   return (
     <Panel title={title}>
-      <TextField label="Kolon başlığı" value={column.title} max={40} onChange={(t) => onChange({ ...column, title: t })} />
+      <TextField
+        label="Kolon başlığı"
+        value={column.title}
+        max={40}
+        onChange={(t) => onChange({ ...column, title: t })}
+      />
       <ListEditor
         items={column.links}
         onChange={(links) => onChange({ ...column, links })}
@@ -466,7 +468,13 @@ function FooterColumnEditor({
         render={(link, update) => (
           <div className="grid gap-3 sm:grid-cols-2">
             <TextField label="Metin" value={link.label} max={120} onChange={(label) => update({ label })} />
-            <TextField label="Bağlantı" value={link.href} max={300} onChange={(href) => update({ href })} placeholder="/sss veya https://…" />
+            <TextField
+              label="Bağlantı"
+              value={link.href}
+              max={300}
+              onChange={(href) => update({ href })}
+              placeholder="/sss veya https://…"
+            />
           </div>
         )}
       />
@@ -498,7 +506,12 @@ export function FooterTab({ value, set }: { value: Homepage["footer"]; set: Set<
       <div className="grid gap-6 xl:grid-cols-2">
         <Panel title="Marka & iletişim" hint="Telefon, e-posta ve WhatsApp üstteki üç iletişim kartında da kullanılır.">
           <div className="grid gap-3 sm:grid-cols-2">
-            <TextField label="Marka adı" value={value.brand_name} max={40} onChange={(brand_name) => patch({ brand_name })} />
+            <TextField
+              label="Marka adı"
+              value={value.brand_name}
+              max={40}
+              onChange={(brand_name) => patch({ brand_name })}
+            />
             <TextField label="Alt etiket" value={value.tagline} max={60} onChange={(tagline) => patch({ tagline })} />
             <TextField label="Telefon" value={value.phone} max={30} onChange={(phone) => patch({ phone })} />
             <TextField label="E-posta" value={value.email} max={120} onChange={(email) => patch({ email })} />
@@ -523,7 +536,13 @@ export function FooterTab({ value, set }: { value: Homepage["footer"]; set: Set<
             render={(branch, update) => (
               <div className="space-y-3">
                 <TextField label="Şube adı" value={branch.name} max={40} onChange={(name) => update({ name })} />
-                <TextArea label="Adres" value={branch.address} max={200} rows={2} onChange={(address) => update({ address })} />
+                <TextArea
+                  label="Adres"
+                  value={branch.address}
+                  max={200}
+                  rows={2}
+                  onChange={(address) => update({ address })}
+                />
               </div>
             )}
           />
@@ -565,8 +584,18 @@ export function FooterTab({ value, set }: { value: Homepage["footer"]; set: Set<
 
       <div className="grid gap-6 xl:grid-cols-3">
         <FooterColumnEditor title="Blog kolonu" column={value.blog} onChange={(blog) => patch({ blog })} withCta />
-        <FooterColumnEditor title="Bilgi Sayfaları kolonu" column={value.info} onChange={(info) => patch({ info })} withCta />
-        <FooterColumnEditor title="Destek & S.S.S kolonu" column={value.faq} onChange={(faq) => patch({ faq })} withCta />
+        <FooterColumnEditor
+          title="Bilgi Sayfaları kolonu"
+          column={value.info}
+          onChange={(info) => patch({ info })}
+          withCta
+        />
+        <FooterColumnEditor
+          title="Destek & S.S.S kolonu"
+          column={value.faq}
+          onChange={(faq) => patch({ faq })}
+          withCta
+        />
       </div>
 
       <Panel title="Alt satır">
@@ -577,7 +606,12 @@ export function FooterTab({ value, set }: { value: Homepage["footer"]; set: Set<
           onChange={(copyright) => patch({ copyright })}
           hint="Başına “© {yıl}” otomatik eklenir."
         />
-        <TextField label="Fiyat notu" value={value.price_note} max={200} onChange={(price_note) => patch({ price_note })} />
+        <TextField
+          label="Fiyat notu"
+          value={value.price_note}
+          max={200}
+          onChange={(price_note) => patch({ price_note })}
+        />
         <TextField label="Yasal uyarı" value={value.warning} max={200} onChange={(warning) => patch({ warning })} />
       </Panel>
     </div>

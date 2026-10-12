@@ -31,6 +31,7 @@ import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { adminCreateProductSheet, adminGetProductSheet, adminListCategories, adminUpdateProductSheet } from "@/lib/adminApi";
 import { categoryTree } from "@/lib/categories";
+import { refreshStorefront } from "@/lib/revalidate";
 import { getApiErrorMessage } from "@/lib/errors";
 import type { AdminCategory, CurrencyType, SavedProductSheet, SheetSegment } from "@/types";
 
@@ -137,6 +138,9 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
         ? await adminUpdateProductSheet(productId, payload)
         : await adminCreateProductSheet(payload);
       setSaved(sheet);
+      // The category page lists it from the catalog cache; drop that so the
+      // product shows under its category straight away.
+      void refreshStorefront();
       setDraft(draftFromSheet(sheet));
       if (!productId) router.replace(`/admin/products/${sheet.id}`);
     } catch (err) {
@@ -196,11 +200,16 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
                 {categoryTree(categories).flatMap((group) =>
                   [group, ...group.children].map((c) => {
                     const row = categories.find((x) => x.id === c.id);
+                    const parent = c.parent_id !== null ? categories.find((x) => x.id === c.parent_id) : undefined;
+                    // Active categories only — the ones the storefront shows —
+                    // except the one this product is already in, so it is not lost.
+                    const live = row?.is_active !== false && parent?.is_active !== false;
+                    if (!live && String(c.id) !== draft.category_id) return null;
                     return (
                       <option key={c.id} value={c.id}>
                         {c.parent_id !== null ? "— " : ""}
                         {c.name}
-                        {row && !row.is_active ? " (pasif)" : ""}
+                        {!live ? " (pasif)" : ""}
                       </option>
                     );
                   }),

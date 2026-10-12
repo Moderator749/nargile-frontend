@@ -4,21 +4,15 @@ import { useEffect, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  BadgeCheck,
   Boxes,
   ClipboardList,
   FileText,
-  FolderTree,
-  GalleryHorizontal,
   House,
   LayoutDashboard,
-  LayoutGrid,
   Megaphone,
   ShieldAlert,
   Users,
   Landmark,
-  Tags,
-  Timer,
   Truck,
 } from "lucide-react";
 
@@ -33,13 +27,13 @@ const NAV = [
   { href: "/admin/products", label: "Ürünler & Stok", icon: Boxes },
   { href: "/admin/customers", label: "Müşteriler", icon: Users },
   { href: "/admin/bank-accounts", label: "Banka Hesapları", icon: Landmark },
-  { href: "/admin/homepage", label: "Ana Sayfa Düzenleme", icon: House },
-  { href: "/admin/categories", label: "Menü & Kategoriler", icon: FolderTree },
-  { href: "/admin/brands", label: "Markalar", icon: Tags },
-  { href: "/admin/hero", label: "Hero Slider", icon: GalleryHorizontal },
-  { href: "/admin/promos", label: "Promo Kutuları", icon: LayoutGrid },
-  { href: "/admin/advantages", label: "Avantajlar", icon: BadgeCheck },
-  { href: "/admin/flash-sales", label: "Fırsat Ürünleri", icon: Timer },
+  // The hub; its editors that keep pages of their own light it up too.
+  {
+    href: "/admin/homepage",
+    label: "Ana Sayfa Düzenleme",
+    icon: House,
+    also: ["/admin/hero", "/admin/promos", "/admin/brands", "/admin/flash-sales", "/admin/advantages"],
+  },
   { href: "/admin/banner", label: "Özel Gün Duyurusu", icon: Megaphone },
   // Exact, so this one does not also light up on /admin/settings/legal.
   { href: "/admin/settings", label: "Teslimat Ayarları", icon: Truck, exact: true },
@@ -102,8 +96,9 @@ export function AdminShell({ children }: { children: ReactNode }) {
     return <Gate title="Erişim yetkiniz yok" body="Bu sayfa yalnızca yönetici hesaplarına açıktır." />;
   }
 
-  const isActive = (href: string, exact?: boolean) =>
-    exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
+  const under = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
+  const isActive = (href: string, exact?: boolean, also: readonly string[] = []) =>
+    (exact ? pathname === href : under(href)) || also.some(under);
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-6 sm:px-6 lg:flex-row lg:gap-10 lg:py-10">
@@ -115,8 +110,8 @@ export function AdminShell({ children }: { children: ReactNode }) {
         </p>
         <nav aria-label="Yönetim menüsü" className="lg:mt-4">
           <ul className="flex gap-1 overflow-x-auto [scrollbar-width:none] lg:flex-col lg:overflow-visible [&::-webkit-scrollbar]:hidden">
-            {NAV.map(({ href, label, icon: Icon, exact }) => {
-              const active = isActive(href, exact);
+            {NAV.map(({ href, label, icon: Icon, exact, also }) => {
+              const active = isActive(href, exact, also);
               return (
                 <li key={href}>
                   <Link

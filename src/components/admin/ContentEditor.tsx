@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode, type SubmitEvent } from "react";
+import { useEffect, useRef, useState, type ReactNode, type SubmitEvent } from "react";
 import Image from "next/image";
 import { Pencil, Plus, Trash2, X } from "lucide-react";
 
@@ -56,6 +56,8 @@ interface ContentEditorProps<Row extends BaseRow, Write extends BaseWrite> {
   validate: (value: Write) => string | null;
   /** Extra note under the list (e.g. how rows are grouped). */
   listNote?: ReactNode;
+  /** The form under the list at full width, instead of beside it (for a wide editor). */
+  stacked?: boolean;
 }
 
 /**
@@ -74,7 +76,9 @@ export function ContentEditor<Row extends BaseRow, Write extends BaseWrite>({
   fields,
   validate,
   listNote,
+  stacked = false,
 }: ContentEditorProps<Row, Write>) {
+  const formRef = useRef<HTMLFormElement>(null);
   const [rows, setRows] = useState<Row[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [form, setForm] = useState<Write>(blank);
@@ -170,7 +174,7 @@ export function ContentEditor<Row extends BaseRow, Write extends BaseWrite>({
     <>
       <AdminPageHeader title={title} description={description} />
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_28rem]">
+      <div className={stacked ? "grid gap-6" : "grid gap-6 xl:grid-cols-[1fr_28rem]"}>
         <section aria-labelledby="content-list" className={`${panelClass} h-fit overflow-hidden`}>
           <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3 dark:border-white/10">
             <h2 id="content-list" className="text-sm font-semibold">
@@ -225,6 +229,8 @@ export function ContentEditor<Row extends BaseRow, Write extends BaseWrite>({
                         setEditing(row);
                         setForm(toWrite(row));
                         setResult(null);
+                        // Stacked, the form is below the list: bring it into view.
+                        if (stacked) requestAnimationFrame(() => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
                       }}
                       aria-label={`Düzenle: ${primary}`}
                       className={iconBtn}
@@ -242,7 +248,7 @@ export function ContentEditor<Row extends BaseRow, Write extends BaseWrite>({
           {listNote && <div className="border-t border-slate-200 px-5 py-3 text-xs text-slate-500 dark:border-white/10 dark:text-zinc-400">{listNote}</div>}
         </section>
 
-        <form onSubmit={handleSubmit} className={`${panelClass} h-fit space-y-4 p-5 sm:p-6`}>
+        <form ref={formRef} onSubmit={handleSubmit} className={`${panelClass} h-fit scroll-mt-[calc(var(--header-height)+1rem)] space-y-4 p-5 sm:p-6`}>
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold">{editing ? "Düzenle" : `Yeni ${noun}`}</h2>
             {editing && (

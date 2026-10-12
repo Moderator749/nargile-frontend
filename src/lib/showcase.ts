@@ -21,21 +21,21 @@ export type ShowcaseTile = HomeShowcaseTile;
 /** The default gallery, shown until the homepage editor saves its own. */
 export const SHOWCASE_TILES: ShowcaseTile[] = [
   // Row 1 — wide, square, square
-  { label: "İthal Nargile Takımları", eyebrow: "İthal seçki", slug: "nargile-takimlari", wide: true, icon: "wind" },
-  { label: "Nargile Marpuçları", eyebrow: "Marpuç çeşitleri", slug: "marpuclar", wide: false, icon: "wrench" },
-  { label: "Nargile Kömürleri", eyebrow: "Tüketim & sarf", slug: "komurler", wide: false, icon: "flame" },
+  { label: "Nargile Takımları", eyebrow: "Tüm takımlar", slug: "nargile-takimlari", wide: true, icon: "wind" },
+  { label: "Marpuç & Hortumlar", eyebrow: "Silikon & klasik", slug: "marpuc-ve-hortumlar", wide: false, icon: "wrench" },
+  { label: "Nargile Kömürleri", eyebrow: "Hindistan cevizi", slug: "nargile-komurleri", wide: false, icon: "flame" },
   // Row 2 — square, square, wide
-  { label: "Lüle Çeşitleri", eyebrow: "Lüle seçkisi", slug: "luleler", wide: false, icon: "layers" },
-  { label: "Közlükler & Folyo", eyebrow: "Köz & folyo", slug: "kozlukler", wide: false, icon: "flame" },
+  { label: "Lüle Çeşitleri", eyebrow: "Phunnel & killer", slug: "luleler", wide: false, icon: "layers" },
+  { label: "Közlükler & Isı Yönetimi", eyebrow: "Köz & folyo", slug: "kozlukler-isi-yonetimi", wide: false, icon: "flame" },
   { label: "Legend Hookah Koleksiyonu", eyebrow: "Marka koleksiyonu", brand: "legend", search: "legend", wide: true, icon: "sparkles" },
   // Row 3 — wide, square, square
   { label: "Çelik Nargile Takımları", eyebrow: "Çelik gövde", slug: "celik-takimlar", wide: true, icon: "shield" },
-  { label: "Yedek Nargile Şişeleri", eyebrow: "Yedek parça", slug: "yedek-siseler", wide: false, icon: "package" },
-  { label: "Sipsiler & Hijyen", eyebrow: "Hijyen & sarf", slug: "sipsiler", wide: false, icon: "wrench" },
+  { label: "Yedek Şişe & Gövde", eyebrow: "Yedek parça", slug: "yedek-sise-ve-govde", wide: false, icon: "package" },
+  { label: "Sipsiler & Aksesuarlar", eyebrow: "Hijyen & bakım", slug: "sipsiler-ve-aksesuarlar", wide: false, icon: "wrench" },
   // Row 4 — square, square, wide
   { label: "Klasik Nargileler", eyebrow: "Klasik seçki", slug: "klasik-takimlar", wide: false, icon: "wind" },
-  { label: "Oyun Aletleri & Tavla", eyebrow: "Oyun & keyif", slug: "oyun-aletleri", search: "oyun aleti", wide: false, icon: "gamepad" },
-  { label: "Özel Tasarım Nargile Takımları", eyebrow: "Özel koleksiyon", search: "özel tasarım", wide: true, icon: "sparkles" },
+  { label: "Mini & Masaüstü", eyebrow: "Kompakt takımlar", slug: "mini-masaustu-takimlar", wide: false, icon: "package" },
+  { label: "Tütün, Bitkisel & Sarf", eyebrow: "Günlük tüketim", slug: "tutun-bitkisel-ve-sarf", wide: true, icon: "sparkles" },
 ];
 
 export interface ResolvedTile extends ShowcaseTile {
@@ -45,6 +45,17 @@ export interface ResolvedTile extends ShowcaseTile {
 }
 
 /** The tiles with their links and their artwork, in grid order. */
+/**
+ * The category a tile shows, for its picture: the one it names, or the one its
+ * link opens (/catalog/<slug>) — so a tile edited to a plain link keeps its
+ * category's photo.
+ */
+export function tileSlug(tile: Pick<ShowcaseTile, "slug" | "href">): string | null {
+  if (tile.slug) return tile.slug;
+  const match = tile.href?.match(/^\/catalog\/([a-z0-9-]+)\/?$/);
+  return match ? match[1] : null;
+}
+
 export function resolveShowcase(
   tiles: ShowcaseTile[],
   categories: Category[],
@@ -58,6 +69,6 @@ export function resolveShowcase(
     href: navHref(tile, bySlug, brandBySlug),
     // A photo chosen on the tile wins, then the category's own cover photo
     // (Menü & Kategoriler), then one borrowed from its products.
-    image: tile.image || (tile.slug ? bySlug.get(tile.slug)?.image_url : null) || artwork[i] || null,
+    image: tile.image || bySlug.get(tileSlug(tile) ?? "")?.image_url || artwork[i] || null,
   }));
 }

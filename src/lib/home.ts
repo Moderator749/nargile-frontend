@@ -2,7 +2,16 @@
 // /admin/promos, /admin/advantages) and served by /home/content; this file maps
 // it to what the components render.
 
-import type { ContentRequirement, HeroSlideContent, HeroTextAlign, PromoBoxContent } from "@/types";
+import type {
+  ContentRequirement,
+  HeroLayout,
+  HeroSlideContent,
+  HeroTextAlign,
+  OverlayDirection,
+  PromoBoxContent,
+  PromoLayout,
+  SocialWidget,
+} from "@/types";
 
 export type Requirement = ContentRequirement;
 
@@ -28,6 +37,8 @@ export interface HeroSlide {
   /** The photo's focal point (0–100 %) and zoom (100 = fills the slide). */
   focus: { x: number; y: number };
   zoom: number;
+  /** Free part positions on a wide screen (lg and up); null = centred stack. */
+  layout: HeroLayout | null;
 }
 
 export const toHeroSlide = (s: HeroSlideContent): HeroSlide => ({
@@ -41,6 +52,7 @@ export const toHeroSlide = (s: HeroSlideContent): HeroSlide => ({
   align: s.text_align ?? "center",
   focus: { x: s.image_focus_x ?? 50, y: s.image_focus_y ?? 50 },
   zoom: s.image_zoom ?? 100,
+  layout: s.layout ?? null,
 });
 
 /** Shown only if the CMS is unreachable, so the homepage never loses its hero. */
@@ -54,6 +66,7 @@ export const FALLBACK_SLIDE: HeroSlide = {
   align: "center",
   focus: { x: 50, y: 50 },
   zoom: 100,
+  layout: null,
 };
 
 // ── Modules 6 & 7: smart promo grids ──────────────────────────────────────────
@@ -69,6 +82,14 @@ export interface PromoBox {
   href: string;
   image?: string;
   badge?: "sok";
+  /** Free part positions on a wide screen (lg and up); null = the stacked card. */
+  layout: PromoLayout | null;
+  /** The full-bleed photo's dark veil direction, focal point and zoom. */
+  overlay: OverlayDirection;
+  focus: { x: number; y: number };
+  zoom: number;
+  /** The split social & advantages card's links (variant "social"). */
+  widget: SocialWidget | null;
 }
 
 export const PROMO_ROWS_COUNT = 2;
@@ -89,6 +110,11 @@ export function promoRows(boxes: PromoBoxContent[], has: Record<Requirement, boo
         href: b.href,
         image: b.image ?? undefined,
         badge: b.badge ?? undefined,
+        layout: b.layout ?? null,
+        overlay: b.overlay_direction ?? "to-t",
+        focus: { x: b.image_focus_x ?? 50, y: b.image_focus_y ?? 50 },
+        zoom: b.image_zoom ?? 100,
+        widget: b.widget ?? null,
       })),
   );
 }

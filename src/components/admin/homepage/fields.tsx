@@ -3,13 +3,13 @@
 import { useId, useState, type ReactNode } from "react";
 import { ArrowDown, ArrowUp, Loader2, Plus, Trash2, X } from "lucide-react";
 
-import { adminSelectClass } from "@/components/admin/ContentEditor";
+import { adminSelectClass, isSiteOrHttpsLink } from "@/components/admin/ContentEditor";
 import { ImageDropZone } from "@/components/admin/ImageDropZone";
 import { adminUploadImages } from "@/lib/adminApi";
 import { getApiErrorMessage } from "@/lib/errors";
-import { categoryTree } from "@/lib/categories";
 import { HOME_ICONS } from "@/lib/homeIcons";
-import type { Brand, Category, HomeIconKey, HomeNavItem } from "@/types";
+import { brokenCategoryLink } from "@/lib/catalogLinks";
+import type { Category, HomeIconKey } from "@/types";
 
 export const inputClass =
   "block h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20 dark:border-white/15 dark:bg-zinc-900 dark:text-zinc-100";
@@ -314,101 +314,70 @@ export function ImageField({
   );
 }
 
-type TargetKind = "category" | "brand" | "link" | "search";
-
-const targetOf = (item: HomeNavItem): TargetKind =>
-  item.href ? "link" : item.slug ? "category" : item.brand ? "brand" : "search";
-
 /**
- * Where a menu entry (or a showcase tile) goes: a category, a brand, a link of
- * its own, or a catalog search. Switching kind clears the others, so an entry
- * always means exactly one thing.
+ * A link a tile or menu entry goes to: a site path (/catalog/luleler,
+ * /#avantajlar) or an https:// address, flagged red as it is typed if it is
+ * neither.
  */
-export function NavTargetFields({
-  item,
-  update,
-  categories,
-  brands,
+export function LinkField({
+  value,
+  onChange,
+  label = "Bağlantı",
+  categories = [],
 }: {
-  item: HomeNavItem;
-  update: (patch: Partial<HomeNavItem>) => void;
-  categories: Category[];
-  brands: Brand[];
+  value: string;
+  onChange: (href: string) => void;
+  label?: string;
+  /** The live categories, to catch a /catalog/<slug> link to one that does not exist. */
+  categories?: Category[];
 }) {
-  const kind = targetOf(item);
   const id = useId();
-  const cleared = { slug: null, brand: null, href: null, search: null };
-
+  const bad = !isSiteOrHttpsLink(value);
+  const broken = bad ? null : brokenCategoryLink(value, categories);
   return (
-    <div className="grid gap-3 sm:grid-cols-[10rem_1fr]">
-      <div className="space-y-1">
-        <label htmlFor={`${id}-kind`} className={labelClass}>
-          Hedef
-        </label>
-        <select
-          id={`${id}-kind`}
-          value={kind}
-          onChange={(e) => {
-            const next = e.target.value as TargetKind;
-            if (next === "category") update({ ...cleared, slug: categories[0]?.slug ?? "" });
-            else if (next === "brand") update({ ...cleared, brand: brands[0]?.slug ?? "" });
-            else if (next === "link") update({ ...cleared, href: "/" });
-            else update({ ...cleared });
-          }}
-          className={adminSelectClass}
-        >
-          <option value="category">Kategori</option>
-          <option value="brand">Marka</option>
-          <option value="link">Özel bağlantı</option>
-          <option value="search">Katalog araması</option>
-        </select>
-      </div>
-      <div className="space-y-1">
-        <label htmlFor={`${id}-value`} className={labelClass}>
-          {kind === "category" ? "Kategori" : kind === "brand" ? "Marka" : kind === "link" ? "Bağlantı" : "Aranacak kelime"}
-        </label>
-        {kind === "category" ? (
-          <select id={`${id}-value`} value={item.slug ?? ""} onChange={(e) => update({ slug: e.target.value })} className={adminSelectClass}>
-            {/* A slug the catalog no longer has stays selectable, so it is not lost silently. */}
-            {item.slug && !categories.some((c) => c.slug === item.slug) && <option value={item.slug}>{item.slug} (bulunamadı)</option>}
-            {categoryTree(categories)
-              .flatMap((group) => [group, ...group.children])
-              .map((c) => (
-                <option key={c.id} value={c.slug}>
-                  {c.parent_id ? "— " : ""}
-                  {c.name}
-                </option>
-              ))}
-          </select>
-        ) : kind === "brand" ? (
-          <select id={`${id}-value`} value={item.brand ?? ""} onChange={(e) => update({ brand: e.target.value })} className={adminSelectClass}>
-            {item.brand && !brands.some((b) => b.slug === item.brand) && <option value={item.brand}>{item.brand} (bulunamadı)</option>}
-            {brands.map((b) => (
-              <option key={b.id} value={b.slug}>
-                {b.name}
-              </option>
-            ))}
-          </select>
-        ) : kind === "link" ? (
-          <input
-            id={`${id}-value`}
-            value={item.href ?? ""}
-            maxLength={300}
-            placeholder="/catalog veya https://…"
-            onChange={(e) => update({ href: e.target.value })}
-            className={inputClass}
-          />
-        ) : (
-          <input
-            id={`${id}-value`}
-            value={item.search ?? ""}
-            maxLength={80}
-            placeholder={`Boş bırakılırsa: “${item.label}”`}
-            onChange={(e) => update({ search: e.target.value || null })}
-            className={inputClass}
-          />
-        )}
-      </div>
+    <div className="space-y-1">
+      <label htmlFor={id} className={labelClass}>
+        {label}
+      </label>
+      <input
+        id={id}
+        value={value}
+        maxLength={300}
+        placeholder="/catalog/luleler veya https://…"
+        aria-invalid={bad || undefined}
+        onChange={(e) => onChange(e.target.value)}
+        className={`${inputClass} font-mono ${bad || broken ? "border-red-400 focus:border-red-500" : ""}`}
+      />
+      {bad && <p className="text-[11px] text-red-600 dark:text-red-400">/ ile ya da https:// ile başlamalı.</p>}
+      <BrokenCategoryNote broken={broken} onFix={onChange} />
     </div>
+  );
+}
+
+/** "No such category" under a link field, with the closest real one a click away. */
+export function BrokenCategoryNote({
+  broken,
+  onFix,
+}: {
+  broken: ReturnType<typeof brokenCategoryLink>;
+  onFix: (href: string) => void;
+}) {
+  if (!broken) return null;
+  return (
+    <p className="text-[11px] text-red-600 dark:text-red-400">
+      “{broken.slug}” adında bir kategori yok; bu bağlantı 404 verir.
+      {broken.suggestion && (
+        <>
+          {" "}
+          <button
+            type="button"
+            onClick={() => onFix(`/catalog/${broken.suggestion!.slug}`)}
+            className="font-semibold underline underline-offset-2 hover:text-red-700"
+          >
+            /catalog/{broken.suggestion.slug} ({broken.suggestion.name}) kullan
+          </button>
+        </>
+      )}
+    </p>
   );
 }

@@ -47,14 +47,12 @@ export default async function CategoryPage(props: PageProps<"/catalog/[category]
   if (categories && !category) notFound();
 
   const name = category?.name ?? "Kategori";
-  const parent = category?.parent_id != null ? categories?.find((c) => c.id === category.parent_id) : undefined;
   return (
     <CatalogScreen
       title={name}
       breadcrumbs={[
+        // Ana Sayfa > Kategori, the first two steps of Ana Sayfa > Kategori > Ürün.
         { name: "Ana Sayfa", href: "/" },
-        { name: "Katalog", href: "/catalog" },
-        ...(parent ? [{ name: parent.name, href: `/catalog/${parent.slug}` }] : []),
         { name, href: `/catalog/${slug}` },
       ]}
       categories={categories ?? []}
