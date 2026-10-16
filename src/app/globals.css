@@ -343,6 +343,46 @@ html[data-sidebar="collapsed"] .category-sidebar {
   background: rgb(255 255 255 / 0.2);
 }
 
+/*
+ * The category column's scrollbar: thin, rounded, pale grey on no track, a
+ * shade darker under the pointer — there to say the list goes on below, not
+ * to be looked at. Chrome and Firefox draw it from the standard properties
+ * (Chrome ignores the -webkit- rules once those are set); Safari, which has
+ * no standard ones, from the -webkit- rules.
+ */
+.scroll-sidebar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-gray-200) transparent;
+}
+.scroll-sidebar:hover {
+  scrollbar-color: var(--color-gray-300) transparent;
+}
+.scroll-sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+.scroll-sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scroll-sidebar::-webkit-scrollbar-thumb {
+  background: var(--color-gray-200);
+  border-radius: 9999px;
+}
+.scroll-sidebar:hover::-webkit-scrollbar-thumb {
+  background: var(--color-gray-300);
+}
+.dark .scroll-sidebar {
+  scrollbar-color: rgb(255 255 255 / 0.15) transparent;
+}
+.dark .scroll-sidebar:hover {
+  scrollbar-color: rgb(255 255 255 / 0.25) transparent;
+}
+.dark .scroll-sidebar::-webkit-scrollbar-thumb {
+  background: rgb(255 255 255 / 0.15);
+}
+.dark .scroll-sidebar:hover::-webkit-scrollbar-thumb {
+  background: rgb(255 255 255 / 0.25);
+}
+
 
 /*
  * Rich text from the panel's editor (components/ui/RichText, ReadMore): the

@@ -22,9 +22,9 @@ export const SIDEBAR_WIDTH_LG = "lg:w-64";
  * Open, it is exactly as tall as the hero beside it, whatever the window: the
  * list sits in a box pinned to the column's edges, so it adds nothing to the
  * row's height, which the hero alone sets (the column stretches to it). The
- * list scrolls inside that height, with the scrollbar hidden — the wheel,
- * trackpad and keyboard still move it — so a long list never holds the row
- * open below the hero. Below `lg` it steps aside, where the same list is one
+ * list scrolls inside that height, under a thin pale scrollbar that says there
+ * is more below (`scroll-sidebar` in `globals.css`), so a long list never
+ * holds the row open below the hero. Below `lg` it steps aside, where the same list is one
  * tap away in the bar's drawer.
  *
  * "KATEGORİLER" in that bar opens and closes it, and the choice is remembered (see
@@ -41,7 +41,7 @@ export function CategorySidebar({ items }: { items: ResolvedNav[] }) {
     >
       {/* No shell: the list stands on the page itself, held together by the
           hairlines between its rows. */}
-      <div className="lg:absolute lg:inset-0 lg:overflow-y-auto lg:overscroll-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="scroll-sidebar lg:absolute lg:inset-0 lg:overflow-y-auto lg:overscroll-contain">
         {/* The list reads the current search to mark a brand row; on a static
             page that is known after hydration, so it waits for it. */}
         <Suspense fallback={<CategoryListSkeleton count={items.length} />}>
