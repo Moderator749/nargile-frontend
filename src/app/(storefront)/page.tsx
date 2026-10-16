@@ -127,10 +127,12 @@ export default async function HomePage() {
             columns split by hairlines under the hero row. With the category
             column open its top line sits flush under the column's last row,
             closing the list; with it closed (and below lg, where there is no
-            column) the band keeps clear of the hero's rounded corners. */}
+            column) the band keeps clear of the hero's rounded corners. The
+            bottom margin is short because the deals section below brings its
+            own padding: together they make the same 48px as the top. */}
         {sections.promos && spotlight && (
           <div
-            className={`${PAGE_CONTAINER} my-12 lg:mt-0 lg:transition-[margin] lg:duration-300 lg:ease-[ease] motion-reduce:transition-none lg:sidebar-closed:mt-12`}
+            className={`${PAGE_CONTAINER} mt-12 mb-6 sm:mb-4 lg:mt-0 lg:transition-[margin] lg:duration-300 lg:ease-[ease] motion-reduce:transition-none lg:sidebar-closed:mt-12`}
           >
             <PromoSpotlight box={spotlight} />
           </div>

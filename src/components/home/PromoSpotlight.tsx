@@ -6,17 +6,26 @@ import { InstagramIcon, YouTubeIcon } from "@/components/icons/SocialIcons";
 import { SmoothAnchor } from "@/components/home/SmoothAnchor";
 import type { PromoBox } from "@/lib/home";
 
-/** The channels, in order; one without a link in /admin/promos is left out. */
-const CHANNELS: { key: "instagram" | "youtube"; Icon: ComponentType<{ className?: string }> }[] = [
-  { key: "instagram", Icon: InstagramIcon },
-  { key: "youtube", Icon: YouTubeIcon },
+/** The channels, in order, each in its brand's colours; one without a link in /admin/promos is left out. */
+const CHANNELS: { key: "instagram" | "youtube"; Icon: ComponentType<{ className?: string }>; tone: string }[] = [
+  {
+    key: "instagram",
+    Icon: InstagramIcon,
+    tone: "border-pink-200 text-pink-600 hover:border-transparent hover:bg-gradient-to-tr hover:from-yellow-400 hover:via-pink-500 hover:to-purple-600 hover:text-white focus-visible:outline-pink-600 dark:border-pink-500/40 dark:text-pink-400",
+  },
+  {
+    key: "youtube",
+    Icon: YouTubeIcon,
+    tone: "border-red-200 text-red-600 hover:border-transparent hover:bg-[#FF0000] hover:text-white focus-visible:outline-red-600 dark:border-red-500/40 dark:text-red-400",
+  },
 ];
 
 /** Where the brand column leads: the whole catalog. */
 const COLLECTION_HREF = "/catalog";
 
-// The roomier padding waits for xl: at lg the outer quarters are too narrow for it.
-const COLUMN = "flex flex-col justify-center p-8 xl:p-12";
+// The roomier sides wait for xl: at lg the outer quarters are too narrow for
+// them. Kept short top and bottom, so the band reads wide rather than tall.
+const COLUMN = "flex flex-col justify-center px-8 py-6 xl:px-12 xl:py-6.5";
 const OVERLINE = "text-xs font-bold uppercase tracking-widest";
 const HEADING = "mt-2 mb-4 text-2xl font-bold text-gray-900 dark:text-white";
 const ARROW = "ml-1.5 h-4 w-4";
@@ -34,9 +43,9 @@ export function PromoSpotlight({ box }: { box: PromoBox }) {
   const widget = box.widget;
   // The admin types the dots into the eyebrow; the overline has none.
   const eyebrow = box.eyebrow.replace(/^[•·\s]+|[•·\s]+$/g, "");
-  const channels = CHANNELS.flatMap(({ key, Icon }) => {
+  const channels = CHANNELS.flatMap(({ key, Icon, tone }) => {
     const href = widget?.[`${key}_href`];
-    return href ? [{ key, href, label: widget![`${key}_label`] || key, Icon }] : [];
+    return href ? [{ key, href, label: widget![`${key}_label`] || key, Icon, tone }] : [];
   });
 
   return (
@@ -46,13 +55,14 @@ export function PromoSpotlight({ box }: { box: PromoBox }) {
           <p className={`${OVERLINE} text-gray-500 dark:text-neutral-400`}>{box.text || "Bizi takip edin"}</p>
           <h2 className={HEADING}>Topluluğa Katılın</h2>
           <ul className="mt-2 flex flex-row flex-wrap gap-3">
-            {channels.map(({ key, href, label, Icon }) => (
-              <li key={key}>
+            {/* One width for both, side by side where they fit and stacked where not. */}
+            {channels.map(({ key, href, label, Icon, tone }) => (
+              <li key={key} className="w-full max-w-[200px]">
                 <a
                   href={href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 rounded-full border border-gray-300 px-6 py-3 text-sm font-semibold text-gray-900 transition-all hover:border-red-700 hover:text-red-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700 dark:border-neutral-700 dark:text-white dark:hover:border-red-400 dark:hover:text-red-400"
+                  className={`flex w-full items-center justify-center gap-2 rounded-full border px-6 py-3 text-sm font-semibold transition-all focus-visible:outline-2 focus-visible:outline-offset-2 dark:hover:text-white ${tone}`}
                 >
                   <Icon className="h-5 w-5" />
                   {label}
