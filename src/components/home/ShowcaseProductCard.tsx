@@ -42,20 +42,28 @@ export function useOwnPrices(products: CatalogProduct[]): Map<string, CatalogPro
   return hydrated && token && own?.token === token ? own.byId : null;
 }
 
+const FOCUS =
+  "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-gray-900 dark:focus-visible:outline-white";
+
 /**
- * A homepage product as a photo and a caption, with no card around them: the
- * photo on the section's own background, the brand, the name and the price
- * beneath it. Shared by "Sizin İçin Seçtiklerimiz" and "Markalarımız".
+ * A homepage product: the photo, then the brand, the name and the price.
+ *
+ * Bare by default — no card at all, the photo on the section's own background
+ * ("Sizin İçin Seçtiklerimiz"). `boxed` encloses all of it in a white card
+ * with a hairline and a soft shadow that deepens on hover ("Markalarımız"),
+ * stretched to the height of its row with the price kept at the bottom.
  */
 export function ShowcaseProductCard({
   product,
   publicPrices,
   sizes,
+  boxed = false,
 }: {
   product: CatalogProduct;
   /** The price is the guest's (retail) one; masked for a signed-in visitor. */
   publicPrices: boolean;
   sizes: string;
+  boxed?: boolean;
 }) {
   const money = useDisplayMoney();
   const price = displayVariant(product)?.price ?? null;
@@ -63,36 +71,48 @@ export function ShowcaseProductCard({
   return (
     <Link
       href={productHref(product)}
-      className="group block rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-gray-900 dark:focus-visible:outline-white"
+      className={`group rounded-2xl ${FOCUS} ${
+        boxed
+          ? "flex h-full flex-col justify-between border border-gray-100 bg-white p-4 shadow-sm transition-shadow hover:shadow-md dark:border-border dark:bg-neutral-900"
+          : "block"
+      }`}
     >
-      {/* No surface of its own in the light theme. On the dark one the photo still
-          needs a light one: it is multiplied into what is behind it, and over
-          black it would go black. */}
-      <div className="relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-2xl bg-transparent p-6 dark:bg-zinc-100">
-        <ProductImage
-          src={product.image_url}
-          alt={productImageAlt(product)}
-          sizes={sizes}
-          surfaceClassName="w-full bg-transparent"
-          imageClassName="object-contain mix-blend-multiply transition-transform duration-500 ease-out motion-safe:group-hover:scale-105"
-          fallback={<Package className="h-10 w-10 text-gray-300" strokeWidth={1} aria-hidden />}
-        />
-      </div>
-      <div className="mt-4 flex flex-col gap-1 text-left">
-        {product.brand && (
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 md:text-xs dark:text-neutral-400">
-            {product.brand.toLocaleUpperCase("tr-TR")}
-          </p>
-        )}
-        <h3 className="line-clamp-2 text-sm font-medium leading-snug text-gray-900 group-hover:underline dark:text-white">
-          {product.name}
-        </h3>
-        <p
-          className={`mt-1 w-fit text-lg font-bold text-gray-900 dark:text-white ${publicPrices ? "public-price" : ""}`}
+      <div>
+        {/* No surface of its own on white. On the dark theme the photo still
+            needs a light one: it is multiplied into what is behind it, and
+            over black it would go black. */}
+        <div
+          className={`relative flex aspect-square w-full items-center justify-center overflow-hidden bg-transparent dark:bg-zinc-100 ${
+            boxed ? "rounded-xl p-4" : "rounded-2xl p-6"
+          }`}
         >
-          <span>{price ? money.format(price) : "—"}</span>
-        </p>
+          <ProductImage
+            src={product.image_url}
+            alt={productImageAlt(product)}
+            sizes={sizes}
+            surfaceClassName="w-full bg-transparent"
+            imageClassName="object-contain mix-blend-multiply transition-transform duration-500 ease-out motion-safe:group-hover:scale-105"
+            fallback={<Package className="h-10 w-10 text-gray-300" strokeWidth={1} aria-hidden />}
+          />
+        </div>
+        <div className={`${boxed ? "mt-3" : "mt-4"} flex flex-col gap-1 text-left`}>
+          {product.brand && (
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 md:text-xs dark:text-neutral-400">
+              {product.brand.toLocaleUpperCase("tr-TR")}
+            </p>
+          )}
+          <h3 className="line-clamp-2 text-sm font-medium leading-snug text-gray-900 group-hover:underline dark:text-white">
+            {product.name}
+          </h3>
+        </div>
       </div>
+      <p
+        className={`w-fit font-bold text-gray-900 dark:text-white ${boxed ? "mt-2 text-base" : "mt-1 text-lg"} ${
+          publicPrices ? "public-price" : ""
+        }`}
+      >
+        <span>{price ? money.format(price) : "—"}</span>
+      </p>
     </Link>
   );
 }

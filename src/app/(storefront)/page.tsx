@@ -57,12 +57,12 @@ const showable = (products: CatalogProduct[] | null, count = PICKS_COUNT) =>
   (products ?? []).filter((p) => p.image_url && p.variants.some((v) => v.price)).slice(0, count);
 
 /**
- * "Markalarımız": the house brand whose products it scrolls through. Found by
- * search, then held to the brand itself, since a search also matches names
- * and codes that merely mention it.
+ * "Markalarımız": the house brand whose products it scrolls through — all of
+ * them, up to the API's page. Found by search, then held to the brand itself,
+ * since a search also matches names and codes that merely mention it.
  */
 const HOUSE_BRAND = "Sultan";
-const HOUSE_BRAND_COUNT = 12;
+const HOUSE_BRAND_LIMIT = 100;
 
 const TITLE = `${SITE_NAME} — Endüstriyel Toptan & Perakende Nargile Çözümleri`;
 
@@ -95,11 +95,11 @@ export default async function HomePage() {
     // Asked for with room to spare: some products have no photo or no price.
     getPublicProducts(PICKS.bestsellers, PICKS_COUNT * 2),
     getPublicProducts(PICKS.newest, PICKS_COUNT * 2),
-    getPublicProducts(undefined, 50, 0, HOUSE_BRAND),
+    getPublicProducts(undefined, HOUSE_BRAND_LIMIT, 0, HOUSE_BRAND),
   ]);
   const houseProducts = showable(
     (house ?? []).filter((p) => p.brand?.toLocaleLowerCase("tr-TR") === HOUSE_BRAND.toLocaleLowerCase("tr-TR")),
-    HOUSE_BRAND_COUNT,
+    HOUSE_BRAND_LIMIT,
   );
   const allCategories = categories ?? [];
   const sidebar = resolveNav(home.navigation.sidebar, allCategories, brands ?? []);
