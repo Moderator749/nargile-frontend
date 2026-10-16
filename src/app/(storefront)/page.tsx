@@ -36,7 +36,7 @@ import type { CatalogProduct } from "@/types";
 export const revalidate = 0;
 
 /** Category whose products are featured on the homepage. */
-const FEATURED_CATEGORY_SLUG = "nargile-takimlari";
+const FEATURED_CATEGORY_SLUG = "celik-takimlar";
 
 /**
  * "Sizin İçin Seçtiklerimiz": the category each tab is drawn from, and how many
@@ -48,7 +48,7 @@ const FEATURED_CATEGORY_SLUG = "nargile-takimlari";
  * fixed category's first products; swap these for a real sort once the API
  * offers one.
  */
-const PICKS = { bestsellers: "celik-takimlar", newest: "oduman" } as const;
+const PICKS = { bestsellers: FEATURED_CATEGORY_SLUG, newest: "oduman" } as const;
 const PICKS_COUNT = 10;
 
 /** A pick worth showing: one with a photo and a price to put under it. */

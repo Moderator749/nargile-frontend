@@ -38,7 +38,7 @@ const TAB_IDLE =
  * that is not theirs.
  */
 export function FeaturedProductsShowcase({ lists }: { lists: Record<TabKey, CatalogProduct[]> }) {
-  const [tab, setTab] = useState<TabKey>("bestsellers");
+  const [tab, setTab] = useState<TabKey>("newest");
   const hydrated = useAuthHydrated();
   const token = useAuthStore((s) => s.token);
   const money = useDisplayMoney();
@@ -68,8 +68,10 @@ export function FeaturedProductsShowcase({ lists }: { lists: Record<TabKey, Cata
   const publicPrices = !mine;
 
   return (
-    <section aria-labelledby="sectiklerimiz-baslik" className="my-12 sm:my-16">
-      <div className="mx-auto mb-8 flex max-w-7xl flex-col justify-between gap-6 px-4 sm:px-6 md:flex-row md:items-end">
+    // On a white band in the light theme: the tiles' beige is all but the page's
+    // own #f5f5f7, so on the bare canvas the boxes would not show at all.
+    <section aria-labelledby="sectiklerimiz-baslik" className="bg-white py-12 sm:py-16 dark:bg-transparent">
+      <div className="mx-auto mb-8 flex max-w-7xl flex-col justify-between gap-4 px-4 sm:px-6 md:flex-row md:items-end">
         <div>
           <h2
             id="sectiklerimiz-baslik"
@@ -96,7 +98,7 @@ export function FeaturedProductsShowcase({ lists }: { lists: Record<TabKey, Cata
         )}
       </div>
 
-      <ul className="mx-auto grid max-w-7xl grid-cols-2 gap-4 px-4 sm:px-6 md:grid-cols-3 md:gap-6 lg:grid-cols-5">
+      <ul className="mx-auto grid max-w-7xl grid-cols-2 gap-6 px-4 sm:px-6 md:grid-cols-3 lg:grid-cols-5">
         {lists[active].map((listed) => {
           // A signed-in visitor's own copy, once it is in; its price is theirs.
           const product = mine?.get(listed.id) ?? listed;
@@ -107,13 +109,13 @@ export function FeaturedProductsShowcase({ lists }: { lists: Record<TabKey, Cata
                 href={productHref(product)}
                 className="group block rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-gray-900 dark:focus-visible:outline-white"
               >
-                <div className="relative flex aspect-square items-center justify-center overflow-hidden rounded-2xl bg-[#f8f7f5]">
+                <div className="relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-2xl bg-[#f8f7f5] p-6">
                   <ProductImage
                     src={product.image_url}
                     alt={productImageAlt(product)}
                     sizes="(min-width: 1024px) 20vw, (min-width: 768px) 33vw, 50vw"
                     surfaceClassName="w-full bg-transparent"
-                    imageClassName="object-contain p-6 mix-blend-multiply transition-transform duration-500 ease-out motion-safe:group-hover:scale-105"
+                    imageClassName="object-contain mix-blend-multiply transition-transform duration-500 ease-out motion-safe:group-hover:scale-105"
                     fallback={<Package className="h-10 w-10 text-gray-300" strokeWidth={1} aria-hidden />}
                   />
                 </div>
