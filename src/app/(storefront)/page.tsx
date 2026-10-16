@@ -28,6 +28,7 @@ import { resolveShowcase, tileSlug } from "@/lib/showcase";
 import { resolveNav } from "@/lib/storefrontNav";
 import { DEFAULT_DESCRIPTION, SITE_NAME } from "@/lib/site";
 import { PAGE_CONTAINER } from "@/lib/layout";
+import { displayVariant } from "@/lib/variants";
 import type { CatalogProduct } from "@/types";
 
 // Rendered per request so a flash sale that starts or ends is reflected at once
@@ -59,7 +60,8 @@ const showable = (products: CatalogProduct[] | null, count = PICKS_COUNT) =>
 /**
  * "Markalarımız": the house brand whose products it scrolls through — all of
  * them, up to the API's page. Found by search, then held to the brand itself,
- * since a search also matches names and codes that merely mention it.
+ * since a search also matches names and codes that merely mention it. Dearest
+ * first, so the row opens on the hookah sets rather than on coal and tongs.
  */
 const HOUSE_BRAND = "Sultan";
 const HOUSE_BRAND_LIMIT = 100;
@@ -97,10 +99,11 @@ export default async function HomePage() {
     getPublicProducts(PICKS.newest, PICKS_COUNT * 2),
     getPublicProducts(undefined, HOUSE_BRAND_LIMIT, 0, HOUSE_BRAND),
   ]);
+  const listPrice = (p: CatalogProduct) => Number(displayVariant(p)?.price?.price_incl_tax ?? 0);
   const houseProducts = showable(
     (house ?? []).filter((p) => p.brand?.toLocaleLowerCase("tr-TR") === HOUSE_BRAND.toLocaleLowerCase("tr-TR")),
     HOUSE_BRAND_LIMIT,
-  );
+  ).sort((a, b) => listPrice(b) - listPrice(a));
   const allCategories = categories ?? [];
   const sidebar = resolveNav(home.navigation.sidebar, allCategories, brands ?? []);
   const showcase = resolveShowcase(home.showcase.tiles, allCategories, brands ?? [], artwork);
