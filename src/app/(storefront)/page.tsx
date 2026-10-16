@@ -13,7 +13,7 @@ import { PromoSpotlight } from "@/components/home/PromoSpotlight";
 import { CategorySidebar } from "@/components/layout/CategorySidebar";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { FEATURED_PRODUCTS_COUNT } from "@/lib/config";
-import { organizationJsonLd, pageMetadata, productListJsonLd, websiteJsonLd } from "@/lib/seo";
+import { brandHref, organizationJsonLd, pageMetadata, productListJsonLd, websiteJsonLd } from "@/lib/seo";
 import { FALLBACK_SLIDE, meets, promoRows, toHeroSlide } from "@/lib/home";
 import {
   getBrands,
@@ -58,13 +58,65 @@ const showable = (products: CatalogProduct[] | null, count = PICKS_COUNT) =>
   (products ?? []).filter((p) => p.image_url && p.variants.some((v) => v.price)).slice(0, count);
 
 /**
- * "Markalarımız": the house brand whose products it scrolls through — all of
- * them, up to the API's page. Found by search, then held to the brand itself,
- * since a search also matches names and codes that merely mention it. Dearest
- * first, so the row opens on the hookah sets rather than on coal and tongs.
+ * "Markalarımız": one section per brand, down the page in a zig-zag (brand on
+ * the left, then the right, then the left). `brand` is the products' own brand
+ * name and the term they are searched by; `slug` is its /marka page.
  */
-const HOUSE_BRAND = "Sultan";
-const HOUSE_BRAND_LIMIT = 100;
+const BRAND_SHOWCASES = [
+  {
+    brand: "Sultan",
+    slug: "sultan",
+    brandName: "Sultan Nargile",
+    logo: { src: "/images/logo.png", width: 2756, height: 359 },
+    description:
+      "Geleneksel nargile zanaatını modern mühendislikle buluşturan Sultan Nargile; dayanıklı çelik takımları, tescilli aksesuarları ve benzersiz içim kalitesiyle sektör standartlarını belirliyor.",
+  },
+  {
+    brand: "Oduman",
+    slug: "oduman",
+    brandName: "Oduman",
+    // A square export with the mark across its middle third: shown cropped.
+    logo: { src: "/images/oduman_logo.png", width: 960, height: 960, crop: 2.4 },
+    description:
+      "Camın zarafetini paslanmaz çelikle birleştiren Oduman, kompakt ve yenilikçi tasarımlarıyla nargile deneyimine modern bir dokunuş katıyor. Her detayıyla kusursuz bir içim keyfi.",
+  },
+  {
+    brand: "Legend",
+    slug: "legend",
+    brandName: "Legend Hookah",
+    logo: { src: "/images/logo_legend.png", width: 2892, height: 710 },
+    description:
+      "Geleneksel estetiği modern nargile mühendisliğiyle buluşturan Legend Hookah, benzersiz tahliye sistemleri ve kusursuz işçiliğiyle elit bir performans sunar.",
+  },
+] as const;
+
+/** How many of a brand's products its row holds: the dearest ones. */
+const BRAND_SHOWCASE_COUNT = 24;
+/** The API's page, and how far to page through a brand. */
+const BRAND_PAGE = 100;
+const BRAND_MAX = 400;
+
+const priceOf = (p: CatalogProduct) => Number(displayVariant(p)?.price?.price_incl_tax ?? 0);
+
+/**
+ * A brand's row: every product it has (searched by name, page by page, then
+ * held to the brand itself, since a search also matches names and codes that
+ * merely mention it), dearest first — so it opens on the hookah sets rather
+ * than on coal and tongs — cut to the row's length.
+ */
+async function getBrandShowcase(brand: string): Promise<CatalogProduct[]> {
+  const found: CatalogProduct[] = [];
+  for (let skip = 0; skip < BRAND_MAX; skip += BRAND_PAGE) {
+    const page = await getPublicProducts(undefined, BRAND_PAGE, skip, brand);
+    if (!page) break;
+    found.push(...page);
+    if (page.length < BRAND_PAGE) break;
+  }
+  const own = found.filter((p) => p.brand?.toLocaleLowerCase("tr-TR") === brand.toLocaleLowerCase("tr-TR"));
+  return showable(own, own.length)
+    .sort((a, b) => priceOf(b) - priceOf(a))
+    .slice(0, BRAND_SHOWCASE_COUNT);
+}
 
 const TITLE = `${SITE_NAME} — Endüstriyel Toptan & Perakende Nargile Çözümleri`;
 
@@ -76,7 +128,7 @@ export default async function HomePage() {
   // What to show and what it says: "Ana Sayfa Düzenleme" (/admin/homepage).
   const home = await getHomepage();
   const { sections } = home;
-  const [categories, featured, flashSales, brands, content, artwork, bestsellers, newest, house] = await Promise.all([
+  const [categories, featured, flashSales, brands, content, artwork, bestsellers, newest, brandRows] = await Promise.all([
     getCategories(),
     getPublicProducts(FEATURED_CATEGORY_SLUG, FEATURED_PRODUCTS_COUNT),
     getFlashSaleProducts(),
@@ -97,13 +149,8 @@ export default async function HomePage() {
     // Asked for with room to spare: some products have no photo or no price.
     getPublicProducts(PICKS.bestsellers, PICKS_COUNT * 2),
     getPublicProducts(PICKS.newest, PICKS_COUNT * 2),
-    getPublicProducts(undefined, HOUSE_BRAND_LIMIT, 0, HOUSE_BRAND),
+    Promise.all(BRAND_SHOWCASES.map(({ brand }) => getBrandShowcase(brand))),
   ]);
-  const listPrice = (p: CatalogProduct) => Number(displayVariant(p)?.price?.price_incl_tax ?? 0);
-  const houseProducts = showable(
-    (house ?? []).filter((p) => p.brand?.toLocaleLowerCase("tr-TR") === HOUSE_BRAND.toLocaleLowerCase("tr-TR")),
-    HOUSE_BRAND_LIMIT,
-  ).sort((a, b) => listPrice(b) - listPrice(a));
   const allCategories = categories ?? [];
   const sidebar = resolveNav(home.navigation.sidebar, allCategories, brands ?? []);
   const showcase = resolveShowcase(home.showcase.tiles, allCategories, brands ?? [], artwork);
@@ -195,9 +242,22 @@ export default async function HomePage() {
         {/* Module 9c: "Sizin İçin Seçtiklerimiz", two tabbed product lists. */}
         <FeaturedProductsShowcase lists={{ bestsellers: showable(bestsellers), newest: showable(newest) }} />
 
-        {/* Module 9d: "Markalarımız", the house brand and its products, just
-            above the gallery. */}
-        <BrandShowcase products={houseProducts} />
+        {/* Module 9d: "Markalarımız", one section per brand, alternating
+            sides, just above the gallery. */}
+        {BRAND_SHOWCASES.map(({ slug, brandName, logo, description }, i) => (
+          <BrandShowcase
+            key={slug}
+            brandName={brandName}
+            logoSrc={logo.src}
+            logoWidth={logo.width}
+            logoHeight={logo.height}
+            logoCrop={"crop" in logo ? logo.crop : undefined}
+            description={description}
+            brandLink={brandHref(slug)}
+            products={brandRows[i]}
+            reverseLayout={i % 2 === 1}
+          />
+        ))}
 
         {/* Module 10: the catalog as a gallery, in place of the old
             "Öne çıkanlar" carousel. */}
