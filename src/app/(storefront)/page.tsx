@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 
 import { AdvantagesSection } from "@/components/home/AdvantagesSection";
 import { CatalogShowcase } from "@/components/home/CatalogShowcase";
-import { CorporateTrust } from "@/components/home/CorporateTrust";
 import { BrandShowcase } from "@/components/home/BrandShowcase";
 import { BrandTicker } from "@/components/home/BrandTicker";
 import { DealsFunnel } from "@/components/home/DealsFunnel";
@@ -10,6 +9,7 @@ import { FeaturedProductsShowcase } from "@/components/home/FeaturedProductsShow
 import { HeroAside } from "@/components/home/HeroAside";
 import { HeroSlider } from "@/components/home/HeroSlider";
 import { PromoSpotlight } from "@/components/home/PromoSpotlight";
+import { SeoIntro } from "@/components/home/SeoIntro";
 import { CategorySidebar } from "@/components/layout/CategorySidebar";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { FEATURED_PRODUCTS_COUNT } from "@/lib/config";
@@ -282,8 +282,9 @@ export default async function HomePage() {
         {/* Module 11: the advantages. */}
         {sections.advantages && <AdvantagesSection content={home.advantages} />}
 
-        {/* Module 12: the corporate close, between the advantages and the footer. */}
-        {sections.about && <CorporateTrust content={home.about} />}
+        {/* Module 12: the close before the footer — the shop in a few plain
+            paragraphs (still switched by "Hakkımızda" in Ana Sayfa Düzenleme). */}
+        {sections.about && <SeoIntro />}
       </main>
     </>
   );

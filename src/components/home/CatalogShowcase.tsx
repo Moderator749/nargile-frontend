@@ -36,12 +36,15 @@ const TILE = [
  *
  * The whole tile is the link; there is no button, which is also what gives the
  * longer names room to be written out in full.
+ *
+ * On a white band across the page in the light theme, which runs on until the
+ * advantages below take over the page's own grey.
  */
 export function CatalogShowcase({ title, subtitle, tiles }: { title: string; subtitle: string; tiles: ResolvedTile[] }) {
   if (tiles.length === 0) return null;
 
   return (
-    <section aria-labelledby="showcase-heading" className="pb-5 pt-5 sm:pb-6 sm:pt-6">
+    <section aria-labelledby="showcase-heading" className="bg-white py-12 sm:py-16 dark:bg-transparent">
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6">
         <h2
           id="showcase-heading"

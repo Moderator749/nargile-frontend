@@ -19,12 +19,14 @@ import type { CatalogPrice, CatalogProduct, Category } from "@/types";
 /**
  * "FIRSATLARI KAÇIRMA": the deals section, and the only one the page has.
  *
- * The frame is carried over from sultannargile.com's own `src/sections/Funnel.tsx`
- * — a floating near-black card with 28px corners and a red glow thrown
- * downwards, three stacked background layers (two radial washes, a diagonal
- * sheen, a masked 52px grid), rising smoke, and a centred title. What sits
- * inside it is this shop's own: the live deals, four across, each a white
- * card whose photo runs flush across the top of it.
+ * The look is carried over from sultannargile.com's own `src/sections/Funnel.tsx`
+ * — near-black, three stacked background layers (two radial washes, a
+ * diagonal sheen, a masked 52px grid), rising smoke, and a centred title — as
+ * a band across the full width of the page rather than a card in its column.
+ * What sits inside is this shop's own: the live deals, four across, each a
+ * white card whose photo runs flush across the top of it, kept to the page's
+ * container (with the inset the card used to give them) so they sit exactly
+ * where they did.
  *
  * It renders only while there is something to show. A dark panel announcing
  * deals with nothing in it is worse than no panel, so with no claimable deal
@@ -143,31 +145,31 @@ export function DealsFunnel({ initialProducts, categories, title, subtitle }: De
     <section
       id="firsat-urunleri"
       aria-labelledby="deals-funnel-heading"
-      className="relative scroll-mt-[var(--header-height)] py-6 sm:py-8"
+      className="relative isolate scroll-mt-[var(--header-height)] overflow-hidden bg-[#0a0a0c] py-12 text-white sm:py-16"
     >
-      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6">
-        <div className="relative overflow-hidden rounded-[28px] bg-[#0a0a0c] px-6 py-5 text-white shadow-[0_40px_90px_-45px_rgba(183,10,33,0.85)] sm:px-10 sm:py-6">
-          {/* Background: two washes, a diagonal sheen, a grid masked to the
-              middle, and smoke rising off the floor. */}
-          <div className="pointer-events-none absolute inset-0" aria-hidden>
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(216,16,40,0.55),transparent_58%),radial-gradient(ellipse_at_bottom_right,rgba(150,10,30,0.5),transparent_60%)]" />
-            <div className="absolute inset-0 bg-[linear-gradient(115deg,transparent_40%,rgba(255,255,255,0.06)_50%,transparent_60%)]" />
-            <div className="absolute inset-0 bg-[linear-gradient(to_right,#fff_1px,transparent_1px),linear-gradient(to_bottom,#fff_1px,transparent_1px)] bg-[size:52px_52px] opacity-[0.14] [mask-image:radial-gradient(ellipse_at_center,#000,transparent_72%)]" />
-            {SMOKE.map((left, index) => (
-              <span
-                key={left}
-                className="absolute bottom-8 h-20 w-20 rounded-full bg-white/10 blur-2xl motion-safe:animate-smoke motion-reduce:hidden"
-                style={
-                  {
-                    left: `${left}%`,
-                    "--smoke-dur": `${6 + index * 1.4}s`,
-                    animationDelay: `${index * 1.3}s`,
-                  } as CSSProperties
-                }
-              />
-            ))}
-          </div>
+      {/* Background, edge to edge: two washes, a diagonal sheen, a grid
+          masked to the middle, and smoke rising off the floor. */}
+      <div className="pointer-events-none absolute inset-0" aria-hidden>
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(216,16,40,0.55),transparent_58%),radial-gradient(ellipse_at_bottom_right,rgba(150,10,30,0.5),transparent_60%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(115deg,transparent_40%,rgba(255,255,255,0.06)_50%,transparent_60%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#fff_1px,transparent_1px),linear-gradient(to_bottom,#fff_1px,transparent_1px)] bg-[size:52px_52px] opacity-[0.14] [mask-image:radial-gradient(ellipse_at_center,#000,transparent_72%)]" />
+        {SMOKE.map((left, index) => (
+          <span
+            key={left}
+            className="absolute bottom-8 h-20 w-20 rounded-full bg-white/10 blur-2xl motion-safe:animate-smoke motion-reduce:hidden"
+            style={
+              {
+                left: `${left}%`,
+                "--smoke-dur": `${6 + index * 1.4}s`,
+                animationDelay: `${index * 1.3}s`,
+              } as CSSProperties
+            }
+          />
+        ))}
+      </div>
 
+      <div className="relative mx-auto w-full max-w-7xl px-4 sm:px-6">
+        <div className="px-6 sm:px-10">
           <div className="relative text-center">
             <h2
               id="deals-funnel-heading"
