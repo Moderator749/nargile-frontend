@@ -4,6 +4,9 @@ const SECONDS_PER_BRAND = 3;
  * The brand ticker: a single line of names (from "Ana Sayfa Düzenleme") sliding between the deals and the
  * gallery, on a flat track with square ends and no surface of its own, so it
  * sits in the page rather than on it; a hairline above and below frames it.
+ * The band behind it is white in the light theme, running on into the white
+ * of "Sizin İçin Seçtiklerimiz" below — spaced by padding, not margin, so no
+ * strip of the page's grey shows between them.
  *
  * The names are small, wide-tracked and muted — a credits line, not a
  * headline — and answer one at a time under the pointer. The track's ends are
@@ -52,7 +55,7 @@ export function BrandTicker({ brands }: { brands: string[] }) {
   );
 
   return (
-    <section aria-label="Dünya markaları" className="mb-2 mt-7 sm:mb-2 sm:mt-8">
+    <section aria-label="Dünya markaları" className="bg-white pb-2 pt-7 sm:pt-8 dark:bg-transparent">
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6">
         {/* Framed by hairlines above and below, open at the ends. The lines are
             on this wrapper and the mask on the track inside, so only the names
