@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { AdvantagesSection } from "@/components/home/AdvantagesSection";
 import { CatalogShowcase } from "@/components/home/CatalogShowcase";
 import { CorporateTrust } from "@/components/home/CorporateTrust";
+import { BrandShowcase } from "@/components/home/BrandShowcase";
 import { BrandTicker } from "@/components/home/BrandTicker";
 import { DealsFunnel } from "@/components/home/DealsFunnel";
 import { FeaturedProductsShowcase } from "@/components/home/FeaturedProductsShowcase";
@@ -51,9 +52,17 @@ const FEATURED_CATEGORY_SLUG = "celik-takimlar";
 const PICKS = { bestsellers: FEATURED_CATEGORY_SLUG, newest: "oduman" } as const;
 const PICKS_COUNT = 10;
 
-/** A pick worth showing: one with a photo and a price to put under it. */
-const showable = (products: CatalogProduct[] | null) =>
-  (products ?? []).filter((p) => p.image_url && p.variants.some((v) => v.price)).slice(0, PICKS_COUNT);
+/** A product worth showing: one with a photo and a price to put under it. */
+const showable = (products: CatalogProduct[] | null, count = PICKS_COUNT) =>
+  (products ?? []).filter((p) => p.image_url && p.variants.some((v) => v.price)).slice(0, count);
+
+/**
+ * "Markalarımız": the house brand whose products it scrolls through. Found by
+ * search, then held to the brand itself, since a search also matches names
+ * and codes that merely mention it.
+ */
+const HOUSE_BRAND = "Sultan";
+const HOUSE_BRAND_COUNT = 12;
 
 const TITLE = `${SITE_NAME} — Endüstriyel Toptan & Perakende Nargile Çözümleri`;
 
@@ -65,7 +74,7 @@ export default async function HomePage() {
   // What to show and what it says: "Ana Sayfa Düzenleme" (/admin/homepage).
   const home = await getHomepage();
   const { sections } = home;
-  const [categories, featured, flashSales, brands, content, artwork, bestsellers, newest] = await Promise.all([
+  const [categories, featured, flashSales, brands, content, artwork, bestsellers, newest, house] = await Promise.all([
     getCategories(),
     getPublicProducts(FEATURED_CATEGORY_SLUG, FEATURED_PRODUCTS_COUNT),
     getFlashSaleProducts(),
@@ -86,7 +95,12 @@ export default async function HomePage() {
     // Asked for with room to spare: some products have no photo or no price.
     getPublicProducts(PICKS.bestsellers, PICKS_COUNT * 2),
     getPublicProducts(PICKS.newest, PICKS_COUNT * 2),
+    getPublicProducts(undefined, 50, 0, HOUSE_BRAND),
   ]);
+  const houseProducts = showable(
+    (house ?? []).filter((p) => p.brand?.toLocaleLowerCase("tr-TR") === HOUSE_BRAND.toLocaleLowerCase("tr-TR")),
+    HOUSE_BRAND_COUNT,
+  );
   const allCategories = categories ?? [];
   const sidebar = resolveNav(home.navigation.sidebar, allCategories, brands ?? []);
   const showcase = resolveShowcase(home.showcase.tiles, allCategories, brands ?? [], artwork);
@@ -177,6 +191,10 @@ export default async function HomePage() {
 
         {/* Module 9c: "Sizin İçin Seçtiklerimiz", two tabbed product lists. */}
         <FeaturedProductsShowcase lists={{ bestsellers: showable(bestsellers), newest: showable(newest) }} />
+
+        {/* Module 9d: "Markalarımız", the house brand and its products, just
+            above the gallery. */}
+        <BrandShowcase products={houseProducts} />
 
         {/* Module 10: the catalog as a gallery, in place of the old
             "Öne çıkanlar" carousel. */}

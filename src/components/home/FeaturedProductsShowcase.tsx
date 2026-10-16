@@ -1,18 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import axios from "axios";
-import { Package } from "lucide-react";
+import { useState } from "react";
 
-import { ProductImage } from "@/components/catalog/ProductImage";
-import { useDisplayMoney } from "@/hooks/useDisplayMoney";
-import { fetchProductsByIds } from "@/lib/catalogApi";
+import { ShowcaseProductCard, useOwnPrices } from "@/components/home/ShowcaseProductCard";
 import { PAGE_CONTAINER } from "@/lib/layout";
-import { productHref, productImageAlt } from "@/lib/seo";
-import { displayVariant } from "@/lib/variants";
-import { useAuthStore } from "@/store/useAuthStore";
-import { useAuthHydrated } from "@/store/useHasHydrated";
 import type { CatalogProduct } from "@/types";
 
 const TABS = [
@@ -30,42 +21,19 @@ const TAB_IDLE =
 
 /**
  * "Sizin İçin Seçtiklerimiz": two short lists behind a pair of tabs, as plain
- * photo-and-caption cards — the photo straight on the section's white, the brand, the
- * name and the price set beneath it, with no card around any of it.
+ * photo-and-caption cards (`ShowcaseProductCard`) on a white band.
  *
- * The lists arrive server-rendered at the public (retail) price. A signed-in
- * visitor gets both re-priced for their own segment in one request; until that
- * answers, the prices stay masked (`public-price`) rather than showing a figure
- * that is not theirs.
+ * The lists arrive server-rendered at the public (retail) price; a signed-in
+ * visitor gets both re-priced for their own segment in one request
+ * (`useOwnPrices`).
  */
 export function FeaturedProductsShowcase({ lists }: { lists: Record<TabKey, CatalogProduct[]> }) {
   const [tab, setTab] = useState<TabKey>("newest");
-  const hydrated = useAuthHydrated();
-  const token = useAuthStore((s) => s.token);
-  const money = useDisplayMoney();
-  const [own, setOwn] = useState<{
-    token: string;
-    byId: Map<string, CatalogProduct>;
-  } | null>(null);
-
-  useEffect(() => {
-    if (!hydrated || !token) return;
-    const ids = [...new Set(TABS.flatMap(({ key }) => lists[key].map((p) => p.id)))];
-    if (ids.length === 0) return;
-    const controller = new AbortController();
-    fetchProductsByIds(ids, controller.signal)
-      .then((products) => setOwn({ token, byId: new Map(products.map((p) => [p.id, p])) }))
-      .catch((err: unknown) => {
-        // Unpriced for this account is still better than a guest's price.
-        if (!axios.isCancel(err)) setOwn({ token, byId: new Map() });
-      });
-    return () => controller.abort();
-  }, [hydrated, token, lists]);
+  const mine = useOwnPrices(TABS.flatMap(({ key }) => lists[key]));
 
   const visible = TABS.filter(({ key }) => lists[key].length > 0);
   if (visible.length === 0) return null;
   const active = lists[tab].length > 0 ? tab : visible[0].key;
-  const mine = hydrated && token && own?.token === token ? own.byId : null;
   const publicPrices = !mine;
 
   return (
@@ -106,42 +74,13 @@ export function FeaturedProductsShowcase({ lists }: { lists: Record<TabKey, Cata
           {lists[active].map((listed) => {
             // A signed-in visitor's own copy, once it is in; its price is theirs.
             const product = mine?.get(listed.id) ?? listed;
-            const price = displayVariant(product)?.price ?? null;
             return (
               <li key={product.id}>
-                <Link
-                  href={productHref(product)}
-                  className="group block rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-gray-900 dark:focus-visible:outline-white"
-                >
-                  {/* No surface of its own on white. On the dark theme the photo still
-                      needs a light one: it is multiplied into what is behind it,
-                      and over black it would go black. */}
-                  <div className="relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-2xl bg-transparent p-6 dark:bg-zinc-100">
-                    <ProductImage
-                      src={product.image_url}
-                      alt={productImageAlt(product)}
-                      sizes="(min-width: 1024px) 20vw, (min-width: 768px) 33vw, 50vw"
-                      surfaceClassName="w-full bg-transparent"
-                      imageClassName="object-contain mix-blend-multiply transition-transform duration-500 ease-out motion-safe:group-hover:scale-105"
-                      fallback={<Package className="h-10 w-10 text-gray-300" strokeWidth={1} aria-hidden />}
-                    />
-                  </div>
-                  <div className="mt-4 flex flex-col gap-1 text-left">
-                    {product.brand && (
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 md:text-xs dark:text-neutral-400">
-                        {product.brand.toLocaleUpperCase("tr-TR")}
-                      </p>
-                    )}
-                    <h3 className="line-clamp-2 text-sm font-medium leading-snug text-gray-900 group-hover:underline dark:text-white">
-                      {product.name}
-                    </h3>
-                    <p
-                      className={`mt-1 w-fit text-lg font-bold text-gray-900 dark:text-white ${publicPrices ? "public-price" : ""}`}
-                    >
-                      <span>{price ? money.format(price) : "—"}</span>
-                    </p>
-                  </div>
-                </Link>
+                <ShowcaseProductCard
+                  product={product}
+                  publicPrices={publicPrices}
+                  sizes="(min-width: 1024px) 20vw, (min-width: 768px) 33vw, 50vw"
+                />
               </li>
             );
           })}
