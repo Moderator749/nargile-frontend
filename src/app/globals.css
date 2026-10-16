@@ -146,6 +146,22 @@ html[data-auth] .guest-only {
   }
 }
 
+/* Advantages, shipping card: a parcel travelling the route, pausing at the door. */
+@keyframes advantage-route {
+  0% {
+    left: 0%;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  75%,
+  100% {
+    left: 100%;
+    opacity: 1;
+  }
+}
+
 /* Brand marquee: the track holds the list twice, so -50% lands on an identical frame. */
 @keyframes marquee {
   to {
