@@ -2,7 +2,7 @@
 
 import { ShieldCheck } from "lucide-react";
 
-import { LegalText } from "@/components/legal/LegalText";
+import { RichText } from "@/components/ui/RichText";
 import type { LegalDocument } from "@/types";
 
 /**
@@ -27,7 +27,7 @@ export function PrivacyNotice({ document }: { document: LegalDocument | undefine
       </h2>
       <div className="mt-2 min-h-[4.5rem]">
         {document ? (
-          <LegalText body={document.body} headingLevel={3} />
+          <RichText html={document.body} nested className="text-sm text-slate-700 dark:text-zinc-300" />
         ) : (
           <div className="space-y-2" aria-busy>
             <div className="h-3 w-full rounded bg-slate-200 motion-safe:animate-pulse dark:bg-white/10" />

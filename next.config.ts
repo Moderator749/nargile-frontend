@@ -79,6 +79,15 @@ const LEGACY_PAGES: Record<string, string> = {
 };
 
 const nextConfig: NextConfig = {
+  /*
+   * Metadata (title, description, canonical, Open Graph) always in <head>.
+   * By default Next streams it into <body> for ordinary browsers and blocks
+   * only for a list of known bots; crawlers outside that list (AI crawlers,
+   * SEO tools, smaller search engines) would then find no <title> in the first
+   * HTML they read. Every page's metadata comes from cached catalog reads, so
+   * waiting for it costs little.
+   */
+  htmlLimitedBots: /.*/,
   // The dashboard ("Genel Bakış") lives at /admin; keep /admin/overview working too.
   async redirects() {
     return [
@@ -122,9 +131,14 @@ const nextConfig: NextConfig = {
     ];
   },
   images: {
+    // AVIF where the browser takes it (a third smaller than WebP for these
+    // photos), else WebP; the original JPEG only for a browser with neither.
+    formats: ["image/avif", "image/webp"],
     remotePatterns: [
       // Product photos imported from the supplier catalog.
       new URL("https://www.nargilemalzemesi.com/image/**"),
+      // A product video's poster frame (gallery thumbnails).
+      new URL("https://i.ytimg.com/vi/**"),
       // Photos the admin uploads, served by the API at /media. Both loopback
       // spellings, since the stored URL carries whichever host the admin used.
       ...(MEDIA_IS_LOCAL

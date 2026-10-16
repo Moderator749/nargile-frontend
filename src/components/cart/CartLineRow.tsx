@@ -49,7 +49,7 @@ export function CartLineRow({
         {image ? (
           <Image
             src={image}
-            alt=""
+            alt={label}
             fill
             sizes="96px"
             unoptimized={!canOptimiseImage(image)}

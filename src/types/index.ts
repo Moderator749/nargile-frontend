@@ -39,8 +39,20 @@ export type WarehouseType = "RETAIL_STOCK" | "B2B_STOCK";
 export type PaymentMethod = "CREDIT_CARD" | "BANK_TRANSFER" | "QUOTE";
 /** How an export shipment leaves the country; quoted after the order. */
 export type TransportMode = "ROAD" | "AIR" | "SEA";
-/** AWAITING_TRANSFER = "Havale Bekliyor": a bank-transfer order waiting for the money. */
-export type OrderStatus = "PENDING_APPROVAL" | "AWAITING_TRANSFER" | "APPROVED" | "SHIPPED" | "CANCELLED";
+/**
+ * AWAITING_TRANSFER = "Havale Bekliyor": a bank-transfer order waiting for the money.
+ * AWAITING_PAYMENT = "Ödeme Bekliyor": a card order waiting for PayTR to confirm it.
+ * PAYMENT_FAILED: the card payment failed or was never completed; what the
+ * order held went back, as on a cancellation.
+ */
+export type OrderStatus =
+  | "PENDING_APPROVAL"
+  | "AWAITING_TRANSFER"
+  | "AWAITING_PAYMENT"
+  | "APPROVED"
+  | "SHIPPED"
+  | "CANCELLED"
+  | "PAYMENT_FAILED";
 /**
  * How an order travels. Which of these a customer may pick depends on what kind
  * of account they have — see `src/lib/shipping.ts`, which mirrors the server's
@@ -137,7 +149,7 @@ export interface User {
   created_at: ISODateTime;
   /** Returned by GET /auth/me (UserMe); absent from other user responses. */
   segment_code?: SegmentType | null;
-  /** Usable ParaPuan (1 point = 1 TRY). Returned by GET /auth/me only. */
+  /** Usable Sultan Puan (each worth `loyalty.conversion_rate` TRY). Returned by GET /auth/me only. */
   loyalty_balance?: number;
 }
 
@@ -191,6 +203,8 @@ export interface RegistrationCreate {
   company?: CompanyIdentityInput | null;
   /** Turkish accounts send the structured Turkish shape, international ones the global one. */
   billing_address?: StructuredAddress | InternationalAddress | null;
+  /** Ticari elektronik ileti onayı: optional, off by default; true turns on both campaign e-mail and SMS. */
+  marketing_consent?: boolean;
 }
 
 export interface LoginRequest {
@@ -215,6 +229,12 @@ export interface Category {
   sort_order?: number;
   /** Cover photo for its showcase tile; null = a product photo is borrowed. */
   image_url?: string | null;
+  /** The page's introduction as the admin wrote it; null = the built-in copy, if any. */
+  description?: string | null;
+  /** `GET /categories/` only: published products its page lists, subcategories included. */
+  product_count?: number;
+  /** `GET /categories/` only: the newest last edit among them (the sitemap's <lastmod>). */
+  updated_at?: string | null;
 }
 
 /** A top-level category with its subcategories (menu, tabs). */
@@ -245,6 +265,7 @@ export interface AdminCategory extends Category {
 export interface CategoryWrite {
   name: string;
   slug?: string | null;
+  description?: string | null;
   parent_id: number | null;
   sort_order: number;
   is_active: boolean;
@@ -261,6 +282,8 @@ export interface BrandWrite {
 
 export interface Product {
   id: UUID;
+  /** The page's address, /product/<slug>; given once and kept through renames. */
+  slug: string;
   base_code: string;
   name: string;
   brand: string | null;
@@ -291,6 +314,8 @@ export interface Product {
   is_opportunity: boolean;
   /** "Fırsat rengi": the badge colour for a product on offer, "#rrggbb". */
   opportunity_color: string | null;
+  /** Last edit of the product itself (ISO); the sitemap's <lastmod>. */
+  updated_at?: string | null;
 }
 
 // Catalog listing (GET /products/): prices resolved for the caller's segment.
@@ -345,6 +370,8 @@ export interface CatalogProduct extends Product {
 export interface CatalogProductDetail extends CatalogProduct {
   /** Priced for the same caller as the product itself; empty when none are pinned. */
   cross_sells?: CatalogProduct[];
+  /** Every category it is listed under, the primary one first. */
+  category_ids?: number[];
 }
 
 export interface ProductVariant {
@@ -474,6 +501,8 @@ export interface CartCalculateRequest {
 export interface CartItemBreakdown {
   variant_id: UUID;
   product_id?: UUID | null;
+  /** For the link to the product's page. */
+  product_slug?: string | null;
   sku: string;
   product_name: string;
   /** The colour in the cart; null on a colourless product. */
@@ -483,7 +512,12 @@ export interface CartItemBreakdown {
   line_total: DecimalString;
   tags: string[];
   image_url?: string | null;
+  /** Percent; `unit_price` and `line_total` include it. */
+  vat_rate?: DecimalString;
 }
+
+/** What the "%50 Kuralı" minimum counts: kilograms of coal, or units (adet). */
+export type CoalRuleBasis = "kg" | "quantity";
 
 /** Server-priced cart, returned by POST /orders/calculate-cart. */
 /** Why shipping is (or isn't) free — lets the cart explain the coal rules. */
@@ -493,7 +527,9 @@ export interface ShippingBreakdown {
   /** "Karşı ödemeli": the buyer pays the carrier (or courier) on delivery. */
   receiver_pays: boolean;
   /**
-   * coal_weight: coal is over coal_max_ratio of the cart and under coal_min_kg.
+   * coal_weight: the "%50 Kuralı" — coal (products with "Sepet Kuralı" on) is
+   * over coal_max_ratio of the cart and under the minimum: coal_min_kg, or
+   * coal_min_quantity when coal_rule_basis is "quantity".
    * freight: a nakliye ambarı, which collects its own fee from the receiver.
    * international: freight and customs, quoted after the order.
    * tier_price: a B2B account, whose price list does not include carriage, so
@@ -509,12 +545,17 @@ export interface ShippingBreakdown {
   coal_min_kg: DecimalString;
   /** Some coal in the cart has no recorded weight (counts as 0 kg). */
   coal_weight_unknown: boolean;
+  /** Which minimum the rule applies: kilograms or units (adet). */
+  coal_rule_basis: CoalRuleBasis;
+  /** Units of coal in the cart. */
+  coal_quantity: number;
+  coal_min_quantity: number;
 }
 
 export interface Cart {
   subtotal: DecimalString;
   /**
-   * Whether this account gets the retail promotions (ParaPuan, the ciro and
+   * Whether this account gets the retail promotions (Sultan Puan, the ciro and
    * havale discounts). False means every discount below is zero by rule: a B2B
    * account pays its tier price net.
    */
@@ -531,6 +572,14 @@ export interface Cart {
   discount_amount: DecimalString;
   points_discount: DecimalString;
   net_total: DecimalString;
+  /**
+   * The VAT inside the merchandise, for a business invoice: the lines before
+   * VAT, the VAT on them, and the rates involved. Exact for a B2B cart, which
+   * carries no promotional discounts.
+   */
+  subtotal_excl_tax?: DecimalString;
+  vat_total?: DecimalString;
+  vat_rates?: DecimalString[];
   loyalty_points_to_earn: number;
   payment_method: PaymentMethod;
   items: CartItemBreakdown[];
@@ -628,6 +677,112 @@ export interface Announcement {
 
 export type AnnouncementUpdate = Omit<Announcement, "updated_at">;
 
+/**
+ * A "Hazır metin" for the special-day banner. With `is_scheduled` on, the
+ * banner shows it by itself from `starts_at` until `ends_at`.
+ */
+export interface BannerPreset {
+  id: number;
+  message: string;
+  icon_type: BannerIcon;
+  starts_at: ISODateTime | null;
+  ends_at: ISODateTime | null;
+  is_scheduled: boolean;
+  sort_order: number;
+  updated_at: ISODateTime | null;
+}
+
+export type BannerPresetWrite = Omit<BannerPreset, "id" | "updated_at">;
+
+export type MessageChannel = "email" | "sms";
+/** "all", a segment code, or "manual" (addresses typed in). */
+export type CampaignAudience = "all" | "RETAIL" | "CAFE" | "WHOLESALE" | "DEALER" | "manual";
+
+/** A bulk e-mail / SMS from "İletişim & Bildirimler". */
+export interface Campaign {
+  id: number;
+  channel: MessageChannel;
+  audience: CampaignAudience;
+  subject: string | null;
+  body: string;
+  body_format: "text" | "html";
+  sms_segments: number | null;
+  /** queued → sending → done, or failed when nothing could be sent. */
+  status: "queued" | "sending" | "done" | "failed";
+  total: number;
+  sent: number;
+  failed: number;
+  created_at: ISODateTime;
+  finished_at: ISODateTime | null;
+}
+
+export interface CampaignCreate {
+  channel: MessageChannel;
+  audience: CampaignAudience;
+  manual_recipients: string[];
+  consent_confirmed: boolean;
+  subject: string | null;
+  body: string;
+  body_format: "text" | "html";
+}
+
+/** One e-mail or SMS sent, whatever sent it. */
+export interface NotificationLogEntry {
+  id: number;
+  channel: MessageChannel;
+  recipient: string;
+  purpose: string;
+  campaign_id: number | null;
+  subject: string | null;
+  /** The driver: "smtp", "resend", "netgsm"…, or "mock" (not actually sent). */
+  provider: string;
+  status: "pending" | "sent" | "failed";
+  error: string | null;
+  created_at: ISODateTime;
+  sent_at: ISODateTime | null;
+}
+
+export interface AudienceCount {
+  key: CampaignAudience;
+  label: string;
+  /** Customers in the group. */
+  total: number;
+  /** Of them: consent given and reachable on the channel. */
+  eligible: number;
+}
+
+export interface CommunicationDrivers {
+  email: string;
+  sms: string;
+  sms_opt_out_text: string;
+}
+
+/** A note in the admin's "Not Defteri"; only its author sees it. */
+export interface AdminNote {
+  id: number;
+  title: string;
+  body: string;
+  created_at: ISODateTime;
+  updated_at: ISODateTime;
+}
+
+export type AdminNoteWrite = Pick<AdminNote, "title" | "body">;
+
+/** "Açılış duyurusu": the card shown once when a visitor lands on the storefront. */
+export interface PopupAnnouncement {
+  title: string;
+  message: string;
+  is_active: boolean;
+  /** Shown from here; null = at once. */
+  starts_at: ISODateTime | null;
+  /** Hidden from here; null = no end. */
+  ends_at: ISODateTime | null;
+  /** A visitor's dismissal is remembered against this, so an edited popup shows again. */
+  updated_at: ISODateTime | null;
+}
+
+export type PopupAnnouncementUpdate = Omit<PopupAnnouncement, "updated_at">;
+
 export interface Segment {
   id: number;
   code: SegmentType;
@@ -704,7 +859,7 @@ export interface SheetRules {
   has_volume_discount: boolean;
   gives_points: boolean;
   can_use_points: boolean;
-  /** "Ağır Kargo rakamı 3.000 TL üzeri alışverişlerde sepetin %50'sini geçemez." */
+  /** "Sepet Kuralı": the product counts as coal for the cargo rule (its category plays no part). */
   is_cart_rule_applied: boolean;
 }
 
@@ -749,6 +904,9 @@ export interface ProductSheet {
   base_code: string;
   name: string;
   brand?: string | null;
+  /** Every category the product is listed under, the primary (breadcrumb) one first. */
+  category_ids?: number[];
+  /** The primary category: the first of `category_ids`, kept in step by the server. */
   category_id?: number | null;
   /** "Renk" labels, in the order the admin added them; one buyable colour each. */
   color_names: string[];
@@ -757,6 +915,8 @@ export interface ProductSheet {
   meta_title?: string | null;
   /** Overrides its meta description; blank falls back to `description`. */
   meta_description?: string | null;
+  /** The page's address, /product/<slug>; blank keeps the current one (a new product's comes from its name). */
+  slug?: string | null;
   /** Gallery in order; the server mirrors the first one into `image_url`. */
   image_urls: string[];
   youtube_video_url?: string | null;
@@ -979,8 +1139,13 @@ export type HeroSlideWrite = Omit<HeroSlideContent, "id" | "image" | "has_upload
 export type PromoBoxWrite = Omit<PromoBoxContent, "id" | "image" | "has_upload">;
 export type AdvantageWrite = Omit<AdvantageContent, "id">;
 
-// ── Wallet (ParaPuan + Kumbarapuan), bank accounts, admin customers ──────────
+// ── Wallet (Sultan Puan), bank accounts, admin customers ─────────────────────
 
+/**
+ * Where a ledger row came from. The names predate the "Sultan Puan" rename and
+ * are kept so old rows read the same: PARAPUAN is a standard Sultan Puan award,
+ * KUMBARA the annual bonus (formerly Kumbarapuan).
+ */
 export type PointSource = "PARAPUAN" | "KUMBARA" | "CHECKOUT" | "ADMIN";
 
 export interface WalletLot {
@@ -1009,9 +1174,28 @@ export interface Wallet {
   balance: number;
   /** Points expiring within 30 days. */
   expiring_soon: number;
+  /** The program's switch: off means nothing is earned or spent (the balance is kept). */
+  enabled: boolean;
+  /** TRY per point. */
+  conversion_rate: DecimalString;
   lots: WalletLot[];
-  kumbara: { accumulated: DecimalString; target: DecimalString; rate: DecimalString };
+  milestone: LoyaltyMilestone;
   history: WalletEntry[];
+}
+
+/** Progress toward the annual Sultan Puan bonus. */
+export interface LoyaltyMilestone {
+  /** Paid spending counted so far: within the window, after the last bonus. */
+  spent: DecimalString;
+  target: DecimalString;
+  remaining: DecimalString;
+  bonus_points: number;
+  period_days: number;
+  /** Orders of this subtotal or more do not count; "0" = every order counts. */
+  order_ceiling: DecimalString;
+  counting_since: ISODateTime;
+  /** The count restarted at a bonus inside the window, not at its start. */
+  restarted: boolean;
 }
 
 export interface BankAccount {
@@ -1162,6 +1346,54 @@ export interface AdminDashboardData {
 export interface ShippingSettings {
   /** "İstanbul İçi B2B Ücretsiz Teslimat Alt Limiti (TL)"; ₺20.000 by default. */
   istanbul_free_min_subtotal: DecimalString;
+}
+
+/** One rung of a discount ladder: from `threshold` TRY of subtotal, `rate` (0..1) off. */
+export interface ParameterTier {
+  threshold: DecimalString;
+  rate: DecimalString;
+}
+
+/**
+ * "Parametreler": the checkout's commercial rules, set in the admin panel and
+ * read by the storefront without a login. Rates are fractions, as the cart
+ * reports them ("0.05" is %5).
+ */
+export interface StoreParameters {
+  /** Retail carts from this subtotal ship on the shop. */
+  free_shipping_threshold: DecimalString;
+  /** "%50 Kuralı": a coal-dominant cart ships free only from this much coal (kg), when it counts kilograms. */
+  coal_min_kg: DecimalString;
+  /** Coal worth more than this share (0..1) of the subtotal makes a cart coal-dominant. */
+  coal_max_ratio: DecimalString;
+  /** Which minimum the rule applies — only that one: coal_min_kg or coal_min_quantity. */
+  coal_rule_basis: CoalRuleBasis;
+  /** The minimum in units (adet), when the rule counts units. */
+  coal_min_quantity: number;
+  /** Havale/EFT: judged on the subtotal, applied after the ciro discount. Ascending. */
+  bank_transfer_tiers: ParameterTier[];
+  /** "Ciro indirimi", on the subtotal. Ascending. */
+  volume_tiers: ParameterTier[];
+  loyalty: LoyaltyParameters;
+  /** "İstanbul İçi B2B Ücretsiz Teslimat Alt Limiti (TL)"; "0" = every İstanbul order. */
+  istanbul_free_min_subtotal: DecimalString;
+}
+
+/** Sultan Puan: how points are earned, what they are worth, the annual bonus. */
+export interface LoyaltyParameters {
+  enabled: boolean;
+  /** Standard award: this fraction of a single paid order's subtotal… */
+  base_rate: DecimalString;
+  /** …for orders from band_min to band_max TRY inclusive. */
+  band_min: DecimalString;
+  band_max: DecimalString;
+  /** 1 Sultan Puan = this many TRY. */
+  conversion_rate: DecimalString;
+  annual_spend_threshold: DecimalString;
+  annual_bonus_points: number;
+  annual_period_days: number;
+  /** Orders of this subtotal or more don't count toward the annual target; "0" = all count. */
+  annual_order_ceiling: DecimalString;
 }
 
 /** Which legal text. PRIVACY_NOTICE is the short framed notice in the cart. */

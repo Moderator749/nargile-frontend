@@ -6,11 +6,14 @@ interface PaymentMethodPickerProps {
   value: PaymentMethod;
   onChange: (value: PaymentMethod) => void;
   /**
-   * Whether to advertise the havale discount. It is a retail promotion, so a
-   * B2B account is not promised one it would not receive — it pays its tier
-   * price either way.
+   * The havale discount to advertise ("%5 indirim (₺30.000 üzeri %7)", from
+   * the live parameters), or null for none. It is a retail promotion, so a B2B
+   * account is not promised one it would not receive — it pays its tier price
+   * either way.
    */
-  transferDiscount: boolean;
+  transferDiscount: string | null;
+  /** Whether card payment (PayTR) is open; false greys the card option out. */
+  cardAvailable: boolean;
   /** "Kart bilgilerimi sonraki alışverişlerim için güvenle kaydet". */
   saveCard: boolean;
   onSaveCardChange: (checked: boolean) => void;
@@ -20,16 +23,22 @@ export function PaymentMethodPicker({
   value,
   onChange,
   transferDiscount,
+  cardAvailable,
   saveCard,
   onSaveCardChange,
 }: PaymentMethodPickerProps) {
-  const options: { value: PaymentMethod; title: string; hint: string; Icon: typeof CreditCard }[] = [
-    { value: "CREDIT_CARD", title: "Kredi Kartı", hint: "Anında onay", Icon: CreditCard },
+  const options: { value: PaymentMethod; title: string; hint: string; Icon: typeof CreditCard; disabled?: boolean }[] = [
+    {
+      value: "CREDIT_CARD",
+      title: "Kredi / Banka Kartı",
+      hint: cardAvailable ? "PayTR güvencesiyle, taksit seçenekli" : "Şu anda kullanılamıyor",
+      Icon: CreditCard,
+      disabled: !cardAvailable,
+    },
     {
       value: "BANK_TRANSFER",
       title: "Havale / EFT",
-      // Mirrors checkout_engine: 5% below ₺30.000, 7% from ₺30.000.
-      hint: transferDiscount ? "%5 indirim (₺30.000 üzeri %7)" : "Banka hesabımıza ödeme",
+      hint: transferDiscount ?? "Banka hesabımıza ödeme",
       Icon: Landmark,
     },
   ];
@@ -37,10 +46,10 @@ export function PaymentMethodPicker({
     <fieldset>
       <legend className="text-sm font-medium text-slate-700 dark:text-zinc-300">Ödeme yöntemi</legend>
       <div className="mt-2 grid grid-cols-2 gap-2">
-        {options.map(({ value: option, title, hint, Icon }) => (
+        {options.map(({ value: option, title, hint, Icon, disabled }) => (
           <label
             key={option}
-            className={`flex cursor-pointer flex-col gap-1 rounded-lg border p-3 text-sm transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-red-500/40 ${
+            className={`flex cursor-pointer flex-col gap-1 rounded-lg border p-3 text-sm transition-colors has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-50 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-red-500/40 ${
               value === option
                 ? "border-red-600 dark:border-red-400 bg-red-50/60 dark:bg-red-500/10 ring-1 ring-red-600 dark:ring-red-400"
                 : "border-slate-300 dark:border-white/15 hover:border-slate-400 dark:hover:border-white/25"
@@ -51,6 +60,7 @@ export function PaymentMethodPicker({
               name="payment_method"
               value={option}
               checked={value === option}
+              disabled={disabled}
               onChange={() => onChange(option)}
               className="sr-only"
             />

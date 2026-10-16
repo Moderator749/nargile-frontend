@@ -109,6 +109,8 @@ export interface RegistrationDraft {
   internationalKind: InternationalKind;
   /** The one address an international account gives: it is billed and shipped there. */
   internationalAddress: InternationalAddressDraft;
+  /** Ticari elektronik ileti onayı — optional, never pre-ticked, the same on every card. */
+  marketingConsent: boolean;
 }
 
 export const EMPTY_ADDRESS: AddressDraft = {
@@ -154,6 +156,7 @@ export function emptyDraft(accountType: AccountType = "INDIVIDUAL"): Registratio
     corporateAddress: { ...EMPTY_ADDRESS },
   internationalKind: "WHOLESALER",
     internationalAddress: { ...EMPTY_INTERNATIONAL_ADDRESS },
+    marketingConsent: false,
   };
 }
 
@@ -337,6 +340,7 @@ function toInternationalPayload(draft: RegistrationDraft): RegistrationCreate {
       address: null,
     },
     billing_address: toInternationalAddress(draft.internationalAddress),
+    marketing_consent: draft.marketingConsent,
   };
 }
 
@@ -370,5 +374,6 @@ export function toPayload(draft: RegistrationDraft): RegistrationCreate {
         }
       : null,
     billing_address: business || addressTouched(draft.billing) ? toAddress(draft.billing) : null,
+    marketing_consent: draft.marketingConsent,
   };
 }

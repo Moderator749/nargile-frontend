@@ -271,7 +271,7 @@ export function CustomerDetailView({ userId }: { userId: string }) {
           id="points-heading"
           className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-zinc-400"
         >
-          ParaPuan
+          Sultan Puan
         </h2>
         <form
           onSubmit={adjust}

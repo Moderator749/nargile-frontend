@@ -8,48 +8,64 @@ interface CategoryCopy {
   description: string;
 }
 
-// Keyed by backend category slug (the taxonomy in the e7c4b19a2f60 migration):
-// the seven groups and the sub-categories with something of their own to say.
+// Keyed by backend category slug (the taxonomy in the b8e3f17c4d92 migration):
+// the eight groups and the sub-categories with something of their own to say.
 // Unknown slugs fall back to DEFAULT_COPY.
 const COPY: Record<string, CategoryCopy> = {
   "nargile-takimlari": {
     icon: Wind,
-    description: "Çelik, klasik, Rus ve masaüstü nargile takımları. Kafe ve işletmelere toptan ve bayi fiyatlarıyla hızlı tedarik.",
+    description: "Çantalı, kafe tipi ve masaüstü nargile takımları. Kafe ve işletmelere toptan ve bayi fiyatlarıyla hızlı tedarik.",
   },
-  "celik-takimlar": {
+  "cantali-nargile-takimlari": {
     icon: Shield,
-    description: "Paslanmaz çelik nargile takımları: yoğun kullanıma dayanıklı, uzun ömürlü gövdeler.",
+    description: "Taşıma çantasıyla gelen nargile takımları: güvenle taşınır, düzenli saklanır.",
   },
   luleler: {
     icon: Layers,
-    description: "Phunnel ve killer, sırlı ve sırsız, toprak, seramik, cam ve silikon lüleler. Isıyı dengeli dağıtan profesyonel modeller.",
+    description: "Killer, phunnel, cam ve silikon lüleler. Isıyı dengeli dağıtan profesyonel modeller.",
   },
-  "kozlukler-isi-yonetimi": {
-    icon: Flame,
-    description: "Közlükler (HMD), folyo, rüzgarlık ve maşalar: içim boyunca ısıyı sabit tutan ekipmanlar.",
+  "sarf-malzemeleri": {
+    icon: Leaf,
+    description: "Nargile kömürleri, bitkisel ürünler, folyolar, sipsiler ve kullan at marpuçlar: işletmenizin günlük tüketimi için toptan tedarik.",
   },
-  "marpuc-ve-hortumlar": {
-    icon: Wrench,
-    description: "Silikon ve klasik marpuçlar, uçlar ve adaptörler: rahat çekim için doğru hortum.",
-  },
-  "sipsiler-ve-aksesuarlar": {
+  aksesuarlar: {
     icon: Cog,
-    description: "Sipsiler, contalar, yedek parçalar, temizlik ürünleri ve taşıma çantaları.",
+    description: "Askılı sipsiler, tütün çatalları, matlar, şerbetlikler, çantalar, elekler, köz tavaları, bacalar, rüzgarlıklar ve maşalar.",
+  },
+  marpuclar: {
+    icon: Wrench,
+    description: "Silikon ve deri marpuçlar, silikon hortumlar ve marpuç başlıkları: rahat çekim için doğru hortum.",
+  },
+  "isi-yonetim-araclari": {
+    icon: Flame,
+    description: "Közlükler (HMD) ve ısı yönetim araçları: içim boyunca ısıyı sabit tutan ekipmanlar.",
+  },
+  "yedek-parca": {
+    icon: Package,
+    description: "Nargile şişeleri, rezistans ve ızgaralar, adaptör ve difüzörler, yapıştırıcılar, bilyalar, contalar ve bez bantlar.",
+  },
+  yakicilar: {
+    icon: Flame,
+    description: "Elektrikli ocaklar, pürmüzler, çakmaklar ve gazlar: kömürü hızlı ve güvenle yakmak için.",
   },
   "nargile-komurleri": {
     icon: Flame,
     description: "Uzun yanan, kokusuz hindistan cevizi ve hızlı yanan nargile kömürleri; kilogram ve koli seçenekleriyle toptan tedarik.",
   },
-  "tutun-bitkisel-ve-sarf": {
-    icon: Leaf,
-    description: "Bitkisel karışımlar ve sarf malzemeleri: işletmenizin günlük tüketimi için toptan tedarik.",
-  },
 };
+
+// The current taxonomy's names for two of the groups above, word for word the
+// same shelves.
+COPY.komurler = COPY["nargile-komurleri"];
+COPY.kozlukler = COPY["isi-yonetim-araclari"];
 
 const DEFAULT_COPY: CategoryCopy = {
   icon: Package,
   description: "Endüstriyel nargile ürünleri, kömür ve lüleler. Kafe, toptancı ve bayilere özel fiyatlar.",
 };
+
+/** Whether this category has copy written for it, rather than the shared default. */
+export const hasCategoryCopy = (slug: string | null | undefined) => !!slug && slug in COPY;
 
 export function categoryCopy(slug: string | null | undefined): CategoryCopy {
   return (slug && COPY[slug]) || DEFAULT_COPY;

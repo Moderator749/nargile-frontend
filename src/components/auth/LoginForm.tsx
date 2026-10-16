@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type SubmitEvent } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { Alert } from "@/components/ui/Alert";
@@ -80,6 +81,11 @@ export function LoginForm({ notice, redirectTo }: LoginFormProps) {
         value={password}
         onChange={(e) => setPassword(e.target.value)}
       />
+      <p className="-mt-2 text-right text-sm">
+        <Link href="/sifremi-unuttum" className="font-medium text-red-600 hover:underline dark:text-red-400">
+          Şifremi unuttum
+        </Link>
+      </p>
 
       <Button type="submit" loading={submitting}>
         {submitting ? "Giriş yapılıyor…" : "Giriş Yap"}

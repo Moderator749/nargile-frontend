@@ -3,14 +3,18 @@
 import { useState } from "react";
 import { Coins } from "lucide-react";
 
+import { formatMoney } from "@/lib/format";
+
 interface LoyaltyPointsInputProps {
   balance: number;
   value: number;
   onChange: (points: number) => void;
+  /** TRY per point, from the live loyalty parameters. */
+  conversionRate: string;
 }
 
-/** "Puan Kullan": redeem ParaPuan + Kumbarapuan, clamped to the balance (1 point = ₺1). */
-export function LoyaltyPointsInput({ balance, value, onChange }: LoyaltyPointsInputProps) {
+/** "Sultan Puan Kullan": redeem points, clamped to the balance. */
+export function LoyaltyPointsInput({ balance, value, onChange, conversionRate }: LoyaltyPointsInputProps) {
   const [draft, setDraft] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
 
@@ -40,7 +44,7 @@ export function LoyaltyPointsInput({ balance, value, onChange }: LoyaltyPointsIn
     <div className="space-y-1.5">
       <div className="flex items-center justify-between">
         <label htmlFor="loyalty-points" className="flex items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-zinc-300">
-          <Coins className="h-4 w-4 text-red-500" aria-hidden /> Puan Kullan
+          <Coins className="h-4 w-4 text-red-500" aria-hidden /> Sultan Puan Kullan
         </label>
         <span className="text-xs text-slate-500 dark:text-zinc-400">
           Bakiye: <strong className="text-slate-700 dark:text-zinc-300">{balance.toLocaleString("tr-TR")}</strong> puan
@@ -75,7 +79,7 @@ export function LoyaltyPointsInput({ balance, value, onChange }: LoyaltyPointsIn
         </button>
       </div>
       <p id="loyalty-points-help" className={`text-xs ${warning ? "text-red-600 dark:text-red-400" : "text-slate-500 dark:text-zinc-400"}`}>
-        {warning ?? "ParaPuan ve Kumbarapuan · 1 puan = ₺1 · kargo hariç tutara uygulanır."}
+        {warning ?? `1 Sultan Puan = ${formatMoney(conversionRate)} · kargo hariç tutara uygulanır.`}
       </p>
     </div>
   );

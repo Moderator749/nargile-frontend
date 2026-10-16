@@ -5,6 +5,7 @@ import { ArrowRight } from "lucide-react";
 import { LinkButton, linkButtonClass } from "@/components/ui/LinkButton";
 import { canOptimiseImage, type HeroSlide } from "@/lib/home";
 import type { HeroPart, HeroTextAlign } from "@/types";
+import { SITE_NAME } from "@/lib/site";
 
 /**
  * One hero slide, as the storefront shows it and as the admin edits it — the
@@ -88,7 +89,9 @@ export function HeroSlideView({
         <>
           <Image
             src={slide.image}
-            alt=""
+            // Named for search engines and image search; the visible title
+            // overlaps it, which costs a screen reader one repeated phrase.
+            alt={slide.title ? `${slide.title} | ${SITE_NAME}` : SITE_NAME}
             fill
             preload={preloadImage}
             unoptimized={!canOptimiseImage(slide.image)}

@@ -1,50 +1,58 @@
-import { useId } from "react";
+import Image from "next/image";
 
-/**
- * Brand mark: a hookah silhouette (bowl with three glowing coals, stem, vase)
- * on a crimson tile. The tile carries its own contrast, so it works on any theme.
+/*
+ * The brand assets are dark ink on transparency: the hookah emblem (`/logo.png`)
+ * and the ~13:1 "NARGİLE MALZEMESİ" wordmark (`/logo_yazi.png`). Under `dark:`
+ * the emblem is inverted to white; the wordmark is inverted too, with its red
+ * turned back to red, so "MALZEMESİ" reads white and "NARGİLE" stays red.
+ * Callers size both through `className` (height and width).
  */
-export function LogoMark({ className = "h-8 w-8" }: { className?: string }) {
-  const id = useId();
+
+interface AssetProps {
+  className: string;
+  /** Above the fold (the header): fetch it with the page. */
+  preload?: boolean;
+}
+
+export function LogoEmblem({ className, preload = false }: AssetProps) {
   return (
-    <svg viewBox="0 0 32 32" className={className} role="img" aria-hidden>
-      <defs>
-        <linearGradient id={`${id}-tile`} x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stopColor="#ef4444" />
-          <stop offset="1" stopColor="#991b1b" />
-        </linearGradient>
-        <radialGradient id={`${id}-ember`} cx="0.5" cy="0.5" r="0.5">
-          <stop offset="0" stopColor="#fff7ed" />
-          <stop offset="1" stopColor="#fecaca" />
-        </radialGradient>
-      </defs>
-      <rect width="32" height="32" rx="8" fill={`url(#${id}-tile)`} />
-      <rect x="0.5" y="0.5" width="31" height="31" rx="7.5" fill="none" stroke="#fff" strokeOpacity="0.18" />
-      {/* Coals */}
-      <circle cx="12.6" cy="6.6" r="1.35" fill={`url(#${id}-ember)`} />
-      <circle cx="16" cy="5.9" r="1.35" fill={`url(#${id}-ember)`} />
-      <circle cx="19.4" cy="6.6" r="1.35" fill={`url(#${id}-ember)`} />
-      {/* Bowl, plate, stem, vase */}
-      <g fill="none" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M11 8.6h10l-2.2 3.2h-5.6z" fill="#fff" fillOpacity="0.95" />
-        <path d="M10.2 13.6h11.6" />
-        <path d="M16 11.8v6.4" />
-        <path d="M16 15.6c2.6.2 4.4 1.2 5.6 3" />
-        <path d="M13.4 18.2h5.2c2.6 1.4 3.6 3.4 3.1 5.5-.5 2-2.8 3.3-5.7 3.3s-5.2-1.3-5.7-3.3c-.5-2.1.5-4.1 3.1-5.5z" />
-      </g>
-    </svg>
+    <Image
+      src="/logo.png"
+      alt="Sultan Nargile"
+      width={44}
+      height={40}
+      preload={preload}
+      className={`shrink-0 object-contain dark:invert ${className}`}
+    />
   );
 }
 
-/** Full logo: mark + single-line "Nargile Malzemesi" wordmark (inherits text color). */
+export function LogoWordmark({ className, preload = false }: AssetProps) {
+  return (
+    <Image
+      src="/logo_yazi.png"
+      alt="Sultan Nargile"
+      width={265}
+      height={20}
+      preload={preload}
+      className={`w-auto shrink-0 object-contain dark:hue-rotate-180 dark:invert dark:saturate-[2.5] ${className}`}
+    />
+  );
+}
+
+/**
+ * Header logo: emblem, then wordmark.
+ *
+ * The wordmark is sized by the room it has, not by the emblem: at 15px tall it
+ * is 199px wide, which with the emblem fits the 256px category column on
+ * desktop. A phone has no room for it beside the header's tools, so below `sm`
+ * only the emblem shows.
+ */
 export function Logo({ className = "" }: { className?: string }) {
   return (
-    <span className={`inline-flex items-center gap-2 ${className}`}>
-      <LogoMark className="h-6 w-6 shrink-0" />
-      <span className="whitespace-nowrap text-[15px] leading-none tracking-tight">
-        <span className="font-semibold">Nargile</span>{" "}
-        <span className="font-light text-muted-foreground">Malzemesi</span>
-      </span>
+    <span className={`flex items-center gap-0 ${className}`}>
+      <LogoEmblem preload className="h-9 w-9 sm:h-10 sm:w-10" />
+      <LogoWordmark preload className="hidden h-[15px] sm:block" />
     </span>
   );
 }

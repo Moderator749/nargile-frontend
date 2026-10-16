@@ -1,3 +1,5 @@
+import { useId } from "react";
+
 import { PromoCardView } from "@/components/home/PromoCardView";
 import { PromoSocialCard } from "@/components/home/PromoSocialCard";
 import type { PromoBox } from "@/lib/home";
@@ -18,10 +20,16 @@ const GRID = "grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3";
 
 /** Modules 6 & 7: a row of up to 3 feature cards; pass only the visible boxes. */
 export function PromoGrid({ boxes, label }: { boxes: PromoBox[]; label: string }) {
+  const headingId = useId();
   if (boxes.length === 0) return null;
 
+  // The label as a hidden <h2>: the cards' <h3> titles then sit under a
+  // section heading of their own in the page outline, not under the hero's.
   return (
-    <section aria-label={label}>
+    <section aria-labelledby={headingId}>
+      <h2 id={headingId} className="sr-only">
+        {label}
+      </h2>
       <ul className={GRID}>
         {boxes.map((box) => (
           <li key={box.id} className="flex">

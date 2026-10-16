@@ -1,0 +1,7 @@
+# Never upload local secrets or build output with `vercel deploy`: Vercel
+# builds from source with the environment variables set in its dashboard.
+.env*
+.next
+node_modules
+*.tsbuildinfo
+.DS_Store

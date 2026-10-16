@@ -1,10 +1,12 @@
 "use client";
 
-import { BadgePercent, Clock, Landmark, ShieldCheck, Truck, type LucideIcon } from "lucide-react";
+import { BadgePercent, Clock, Crown, Landmark, ShieldCheck, Truck, type LucideIcon } from "lucide-react";
 
+import { formatMoneyCompact } from "@/lib/format";
 import { retailPerks } from "@/lib/perks";
+import { formatRate, rateRange } from "@/lib/storeParameters";
 import { useAuthStore } from "@/store/useAuthStore";
-import type { User } from "@/types";
+import type { StoreParameters, User } from "@/types";
 
 interface Perk {
   Icon: LucideIcon;
@@ -13,25 +15,47 @@ interface Perk {
 }
 
 /**
- * Four terms a retail buyer gets, two of which the checkout actually computes:
- * ₺3.000 is `FREE_SHIPPING_THRESHOLD` and %5 – %7 are the havale rates either
- * side of ₺30.000 (`app/services/checkout_engine.py`). The other two are the
- * shop's own promises rather than anything the cart arithmetic knows about.
+ * The terms a retail buyer gets. Three of them are what checkout computes, read
+ * from the live parameters ("Parametreler" in the panel): the free shipping
+ * threshold, the havale ladder and Sultan Puan — each left out while the panel
+ * has it switched off or empty. The other two are the shop's own promises
+ * rather than anything the cart arithmetic knows about.
  */
-const PERKS: Perk[] = [
-  {
-    Icon: Truck,
-    title: "₺3.000+ Ücretsiz Kargo & Hızlı Sevk",
-    note: "3.000 TL ve üzeri siparişlerde kargo ücretsiz.",
-  },
-  {
-    Icon: Landmark,
-    title: "Havale / EFT ile %5 – %7 İndirim",
-    note: "Ödeme adımında anında otomatik sepet indirimi.",
-  },
+function perks(params: StoreParameters): Perk[] {
+  const threshold = formatMoneyCompact(params.free_shipping_threshold);
+  const havale = rateRange(params.bank_transfer_tiers);
+  return [
+    {
+      Icon: Truck,
+      title: `${threshold}+ Ücretsiz Kargo & Hızlı Sevk`,
+      note: `${threshold} ve üzeri siparişlerde kargo ücretsiz.`,
+    },
+    ...(havale
+      ? [
+          {
+            Icon: Landmark,
+            title: `Havale / EFT ile ${havale} İndirim`,
+            note: "Ödeme adımında anında otomatik sepet indirimi.",
+          },
+        ]
+      : []),
+    ...(params.loyalty.enabled && Number(params.loyalty.base_rate) > 0
+      ? [
+          {
+            Icon: Crown,
+            title: "Sultan Puan Kazanın",
+            note: `${formatMoneyCompact(params.loyalty.band_min)} – ${formatMoneyCompact(params.loyalty.band_max)} arası siparişlerde ${formatRate(params.loyalty.base_rate)} Sultan Puan; bir sonraki alışverişinizde indirim olarak kullanın.`,
+          },
+        ]
+      : []),
+    ...PROMISES,
+  ];
+}
+
+const PROMISES: Perk[] = [
   {
     Icon: Clock,
-    title: "İstanbul İçi VIP Aynı Gün Teslimat",
+    title: "İstanbul İçi Kurye Aynı Gün Teslimat",
     note: "Saat 10:00 – 20:00 arası hızlı teslimat seçeneği.",
   },
   {
@@ -68,7 +92,7 @@ const PERKS: Perk[] = [
 export const showsRetailPerks = (user: Pick<User, "account_type" | "segment_code"> | null) =>
   !user || retailPerks(user);
 
-export function RetailPerks() {
+export function RetailPerks({ params }: { params: StoreParameters }) {
   const user = useAuthStore((s) => s.user);
   if (!showsRetailPerks(user)) return null;
 
@@ -83,7 +107,7 @@ export function RetailPerks() {
       </p>
 
       <ul className="space-y-5 sm:space-y-6">
-        {PERKS.map(({ Icon, title, note }) => (
+        {perks(params).map(({ Icon, title, note }) => (
           <li key={title} className="flex items-start gap-2.5">
             <Icon
               className="mt-[3px] h-4 w-4 shrink-0 text-red-600 dark:text-red-400"

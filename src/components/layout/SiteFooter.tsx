@@ -2,7 +2,7 @@ import type { ComponentType } from "react";
 import Link from "next/link";
 import { ArrowRight, Clock, Link2, MapPin } from "lucide-react";
 
-import { LogoMark } from "@/components/brand/Logo";
+import { LogoEmblem, LogoWordmark } from "@/components/brand/Logo";
 import { InstagramIcon, YouTubeIcon } from "@/components/icons/SocialIcons";
 import { ContactBar } from "@/components/layout/ContactBar";
 import type { HomeFooter, HomeFooterColumn, HomeSocialKind } from "@/types";
@@ -73,14 +73,21 @@ export function SiteFooter({ footer }: { footer: HomeFooter }) {
         <div className="mt-12 grid grid-cols-1 gap-8 border-t border-neutral-800 py-12 md:grid-cols-2 lg:grid-cols-4">
           {/* Brand, branches, hours and social. */}
           <section aria-labelledby="footer-brand">
-            <Link href="/" aria-label={`${footer.brand_name} ana sayfa`} className="inline-flex items-center gap-3 text-white">
-              <LogoMark className="h-10 w-10 shrink-0" />
+            {/* Wordmark heights keep emblem + wordmark inside the column: one
+                column on a phone, two from md, four (≈284px each) from lg. */}
+            <Link
+              href="/"
+              aria-label={`${footer.brand_name} ana sayfa`}
+              className="inline-flex items-center gap-3 rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+            >
+              <LogoEmblem className="h-10 w-10 md:h-11 md:w-11" />
               <span>
-                <span id="footer-brand" className="block text-lg font-black leading-none tracking-tight">
+                <span id="footer-brand" className="sr-only">
                   {footer.brand_name}
                 </span>
+                <LogoWordmark className="block h-[18px] md:h-5 lg:h-4" />
                 {footer.tagline && (
-                  <span className="mt-1 block text-[10px] font-semibold tracking-[0.25em] text-neutral-500">
+                  <span className="mt-2 block text-[10px] font-semibold tracking-[0.25em] text-neutral-500">
                     {footer.tagline}
                   </span>
                 )}

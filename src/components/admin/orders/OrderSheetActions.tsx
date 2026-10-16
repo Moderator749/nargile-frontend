@@ -90,7 +90,9 @@ export function OrderSheetActions({
           canApproveOrder(order.status)
             ? order.status === "AWAITING_TRANSFER"
               ? "Havale hesaba geçti: siparişi ödendi olarak işaretle"
-              : "Siparişi onayla"
+              : order.status === "AWAITING_PAYMENT"
+                ? "Yalnızca ödemeyi PayTR panelinde gördüyseniz: siparişi ödendi olarak işaretle"
+                : "Siparişi onayla"
             : settled
         }
         className={`${base} ml-auto bg-emerald-600 text-white shadow-sm hover:bg-emerald-500`}

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type SubmitEvent } from "react";
 import { FolderTree, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 
 import { panelClass } from "@/components/admin/AdminShell";
+import { RichTextEditor } from "@/components/admin/RichTextEditor";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -34,9 +35,18 @@ interface FormState {
   sortOrder: string;
   isActive: boolean;
   imageUrl: string | null;
+  description: string;
 }
 
-const EMPTY: FormState = { name: "", slug: "", parentId: "", sortOrder: "0", isActive: true, imageUrl: null };
+const EMPTY: FormState = {
+  name: "",
+  slug: "",
+  parentId: "",
+  sortOrder: "0",
+  isActive: true,
+  imageUrl: null,
+  description: "",
+};
 
 /**
  * The catalog's categories: the two-level tree (groups → sub-categories) with
@@ -91,6 +101,7 @@ export function AdminCategoriesView({ onChange }: { onChange?: () => void } = {}
       sortOrder: String(c.sort_order),
       isActive: c.is_active,
       imageUrl: c.image_url ?? null,
+      description: c.description ?? "",
     });
     setResult(null);
   }
@@ -112,6 +123,7 @@ export function AdminCategoriesView({ onChange }: { onChange?: () => void } = {}
       sort_order: Math.max(0, Number.parseInt(form.sortOrder, 10) || 0),
       is_active: form.isActive,
       image_url: form.imageUrl?.trim() || null,
+      description: form.description.trim() || null,
     };
     try {
       const saved = editing ? await adminUpdateCategory(editing.id, body) : await adminCreateCategory(body);
@@ -226,8 +238,24 @@ export function AdminCategoriesView({ onChange }: { onChange?: () => void } = {}
             value={form.slug}
             onChange={(e) => set("slug", e.target.value)}
             placeholder="boş: addan üretilir"
-            hint="Değiştirirseniz eski bağlantılar çalışmaz."
+            hint="Sayfa adresi: /catalog/<slug>. Değiştirirseniz eski adres yeni adrese yönlendirilir."
           />
+          <div className="space-y-1.5">
+            <p id="cat-description-label" className="block text-sm font-medium text-slate-700 dark:text-zinc-300">
+              Kategori açıklaması
+            </p>
+            <RichTextEditor
+              id="cat-description"
+              labelledBy="cat-description-label"
+              value={form.description}
+              onChange={(html) => set("description", html)}
+              minHeight="7rem"
+              placeholder="Kategori sayfasında başlığın altında görünür; uzun metin iki satırdan sonra “Devamını Oku” ile açılır."
+            />
+            <p className="text-xs text-slate-500 dark:text-zinc-400">
+              İlk cümleler arama sonuçlarındaki açıklama olarak da kullanılır. Boş bırakılırsa hazır metin gösterilir.
+            </p>
+          </div>
           <div className="space-y-1.5">
             <label htmlFor="cat-parent" className="block text-sm font-medium text-slate-700 dark:text-zinc-300">
               Üst grup

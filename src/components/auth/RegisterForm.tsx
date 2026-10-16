@@ -13,7 +13,7 @@ import {
   InternationalAddressFields,
   InternationalIdentityFields,
 } from "@/components/auth/InternationalFields";
-import { copyFor } from "@/components/auth/registrationCopy";
+import { copyFor, type RegistrationCopy } from "@/components/auth/registrationCopy";
 import {
   MIN_PASSWORD_LENGTH,
   emptyDraft,
@@ -24,9 +24,12 @@ import {
   toPayload,
   type RegistrationDraft,
 } from "@/components/auth/registrationDraft";
+import { RichText } from "@/components/ui/RichText";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
+import { Dialog } from "@/components/ui/Dialog";
 import { Input } from "@/components/ui/Input";
+import { useLegalDocuments } from "@/hooks/useLegalDocuments";
 import { register } from "@/lib/authApi";
 import { getApiErrorMessage } from "@/lib/errors";
 
@@ -61,6 +64,65 @@ function DocumentNotice() {
  * admin's answer, given once the account exists. Neither belongs between a
  * visitor and their account.
  */
+/**
+ * Ticari elektronik ileti onayı (6563 sayılı Kanun). Optional and unticked
+ * until the customer ticks it: the law forbids making it a condition of the
+ * account, so the form never blocks on it and never pre-fills it. The link
+ * opens the shop's privacy text, read live from the panel, so what they read
+ * is what the shop last saved.
+ */
+function MarketingConsent({
+  checked,
+  onChange,
+  copy,
+}: {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  copy: RegistrationCopy;
+}) {
+  const documents = useLegalDocuments();
+  const [open, setOpen] = useState(false);
+  const privacy = documents?.PRIVACY;
+
+  return (
+    <div className="rounded-xl bg-slate-50 px-3 py-3 dark:bg-white/5">
+      <label className="flex cursor-pointer items-start gap-3 text-sm">
+        <input
+          type="checkbox"
+          name="marketing_consent"
+          checked={checked}
+          onChange={(e) => onChange(e.target.checked)}
+          className="mt-0.5 h-4 w-4 shrink-0 accent-red-600"
+        />
+        <span>
+          <span className="text-slate-700 dark:text-zinc-200">{copy.marketingConsent}</span>
+          <span className="mt-1 block text-xs text-slate-500 dark:text-zinc-400">
+            {copy.marketingConsentHint}{" "}
+            <button
+              type="button"
+              onClick={() => setOpen(true)}
+              className="inline-flex items-center gap-1 font-medium text-red-700 underline-offset-2 hover:underline dark:text-red-400"
+            >
+              <FileText className="h-3.5 w-3.5" aria-hidden />
+              {privacy?.title ?? copy.readPrivacy}
+            </button>
+          </span>
+        </span>
+      </label>
+
+      <Dialog open={open} onClose={() => setOpen(false)} title={privacy?.title ?? copy.readPrivacy}>
+        {privacy ? (
+          <RichText html={privacy.body} nested className="text-sm text-slate-700 dark:text-zinc-300" />
+        ) : (
+          <p className="text-sm text-slate-500 dark:text-zinc-400">
+            Metin yüklenemedi. Sayfayı yenileyip tekrar deneyebilirsiniz.
+          </p>
+        )}
+      </Dialog>
+    </div>
+  );
+}
+
 export function RegisterForm() {
   const router = useRouter();
   const [draft, setDraft] = useState<RegistrationDraft>(() => emptyDraft());
@@ -303,6 +365,12 @@ export function RegisterForm() {
       )}
 
       {international && <CustomsNotice />}
+
+      <MarketingConsent
+        checked={draft.marketingConsent}
+        onChange={(marketingConsent) => set({ marketingConsent })}
+        copy={copy}
+      />
 
       <Button type="submit" loading={submitting}>
         {submitting ? copy.submitting : copy.submit}

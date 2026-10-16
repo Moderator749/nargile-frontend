@@ -5,6 +5,7 @@
  */
 
 import { parseDecimalInput } from "@/lib/format";
+import { PRODUCT_SLUG } from "@/lib/slug";
 import type {
   CrossSellCard,
   CurrencyType,
@@ -98,7 +99,8 @@ export interface SheetDraft {
   base_code: string;
   name: string;
   brand: string;
-  category_id: string;
+  /** Ticked categories, in the order ticked; the first is the primary one. */
+  category_ids: number[];
   /** "Renk" as pills, each owning its own stock row; typed one at a time. */
   colors: ColorDraft[];
   /** One row per image input; blanks are dropped on save. */
@@ -108,6 +110,8 @@ export interface SheetDraft {
   description: string;
   metaTitle: string;
   metaDescription: string;
+  /** The page's address, /product/<slug>; blank = keep it (or derive it, on a new product). */
+  slug: string;
   /** "KDV Oranı" for the whole sheet; KDV dahil is computed from it. */
   vatRate: VatRate;
   /** "Birlikte satılanlar", as cards so the grid can draw them without a lookup. */
@@ -150,13 +154,14 @@ export function emptyDraft(): SheetDraft {
     base_code: "",
     name: "",
     brand: "",
-    category_id: "",
+    category_ids: [],
     colors: [],
     image_urls: [],
     youtube_video_url: "",
     description: "",
     metaTitle: "",
     metaDescription: "",
+    slug: "",
     vatRate: 20,
     crossSells: [],
     isPublished: true,
@@ -225,7 +230,7 @@ export function draftFromSheet(sheet: SavedProductSheet): SheetDraft {
     base_code: sheet.base_code,
     name: sheet.name,
     brand: sheet.brand ?? "",
-    category_id: sheet.category_id == null ? "" : String(sheet.category_id),
+    category_ids: sheet.category_ids ?? (sheet.category_id == null ? [] : [sheet.category_id]),
     colors: saved
       .filter((v) => v.color != null)
       .map((v) => ({ ...newColor(v.color as string), id: v.id ?? null, sku: v.sku ?? null, stock: stockDraft(v.stock) })),
@@ -234,6 +239,7 @@ export function draftFromSheet(sheet: SavedProductSheet): SheetDraft {
     description: sheet.description ?? "",
     metaTitle: sheet.meta_title ?? "",
     metaDescription: sheet.meta_description ?? "",
+    slug: sheet.slug ?? "",
     vatRate: savedVatRate(sheet),
     crossSells: sheet.related_products,
     isPublished: sheet.is_published,
@@ -285,6 +291,9 @@ export function draftProblem(draft: SheetDraft): string | null {
   if (draft.colors.some((c) => !c.label.trim())) return "Renk adı boş olamaz.";
   if (draft.metaTitle.length > 70) return "SEO başlığı en fazla 70 karakter olabilir.";
   if (draft.metaDescription.length > 160) return "SEO açıklaması en fazla 160 karakter olabilir.";
+  const slug = draft.slug.trim().toLowerCase();
+  if (slug && !PRODUCT_SLUG.test(slug))
+    return "Sayfa adresi yalnızca küçük harf, rakam, tire ve nokta içerebilir (ör. sultan-nargile-takimi).";
   const anyPrice = SHEET_CURRENCIES.some((c) =>
     SHEET_COLUMNS.some(({ segment }) => cellFilled(draft.prices[c][segment])),
   );
@@ -331,13 +340,14 @@ export function toPayload(draft: SheetDraft): ProductSheet {
     base_code: draft.base_code.trim(),
     name: draft.name.trim(),
     brand: draft.brand.trim() || null,
-    category_id: draft.category_id ? Number(draft.category_id) : null,
+    category_ids: draft.category_ids,
     color_names: colors,
     image_urls: draft.image_urls.map((u) => u.trim()).filter(Boolean),
     youtube_video_url: draft.youtube_video_url.trim() || null,
     description: draft.description.trim() || null,
     meta_title: draft.metaTitle.trim() || null,
     meta_description: draft.metaDescription.trim() || null,
+    slug: draft.slug.trim().toLowerCase() || null,
     stock: toStock(draft.stock),
     variants,
     prices,

@@ -1,7 +1,7 @@
 import type { User } from "@/types";
 
 /**
- * Whether this account gets the B2C perks: ParaPuan, the ciro discount and the
+ * Whether this account gets the B2C perks: Sultan Puan, the ciro discount and the
  * havale discount.
  *
  * Mirrors `app/services/perks.py`, which has the last word on every amount —

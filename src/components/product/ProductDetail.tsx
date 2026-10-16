@@ -12,7 +12,9 @@ import { ProductDescription } from "@/components/product/ProductDescription";
 import { RetailPerks, showsRetailPerks } from "@/components/product/RetailPerks";
 import { isExportAccount } from "@/lib/exportAccount";
 import { ProductGallery } from "@/components/product/ProductGallery";
+import { TransferPrice } from "@/components/product/TransferPrice";
 import { useDisplayMoney } from "@/hooks/useDisplayMoney";
+import { useStoreParameters } from "@/hooks/useStoreParameters";
 import { useNow } from "@/hooks/useNow";
 import { countdownParts } from "@/lib/banner";
 import { fetchProduct } from "@/lib/catalogApi";
@@ -20,7 +22,7 @@ import { cartLineFor } from "@/lib/cartLine";
 import { categoryCopy } from "@/lib/categories";
 import { normalizeHex, readableInk } from "@/lib/color";
 import { saleState } from "@/lib/flashSale";
-import type { Breadcrumb } from "@/lib/seo";
+import { productImageAlt, type Breadcrumb } from "@/lib/seo";
 import { hasColorChoice, initialVariantId, resolveVariant, variantInStock } from "@/lib/variants";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useCartStore } from "@/store/useCartStore";
@@ -61,6 +63,8 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
   const money = useDisplayMoney();
   // The dock decides the shape of the row above the colour pills.
   const perksShown = showsRetailPerks(user);
+  // The live rules behind the dock and the havale price line.
+  const params = useStoreParameters();
 
   useEffect(() => {
     if (!hydrated || !token) return;
@@ -154,7 +158,7 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
         <ProductGallery
           images={product.image_urls}
           youtubeUrl={product.youtube_video_url}
-          alt={product.name}
+          alt={productImageAlt(product, category)}
           dimmed={soldOut}
           fallback={
             <div className="flex h-full items-center justify-center text-zinc-300">
@@ -190,6 +194,11 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">Fiyat bilgisi yok</p>
+            )}
+            {/* The havale discount is a retail promotion: not promised to an
+                account that pays its tier price whichever way it pays. */}
+            {price && perksShown && (
+              <TransferPrice price={price} params={params} rates={money.rates} format={money.format} />
             )}
             <p className="mt-1 text-xs text-muted-foreground">KDV dahil</p>
           </div>
@@ -234,7 +243,7 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
           </div>
           </div>
 
-          {perksShown && <RetailPerks />}
+          {perksShown && <RetailPerks params={params} />}
           </div>
 
           {/* One pill per colour, each its own stock. A single-colour product has
@@ -307,7 +316,7 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
 
           {/* A three-line preview rather than a wall of text, so "Sepete Ekle"
               stays the first thing below the price. */}
-          {product.description && <ProductDescription text={product.description} />}
+          {product.description && <ProductDescription html={product.description} />}
         </div>
       </div>
 

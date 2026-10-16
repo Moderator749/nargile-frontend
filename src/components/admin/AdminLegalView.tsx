@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { Eye, FileText, Save } from "lucide-react";
 
 import { AdminPageHeader, panelClass } from "@/components/admin/AdminShell";
-import { LegalText } from "@/components/legal/LegalText";
+import { RichTextEditor } from "@/components/admin/RichTextEditor";
+import { RichText } from "@/components/ui/RichText";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
@@ -170,22 +171,18 @@ export function AdminLegalView() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label
-                    htmlFor={`legal-body-${key}`}
-                    className="block text-sm font-medium text-slate-700 dark:text-zinc-300"
-                  >
+                  <p id={`legal-body-${key}-label`} className="block text-sm font-medium text-slate-700 dark:text-zinc-300">
                     Metin
-                  </label>
-                  <textarea
+                  </p>
+                  <RichTextEditor
                     id={`legal-body-${key}`}
-                    rows={key === "PRIVACY_NOTICE" ? 5 : 16}
+                    labelledBy={`legal-body-${key}-label`}
                     value={draft.body}
-                    onChange={(e) => patch(key, { body: e.target.value, result: null })}
-                    className={`${fieldClass} resize-y font-mono leading-6`}
+                    onChange={(html) => patch(key, { body: html, result: null })}
+                    minHeight={key === "PRIVACY_NOTICE" ? "7rem" : "24rem"}
                   />
                   <p className="text-xs text-slate-500 dark:text-zinc-400">
-                    Boş satır yeni paragraf açar. Bir satıra <code>## Başlık</code> yazarsanız ara başlık
-                    olur.
+                    Ara başlık için “Başlık” düğmesini kullanın; maddeler için liste, vurgu için kalın yazı.
                   </p>
                 </div>
                 {draft.result && (
@@ -211,7 +208,7 @@ export function AdminLegalView() {
       </div>
 
       <Dialog open={preview !== null} onClose={() => setPreview(null)} title={shown?.title ?? "Önizleme"}>
-        {shown && <LegalText body={shown.body} headingLevel={3} />}
+        {shown && <RichText html={shown.body} nested className="text-sm text-slate-700 dark:text-zinc-300" />}
       </Dialog>
     </>
   );

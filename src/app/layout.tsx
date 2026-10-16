@@ -4,16 +4,9 @@ import Script from "next/script";
 import "./globals.css";
 
 import { StoreHydration } from "@/components/StoreHydration";
-import { Navbar } from "@/components/layout/Navbar";
-import { SiteFooter } from "@/components/layout/SiteFooter";
-import { TopBanner } from "@/components/layout/TopBanner";
-import { ExportNotice } from "@/components/auth/ExportNotice";
 import { AUTH_HINT_SCRIPT } from "@/lib/auth";
 import { SIDEBAR_SCRIPT } from "@/lib/sidebar";
-import { getBrands, getCategories } from "@/lib/server/catalog";
-import { getHomepage } from "@/lib/server/homepage";
-import { resolveNav } from "@/lib/storefrontNav";
-import { DEFAULT_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
+import { DEFAULT_DESCRIPTION, INDEXING_ALLOWED, SITE_NAME, SITE_URL } from "@/lib/site";
 import { THEME_SCRIPT } from "@/lib/theme";
 
 // latin-ext carries Turkish ğ, ş, ı, İ — without it they fall back to another font.
@@ -40,6 +33,8 @@ export const metadata: Metadata = {
     locale: "tr_TR",
     siteName: SITE_NAME,
   },
+  // A deployment that may not be indexed says so on every page.
+  ...(INDEXING_ALLOWED ? {} : { robots: { index: false, follow: false } }),
 };
 
 export const viewport: Viewport = {
@@ -50,14 +45,13 @@ export const viewport: Viewport = {
 };
 
 
-export default async function RootLayout({ children }: LayoutProps<"/">) {
-  // Cached for CATALOG_REVALIDATE like the catalog, so pages stay static/ISR.
-  const [categories, brands, home] = await Promise.all([getCategories(), getBrands(), getHomepage()]);
-  // The two menus from "Ana Sayfa Düzenleme", pointed at the catalog as it
-  // stands (see lib/storefrontNav).
-  const menu = resolveNav(home.navigation.top, categories ?? [], brands ?? []);
-  const sidebar = resolveNav(home.navigation.sidebar, categories ?? [], brands ?? []);
-
+/**
+ * The document every page shares — the storefront's (app/(storefront)) and the
+ * admin panel's (app/(admin)) — and nothing else: fonts, theme and the
+ * pre-paint scripts, the stores' hydration. Each group's own layout adds its
+ * chrome, so neither side's code rides along with the other's pages.
+ */
+export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="tr"
@@ -74,14 +68,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <Script id="auth-hint" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: AUTH_HINT_SCRIPT }} />
         <Script id="sidebar-state" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: SIDEBAR_SCRIPT }} />
         <StoreHydration />
-        {/* Shown to an export account on its first page after signing in, and
-            not dismissable any other way. Renders nothing for everyone else. */}
-        <ExportNotice />
-        {/* Module 1: the welcome / special-day strip, above everything. */}
-        <TopBanner />
-        <Navbar categories={sidebar} links={menu} />
         {children}
-        {home.sections.footer && <SiteFooter footer={home.footer} />}
       </body>
     </html>
   );

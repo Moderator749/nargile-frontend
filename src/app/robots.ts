@@ -1,12 +1,41 @@
 import type { MetadataRoute } from "next";
 
-import { SITE_URL } from "@/lib/site";
+import { INDEXING_ALLOWED, SITE_URL } from "@/lib/site";
 
-// Private pages are not disallowed here on purpose: crawlers must be able to fetch
-// them to see their `noindex` meta tag (a disallowed URL can still get indexed).
+/**
+ * Crawl the storefront; stay out of the panel, the account, the cart and
+ * checkout, and the API.
+ *
+ * Every one of these pages also says `noindex` itself. A disallowed URL that
+ * someone links to can still be listed (bare, without its content), and only a
+ * crawler that fetches the page sees that tag — so the meta tag is the
+ * safeguard, and this list spares the crawl budget. The Turkish paths are the
+ * names these pages are known by and may be given; listing them now costs
+ * nothing.
+ */
+const PRIVATE_PATHS = [
+  "/admin",
+  "/kontrol-merkezi",
+  "/account",
+  "/hesabim",
+  "/orders",
+  "/cart",
+  "/sepet",
+  "/odeme",
+  "/login",
+  "/register",
+  "/sifremi-unuttum",
+  "/sifre-yenile",
+  "/fiyat-katalogu",
+  "/api",
+];
+
 export default function robots(): MetadataRoute.Robots {
+  // Staging and previews: nothing to crawl at all.
+  if (!INDEXING_ALLOWED) return { rules: { userAgent: "*", disallow: "/" } };
   return {
-    rules: { userAgent: "*", allow: "/" },
+    rules: { userAgent: "*", allow: "/", disallow: PRIVATE_PATHS },
     sitemap: `${SITE_URL}/sitemap.xml`,
+    host: SITE_URL,
   };
 }

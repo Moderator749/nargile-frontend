@@ -5,6 +5,7 @@ import { ArrowUpRight } from "lucide-react";
 
 import { canOptimiseImage, type PromoBox } from "@/lib/home";
 import type { OverlayDirection, PromoPart } from "@/types";
+import { SITE_NAME } from "@/lib/site";
 
 /**
  * One promo card, as the storefront shows it and as /admin/promos edits it —
@@ -62,7 +63,7 @@ function Background({ box }: { box: PromoBox }) {
     <>
       <Image
         src={box.image}
-        alt=""
+        alt={box.title ? `${box.title} | ${SITE_NAME}` : SITE_NAME}
         fill
         sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
         unoptimized={!canOptimiseImage(box.image)}

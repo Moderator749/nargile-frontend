@@ -7,11 +7,13 @@ import { LegalConsent, type Agreements } from "@/components/cart/LegalConsent";
 import { LoyaltyPointsInput } from "@/components/cart/LoyaltyPointsInput";
 import { PaymentMethodPicker } from "@/components/cart/PaymentMethodPicker";
 import { ShippingConsent } from "@/components/cart/ShippingConsent";
+import { TransferDetails } from "@/components/payment/TransferDetails";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
-import { formatMoney } from "@/lib/format";
+import { formatMoney, formatMoneyCompact } from "@/lib/format";
 import { shippingOption } from "@/lib/shipping";
-import type { Cart, LegalDocument, LegalKey, PaymentMethod, ShippingMethod } from "@/types";
+import { formatRate, transferDiscountHint } from "@/lib/storeParameters";
+import type { Cart, LegalDocument, LegalKey, PaymentMethod, ShippingMethod, StoreParameters } from "@/types";
 
 interface OrderSummaryProps {
   isLoggedIn: boolean;
@@ -51,6 +53,10 @@ interface OrderSummaryProps {
   checkoutError: string | null;
   /** Why the order can't be placed yet (e.g. incomplete address); null = ready. */
   blocker: string | null;
+  /** The live store parameters: the havale hint, the guest note, Sultan Puan. */
+  params: StoreParameters;
+  /** Whether card payment (PayTR) is open. */
+  cardAvailable: boolean;
 }
 
 function Row({ label, value, tone }: { label: ReactNode; value: string; tone?: "discount" }) {
@@ -64,14 +70,13 @@ function Row({ label, value, tone }: { label: ReactNode; value: string; tone?: "
   );
 }
 
-const pct = (rate: string) => `%${Math.round(Number(rate) * 100)}`;
 const kg = (value: string) => Number(value).toLocaleString("tr-TR", { maximumFractionDigits: 1 });
 
 /**
  * Explains the shipping line: when the shop pays the carrier, and when the buyer
  * pays it on delivery ("karşı ödemeli") instead — the cart is never charged
- * carriage. The coal note only appears for coal-dominant carts (> 50% coal)
- * under 20 kg.
+ * carriage. The coal note only appears for coal-dominant carts under the coal
+ * minimum. Every figure comes from the quote, i.e. from the live parameters.
  */
 function ShippingNote({ quote }: { quote: Cart }) {
   const s = quote.shipping;
@@ -98,7 +103,9 @@ function ShippingNote({ quote }: { quote: Cart }) {
           "Gönderim ücreti sipariş tutarınıza eklenmez; teslimatta kargo görevlisine ödenir. Fiyat listenize kargo dahil değildir."
         : s.reason === "below_threshold"
           ? `Gönderim ücreti sipariş tutarınıza eklenmez; teslimatta kargo görevlisine ödenir. ${formatMoney(remaining)} daha ekleyin, kargonuz ücretsiz olsun.`
-          : `Kömür ağırlıklı siparişlerde ücretsiz kargo için en az ${kg(s.coal_min_kg)} kg kömür gereklidir. Sepetinizde ${kg(s.coal_weight_kg)} kg var; gönderim ücreti teslimatta alıcı tarafından ödenir.`;
+          : s.coal_rule_basis === "quantity"
+            ? `Kömür ağırlıklı siparişlerde ücretsiz kargo için en az ${s.coal_min_quantity} adet kömür gereklidir. Sepetinizde ${s.coal_quantity} adet var; gönderim ücreti teslimatta alıcı tarafından ödenir.`
+            : `Kömür ağırlıklı siparişlerde ücretsiz kargo için en az ${kg(s.coal_min_kg)} kg kömür gereklidir. Sepetinizde ${kg(s.coal_weight_kg)} kg var; gönderim ücreti teslimatta alıcı tarafından ödenir.`;
   if (!message) return null;
 
   const coal = s.reason === "coal_weight";
@@ -113,7 +120,7 @@ function ShippingNote({ quote }: { quote: Cart }) {
       <Truck className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
       <p>
         {message}
-        {coal && s.coal_weight_unknown && (
+        {coal && s.coal_rule_basis === "kg" && s.coal_weight_unknown && (
           <span className="block opacity-80">Bazı kömürlerin ağırlığı tanımlı değil; bunlar 0 kg sayılır.</span>
         )}
       </p>
@@ -131,7 +138,7 @@ function VolumeNudge({ quote }: { quote: Cart }) {
   return (
     <p className="flex gap-2 rounded-xl bg-emerald-50 px-3 py-2.5 text-xs leading-5 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-200">
       <TrendingUp className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
-      {formatMoney(remaining)} daha ekleyin, {pct(next.rate)} ciro indirimi otomatik uygulansın.
+      {formatMoney(remaining)} daha ekleyin, {formatRate(next.rate)} ciro indirimi otomatik uygulansın.
     </p>
   );
 }
@@ -140,6 +147,13 @@ export function OrderSummary(props: OrderSummaryProps) {
   const { isLoggedIn, quote, quoteLoading, quoteError, submitting, checkoutError } = props;
   const needsConsent = !!quote?.shipping.receiver_pays;
   const canCheckout = !isLoggedIn || (!!quote && !quoteLoading && !quoteError && !props.blocker);
+  const { params } = props;
+  // A Bayi / Toptan / Kafe account sees its cart as an invoice: before VAT, the
+  // VAT, after VAT. Retail keeps the consumer view, VAT-inclusive throughout.
+  const b2bInvoice =
+    !!quote && !quote.perks_eligible && !props.quoteOnly && quote.subtotal_excl_tax != null && quote.vat_total != null;
+  // Sultan Puan is a retail promotion and can be switched off in the panel.
+  const loyalty = props.perks && params.loyalty.enabled;
 
   return (
     <section
@@ -151,7 +165,7 @@ export function OrderSummary(props: OrderSummaryProps) {
       </h2>
 
       {/* An export account has no payment step at all: no gateway, no havale,
-          no card to save, and no ParaPuan to spend. What it gets instead is a
+          no card to save, and no Sultan Puan to spend. What it gets instead is a
           line saying what happens after the request. */}
       {isLoggedIn && props.quoteOnly && (
         <p className="mt-5 rounded-xl bg-amber-50 px-3.5 py-3 text-[13px] leading-relaxed text-amber-950 dark:bg-amber-500/10 dark:text-amber-100">
@@ -167,14 +181,21 @@ export function OrderSummary(props: OrderSummaryProps) {
             onChange={props.onPaymentMethodChange}
             /* The havale discount is a retail promotion: a B2B account pays its
                tier price whichever way it pays. */
-            transferDiscount={props.perks}
+            transferDiscount={props.perks ? transferDiscountHint(params) : null}
+            cardAvailable={props.cardAvailable}
             saveCard={props.saveCard}
             onSaveCardChange={props.onSaveCardChange}
           />
-          {/* ParaPuan is a retail promotion too, so it is not offered to an
-              account that cannot spend it. */}
-          {props.perks && (
-            <LoyaltyPointsInput balance={props.balance} value={props.points} onChange={props.onPointsChange} />
+          {props.paymentMethod === "BANK_TRANSFER" && <TransferDetails quote={quote} />}
+          {/* Sultan Puan is a retail promotion too, so it is not offered to an
+              account that cannot spend it, nor to anyone while it is off. */}
+          {loyalty && (
+            <LoyaltyPointsInput
+              balance={props.balance}
+              value={props.points}
+              onChange={props.onPointsChange}
+              conversionRate={params.loyalty.conversion_rate}
+            />
           )}
         </div>
       )}
@@ -183,12 +204,46 @@ export function OrderSummary(props: OrderSummaryProps) {
         className={`mt-5 space-y-2.5 border-t border-slate-200 dark:border-white/10 pt-5 transition-opacity ${quoteLoading ? "opacity-50" : ""}`}
         aria-busy={quoteLoading}
       >
-        {quote ? (
+        {quote && b2bInvoice ? (
+          // Bayi / Toptan / Kafe: invoice lines, before VAT, the VAT, and the total.
+          <>
+            <Row label={<span>Ara toplam <span className="text-xs opacity-75">(KDV hariç)</span></span>} value={formatMoney(quote.subtotal_excl_tax!)} />
+            <Row
+              label={`Hesaplanan KDV (${(quote.vat_rates ?? []).map((r) => formatRate(Number(r) / 100)).join(" / ") || "%0"})`}
+              value={formatMoney(quote.vat_total!)}
+            />
+            <Row
+              label={shippingOption(props.shippingMethod).title}
+              value={
+                quote.shipping.free
+                  ? "Ücretsiz"
+                  : quote.shipping.reason === "international"
+                    ? "Sipariş sonrası"
+                    : "Teslimatta alıcı öder"
+              }
+            />
+            <div className="flex items-baseline justify-between gap-4 border-t border-slate-200 pt-3 dark:border-white/10">
+              <dt className="text-base font-bold">
+                Genel toplam <span className="text-xs font-medium text-slate-500 dark:text-zinc-400">(KDV dahil)</span>
+              </dt>
+              <dd className="font-mono text-base font-bold tabular-nums">{formatMoney(quote.net_total)}</dd>
+            </div>
+            {!props.quoteOnly && (
+              <div className="space-y-2 pt-1">
+                <ShippingNote quote={quote} />
+              </div>
+            )}
+            <p className="text-xs text-slate-500 dark:text-zinc-400">
+              Fiyatlarınız hesabınıza tanımlı fiyat listesinden gelir; ciro, havale ve Sultan Puan indirimleri
+              bireysel (perakende) hesaplara tanımlıdır.
+            </p>
+          </>
+        ) : quote ? (
           <>
             <Row label="Ara toplam" value={formatMoney(quote.subtotal)} />
             {Number(quote.volume_discount_amount) > 0 && (
               <Row
-                label={`Kazanılan ciro indirimi (−${pct(quote.volume_discount_rate)})`}
+                label={`Kazanılan ciro indirimi (−${formatRate(quote.volume_discount_rate)})`}
                 value={`−${formatMoney(quote.volume_discount_amount)}`}
                 tone="discount"
               />
@@ -197,7 +252,7 @@ export function OrderSummary(props: OrderSummaryProps) {
               <Row
                 label={
                   <>
-                    Havale/EFT indirimi (−{pct(quote.discount_rate)})
+                    Havale/EFT indirimi (−{formatRate(quote.discount_rate)})
                     {Number(quote.volume_discount_amount) > 0 && (
                       <span className="block text-xs opacity-75">ciro indiriminden sonraki tutara</span>
                     )}
@@ -219,7 +274,7 @@ export function OrderSummary(props: OrderSummaryProps) {
               }
             />
             {Number(quote.points_discount) > 0 && (
-              <Row label="ParaPuan" value={`−${formatMoney(quote.points_discount)}`} tone="discount" />
+              <Row label="Sultan Puan" value={`−${formatMoney(quote.points_discount)}`} tone="discount" />
             )}
             <div className="flex justify-between gap-4 border-t border-slate-200 dark:border-white/10 pt-3 text-base font-bold">
               <dt>Toplam</dt>
@@ -231,15 +286,15 @@ export function OrderSummary(props: OrderSummaryProps) {
                 <VolumeNudge quote={quote} />
               </div>
             )}
-            {!props.quoteOnly && quote.loyalty_points_to_earn > 0 && (
+            {!props.quoteOnly && loyalty && quote.loyalty_points_to_earn > 0 && (
               <p className="text-xs text-zinc-600 dark:text-zinc-400">
-                Siparişiniz onaylandığında {quote.loyalty_points_to_earn.toLocaleString("tr-TR")} ParaPuan
+                Siparişiniz onaylandığında {quote.loyalty_points_to_earn.toLocaleString("tr-TR")} Sultan Puan
                 kazanacaksınız.
               </p>
             )}
             {!props.quoteOnly && !quote.perks_eligible && (
               <p className="text-xs text-slate-500 dark:text-zinc-400">
-                Fiyatlarınız hesabınıza tanımlı fiyat listesinden gelir; ciro, havale ve ParaPuan indirimleri
+                Fiyatlarınız hesabınıza tanımlı fiyat listesinden gelir; ciro, havale ve Sultan Puan indirimleri
                 bireysel (perakende) hesaplara tanımlıdır.
               </p>
             )}
@@ -250,7 +305,7 @@ export function OrderSummary(props: OrderSummaryProps) {
             <p className="text-xs text-slate-500 dark:text-zinc-400">
               {isLoggedIn
                 ? "Kargo ve indirimler hesaplanıyor…"
-                : "Ciro ve havale indirimleri ile size özel fiyatlar giriş yaptıktan sonra hesaplanır. ₺3.000 üzeri kargo ücretsiz (kömürde koşullu); altında gönderim ücreti teslimatta alıcı tarafından ödenir."}
+                : `Ciro ve havale indirimleri ile size özel fiyatlar giriş yaptıktan sonra hesaplanır. ${formatMoneyCompact(params.free_shipping_threshold)} üzeri kargo ücretsiz (kömürde koşullu); altında gönderim ücreti teslimatta alıcı tarafından ödenir.`}
             </p>
           </>
         )}
@@ -294,10 +349,11 @@ export function OrderSummary(props: OrderSummaryProps) {
               </>
             )
           ) : submitting ? (
-            "Sipariş oluşturuluyor…"
+            props.paymentMethod === "CREDIT_CARD" ? "Ödeme sayfası açılıyor…" : "Sipariş oluşturuluyor…"
           ) : (
             <>
-              <Lock className="h-4 w-4" aria-hidden /> Siparişi Tamamla
+              <Lock className="h-4 w-4" aria-hidden />{" "}
+              {props.paymentMethod === "CREDIT_CARD" ? "Kart ile Öde" : "Siparişi Tamamla"}
             </>
           )}
         </Button>

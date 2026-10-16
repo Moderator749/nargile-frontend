@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+
 import { CountdownBadge } from "@/components/banner/CountdownBadge";
 import { AnnouncementBar } from "@/components/home/AnnouncementBar";
 import { useNow } from "@/hooks/useNow";
@@ -14,17 +16,25 @@ interface LiveAnnouncementBarProps {
   /** Fade out and unmount at expiry (storefront). The admin preview keeps it visible. */
   hideOnExpire?: boolean;
   onDismiss?: () => void;
+  /** Called once when it unmounts at expiry, so the strip can ask what comes next. */
+  onExpire?: () => void;
 }
 
 /** The banner plus its ticking countdown and client-side expiry. */
-export function LiveAnnouncementBar({ announcement, hideOnExpire = true, onDismiss }: LiveAnnouncementBarProps) {
+export function LiveAnnouncementBar({ announcement, hideOnExpire = true, onDismiss, onExpire }: LiveAnnouncementBarProps) {
   const parsed = announcement.expires_at ? Date.parse(announcement.expires_at) : NaN;
   const expiresAt = Number.isNaN(parsed) ? null : parsed;
   const now = useNow(expiresAt !== null);
   const remaining = expiresAt !== null && now !== null ? expiresAt - now : null;
   const expired = remaining !== null && remaining <= 0;
 
-  if (hideOnExpire && remaining !== null && remaining <= UNMOUNT_AFTER_MS) return null;
+  const gone = hideOnExpire && remaining !== null && remaining <= UNMOUNT_AFTER_MS;
+
+  useEffect(() => {
+    if (gone) onExpire?.();
+  }, [gone, onExpire]);
+
+  if (gone) return null;
 
   const fading = hideOnExpire && expired;
   return (

@@ -9,7 +9,7 @@ interface AuthState {
   user: User | null;
   token: string | null;
   setAuth: (token: string, user: User) => void;
-  /** Refresh the profile (e.g. ParaPuan balance) without touching the token. */
+  /** Refresh the profile (e.g. Sultan Puan balance) without touching the token. */
   setUser: (user: User) => void;
   /** Pass `keepCart` when the session merely expired (same person, keep their cart). */
   logout: (options?: { keepCart?: boolean }) => void;

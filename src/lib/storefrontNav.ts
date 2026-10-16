@@ -14,6 +14,7 @@
  */
 
 import { catalogSearchHref } from "@/lib/home";
+import { brandHref } from "@/lib/seo";
 import type { Brand, Category, HomeNavItem } from "@/types";
 
 /**
@@ -40,30 +41,38 @@ export const TOP_NAV: NavEntry[] = [
   { label: "KAMPANYALAR", href: "/#firsat-urunleri", accent: true },
   { label: "NARGİLE TAKIMLARI", slug: "nargile-takimlari" },
   { label: "LÜLELER", slug: "luleler" },
-  { label: "KÖZLÜKLER", slug: "kozlukler-isi-yonetimi" },
-  { label: "MARPUÇLAR", slug: "marpuc-ve-hortumlar" },
-  { label: "SİPSİ & AKSESUAR", slug: "sipsiler-ve-aksesuarlar" },
+  { label: "MARPUÇLAR", slug: "marpuclar" },
+  { label: "AKSESUARLAR", slug: "aksesuarlar" },
+  { label: "SARF MALZEMELERİ", slug: "sarf-malzemeleri" },
   { label: "KÖMÜRLER", slug: "nargile-komurleri" },
 ];
 
-/** The left column: fifteen entries the shop leads with. */
+/**
+ * The left column: Turhan Bey's list, in his order — the house brands and the
+ * takım types first, then the catalog's own corners. A flat list, no sub-menus.
+ */
 export const SIDEBAR_NAV: NavEntry[] = [
-  // The house brands first, then the catalog's own groups and the takım types.
   { label: "SULTAN NARGİLE", brand: "sultan", search: "sultan" },
   { label: "LEGEND HOOKAH", brand: "legend", search: "legend" },
   { label: "ODUMAN NARGİLE", brand: "oduman", search: "oduman" },
   { label: "MR.WOOD NARGİLE", brand: "mr-wood", search: "mr.wood" },
-  { label: "ÇELİK TAKIMLAR", slug: "celik-takimlar" },
-  { label: "KLASİK TAKIMLAR", slug: "klasik-takimlar" },
-  { label: "RUS TAKIMLARI", slug: "rus-takimlari" },
-  { label: "MİNİ & MASAÜSTÜ TAKIMLAR", slug: "mini-masaustu-takimlar" },
-  { label: "LÜLELER", slug: "luleler" },
-  { label: "KÖZLÜK & ISI YÖNETİMİ", slug: "kozlukler-isi-yonetimi" },
-  { label: "MARPUÇ & HORTUMLAR", slug: "marpuc-ve-hortumlar" },
-  { label: "SİPSİLER & AKSESUARLAR", slug: "sipsiler-ve-aksesuarlar" },
+  { label: "KLASİK NARGİLE TAKIMLARI", search: "klasik nargile" },
+  { label: "ÇELİK NARGİLE TAKIMLARI", search: "çelik nargile takımı" },
+  { label: "MASAÜSTÜ NARGİLE TAKIMLARI", slug: "masaustu-nargile-takimlari" },
+  { label: "RUS NARGİLE TAKIMLARI", search: "rus nargile" },
+  { label: "STEAMULATION", brand: "steamulation", search: "steamulation" },
+  { label: "QUASAR ARGUİLE", brand: "quasar", search: "quasar" },
+  { label: "MEDUSE NARGİLE TAKIMLARI", brand: "meduse", search: "meduse" },
+  { label: "PANADA HOOKAH", brand: "panada", search: "panada" },
+  { label: "BİTKİSEL ÜRÜNLER", slug: "bitkisel-urunler" },
+  { label: "YEDEK NARGİLE ŞİŞELERİ", slug: "nargile-siseleri" },
+  { label: "OYUN ALETLERİ", search: "oyun aleti" },
   { label: "NARGİLE KÖMÜRLERİ", slug: "nargile-komurleri" },
-  { label: "TÜTÜN, BİTKİSEL & SARF", slug: "tutun-bitkisel-ve-sarf" },
-  { label: "YEDEK ŞİŞE & GÖVDE", slug: "yedek-sise-ve-govde" },
+  { label: "LÜLELER", slug: "luleler" },
+  { label: "KÖZLÜKLER", slug: "kozlukler" },
+  { label: "MARPUÇLAR", slug: "marpuclar" },
+  { label: "SİPSİLER", slug: "sipsiler" },
+  { label: "NARGİLE MALZEMELERİ", slug: "aksesuarlar" },
 ];
 
 /**
@@ -81,7 +90,9 @@ export function navHref(
   // does not would be a 404 with the visitor's click already spent.
   if (entry.slug && categories.has(entry.slug)) return `/catalog/${entry.slug}`;
   const brand = entry.brand ? brands.get(entry.brand) : undefined;
-  if (brand) return catalogSearchHref(brand.search_term);
+  // The brand's own page: the same products its search finds, at a URL that
+  // can be indexed and shared.
+  if (brand) return brandHref(brand.slug);
   return catalogSearchHref(entry.search ?? entry.label);
 }
 

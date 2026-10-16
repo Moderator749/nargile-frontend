@@ -12,6 +12,10 @@ export const ORDER_STATUS: Record<OrderStatus, { label: string; className: strin
     // Deeper than the havale rows' yellow, so it still stands out on them.
     className: "bg-amber-200 text-amber-900 ring-amber-400 dark:bg-amber-500/20 dark:text-amber-200 dark:ring-amber-500/50",
   },
+  AWAITING_PAYMENT: {
+    label: "Ödeme bekliyor",
+    className: "bg-sky-100 text-sky-800 ring-sky-300 dark:bg-sky-500/15 dark:text-sky-200 dark:ring-sky-500/40",
+  },
   APPROVED: {
     label: "Onaylandı",
     className:
@@ -24,6 +28,10 @@ export const ORDER_STATUS: Record<OrderStatus, { label: string; className: strin
   CANCELLED: {
     label: "İptal edildi",
     className: "bg-red-100 text-red-800 ring-red-300 dark:bg-red-500/15 dark:text-red-200 dark:ring-red-500/40",
+  },
+  PAYMENT_FAILED: {
+    label: "Ödeme başarısız",
+    className: "bg-zinc-100 text-zinc-700 ring-zinc-300 dark:bg-white/10 dark:text-zinc-300 dark:ring-white/20",
   },
 };
 

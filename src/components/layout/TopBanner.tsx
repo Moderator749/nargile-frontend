@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { LiveAnnouncementBar } from "@/components/banner/LiveAnnouncementBar";
 import { AnnouncementBar } from "@/components/home/AnnouncementBar";
@@ -9,7 +9,7 @@ import { API_URL } from "@/lib/config";
 import type { Announcement } from "@/types";
 
 /** What the strip says when the shop has no special day running. */
-export const WELCOME = "SULTAN NARGİLE'YE HOŞGELDİNİZ / ÖZEL GÜN KUTLAMA ALANI";
+export const WELCOME = "SULTAN NARGİLE'YE HOŞ GELDİNİZ";
 
 /**
  * The strip across the very top of the storefront.
@@ -25,9 +25,18 @@ export const WELCOME = "SULTAN NARGİLE'YE HOŞGELDİNİZ / ÖZEL GÜN KUTLAMA A
  * page around: the welcome renders with the HTML, and the live banner replaces
  * it once it is read. Reading it in the browser rather than on the server is
  * what keeps every page statically rendered while the message stays current.
+ *
+ * When the banner on show ends while the visitor is here — a scheduled
+ * "Hazır metin" reaching its end — the welcome stands in at once and the strip
+ * asks again, so the default banner comes back without a reload.
  */
 export function TopBanner() {
   const [live, setLive] = useState<Announcement | null>(null);
+  const [round, setRound] = useState(0);
+  const expired = useCallback(() => {
+    setLive(null);
+    setRound((n) => n + 1);
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -43,9 +52,9 @@ export function TopBanner() {
         // Non-critical: the welcome stands.
       });
     return () => controller.abort();
-  }, []);
+  }, [round]);
 
-  if (live) return <LiveAnnouncementBar announcement={live} />;
+  if (live) return <LiveAnnouncementBar key={`${live.message}|${live.expires_at}`} announcement={live} onExpire={expired} />;
 
   // The greeting is not an announcement: the house gradient, and no icon to
   // read anything into.

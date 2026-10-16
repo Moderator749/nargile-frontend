@@ -26,6 +26,10 @@ export interface RegistrationCopy {
   passwordHint: (min: number) => string;
   submit: string;
   submitting: string;
+  /** The optional ticari elektronik ileti box, and the name of the text its link opens. */
+  marketingConsent: string;
+  marketingConsentHint: string;
+  readPrivacy: string;
 }
 
 const TR: RegistrationCopy = {
@@ -45,6 +49,11 @@ const TR: RegistrationCopy = {
   passwordHint: (min) => `En az ${min} karakter`,
   submit: "Hesap Oluştur",
   submitting: "Hesap oluşturuluyor…",
+  marketingConsent:
+    "Kampanya, indirim ve duyurulardan haberdar olmak için ticari elektronik ileti (SMS ve E-posta) almayı onaylıyorum.",
+  marketingConsentHint:
+    "İsteğe bağlı. Sipariş ve şifre mesajları bu onaydan bağımsız gönderilir; tercihinizi hesabınızdan her zaman değiştirebilirsiniz.",
+  readPrivacy: "Gizlilik Kuralları",
 };
 
 const EN: RegistrationCopy = {
@@ -62,6 +71,10 @@ const EN: RegistrationCopy = {
   passwordHint: (min) => `At least ${min} characters`,
   submit: "Create account",
   submitting: "Creating your account…",
+  marketingConsent: "I agree to receive commercial electronic messages (SMS and e-mail) about campaigns, discounts and news.",
+  marketingConsentHint:
+    "Optional. Order and password messages are sent regardless; you can change this in your account at any time.",
+  readPrivacy: "Privacy Policy",
 };
 
 export const copyFor = (international: boolean): RegistrationCopy => (international ? EN : TR);

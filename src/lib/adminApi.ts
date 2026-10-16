@@ -14,6 +14,18 @@ import type {
   AdvantageWrite,
   Announcement,
   AnnouncementUpdate,
+  AudienceCount,
+  Campaign,
+  CampaignCreate,
+  CommunicationDrivers,
+  MessageChannel,
+  NotificationLogEntry,
+  AdminNote,
+  AdminNoteWrite,
+  BannerPreset,
+  BannerPresetWrite,
+  PopupAnnouncement,
+  PopupAnnouncementUpdate,
   B2BApplication,
   B2BSegment,
   BankAccount,
@@ -34,7 +46,7 @@ import type {
   ProductSheet,
   ProductSort,
   PromoBoxContent,
-  ShippingSettings,
+  StoreParameters,
   PromoBoxWrite,
   SavedProductSheet,
   Segment,
@@ -177,6 +189,79 @@ export async function adminGetAnnouncement(signal?: AbortSignal): Promise<Announ
 
 export async function adminUpdateAnnouncement(payload: AnnouncementUpdate): Promise<Announcement> {
   const { data } = await api.put<Announcement>("/admin/announcement", payload);
+  return data;
+}
+
+export async function adminListBannerPresets(signal?: AbortSignal): Promise<BannerPreset[]> {
+  const { data } = await api.get<BannerPreset[]>("/admin/banner-presets", { signal });
+  return data;
+}
+
+export async function adminCreateBannerPreset(body: BannerPresetWrite): Promise<BannerPreset> {
+  const { data } = await api.post<BannerPreset>("/admin/banner-presets", body);
+  return data;
+}
+
+export async function adminUpdateBannerPreset(id: number, body: BannerPresetWrite): Promise<BannerPreset> {
+  const { data } = await api.put<BannerPreset>(`/admin/banner-presets/${id}`, body);
+  return data;
+}
+
+export async function adminDeleteBannerPreset(id: number): Promise<void> {
+  await api.delete(`/admin/banner-presets/${id}`);
+}
+
+export async function adminCommunicationDrivers(signal?: AbortSignal): Promise<CommunicationDrivers> {
+  const { data } = await api.get<CommunicationDrivers>("/admin/communications/status", { signal });
+  return data;
+}
+
+export async function adminAudienceCounts(channel: MessageChannel, signal?: AbortSignal): Promise<AudienceCount[]> {
+  const { data } = await api.get<AudienceCount[]>("/admin/communications/audiences", { params: { channel }, signal });
+  return data;
+}
+
+export async function adminCreateCampaign(body: CampaignCreate): Promise<Campaign> {
+  const { data } = await api.post<Campaign>("/admin/communications/campaigns", body);
+  return data;
+}
+
+export async function adminListCampaigns(signal?: AbortSignal): Promise<Campaign[]> {
+  const { data } = await api.get<Campaign[]>("/admin/communications/campaigns", { params: { limit: 30 }, signal });
+  return data;
+}
+
+export async function adminNotificationLogs(signal?: AbortSignal): Promise<NotificationLogEntry[]> {
+  const { data } = await api.get<NotificationLogEntry[]>("/admin/communications/logs", { params: { limit: 50 }, signal });
+  return data;
+}
+
+export async function adminListNotes(signal?: AbortSignal): Promise<AdminNote[]> {
+  const { data } = await api.get<AdminNote[]>("/admin/notes", { signal });
+  return data;
+}
+
+export async function adminCreateNote(body: AdminNoteWrite): Promise<AdminNote> {
+  const { data } = await api.post<AdminNote>("/admin/notes", body);
+  return data;
+}
+
+export async function adminUpdateNote(id: number, body: AdminNoteWrite): Promise<AdminNote> {
+  const { data } = await api.put<AdminNote>(`/admin/notes/${id}`, body);
+  return data;
+}
+
+export async function adminDeleteNote(id: number): Promise<void> {
+  await api.delete(`/admin/notes/${id}`);
+}
+
+export async function adminGetPopup(signal?: AbortSignal): Promise<PopupAnnouncement> {
+  const { data } = await api.get<PopupAnnouncement>("/admin/announcements/popup", { signal });
+  return data;
+}
+
+export async function adminUpdatePopup(payload: PopupAnnouncementUpdate): Promise<PopupAnnouncement> {
+  const { data } = await api.put<PopupAnnouncement>("/admin/announcements/popup", payload);
   return data;
 }
 
@@ -456,17 +541,15 @@ export async function adminGetLegalDocuments(signal?: AbortSignal): Promise<Lega
   return data;
 }
 
-/** The shipping limits the checkout engine applies; see `lib/settingsApi`. */
-export async function adminGetShippingSettings(signal?: AbortSignal): Promise<ShippingSettings> {
-  const { data } = await api.get<ShippingSettings>("/admin/settings/shipping", { signal });
+/** "Parametreler": the checkout's commercial rules; see `lib/settingsApi`. */
+export async function adminGetStoreParameters(signal?: AbortSignal): Promise<StoreParameters> {
+  const { data } = await api.get<StoreParameters>("/admin/settings/parameters", { signal });
   return data;
 }
 
-/** Saves them. The next cart is quoted against what is saved here. */
-export async function adminUpdateShippingSettings(
-  body: { istanbul_free_min_subtotal: string },
-): Promise<ShippingSettings> {
-  const { data } = await api.put<ShippingSettings>("/admin/settings/shipping", body);
+/** Saves all of them at once. The next cart calculation uses what is saved here. */
+export async function adminUpdateStoreParameters(body: StoreParameters): Promise<StoreParameters> {
+  const { data } = await api.put<StoreParameters>("/admin/settings/parameters", body);
   return data;
 }
 

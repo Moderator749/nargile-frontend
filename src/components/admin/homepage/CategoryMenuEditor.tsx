@@ -3,7 +3,7 @@
 import { useId } from "react";
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 
-import { isSiteOrHttpsLink } from "@/components/admin/ContentEditor";
+import { adminSelectClass, isSiteOrHttpsLink } from "@/components/admin/ContentEditor";
 import { BrokenCategoryNote, inputClass } from "@/components/admin/homepage/fields";
 import { Switch } from "@/components/ui/Switch";
 import { categoryTree } from "@/lib/categories";
@@ -12,6 +12,11 @@ import { navHref } from "@/lib/storefrontNav";
 import type { Brand, Category, HomeNavItem } from "@/types";
 
 const labelClass = "block text-xs font-medium text-slate-600 dark:text-zinc-400";
+type TargetKind = "category" | "brand" | "link" | "search";
+
+const targetOf = (item: HomeNavItem): TargetKind =>
+  item.href ? "link" : item.slug ? "category" : item.brand ? "brand" : "search";
+
 const iconButton =
   "inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 disabled:pointer-events-none disabled:opacity-30 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-white";
 
@@ -26,6 +31,7 @@ function Entry({
   remove,
   accent,
   categories,
+  brands,
 }: {
   item: HomeNavItem;
   /** Where the entry goes, as the storefront resolves it today. */
@@ -39,12 +45,24 @@ function Entry({
   remove: () => void;
   accent: boolean;
   categories: Category[];
+  brands: Brand[];
 }) {
   const id = useId();
   const enabled = item.enabled !== false;
   const badLink = !isSiteOrHttpsLink(link);
   const broken = badLink ? null : brokenCategoryLink(link, categories);
-  const setLink = (href: string) => update({ slug: null, brand: null, search: null, href, label: item.label || name });
+  const kind = targetOf(item);
+  const cleared = { slug: null, brand: null, href: null, search: null };
+  // Switching kind clears the others, so an entry always means exactly one
+  // thing; the name stays, so the menu does not go blank on the way.
+  const setKind = (next: TargetKind) => {
+    const label = item.label || name;
+    if (next === "category") update({ ...cleared, label, slug: categories[0]?.slug ?? "" });
+    else if (next === "brand") update({ ...cleared, label, brand: brands[0]?.slug ?? "" });
+    else if (next === "link") update({ ...cleared, label, href: link });
+    else update({ ...cleared, label });
+  };
+  const setLink = (href: string) => update({ ...cleared, href, label: item.label || name });
 
   return (
     <li
@@ -80,7 +98,8 @@ function Entry({
         </button>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      {/* Three parts: the name shown, what kind of target, and the target itself. */}
+      <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_9.5rem_minmax(0,1.3fr)]">
         <div className="space-y-1">
           <label htmlFor={`${id}-name`} className={labelClass}>
             İsim
@@ -95,21 +114,86 @@ function Entry({
           />
         </div>
         <div className="space-y-1">
-          <label htmlFor={`${id}-href`} className={labelClass}>
-            Bağlantı
+          <label htmlFor={`${id}-kind`} className={labelClass}>
+            Hedef
           </label>
-          {/* Editing the link makes it a plain link: no category or brand behind it. */}
-          <input
-            id={`${id}-href`}
-            value={link}
-            maxLength={300}
-            placeholder="/catalog/luleler veya https://…"
-            aria-invalid={badLink || undefined}
-            onChange={(e) => setLink(e.target.value)}
-            className={`${inputClass} font-mono ${badLink || broken ? "border-red-400 focus:border-red-500" : ""}`}
-          />
-          {badLink && <p className="text-[11px] text-red-600 dark:text-red-400">/ ile ya da https:// ile başlamalı.</p>}
-          <BrokenCategoryNote broken={broken} onFix={setLink} />
+          <select
+            id={`${id}-kind`}
+            value={kind}
+            onChange={(e) => setKind(e.target.value as TargetKind)}
+            className={adminSelectClass}
+          >
+            <option value="category">Kategori</option>
+            <option value="brand">Marka</option>
+            <option value="link">Özel bağlantı</option>
+            <option value="search">Katalog araması</option>
+          </select>
+        </div>
+        <div className="space-y-1">
+          <label htmlFor={`${id}-value`} className={labelClass}>
+            {kind === "category" ? "Kategori" : kind === "brand" ? "Marka" : kind === "link" ? "Bağlantı" : "Aranacak kelime"}
+          </label>
+          {kind === "category" ? (
+            <select
+              id={`${id}-value`}
+              value={item.slug ?? ""}
+              onChange={(e) => update({ slug: e.target.value })}
+              className={adminSelectClass}
+            >
+              {/* A slug the catalog no longer has stays selectable, so it is not lost silently. */}
+              {item.slug && !categories.some((c) => c.slug === item.slug) && (
+                <option value={item.slug}>{item.slug} (bulunamadı)</option>
+              )}
+              {categoryTree(categories)
+                .flatMap((group) => [group, ...group.children])
+                .map((c) => (
+                  <option key={c.id} value={c.slug}>
+                    {c.parent_id ? "— " : ""}
+                    {c.name}
+                  </option>
+                ))}
+            </select>
+          ) : kind === "brand" ? (
+            <select
+              id={`${id}-value`}
+              value={item.brand ?? ""}
+              onChange={(e) => update({ brand: e.target.value })}
+              className={adminSelectClass}
+            >
+              {item.brand && !brands.some((b) => b.slug === item.brand) && (
+                <option value={item.brand}>{item.brand} (bulunamadı — aranır)</option>
+              )}
+              {brands.map((b) => (
+                <option key={b.id} value={b.slug}>
+                  {b.name}
+                </option>
+              ))}
+            </select>
+          ) : kind === "link" ? (
+            <>
+              <input
+                id={`${id}-value`}
+                value={link}
+                maxLength={300}
+                placeholder="/catalog/luleler veya https://…"
+                aria-invalid={badLink || undefined}
+                onChange={(e) => setLink(e.target.value)}
+                className={`${inputClass} font-mono ${badLink || broken ? "border-red-400 focus:border-red-500" : ""}`}
+              />
+              {badLink && <p className="text-[11px] text-red-600 dark:text-red-400">/ ile ya da https:// ile başlamalı.</p>}
+              <BrokenCategoryNote broken={broken} onFix={setLink} />
+            </>
+          ) : (
+            <input
+              id={`${id}-value`}
+              value={item.search ?? ""}
+              maxLength={80}
+              placeholder={`Boş bırakılırsa: “${item.label || name}”`}
+              onChange={(e) => update({ search: e.target.value || null })}
+              className={inputClass}
+            />
+          )}
+          {kind !== "link" && <p className="truncate font-mono text-[11px] text-slate-400 dark:text-zinc-500">→ {link}</p>}
         </div>
       </div>
 
@@ -130,9 +214,9 @@ function Entry({
 
 /**
  * One menu ("Sol Kategori" or "Üst Kategori"), as a vertical list of entries:
- * a name and a link each, with order, on/off and delete — and a button to add
- * one. Entries saved before as a category or brand reference show the link
- * they resolve to, and become plain links once that link is edited.
+ * a name, a target kind and the target each (a category, a brand, a link of
+ * its own or a catalog search), with order, on/off and delete — and a button
+ * to add one. Under a non-link target, the link it resolves to today.
  */
 export function CategoryMenuEditor({
   items,
@@ -191,6 +275,7 @@ export function CategoryMenuEditor({
             remove={() => onChange(items.filter((_, j) => j !== i))}
             accent={accent}
             categories={categories}
+            brands={brands}
           />
         ))}
       </ul>

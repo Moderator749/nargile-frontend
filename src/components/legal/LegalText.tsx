@@ -1,6 +1,7 @@
 /**
- * A legal text as the admin typed it: blank lines separate paragraphs and a
- * line beginning with `## ` is a heading.
+ * Text written in code — the blog's articles (lib/blog) — in the plain format:
+ * blank lines separate paragraphs and a line beginning with `## ` is a
+ * heading. (The legal texts are the editor's HTML now, shown by RichText.)
  *
  * Deliberately not a markdown renderer — these texts are prose with headings,
  * and anything richer would be a way to put arbitrary HTML on the page from the

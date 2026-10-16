@@ -48,6 +48,10 @@ export function Dialog({
       aria-label={title}
       className="m-auto max-h-[85dvh] w-[calc(100vw-2rem)] max-w-2xl rounded-2xl border border-slate-200 bg-white p-0 text-slate-900 shadow-2xl backdrop:bg-slate-900/50 backdrop:backdrop-blur-sm open:flex open:flex-col dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-100"
     >
+      {/* The panel only while open: a closed dialog's title would otherwise
+          sit in the page as one more <h2>, out of the page's own outline. */}
+      {open && (
+        <>
       <header className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4 dark:border-white/10">
         <h2 className="text-base font-bold tracking-tight">{title}</h2>
         <button
@@ -60,6 +64,8 @@ export function Dialog({
         </button>
       </header>
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4">{children}</div>
+        </>
+      )}
     </dialog>
   );
 }

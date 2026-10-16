@@ -7,8 +7,10 @@ import { getApiErrorMessage } from "@/lib/errors";
 import type { AdminOrder, OrderStatus } from "@/types";
 
 /** Waiting for money or for an admin's approval. The server enforces all three
- * rules below with a 409, so these only decide what to offer. */
-const PENDING: OrderStatus[] = ["PENDING_APPROVAL", "AWAITING_TRANSFER"];
+ * rules below with a 409, so these only decide what to offer. A card order
+ * waiting for PayTR is approvable too: if PayTR's notification never arrives,
+ * an admin who sees the payment in the PayTR panel can still mark it paid. */
+const PENDING: OrderStatus[] = ["PENDING_APPROVAL", "AWAITING_TRANSFER", "AWAITING_PAYMENT"];
 
 export function canApproveOrder(status: OrderStatus): boolean {
   return PENDING.includes(status);

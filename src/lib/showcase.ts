@@ -22,20 +22,20 @@ export type ShowcaseTile = HomeShowcaseTile;
 export const SHOWCASE_TILES: ShowcaseTile[] = [
   // Row 1 — wide, square, square
   { label: "Nargile Takımları", eyebrow: "Tüm takımlar", slug: "nargile-takimlari", wide: true, icon: "wind" },
-  { label: "Marpuç & Hortumlar", eyebrow: "Silikon & klasik", slug: "marpuc-ve-hortumlar", wide: false, icon: "wrench" },
+  { label: "Marpuçlar", eyebrow: "Silikon & deri", slug: "marpuclar", wide: false, icon: "wrench" },
   { label: "Nargile Kömürleri", eyebrow: "Hindistan cevizi", slug: "nargile-komurleri", wide: false, icon: "flame" },
   // Row 2 — square, square, wide
   { label: "Lüle Çeşitleri", eyebrow: "Phunnel & killer", slug: "luleler", wide: false, icon: "layers" },
-  { label: "Közlükler & Isı Yönetimi", eyebrow: "Köz & folyo", slug: "kozlukler-isi-yonetimi", wide: false, icon: "flame" },
+  { label: "Isı Yönetim Araçları", eyebrow: "Közlükler", slug: "isi-yonetim-araclari", wide: false, icon: "flame" },
   { label: "Legend Hookah Koleksiyonu", eyebrow: "Marka koleksiyonu", brand: "legend", search: "legend", wide: true, icon: "sparkles" },
   // Row 3 — wide, square, square
-  { label: "Çelik Nargile Takımları", eyebrow: "Çelik gövde", slug: "celik-takimlar", wide: true, icon: "shield" },
-  { label: "Yedek Şişe & Gövde", eyebrow: "Yedek parça", slug: "yedek-sise-ve-govde", wide: false, icon: "package" },
-  { label: "Sipsiler & Aksesuarlar", eyebrow: "Hijyen & bakım", slug: "sipsiler-ve-aksesuarlar", wide: false, icon: "wrench" },
+  { label: "Çantalı Nargile Takımları", eyebrow: "Taşınabilir", slug: "cantali-nargile-takimlari", wide: true, icon: "shield" },
+  { label: "Yedek Parça", eyebrow: "Şişe, conta & difüzör", slug: "yedek-parca", wide: false, icon: "package" },
+  { label: "Aksesuarlar", eyebrow: "Baca, maşa & çanta", slug: "aksesuarlar", wide: false, icon: "wrench" },
   // Row 4 — square, square, wide
-  { label: "Klasik Nargileler", eyebrow: "Klasik seçki", slug: "klasik-takimlar", wide: false, icon: "wind" },
-  { label: "Mini & Masaüstü", eyebrow: "Kompakt takımlar", slug: "mini-masaustu-takimlar", wide: false, icon: "package" },
-  { label: "Tütün, Bitkisel & Sarf", eyebrow: "Günlük tüketim", slug: "tutun-bitkisel-ve-sarf", wide: true, icon: "sparkles" },
+  { label: "Yakıcılar", eyebrow: "Ocak, pürmüz & gaz", slug: "yakicilar", wide: false, icon: "wind" },
+  { label: "Masaüstü Takımlar", eyebrow: "Kompakt takımlar", slug: "masaustu-nargile-takimlari", wide: false, icon: "package" },
+  { label: "Sarf Malzemeleri", eyebrow: "Günlük tüketim", slug: "sarf-malzemeleri", wide: true, icon: "sparkles" },
 ];
 
 export interface ResolvedTile extends ShowcaseTile {

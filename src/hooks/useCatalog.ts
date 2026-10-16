@@ -23,6 +23,12 @@ interface UseCatalogOptions {
   initialProducts: CatalogProduct[] | null;
   /** Products per page (must match the server-rendered page size). */
   pageSize?: number;
+  /**
+   * The search term `initialProducts` were rendered for: "" for a category or
+   * the whole catalog, a brand's term on its brand page. While `query` is that
+   * term, the server page is used as it is, like any other first page.
+   */
+  seedQuery?: string;
 }
 
 const LOAD_ERROR = "Ürünler yüklenemedi. Lütfen tekrar deneyin.";
@@ -39,6 +45,7 @@ export function useCatalog({
   query,
   initialProducts,
   pageSize = CATALOG_PAGE_SIZE,
+  seedQuery = "",
 }: UseCatalogOptions) {
   const hydrated = useAuthHydrated();
   const token = useAuthStore((s) => s.token);
@@ -48,7 +55,7 @@ export function useCatalog({
 
   const viewer = hydrated ? (token ?? "anon") : null;
   const key = viewer === null ? null : `${viewer}|${category ?? ""}|${query}|${attempt}`;
-  const seed = initialProducts && !query && attempt === 0 ? initialProducts : null;
+  const seed = initialProducts && query === seedQuery && attempt === 0 ? initialProducts : null;
   const seedIsFinal = viewer !== null && viewer === "anon" && seed !== null;
 
   const keyRef = useRef(key);

@@ -71,18 +71,22 @@ function HeaderSearch(props: SearchProps) {
  * The storefront header: the shop's name, one search field, and the tools a
  * visitor reaches for — currency, cargo tracking, their account, their cart.
  *
- * Below it sits the horizontal menu (`TopNav`), whose every item is a link.
+ * Below it sits the horizontal menu (`TopNav`), whose every item is a link —
+ * on the storefront only (`showMenu`): the admin panel has its own navigation.
  * There is no hover menu and nothing that floats over the page: the categories
  * are in the column down the left of the storefront, open at all times.
  */
 export function Navbar({
   categories,
   links,
+  showMenu = true,
 }: {
   /** The sidebar's fifteen, for the bar's drawer on a phone. */
   categories: ResolvedNav[];
   /** The horizontal bar's own items. */
   links: ResolvedNav[];
+  /** The horizontal menu under the header; the admin panel's layout turns it off. */
+  showMenu?: boolean;
 }) {
   const user = useAuthStore((s) => s.user);
   const cartCount = useCartStore(selectCartCount);
@@ -178,8 +182,9 @@ export function Navbar({
         <HeaderSearch id="header-search-mobile" />
       </div>
 
-      {/* Module 3: the horizontal menu. Links only — no dropdowns. */}
-      <TopNav categories={categories} links={links} />
+      {/* Module 3: the horizontal menu. Links only — no dropdowns. Not in the
+          admin panel. */}
+      {showMenu && <TopNav categories={categories} links={links} />}
     </header>
   );
 }

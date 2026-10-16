@@ -4,6 +4,7 @@ import { AdvantageCopy } from "@/components/home/AdvantageCopy";
 import { canOptimiseImage } from "@/lib/home";
 import { homeIcon } from "@/lib/homeIcons";
 import type { Homepage } from "@/types";
+import { SITE_NAME } from "@/lib/site";
 
 const CARD = [
   // A hair of padding, so the photograph reads as a canvas set into the card
@@ -63,7 +64,7 @@ export function AdvantagesSection({ content }: { content: Homepage["advantages"]
                 {image ? (
                   <Image
                     src={image}
-                    alt=""
+                    alt={`${title} | ${SITE_NAME}`}
                     fill
                     sizes="(min-width: 640px) 100px, 80px"
                     unoptimized={!canOptimiseImage(image)}

@@ -21,10 +21,6 @@ const PATTERNS: [RegExp, (m: RegExpMatchArray) => string][] = [
     (m) => `Stok yetersiz: ${m[1]} için en fazla ${m[3]} adet sipariş verebilirsiniz (sepette ${m[2]}).`,
   ],
   [
-    /^Insufficient ParaPuan: requested (\d+), available (\d+)/,
-    (m) => `Yetersiz ParaPuan: ${m[1]} puan kullanmak istediniz, bakiyeniz ${m[2]} puan.`,
-  ],
-  [
     /^No TRY price for variant (\S+)/,
     (m) => `${m[1]} kodlu ürün hesabınız için satışta değil. Lütfen sepetten çıkarın.`,
   ],

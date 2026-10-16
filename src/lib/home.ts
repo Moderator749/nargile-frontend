@@ -2,6 +2,7 @@
 // /admin/promos, /admin/advantages) and served by /home/content; this file maps
 // it to what the components render.
 
+import { API_URL } from "@/lib/config";
 import type {
   ContentRequirement,
   HeroLayout,
@@ -124,14 +125,32 @@ export function promoRows(boxes: PromoBoxContent[], has: Record<Requirement, boo
 /** Hosts next/image may optimise (must match next.config.ts images.remotePatterns). */
 const OPTIMISED_HOSTS = new Set(["www.nargilemalzemesi.com"]);
 
+const LOOPBACK = new Set(["localhost", "127.0.0.1", "[::1]", "::1"]);
+
+/** Where the API serves uploads from: its own origin, under /media. */
+const MEDIA_ORIGIN = (() => {
+  try {
+    return new URL(API_URL);
+  } catch {
+    return null;
+  }
+})();
+
 /**
- * Admin images can come from any https host or from our own /media uploads,
- * which aren't in remotePatterns: those are shown as-is (unoptimised).
+ * Whether next/image may resize and re-encode this photo (WebP/AVIF, one width
+ * per screen) — exactly the addresses next.config.ts lets it fetch: the old
+ * store's photos, our /public files and the API's own /media uploads (either
+ * loopback spelling on a developer's machine). An admin image from any other
+ * host is shown as it is.
  */
 export function canOptimiseImage(src: string): boolean {
   if (src.startsWith("/")) return true; // /public
   try {
-    return OPTIMISED_HOSTS.has(new URL(src).hostname);
+    const url = new URL(src);
+    if (OPTIMISED_HOSTS.has(url.hostname)) return true;
+    if (!MEDIA_ORIGIN || !url.pathname.startsWith("/media/")) return false;
+    if (url.origin === MEDIA_ORIGIN.origin) return true;
+    return LOOPBACK.has(MEDIA_ORIGIN.hostname) && LOOPBACK.has(url.hostname) && url.port === MEDIA_ORIGIN.port;
   } catch {
     return false;
   }

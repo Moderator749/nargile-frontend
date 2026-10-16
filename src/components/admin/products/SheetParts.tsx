@@ -44,7 +44,9 @@ export function SheetField({
 }) {
   return (
     <div className={className}>
-      <label htmlFor={id} className={sheetLabelClass}>
+      {/* The id lets a control that is not a form element (the rich-text
+          editor) name itself after the label with aria-labelledby. */}
+      <label id={`${id}-label`} htmlFor={id} className={sheetLabelClass}>
         {label}
       </label>
       {children}

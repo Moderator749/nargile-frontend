@@ -24,6 +24,17 @@ export async function fetchProducts(
   return data;
 }
 
+/**
+ * These products, priced for the caller — a set the page already chose, in no
+ * particular order (the caller keeps its own).
+ */
+export async function fetchProductsByIds(ids: string[], signal?: AbortSignal): Promise<CatalogProduct[]> {
+  const params = new URLSearchParams({ limit: String(Math.min(ids.length, 100)) });
+  for (const id of ids) params.append("ids", id);
+  const { data } = await api.get<CatalogProduct[]>(`/products/?${params}`, { signal });
+  return data;
+}
+
 export async function fetchCategories(signal?: AbortSignal): Promise<Category[]> {
   const { data } = await api.get<Category[]>("/categories/", { signal });
   return data;

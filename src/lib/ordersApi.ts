@@ -165,3 +165,19 @@ export async function applyForB2B(body: B2BApplicationInput): Promise<B2BApplica
   const { data } = await api.post<B2BApplication>("/me/b2b-application", body);
   return data;
 }
+
+/** Ticari elektronik ileti onayı: campaign e-mail / SMS. */
+export interface CommunicationPreferences {
+  email: boolean;
+  sms: boolean;
+}
+
+export async function fetchCommunicationPreferences(signal?: AbortSignal): Promise<CommunicationPreferences> {
+  const { data } = await api.get<CommunicationPreferences>("/me/communication-preferences", { signal });
+  return data;
+}
+
+export async function updateCommunicationPreferences(body: CommunicationPreferences): Promise<CommunicationPreferences> {
+  const { data } = await api.put<CommunicationPreferences>("/me/communication-preferences", body);
+  return data;
+}

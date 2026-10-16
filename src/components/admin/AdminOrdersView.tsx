@@ -22,10 +22,12 @@ import type { AdminOrder, OrderStatus } from "@/types";
 const FILTERS: { value: OrderStatus | null; label: string }[] = [
   { value: null, label: "Tümü" },
   { value: "AWAITING_TRANSFER", label: "Havale bekleyen" },
+  { value: "AWAITING_PAYMENT", label: "Kart ödemesi bekleyen" },
   { value: "PENDING_APPROVAL", label: "Onay bekleyen" },
   { value: "APPROVED", label: "Onaylanan" },
   { value: "SHIPPED", label: "Kargoda" },
   { value: "CANCELLED", label: "İptal" },
+  { value: "PAYMENT_FAILED", label: "Ödeme başarısız" },
 ];
 
 interface ListState {
@@ -203,7 +205,7 @@ export function AdminOrdersView() {
     <>
       <AdminPageHeader
         title="Siparişler"
-        description="Havalesi hesaba geçen siparişleri “Ödendi” ile onaylayın (ParaPuan/Kumbarapuan o an tanımlanır) veya gerekçeyle iptal edin; iptal stoğu ve kullanılan puanları iade eder. Kurye siparişleri aynı gün çıkmalıdır."
+        description="Havalesi hesaba geçen siparişleri “Ödendi” ile onaylayın (Sultan Puan o an tanımlanır) veya gerekçeyle iptal edin; iptal stoğu ve kullanılan puanları iade eder. Kurye siparişleri aynı gün çıkmalıdır."
         actions={
           <button
             type="button"

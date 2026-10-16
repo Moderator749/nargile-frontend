@@ -1,13 +1,15 @@
 "use client";
 
-import { useId } from "react";
+import { useId, type ReactNode } from "react";
 import { Check } from "lucide-react";
 
 import { SORT_OPTIONS, type CatalogFilters, type SortKey } from "@/lib/catalogFilters";
 
 const LABEL = "text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400";
+// One height for every control in the bar: the price boxes, the stock pill,
+// the sort and the catalogue button (PriceCatalogExport) are all h-9.
 const FIELD = [
-  "rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-1.5 text-xs font-bold text-neutral-800",
+  "h-9 rounded-xl border border-neutral-200 bg-neutral-50 px-3 text-xs font-bold text-neutral-800",
   "transition-colors duration-200 focus:border-red-500 focus:outline-none",
   "dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200",
 ].join(" ");
@@ -17,24 +19,28 @@ interface CatalogFilterBarProps {
   onChange: (patch: Partial<CatalogFilters>) => void;
   /** The cheapest and dearest on screen, shown as the inputs' placeholders. */
   bounds: { min: number; max: number } | null;
+  /** Beside the sort, at the right end of the bar (the B2B catalogue download). */
+  trailing?: ReactNode;
 }
 
 /**
- * One row, three controls: price range, stock, sort.
+ * One row, three controls: price range, stock, sort — and, for a B2B account,
+ * the catalogue button at the far right. One line on a desktop (from xl, where
+ * the column beside the category sidebar has the room); narrower screens wrap.
  *
  * Everything here narrows what is already on screen (see `lib/catalogFilters`),
  * so the controls are plain inputs rather than links: there is no URL behind
  * them to crawl, and the grid answers immediately.
  */
-export function CatalogFilterBar({ value, onChange, bounds }: CatalogFilterBarProps) {
+export function CatalogFilterBar({ value, onChange, bounds, trailing }: CatalogFilterBarProps) {
   const minId = useId();
   const maxId = useId();
   const sortId = useId();
 
   return (
-    <div className="mb-8 flex w-full flex-wrap items-center justify-between gap-4 rounded-2xl border border-neutral-200/80 bg-white p-3 shadow-sm sm:p-4 dark:border-neutral-800 dark:bg-neutral-900">
-      <div className="flex items-center gap-2">
-        <span className={LABEL} id={`${minId}-label`}>
+    <div className="mb-8 flex w-full flex-wrap items-center justify-between gap-3 rounded-2xl xl:flex-nowrap border border-neutral-200/80 bg-white p-3 shadow-sm sm:p-4 dark:border-neutral-800 dark:bg-neutral-900">
+      <div className="flex shrink-0 items-center gap-2">
+        <span className={`${LABEL} whitespace-nowrap`} id={`${minId}-label`}>
           Fiyat Aralığı
         </span>
         <label className="sr-only" htmlFor={minId}>
@@ -47,7 +53,7 @@ export function CatalogFilterBar({ value, onChange, bounds }: CatalogFilterBarPr
           value={value.min}
           onChange={(e) => onChange({ min: e.target.value })}
           placeholder={bounds ? String(bounds.min) : "0"}
-          className={`${FIELD} w-20 text-center sm:w-24`}
+          className={`${FIELD} w-20 text-center`}
         />
         <span aria-hidden className="text-xs font-bold text-neutral-400">
           –
@@ -62,7 +68,7 @@ export function CatalogFilterBar({ value, onChange, bounds }: CatalogFilterBarPr
           value={value.max}
           onChange={(e) => onChange({ max: e.target.value })}
           placeholder={bounds ? String(bounds.max) : "1000"}
-          className={`${FIELD} w-20 text-center sm:w-24`}
+          className={`${FIELD} w-20 text-center`}
         />
       </div>
 
@@ -72,7 +78,7 @@ export function CatalogFilterBar({ value, onChange, bounds }: CatalogFilterBarPr
         type="button"
         aria-pressed={value.inStock}
         onClick={() => onChange({ inStock: !value.inStock })}
-        className={`flex select-none items-center gap-2 rounded-xl border px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+        className={`flex h-9 shrink-0 select-none items-center gap-2 whitespace-nowrap rounded-xl border px-3 text-[11px] font-bold uppercase tracking-wider transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
           value.inStock
             ? "border-red-600 bg-red-600 text-white shadow-sm"
             : "border-neutral-200 bg-neutral-50 text-neutral-700 hover:border-red-400/50 hover:text-red-600 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
@@ -89,15 +95,18 @@ export function CatalogFilterBar({ value, onChange, bounds }: CatalogFilterBarPr
         Stokta Olanlar
       </button>
 
-      <div className="flex items-center gap-2">
-        <label className={LABEL} htmlFor={sortId}>
+      {/* With something beside the sort (the catalogue button) the group may
+          wrap under the rest; it stays in the right-hand corner when it does.
+          Without it, the bar keeps its three-way spacing. */}
+      <div className={`flex flex-wrap items-center justify-end gap-2 xl:flex-nowrap ${trailing ? "ml-auto" : ""}`}>
+        <label className={`${LABEL} whitespace-nowrap`} htmlFor={sortId}>
           Sırala
         </label>
         <select
           id={sortId}
           value={value.sort}
           onChange={(e) => onChange({ sort: e.target.value as SortKey })}
-          className={`${FIELD} cursor-pointer py-[7px] pr-8`}
+          className={`${FIELD} w-40 cursor-pointer pr-8`}
         >
           {SORT_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
@@ -105,6 +114,7 @@ export function CatalogFilterBar({ value, onChange, bounds }: CatalogFilterBarPr
             </option>
           ))}
         </select>
+        {trailing}
       </div>
     </div>
   );

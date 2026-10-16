@@ -36,7 +36,7 @@ function validate(v: AdvantageWrite): string | null {
   return null;
 }
 
-/** Admin: the "Avantajlar" bento (cargo, courier, installments, transfer discount, ParaPuan…). */
+/** Admin: the "Avantajlar" bento (cargo, courier, installments, transfer discount, Sultan Puan…). */
 export function AdminAdvantagesView() {
   return (
     <ContentEditor
@@ -48,7 +48,7 @@ export function AdminAdvantagesView() {
       toWrite={toWrite}
       summary={(a) => ({ primary: a.title, secondary: `${a.highlight} ${a.highlight_label}`.trim() })}
       validate={validate}
-      listNote="Not: Kargo, havale indirimi ve ParaPuan sepette uygulanır; kurye ve taksit bilgilendirme amaçlıdır."
+      listNote="Not: Kargo, havale indirimi ve Sultan Puan sepette uygulanır; kurye ve taksit bilgilendirme amaçlıdır."
       fields={(v, set) => {
         const Icon = ADVANTAGE_ICONS[v.icon]?.icon;
         return (

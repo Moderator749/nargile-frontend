@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import Image from "next/image";
 import { ChevronLeft, ChevronRight, Play } from "lucide-react";
 
 import { ProductImage } from "@/components/catalog/ProductImage";
@@ -60,7 +61,15 @@ export function ProductGallery({
       <div className={frameClass}>
         <div className={`h-full transition-[filter,opacity] duration-300 ${dimmed ? "opacity-50 grayscale" : ""}`}>
           {current.kind === "image" ? (
-            <ProductImage src={current.src} alt={alt} sizes="(min-width: 1024px) 600px, 100vw" fallback={fallback} />
+            <ProductImage
+              src={current.src}
+              // The cover is the product's name; the others say which view they are.
+              alt={index === 0 ? alt : `${alt} - ${index + 1}. görsel`}
+              sizes="(min-width: 1024px) 600px, 100vw"
+              fallback={fallback}
+              // The cover is the page's LCP; a photo picked later is not.
+              eager={index === 0}
+            />
           ) : playing ? (
             <iframe
               src={youtubeEmbed(current.id)}
@@ -77,11 +86,12 @@ export function ProductGallery({
               aria-label={`${alt} videosunu oynat`}
             >
               {/* Poster frame straight from YouTube; no player, no cookies yet. */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src={youtubeThumbnail(current.id)}
-                alt=""
-                className="h-full w-full object-cover opacity-90 transition-opacity duration-300 group-hover/play:opacity-100"
+                alt={`${alt} - ürün videosu`}
+                fill
+                sizes="(min-width: 1024px) 600px, 100vw"
+                className="object-cover opacity-90 transition-opacity duration-300 group-hover/play:opacity-100"
               />
               <span className="absolute inset-0 flex items-center justify-center">
                 <span className="flex h-16 w-16 items-center justify-center rounded-full bg-accent text-white shadow-lg transition-transform duration-300 motion-safe:group-hover/play:scale-110">
@@ -111,17 +121,21 @@ export function ProductGallery({
               <button
                 type="button"
                 onClick={() => go(i)}
-                aria-label={slide.kind === "video" ? "Ürün videosu" : `${i + 1}. görsel`}
+                aria-label={slide.kind === "video" ? `${alt} ürün videosu` : undefined}
                 aria-current={i === index}
                 className={`relative h-16 w-16 overflow-hidden rounded-xl bg-white ring-1 transition-[box-shadow,opacity] duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent dark:bg-zinc-100 ${
                   i === index ? "ring-2 ring-accent" : "ring-black/[0.08] hover:opacity-80 dark:ring-white/10"
                 }`}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                {/* A 64px button: next/image sends a 64/128px copy, not the
+                    full photo the main frame shows. */}
+                <Image
                   src={slide.kind === "image" ? slide.src : youtubeThumbnail(slide.id)}
-                  alt=""
-                  className="h-full w-full object-cover"
+                  // The image names the button: the product, and which view it is.
+                  alt={slide.kind === "image" ? `${alt} - ${i + 1}. görsel` : `${alt} - ürün videosu`}
+                  fill
+                  sizes="64px"
+                  className="object-cover"
                 />
                 {slide.kind === "video" && (
                   <span className="absolute inset-0 flex items-center justify-center bg-black/35 text-white">

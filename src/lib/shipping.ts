@@ -15,7 +15,8 @@ const OPTIONS: Record<ShippingMethod, ShippingOption> = {
     value: "YURTICI_DOOR",
     title: "Yurtiçi Kargo (Adrese Teslim)",
     // Replaced below for an account that cannot reach the free-shipping threshold.
-    hint: "₺3.000 üzeri ücretsiz",
+    // The threshold itself is a panel setting, so it is not written into the hint.
+    hint: "Ücretsiz kargo limiti üzerinde ücretsiz",
     Icon: Truck,
   },
   YURTICI_BRANCH: {
@@ -73,7 +74,7 @@ const BY_ACCOUNT_TYPE: Record<AccountType, ShippingMethod[]> = {
  *
  * Free shipping is a retail promotion (see `lib/perks`), so for a firm Yurtiçi
  * Kargo is the same deal as a nakliye ambarı — carriage is paid on delivery,
- * whatever the cart is worth. Promising "₺3.000 üzeri ücretsiz" there would be
+ * whatever the cart is worth. Promising free shipping over a threshold there would be
  * advertising something the server will not give.
  */
 export function shippingOptions({

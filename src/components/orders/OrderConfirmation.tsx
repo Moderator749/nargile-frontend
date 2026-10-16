@@ -1,53 +1,61 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { Check, CircleCheck, Copy, Landmark, UserCheck } from "lucide-react";
+import { CircleCheck, CircleX, Landmark, Loader2, UserCheck } from "lucide-react";
 
+import { BankAccountList, CopyButton } from "@/components/payment/BankAccounts";
 import { Alert } from "@/components/ui/Alert";
 import { countryName } from "@/lib/countries";
 import { getApiErrorMessage } from "@/lib/errors";
 import { formatMoney } from "@/lib/format";
 import { fetchBankAccounts, fetchOrder, orderNetTotal } from "@/lib/ordersApi";
-import { formatIban } from "@/lib/provinces";
 import { shippingOption } from "@/lib/shipping";
 import { useAuthHydrated } from "@/store/useHasHydrated";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useCartStore } from "@/store/useCartStore";
 import type { BankAccount, Order } from "@/types";
 
 /** Must match the backend's SLA (order_tasks.SLA_HOURS). */
 const TRANSFER_DEADLINE_HOURS = 48;
+const noSubscription = () => () => {};
+/** Inside PayTR's frame: where PayTR sends the customer back to. */
+const isFramed = () => window.top !== window.self;
+/** "?payment=ok": the browser came straight back from a PayTR payment. */
+const backFromPaytr = () => new URLSearchParams(window.location.search).get("payment") === "ok";
 
-function CopyButton({ text, label }: { text: string; label: string }) {
-  const [copied, setCopied] = useState(false);
-  return (
-    <button
-      type="button"
-      onClick={() => {
-        void navigator.clipboard?.writeText(text).then(() => {
-          setCopied(true);
-          setTimeout(() => setCopied(false), 1500);
-        });
-      }}
-      aria-label={`${label} kopyala`}
-      className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-white/10 dark:text-zinc-300 dark:hover:bg-white/5"
-    >
-      {copied ? <Check className="h-3.5 w-3.5 text-emerald-600" aria-hidden /> : <Copy className="h-3.5 w-3.5" aria-hidden />}
-      {copied ? "Kopyalandı" : "Kopyala"}
-    </button>
-  );
-}
+/** How long to wait for PayTR's notification before saying it is taking a while. */
+const PAYMENT_POLL_MS = 3000;
+const PAYMENT_POLLS = 20;
 
-/** After checkout: what was ordered and — for havale/EFT — where to pay. */
+/**
+ * After checkout: what was ordered and — for havale/EFT — where to pay; for a
+ * card, how the payment went.
+ *
+ * A card payment ends here twice over. PayTR sends the customer's browser back
+ * (inside its frame, which this page steps out of), and separately notifies
+ * the server, which is what actually marks the order paid or failed. The two
+ * can arrive in either order, so while the order still says AWAITING_PAYMENT
+ * the page asks again every few seconds instead of guessing.
+ */
 export function OrderConfirmation({ orderId }: { orderId: string }) {
   const hydrated = useAuthHydrated();
   const token = useAuthStore((s) => s.token);
   const [order, setOrder] = useState<Order | null>(null);
   const [accounts, setAccounts] = useState<BankAccount[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [polls, setPolls] = useState(0);
+  // Browser facts, false while rendering on the server.
+  const framed = useSyncExternalStore(noSubscription, isFramed, () => false);
+  const fromPaytr = useSyncExternalStore(noSubscription, backFromPaytr, () => false);
+
+  // PayTR returns the customer inside its frame: carry the page to the top.
+  useEffect(() => {
+    if (framed && window.top) window.top.location.href = window.location.href;
+  }, [framed]);
 
   useEffect(() => {
-    if (!hydrated || !token) return;
+    if (!hydrated || !token || framed) return;
     const controller = new AbortController();
     fetchOrder(orderId, controller.signal)
       .then(async (o) => {
@@ -58,7 +66,29 @@ export function OrderConfirmation({ orderId }: { orderId: string }) {
         if (!controller.signal.aborted) setError(getApiErrorMessage(err, "Sipariş bulunamadı."));
       });
     return () => controller.abort();
-  }, [hydrated, token, orderId]);
+  }, [hydrated, token, orderId, framed]);
+
+  // Waiting for PayTR's word: ask again until it has come, or for a minute.
+  const awaitingCard = order?.status === "AWAITING_PAYMENT";
+  useEffect(() => {
+    if (!awaitingCard || polls >= PAYMENT_POLLS) return;
+    const t = setTimeout(() => {
+      fetchOrder(orderId)
+        .then(setOrder)
+        .catch(() => {})
+        .finally(() => setPolls((n) => n + 1));
+    }, PAYMENT_POLL_MS);
+    return () => clearTimeout(t);
+  }, [awaitingCard, polls, orderId]);
+
+  // The cart was kept while the card was being charged, so a failed payment
+  // could be tried again; now that it is paid, it has done its job.
+  const paidByCard = order?.payment_method === "CREDIT_CARD" && (order.status === "APPROVED" || order.status === "SHIPPED");
+  useEffect(() => {
+    if (fromPaytr && paidByCard) useCartStore.getState().clearCart();
+  }, [fromPaytr, paidByCard]);
+
+  if (framed) return <main className="flex-1" aria-busy />;
 
   if (hydrated && !token) {
     return (
@@ -78,6 +108,16 @@ export function OrderConfirmation({ orderId }: { orderId: string }) {
 
   const net = orderNetTotal(order);
   const transfer = order.payment_method === "BANK_TRANSFER";
+  const card = order.payment_method === "CREDIT_CARD";
+  const failed = order.status === "PAYMENT_FAILED";
+  const heading = !card
+    ? "Siparişiniz alındı"
+    : failed
+      ? "Ödeme tamamlanamadı"
+      : awaitingCard
+        ? "Ödemeniz doğrulanıyor"
+        : "Ödemeniz alındı";
+  const HeadIcon = failed ? CircleX : awaitingCard ? Loader2 : CircleCheck;
   const ownVan = order.shipping_method === "ISTANBUL_FREE";
   const { Icon } = shippingOption(order.shipping_method);
   const a = order.shipping_address;
@@ -85,12 +125,42 @@ export function OrderConfirmation({ orderId }: { orderId: string }) {
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-12 sm:px-6">
       <div className="text-center">
-        <CircleCheck className="mx-auto h-12 w-12 text-emerald-600" strokeWidth={1.5} aria-hidden />
-        <h1 className="mt-4 text-2xl font-bold tracking-tight sm:text-3xl">Siparişiniz alındı</h1>
+        <HeadIcon
+          className={`mx-auto h-12 w-12 ${
+            failed ? "text-red-600" : awaitingCard ? "text-slate-400 motion-safe:animate-spin" : "text-emerald-600"
+          }`}
+          strokeWidth={1.5}
+          aria-hidden
+        />
+        <h1 className="mt-4 text-2xl font-bold tracking-tight sm:text-3xl" aria-live="polite">
+          {heading}
+        </h1>
         <p className="mt-2 text-sm text-slate-600 dark:text-zinc-400">
           Sipariş no: <span className="font-mono font-semibold text-slate-900 dark:text-zinc-100">{order.order_number}</span>
         </p>
       </div>
+
+      {card && awaitingCard && (
+        <p className="mt-6 text-center text-sm text-slate-600 dark:text-zinc-400" aria-live="polite">
+          {polls < PAYMENT_POLLS
+            ? "Ödeme kuruluşundan onay bekleniyor; bu birkaç saniye sürebilir."
+            : "Onay beklenenden uzun sürüyor. Sonucu Siparişlerim sayfasından takip edebilirsiniz; ödeme alınmadıysa sipariş kısa süre içinde otomatik olarak kapanır."}
+        </p>
+      )}
+      {failed && (
+        <div className="mt-8 space-y-4 text-center">
+          <Alert variant="error">
+            {order.cancel_reason ?? "Kart ödemesi tamamlanamadı."} Kartınızdan çekim yapılmadı; ayrılan stok ve
+            kullandığınız puanlar iade edildi.
+          </Alert>
+          <Link
+            href="/cart"
+            className="inline-flex h-11 items-center justify-center rounded-lg bg-red-600 px-5 text-sm font-semibold text-white hover:bg-red-500"
+          >
+            Sepete dön ve tekrar dene
+          </Link>
+        </div>
+      )}
 
       {transfer && order.status === "AWAITING_TRANSFER" && (
         <section aria-labelledby="pay-heading" className="mt-10 rounded-2xl border border-amber-200 bg-amber-50/60 p-5 dark:border-amber-500/30 dark:bg-amber-500/5 sm:p-6">
@@ -117,21 +187,9 @@ export function OrderConfirmation({ orderId }: { orderId: string }) {
               <Alert variant="error">Banka hesap bilgileri henüz tanımlanmadı. Ödeme için lütfen bizimle iletişime geçin.</Alert>
             </div>
           ) : (
-            <ul className="mt-3 space-y-3">
-              {accounts.map((acc) => (
-                <li key={acc.id} className="rounded-xl bg-white p-4 dark:bg-zinc-900">
-                  <p className="text-sm font-semibold">
-                    {acc.bank_name}
-                    {acc.branch && <span className="font-normal text-slate-500 dark:text-zinc-400"> · {acc.branch}</span>}
-                  </p>
-                  <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">Alıcı: {acc.account_holder}</p>
-                  <div className="mt-2 flex items-center justify-between gap-3">
-                    <p className="break-all font-mono text-sm tracking-wide">{formatIban(acc.iban)}</p>
-                    <CopyButton text={acc.iban} label="IBAN" />
-                  </div>
-                </li>
-              ))}
-            </ul>
+            <div className="mt-3">
+              <BankAccountList accounts={accounts} />
+            </div>
           )}
         </section>
       )}

@@ -5,15 +5,18 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Boxes,
+  Calculator,
   ClipboardList,
   FileText,
   House,
   LayoutDashboard,
   Megaphone,
+  MessagesSquare,
+  NotebookPen,
   ShieldAlert,
+  SlidersHorizontal,
   Users,
   Landmark,
-  Truck,
 } from "lucide-react";
 
 import { fetchMe } from "@/lib/authApi";
@@ -26,7 +29,6 @@ const NAV = [
   { href: "/admin/orders", label: "Siparişler", icon: ClipboardList },
   { href: "/admin/products", label: "Ürünler & Stok", icon: Boxes },
   { href: "/admin/customers", label: "Müşteriler", icon: Users },
-  { href: "/admin/bank-accounts", label: "Banka Hesapları", icon: Landmark },
   // The hub; its editors that keep pages of their own light it up too.
   {
     href: "/admin/homepage",
@@ -34,10 +36,18 @@ const NAV = [
     icon: House,
     also: ["/admin/hero", "/admin/promos", "/admin/brands", "/admin/flash-sales", "/admin/advantages"],
   },
-  { href: "/admin/banner", label: "Özel Gün Duyurusu", icon: Megaphone },
-  // Exact, so this one does not also light up on /admin/settings/legal.
-  { href: "/admin/settings", label: "Teslimat Ayarları", icon: Truck, exact: true },
-  { href: "/admin/settings/legal", label: "Sözleşmeler & Metinler", icon: FileText },
+  // The special-day strip and the landing popup.
+  { href: "/admin/banner", label: "Duyurular", icon: Megaphone },
+  // Bulk SMS / e-mail and the log of everything sent.
+  { href: "/admin/communications", label: "İletişim & Bildirimler", icon: MessagesSquare },
+  // Every threshold the checkout applies, the İstanbul delivery limit included
+  // (the old "Teslimat Ayarları" page, /admin/settings, redirects here).
+  { href: "/admin/parameters", label: "Parametreler", icon: SlidersHorizontal },
+  { href: "/admin/bank-accounts", label: "Banka Hesapları", icon: Landmark },
+  { href: "/admin/settings/legal", label: "Sözleşmeler", icon: FileText },
+  { href: "/admin/pricing-calculator", label: "Fiyat Hesaplama Cetveli", icon: Calculator },
+  // Personal: each admin sees only their own notes.
+  { href: "/admin/notes", label: "Not Defteri", icon: NotebookPen },
 ];
 
 function Gate({ title, body, action }: { title: string; body: string; action?: ReactNode }) {

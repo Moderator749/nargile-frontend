@@ -49,9 +49,12 @@ import { OrderSummary } from "@/components/cart/OrderSummary";
 import { useCartQuote } from "@/hooks/useCartQuote";
 import { useLegalDocuments } from "@/hooks/useLegalDocuments";
 import { useIstanbulFreeMinimum } from "@/hooks/useShippingSettings";
+import { PaytrFrame } from "@/components/payment/PaytrFrame";
+import { useStoreParameters } from "@/hooks/useStoreParameters";
 import { fetchMe } from "@/lib/authApi";
 import { getApiErrorMessage } from "@/lib/errors";
 import { isExportAccount } from "@/lib/exportAccount";
+import { fetchPaytrStatus, openPaytrPage, type PaytrPage, type PaytrStatus } from "@/lib/paytr";
 import { retailPerks } from "@/lib/perks";
 import {
   buildCheckoutRequest,
@@ -68,13 +71,14 @@ import { useAuthHydrated, useCartHydrated } from "@/store/useHasHydrated";
 import type {
   AccountType,
   CorporateInvoiceDetails,
+  Order,
   PaymentMethod,
   SavedAddress,
   ShippingMethod,
   TransportMode,
 } from "@/types";
 
-/** Refresh the profile so the ParaPuan balance and segment are current. */
+/** Refresh the profile so the Sultan Puan balance and segment are current. */
 function refreshProfile() {
   fetchMe()
     .then((user) => useAuthStore.getState().setUser(user))
@@ -94,7 +98,26 @@ export function CartView() {
   const user = useAuthStore((s) => s.user);
   const token = useAuthStore((s) => s.token);
 
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("CREDIT_CARD");
+  const [chosenMethod, setPaymentMethod] = useState<PaymentMethod>("CREDIT_CARD");
+  // Card payment is open only while PayTR is configured on the server; until
+  // that is known the card stays on offer, and once it is known to be off the
+  // cart pays by transfer instead.
+  const [paytr, setPaytr] = useState<PaytrStatus | null>(null);
+  const cardAvailable = paytr?.enabled !== false;
+  const paymentMethod: PaymentMethod =
+    chosenMethod === "CREDIT_CARD" && !cardAvailable ? "BANK_TRANSFER" : chosenMethod;
+  // The PayTR page, once a card order has been placed: it replaces the form.
+  const [cardPayment, setCardPayment] = useState<{ order: Order; page: PaytrPage } | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchPaytrStatus(controller.signal)
+      .then(setPaytr)
+      .catch(() => {
+        // Unknown: leave the card on offer; checkout says so if it is not.
+      });
+    return () => controller.abort();
+  }, []);
   // Addresses on file; null until they arrive.
   const [saved, setSaved] = useState<SavedAddress[] | null>(null);
   // The customer's own choice of address; null until they make one, when the
@@ -143,11 +166,13 @@ export function CartView() {
   const abroad = shipsAbroad(accountType);
   // The export account: no payment screen, and an order that is a request.
   const quoteOnly = isExportAccount(user);
-  // ParaPuan and the cart discounts are retail promotions; the server decides
+  // Sultan Puan and the cart discounts are retail promotions; the server decides
   // the amounts, this decides what is on screen.
   const perks = retailPerks(user ?? null);
   const balance = user?.loyalty_balance ?? 0;
-  const points = perks ? Math.min(storedPoints, balance) : 0;
+  const params = useStoreParameters();
+  // Nothing is spent while the program is switched off in the panel.
+  const points = perks && params.loyalty.enabled ? Math.min(storedPoints, balance) : 0;
 
   useEffect(() => {
     if (token) refreshProfile();
@@ -421,10 +446,26 @@ export function CartView() {
           agreements,
         }),
       );
+      if (order.payment_method === "CREDIT_CARD") {
+        // Paid on PayTR's page. The cart stays as it is until the payment is
+        // confirmed, so a declined card can be tried again or swapped for a
+        // transfer without filling the basket again.
+        try {
+          const page = await openPaytrPage(order.id);
+          setCardPayment({ order, page });
+          window.scrollTo({ top: 0 });
+        } catch (err) {
+          // The server has already released the order it could not open a page for.
+          setCheckoutError(getApiErrorMessage(err, "Ödeme sayfası açılamadı. Lütfen tekrar deneyin."));
+        }
+        setSubmitting(false);
+        refreshProfile(); // points spent on it are held, or back
+        return;
+      }
       // Confirmation: bank details for havale/EFT, how it travels, where to.
       router.push(`/orders/${order.id}/confirmation`);
       useCartStore.getState().clearCart();
-      refreshProfile(); // ParaPuan balance changed
+      refreshProfile(); // Sultan Puan balance changed
       // Keep `submitting` so the page doesn't flash the empty-cart state while navigating.
     } catch (err) {
       setCheckoutError(getApiErrorMessage(err, "Sipariş oluşturulamadı. Lütfen tekrar deneyin."));
@@ -434,6 +475,18 @@ export function CartView() {
 
   if (!cartHydrated) {
     return <main className="flex-1" aria-busy />;
+  }
+
+  if (cardPayment) {
+    return (
+      <main className="w-full flex-1 px-4 py-8 sm:px-6">
+        <PaytrFrame
+          page={cardPayment.page}
+          orderNumber={cardPayment.order.order_number}
+          onBack={() => setCardPayment(null)}
+        />
+      </main>
+    );
   }
 
   if (items.length === 0 && !submitting) {
@@ -477,7 +530,7 @@ export function CartView() {
                   serverUnitPrice={line?.unit_price}
                   serverColorName={line?.color_name}
                   serverImageUrl={line?.image_url}
-                  productHref={line?.product_id ? productHref(line.product_id) : undefined}
+                  productHref={line?.product_id ? productHref({ id: line.product_id, slug: line.product_slug }) : undefined}
                 />
               );
             })}
@@ -592,6 +645,8 @@ export function CartView() {
         <OrderSummary
           isLoggedIn={isLoggedIn}
           perks={perks}
+          params={params}
+          cardAvailable={cardAvailable}
           quoteOnly={quoteOnly}
           shippingMethod={method}
           estimatedSubtotal={estimatedSubtotal}

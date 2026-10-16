@@ -10,7 +10,7 @@ import { useDisplayMoney } from "@/hooks/useDisplayMoney";
 import { useNow } from "@/hooks/useNow";
 import { fetchFlashSaleProducts } from "@/lib/catalogApi";
 import { saleState } from "@/lib/flashSale";
-import { productHref } from "@/lib/seo";
+import { productHref, productImageAlt } from "@/lib/seo";
 import { displayVariant, soldOut as allSoldOut } from "@/lib/variants";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useAuthHydrated } from "@/store/useHasHydrated";
@@ -247,7 +247,7 @@ export function DealsFunnel({ initialProducts, categories, title, subtitle }: De
 
               return (
                 <li key={product.id} className={`flex min-w-0 ${SLIDE}`}>
-                  <Link href={productHref(product.id)} className={CARD}>
+                  <Link href={productHref(product)} className={CARD}>
                     {/* The photo's canvas: flush to the card's top and sides,
                         and the same white as the card, so there is no seam to
                         find. The photos are opaque JPEGs shot on white, which is
@@ -258,7 +258,7 @@ export function DealsFunnel({ initialProducts, categories, title, subtitle }: De
                       <div className="relative h-full w-full">
                         <ProductImage
                           src={product.image_url}
-                          alt={product.name}
+                          alt={productImageAlt(product, category)}
                           sizes="(min-width: 1024px) 15vw, (min-width: 768px) 28vw, 44vw"
                           surfaceClassName="bg-transparent"
                           imageClassName="h-full w-full object-contain transition-transform duration-300 motion-safe:group-hover:scale-[1.08]"

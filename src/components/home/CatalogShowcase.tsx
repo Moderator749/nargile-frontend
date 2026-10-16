@@ -4,6 +4,7 @@ import Link from "next/link";
 import { canOptimiseImage } from "@/lib/home";
 import { homeIcon } from "@/lib/homeIcons";
 import type { ResolvedTile } from "@/lib/showcase";
+import { SITE_NAME } from "@/lib/site";
 
 /**
  * The tile: a photograph with the words on it, and nothing else.
@@ -62,12 +63,12 @@ export function CatalogShowcase({ title, subtitle, tiles }: { title: string; sub
             return (
             <li key={`${tile.label}-${i}`} className={`flex min-w-0${tile.wide ? " md:col-span-2" : ""}`}>
               <Link href={tile.href} className={TILE}>
-                {/* The photograph, filling the tile. Decorative: the title is
-                    what names the tile, so it carries no alt text of its own. */}
+                {/* The photograph, filling the tile, named after the category
+                    it opens (image search reads the alt, not the title). */}
                 {tile.image ? (
                   <Image
                     src={tile.image}
-                    alt=""
+                    alt={`${tile.label} | ${SITE_NAME}`}
                     fill
                     sizes={tile.wide ? "(min-width: 1024px) 50vw, 100vw" : "(min-width: 1024px) 25vw, 50vw"}
                     unoptimized={!canOptimiseImage(tile.image)}

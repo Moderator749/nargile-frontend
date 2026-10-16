@@ -4,9 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import axios from "axios";
-import { ArrowLeft, Check, Package, Save } from "lucide-react";
+import { ArrowLeft, Check, Package, Plus, RotateCw, Save } from "lucide-react";
 
-import { AdminPageHeader } from "@/components/admin/AdminShell";
+import { RichTextEditor } from "@/components/admin/RichTextEditor";
+import { AdminPageHeader, panelClass } from "@/components/admin/AdminShell";
+import { CategoryPicker } from "@/components/admin/products/CategoryPicker";
 import { ColorTags } from "@/components/admin/products/ColorTags";
 import { MediaFields } from "@/components/admin/products/MediaFields";
 import { CrossSellPicker, MAX_CROSS_SELLS } from "@/components/admin/products/CrossSellPicker";
@@ -29,11 +31,17 @@ import {
 } from "@/components/admin/products/sheetDraft";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
-import { adminCreateProductSheet, adminGetProductSheet, adminListCategories, adminUpdateProductSheet } from "@/lib/adminApi";
-import { categoryTree } from "@/lib/categories";
+import {
+  adminCreateProductSheet,
+  adminGetProductSheet,
+  adminListBrands,
+  adminListCategories,
+  adminUpdateProductSheet,
+} from "@/lib/adminApi";
 import { refreshStorefront } from "@/lib/revalidate";
 import { getApiErrorMessage } from "@/lib/errors";
-import type { AdminCategory, CurrencyType, SavedProductSheet, SheetSegment } from "@/types";
+import { slugify } from "@/lib/slug";
+import type { AdminCategory, Brand, CurrencyType, SavedProductSheet, SheetSegment } from "@/types";
 
 /** The crimson of the site's primary buttons (red-600), as a one-click preset. */
 const CRIMSON = "#DC2626";
@@ -41,7 +49,12 @@ const CRIMSON = "#DC2626";
 // What a search result actually shows, and what the columns hold.
 const META_TITLE_MAX = 70;
 const META_DESCRIPTION_MAX = 160;
-const DESCRIPTION_MAX = 8000;
+
+/** Product ids are UUIDs; anything else in the address cannot be a product. */
+const PRODUCT_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const linkButtonClass =
+  "inline-flex h-10 items-center gap-1.5 rounded-lg px-4 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 transition-colors duration-200 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5";
 
 /** "48 / 70" — amber from four fifths on, so the admin sees the ceiling coming. */
 function CharCount({ value, max }: { value: string; max: number }) {
@@ -58,6 +71,18 @@ function CharCount({ value, max }: { value: string; max: number }) {
 }
 
 /** Shared by the general rule and its Fırsat override, so the two always agree. */
+/**
+ * The brand a stored value means: the same name, slug or search term, ignoring
+ * case — so a product saved as "legend" before the brand list existed still
+ * shows as Legend.
+ */
+function matchBrand(value: string, brands: Brand[]): Brand | undefined {
+  const fold = (s: string) => s.trim().toLocaleLowerCase("tr-TR");
+  const v = fold(value);
+  if (!v) return undefined;
+  return brands.find((b) => [b.name, b.slug, b.search_term].some((x) => fold(x) === v));
+}
+
 const VOLUME_DISCOUNT_HINT =
   "sepet indirim limitine gelindiğinde %5 ve %8 ciro indirimi otomatik olarak uygulansın";
 
@@ -70,10 +95,20 @@ const VOLUME_DISCOUNT_HINT =
 export function ProductSheetForm({ productId }: { productId?: string }) {
   const router = useRouter();
   const editing = !!productId;
+  // An address that cannot name a product is not looked up at all.
+  const validId = !!productId && PRODUCT_ID.test(productId);
+  // The product could not be loaded: the form is not shown, so saving cannot
+  // write an empty sheet over it — or PUT to a product that no longer exists.
+  const [unavailable, setUnavailable] = useState<{ missing: boolean; message: string } | null>(
+    editing && !validId ? { missing: true, message: "" } : null,
+  );
+  const [attempt, setAttempt] = useState(0);
   const [draft, setDraft] = useState<SheetDraft>(emptyDraft);
   // The admin list, so a category switched off in the storefront can still be chosen.
   const [categories, setCategories] = useState<AdminCategory[]>([]);
-  const [loading, setLoading] = useState(editing);
+  // The admin list too, so the brand a product already has is found even when switched off.
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [loading, setLoading] = useState(validId);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState<SavedProductSheet | null>(null);
@@ -85,24 +120,33 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
       .catch(() => {
         // Non-critical: the category select stays empty.
       });
+    adminListBrands(controller.signal)
+      .then(setBrands)
+      .catch(() => {
+        // Non-critical: the brand select offers only the product's own brand.
+      });
     return () => controller.abort();
   }, []);
 
   useEffect(() => {
-    if (!productId) return;
+    if (!productId || !validId) return;
     const controller = new AbortController();
     adminGetProductSheet(productId, controller.signal)
       .then((sheet) => {
         setDraft(draftFromSheet(sheet));
+        setUnavailable(null);
         setLoading(false);
       })
       .catch((err: unknown) => {
         if (axios.isCancel(err)) return;
-        setError(getApiErrorMessage(err, "Ürün yüklenemedi."));
+        setUnavailable({
+          missing: axios.isAxiosError(err) && err.response?.status === 404,
+          message: getApiErrorMessage(err, "Ürün yüklenemedi."),
+        });
         setLoading(false);
       });
     return () => controller.abort();
-  }, [productId]);
+  }, [productId, validId, attempt]);
 
   const set = <K extends keyof SheetDraft>(key: K, value: SheetDraft[K]) =>
     setDraft((d) => ({ ...d, [key]: value }));
@@ -124,11 +168,16 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
       ) as SheetDraft["prices"],
     }));
 
+  const brand = matchBrand(draft.brand, brands);
+  // A brand typed in before the list existed, or since removed from it: kept
+  // and shown, so saving does not drop it, until another one is picked.
+  const unlistedBrand = draft.brand.trim() && !brand ? draft.brand.trim() : null;
+
   const problem = useMemo(() => draftProblem(draft), [draft]);
   const total = draftStockTotal(draft);
 
   async function save() {
-    if (saving || problem) return;
+    if (saving || problem || unavailable) return;
     setSaving(true);
     setError(null);
     setSaved(null);
@@ -160,6 +209,42 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
     );
   }
 
+  if (unavailable) {
+    return (
+      <>
+        <AdminPageHeader title="Ürün Düzenle" description="Ürün bilgisi, stok, fiyat ve kurallar tek formda." />
+        <div className={`${panelClass} space-y-4 p-6`}>
+          <Alert variant="error">
+            {unavailable.missing
+              ? "Bu ürün bulunamadı. Silinmiş olabilir ya da bağlantı hatalı."
+              : unavailable.message}
+          </Alert>
+          <div className="flex flex-wrap gap-2">
+            <Link href="/admin/products" className={linkButtonClass}>
+              <ArrowLeft className="h-4 w-4" aria-hidden /> Ürün listesine dön
+            </Link>
+            {unavailable.missing ? (
+              <Link href="/admin/products/new" className={linkButtonClass}>
+                <Plus className="h-4 w-4" aria-hidden /> Yeni Ürün Ekle
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setLoading(true);
+                  setAttempt((n) => n + 1);
+                }}
+                className={linkButtonClass}
+              >
+                <RotateCw className="h-4 w-4" aria-hidden /> Tekrar dene
+              </button>
+            )}
+          </div>
+        </div>
+      </>
+    );
+  }
+
   const opp = draft.opportunity;
   const setOpp = (patch: Partial<SheetDraft["opportunity"]>) => set("opportunity", { ...opp, ...patch });
 
@@ -186,36 +271,33 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
               <input id="sheet-name" value={draft.name} onChange={(e) => set("name", e.target.value)} className={sheetInputClass} />
             </SheetField>
             <SheetField id="sheet-brand" label="Marka">
-              <input id="sheet-brand" value={draft.brand} onChange={(e) => set("brand", e.target.value)} className={sheetInputClass} />
-            </SheetField>
-            <SheetField id="sheet-category" label="Kategori">
+              {/* The sidebar's brand entries search for the brand's term, which
+                  the name carries — so a brand picked here lists the product there. */}
               <select
-                id="sheet-category"
-                value={draft.category_id}
-                onChange={(e) => set("category_id", e.target.value)}
+                id="sheet-brand"
+                value={brand?.name ?? unlistedBrand ?? ""}
+                onChange={(e) => set("brand", e.target.value)}
                 className={sheetInputClass}
               >
-                <option value="">Kategorisiz</option>
-                {/* Groups with their subcategories under them, as the menu shows them. */}
-                {categoryTree(categories).flatMap((group) =>
-                  [group, ...group.children].map((c) => {
-                    const row = categories.find((x) => x.id === c.id);
-                    const parent = c.parent_id !== null ? categories.find((x) => x.id === c.parent_id) : undefined;
-                    // Active categories only — the ones the storefront shows —
-                    // except the one this product is already in, so it is not lost.
-                    const live = row?.is_active !== false && parent?.is_active !== false;
-                    if (!live && String(c.id) !== draft.category_id) return null;
-                    return (
-                      <option key={c.id} value={c.id}>
-                        {c.parent_id !== null ? "— " : ""}
-                        {c.name}
-                        {!live ? " (pasif)" : ""}
-                      </option>
-                    );
-                  }),
-                )}
+                <option value="">Markasız</option>
+                {brands
+                  .filter((b) => b.is_active || b.id === brand?.id)
+                  .map((b) => (
+                    <option key={b.id} value={b.name}>
+                      {b.name}
+                      {!b.is_active ? " (pasif)" : ""}
+                    </option>
+                  ))}
+                {unlistedBrand && <option value={unlistedBrand}>{unlistedBrand} (listede yok)</option>}
               </select>
             </SheetField>
+            <div className="xl:col-span-2">
+              <CategoryPicker
+                categories={categories}
+                value={draft.category_ids}
+                onChange={(ids) => set("category_ids", ids)}
+              />
+            </div>
             <ColorTags colors={draft.colors} onChange={(colors) => set("colors", colors)} />
           </div>
         </SheetSection>
@@ -247,16 +329,14 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
             <SheetField
               id="sheet-description"
               label="Ürün Açıklaması"
-              hint="Satır başları korunur. Ürün sayfasında “Ürün Açıklaması” başlığı altında açılır."
+              hint="Kalın, başlık, liste ve bağlantı kullanılabilir. Ürün sayfasında “Ürün Açıklaması” başlığı altında ilk üç satırı görünür, gerisi “Devamını Oku” ile açılır."
             >
-              <textarea
+              <RichTextEditor
                 id="sheet-description"
+                labelledBy="sheet-description-label"
                 value={draft.description}
-                onChange={(e) => set("description", e.target.value)}
-                rows={6}
-                maxLength={DESCRIPTION_MAX}
+                onChange={(html) => set("description", html)}
                 placeholder="Malzeme, ölçüler, kutu içeriği, kullanım notları…"
-                className={`${sheetInputClass} h-auto! resize-y py-2 leading-6`}
               />
             </SheetField>
             <div className="grid gap-4 lg:grid-cols-2">
@@ -283,6 +363,31 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
                 <CharCount value={draft.metaDescription} max={META_DESCRIPTION_MAX} />
               </SheetField>
             </div>
+            <SheetField
+              id="sheet-slug"
+              label="Sayfa Adresi (slug)"
+              hint={
+                saved || draft.slug
+                  ? "Değiştirirseniz eski adres otomatik olarak yeni adrese yönlendirilir; paylaşılmış bağlantılar çalışmaya devam eder."
+                  : "Boş bırakılırsa ürün adından üretilir. Küçük harf, rakam, tire ve nokta."
+              }
+            >
+              <div className="flex items-stretch">
+                <span className="inline-flex items-center rounded-l-lg border border-r-0 border-slate-300 bg-slate-50 px-3 font-mono text-xs text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-zinc-400">
+                  /product/
+                </span>
+                <input
+                  id="sheet-slug"
+                  value={draft.slug}
+                  onChange={(e) => set("slug", e.target.value)}
+                  maxLength={255}
+                  placeholder={slugify(draft.name) || "urun-adi"}
+                  spellCheck={false}
+                  autoCapitalize="none"
+                  className={`${sheetInputClass} rounded-l-none font-mono`}
+                />
+              </div>
+            </SheetField>
           </div>
         </SheetSection>
 
@@ -354,20 +459,20 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
             />
             <RuleSwitch
               id="rule-earn"
-              label="ParaPuan Kazandırır"
+              label="Sultan Puan Kazandırır"
               checked={draft.rules.gives_points}
               onChange={(v) => set("rules", { ...draft.rules, gives_points: v })}
             />
             <RuleSwitch
               id="rule-spend"
-              label="ParaPuan ile Alınabilir"
+              label="Sultan Puan ile Alınabilir"
               checked={draft.rules.can_use_points}
               onChange={(v) => set("rules", { ...draft.rules, can_use_points: v })}
             />
             <RuleSwitch
               id="rule-cart"
               label="Sepet Kuralı"
-              hint="ücretsiz kargo için sepet kargo limitinin %50'sini geçemez."
+              hint="Açıkken ürün %50 kuralına girer: sepetin %50'sinden fazlasıysa ücretsiz kargo belirlenen parametre kuralıyla başlar."
               checked={draft.rules.is_cart_rule_applied}
               onChange={(v) => set("rules", { ...draft.rules, is_cart_rule_applied: v })}
             />
@@ -484,13 +589,13 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
             />
             <RuleSwitch
               id="opp-earn"
-              label="ParaPuan Kazandırır"
+              label="Sultan Puan Kazandırır"
               checked={opp.opp_gives_points}
               onChange={(v) => setOpp({ opp_gives_points: v })}
             />
             <RuleSwitch
               id="opp-spend"
-              label="ParaPuan ile Alınabilir"
+              label="Sultan Puan ile Alınabilir"
               checked={opp.opp_can_use_points}
               onChange={(v) => setOpp({ opp_can_use_points: v })}
             />
@@ -523,10 +628,7 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
           </p>
           <div className="flex items-center gap-2">
             <Package className="h-4 w-4 shrink-0 text-slate-400 dark:text-zinc-500" aria-hidden />
-            <Link
-              href="/admin/products"
-              className="inline-flex h-10 items-center gap-1.5 rounded-lg px-4 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 transition-colors duration-200 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
-            >
+            <Link href="/admin/products" className={linkButtonClass}>
               <ArrowLeft className="h-4 w-4" aria-hidden /> Geri Dön
             </Link>
             <Button type="button" onClick={save} loading={saving} disabled={!!problem} className="h-10! w-auto!">

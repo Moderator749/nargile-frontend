@@ -13,7 +13,7 @@ import { cartLineFor } from "@/lib/cartLine";
 import { isExportAccount } from "@/lib/exportAccount";
 import { normalizeHex, readableInk } from "@/lib/color";
 import { saleState } from "@/lib/flashSale";
-import { productHref } from "@/lib/seo";
+import { productHref, productImageAlt } from "@/lib/seo";
 import { displayVariant, hasColorChoice, soldOut as allSoldOut } from "@/lib/variants";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useCartStore } from "@/store/useCartStore";
@@ -22,6 +22,8 @@ import type { CatalogProduct, Category } from "@/types";
 
 interface ProductCardProps {
   product: CatalogProduct;
+  /** One of the first cards in view: its photo loads eagerly (the grid's LCP). */
+  eager?: boolean;
   category: Category | undefined;
   isLoggedIn: boolean;
   /** Prices are server-rendered public ones (masked by CSS for logged-in viewers). */
@@ -37,7 +39,10 @@ const cardClass =
 // Dark mode: supplier photos (shot on white) sit on an inset light plate, not a harsh white square.
 const mediaClass = "relative aspect-square overflow-hidden dark:m-2 dark:rounded-[1.25rem] dark:bg-zinc-100";
 // Widest card: 3 columns in the 80rem container (catalog); 4 on the homepage is smaller.
-const IMAGE_SIZES = "(min-width: 1280px) 400px, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw";
+// What a card actually measures: four to a row beside the 16rem category
+// column from xl (≈ 240px), three from lg (≈ a quarter of the screen), two
+// from sm, one on a phone. The browser picks the srcset width from this.
+const IMAGE_SIZES = "(min-width: 1280px) 260px, (min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw";
 const bodyClass = "flex flex-1 flex-col px-6 pb-6 pt-1";
 // Minimal status pills: frosted glass, crimson only for a live deal.
 const badgeClass =
@@ -54,7 +59,7 @@ function formatCountdown(ms: number): string {
   return `${days > 0 ? `${days}g ` : ""}${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
 }
 
-export function ProductCard({ product, category, isLoggedIn, publicPrices, pricesPending }: ProductCardProps) {
+export function ProductCard({ product, category, isLoggedIn, publicPrices, pricesPending, eager }: ProductCardProps) {
   // A coloured product is still one card. The colour it speaks for is the first
   // that can be bought, so the price shown is one the visitor can actually get;
   // the card only reads "Tükendi" once every colour is gone.
@@ -117,8 +122,9 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
         <div className={`h-full transition-[filter,opacity] duration-300 ${soldOut ? "opacity-50 grayscale" : ""}`}>
           <ProductImage
             src={product.image_url}
-            alt={product.name}
+            alt={productImageAlt(product, category)}
             sizes={IMAGE_SIZES}
+            eager={eager}
             fallback={
               <div className="flex h-full items-center justify-center bg-gradient-to-b from-white to-[#f5f5f7] text-zinc-300 dark:from-zinc-100 dark:to-zinc-200 dark:text-zinc-400">
                 <Icon
@@ -197,7 +203,7 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
           // Nothing to add yet: which colour is the visitor's to say, so the
           // button opens the page where the pills are instead of guessing.
           <Link
-            href={productHref(product.id)}
+            href={productHref(product)}
             aria-label={`Renk seçin: ${product.name}`}
             title="Renk seçin"
             className="absolute bottom-3 right-3 z-10 flex h-11 items-center gap-1.5 rounded-full bg-black/80 px-3.5 text-xs font-medium text-white shadow-lg backdrop-blur-md transition-[background-color,transform] duration-300 ease-out hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-safe:active:scale-95"
@@ -249,7 +255,7 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
         <h3 className="mt-2 line-clamp-2 min-h-10 text-[15px] font-medium leading-5 tracking-tight text-foreground">
           {/* Stretched link: the whole card opens the product page; the "+" sits above it. */}
           <Link
-            href={productHref(product.id)}
+            href={productHref(product)}
             className="after:absolute after:inset-0 after:rounded-3xl after:content-[''] focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:outline-offset-2 focus-visible:after:outline-accent"
           >
             {product.name}

@@ -23,14 +23,41 @@ export function getCategories(): Promise<Category[] | null> {
   return getJson<Category[]>("/categories/");
 }
 
+/**
+ * The visible category a slug names now — its own, or one the admin has since
+ * replaced (then the answer carries the new slug). Null when there is none.
+ */
+export function getCategoryBySlug(slug: string): Promise<Category | null> {
+  if (slug.length > 180 || !/^[a-z0-9-]+$/i.test(slug)) return Promise.resolve(null);
+  return getJson<Category>(`/categories/by-slug/${encodeURIComponent(slug)}`);
+}
+
 export function getPublicProducts(
   category?: string,
   limit: number = CATALOG_PAGE_SIZE,
   skip = 0,
+  q?: string,
 ): Promise<CatalogProduct[] | null> {
   const params = new URLSearchParams({ skip: String(skip), limit: String(limit) });
   if (category) params.set("category", category);
+  if (q) params.set("q", q);
   return getJson<CatalogProduct[]>(`/products/?${params}`);
+}
+
+/**
+ * A category's whole public list (subcategories included), page by page —
+ * the product page picks its "Benzer Ürünler" from it. Cached like any
+ * catalog read, so every product of a category shares the same requests.
+ */
+export async function getCategoryProducts(slug: string, max = 300): Promise<CatalogProduct[]> {
+  const products: CatalogProduct[] = [];
+  for (let skip = 0; skip < max; skip += 100) {
+    const page = await getPublicProducts(slug, 100, skip);
+    if (!page) break;
+    products.push(...page);
+    if (page.length < 100) break;
+  }
+  return products;
 }
 
 /** The server's ceiling for one page of deals. */
@@ -75,9 +102,12 @@ export async function getTileArtwork(tile: { slug?: string | null; search?: stri
   return rows?.[0]?.image_url ?? null;
 }
 
-/** One product (anonymous RETAIL view) for its detail page; null if missing or the API is down. */
-export function getProduct(id: string): Promise<CatalogProductDetail | null> {
-  // Product ids are UUIDs: don't even ask the API for anything else.
-  if (!/^[0-9a-f-]{36}$/i.test(id)) return Promise.resolve(null);
-  return getJson<CatalogProductDetail>(`/products/${id}`);
+/** A product's address segment: its slug (the old store's dotted spellings included) or its id. */
+const PRODUCT_REF = /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[a-z0-9]+(?:[.-][a-z0-9]+)*)$/i;
+
+/** One product (anonymous RETAIL view) for its detail page, by slug or id; null if missing or the API is down. */
+export function getProduct(ref: string): Promise<CatalogProductDetail | null> {
+  // Nothing that could not be a slug or an id goes to the API.
+  if (ref.length > 255 || !PRODUCT_REF.test(ref)) return Promise.resolve(null);
+  return getJson<CatalogProductDetail>(`/products/${encodeURIComponent(ref)}`);
 }

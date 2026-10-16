@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 
 import { B2BApplicationPanel } from "@/components/account/B2BApplicationPanel";
+import { CommunicationPreferencesPanel } from "@/components/account/CommunicationPreferencesPanel";
 import { WalletPanel } from "@/components/account/WalletPanel";
 import { Alert } from "@/components/ui/Alert";
 import { getApiErrorMessage } from "@/lib/errors";
@@ -12,7 +13,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { useAuthHydrated } from "@/store/useHasHydrated";
 import type { Wallet } from "@/types";
 
-/** "Hesabım": profile basics and the ParaPuan/Kumbarapuan wallet. */
+/** "Hesabım": profile basics and the Sultan Puan wallet. */
 export function AccountView() {
   const hydrated = useAuthHydrated();
   const user = useAuthStore((s) => s.user);
@@ -68,6 +69,10 @@ export function AccountView() {
         ) : (
           <div className="h-40 rounded-2xl bg-slate-100 motion-safe:animate-pulse dark:bg-white/5" aria-busy />
         )}
+      </div>
+
+      <div className="mt-10">
+        <CommunicationPreferencesPanel />
       </div>
 
       <p className="mt-10 text-sm">

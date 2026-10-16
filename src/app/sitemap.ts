@@ -4,35 +4,75 @@ import { BILGI_HREF } from "@/lib/bilgi";
 import { ARTICLES, BLOG_HREF, articleHref } from "@/lib/blog";
 import { FAQ_HREF } from "@/lib/faq";
 import { INFO_LINKS } from "@/lib/footer";
-import { productHref } from "@/lib/seo";
-import { getCategories, getPublicProducts } from "@/lib/server/catalog";
+import { brandCanonical, brandHref, productHref } from "@/lib/seo";
+import { getBrands, getCategories, getPublicProducts } from "@/lib/server/catalog";
 import { SITE_URL } from "@/lib/site";
+import type { CatalogProduct } from "@/types";
 
 export const revalidate = 3600;
 
 /** Every public product, page by page (the API caps a page at 100). */
-async function allProductIds(): Promise<string[]> {
-  const ids: string[] = [];
-  for (let skip = 0; skip < 5000; skip += 100) {
+async function allProducts(): Promise<CatalogProduct[]> {
+  const products: CatalogProduct[] = [];
+  for (let skip = 0; skip < 10000; skip += 100) {
     const page = await getPublicProducts(undefined, 100, skip);
     if (!page) break;
-    ids.push(...page.map((p) => p.id));
+    products.push(...page);
     if (page.length < 100) break;
   }
-  return ids;
+  return products;
 }
 
+const latest = (dates: (string | null | undefined)[]): Date | undefined => {
+  const times = dates.map((d) => (d ? Date.parse(d) : NaN)).filter((t) => !Number.isNaN(t));
+  return times.length > 0 ? new Date(Math.max(...times)) : undefined;
+};
+
+/**
+ * The storefront's indexable pages, and nothing else: the homepage, the
+ * catalog, every category and every published product, the brands that have
+ * a page of their own, and the information pages.
+ *
+ * `lastModified` is only given where it is known — a product's last edit, a
+ * category's or brand's newest product — because a date that is always "now"
+ * teaches search engines to ignore the field.
+ */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [categories, productIds] = await Promise.all([getCategories(), allProductIds()]);
+  const [categories, brands, products] = await Promise.all([getCategories(), getBrands(), allProducts()]);
+  const newest = latest(products.map((p) => p.updated_at));
+
+  // Each category as its page sees it (subcategories and second categories
+  // included), counted and dated by the API: an empty one says noindex, so it
+  // is not listed either.
+  const categoryPages = (categories ?? []).filter((c) => (c.product_count ?? 0) > 0);
+  // A brand page is listed only when it is its own canonical (no category of
+  // the same slug) and has something on sale.
+  const brandPages = await Promise.all(
+    (brands ?? [])
+      .filter((b) => b.is_active && brandCanonical(b.slug, categories) === brandHref(b.slug))
+      .map(async (b) => ({ brand: b, products: (await getPublicProducts(undefined, 100, 0, b.search_term)) ?? [] })),
+  );
+
   return [
-    { url: `${SITE_URL}/catalog`, changeFrequency: "daily", priority: 1 },
-    ...(categories ?? []).map((c) => ({
-      url: `${SITE_URL}/catalog/${c.slug}`,
+    { url: `${SITE_URL}/`, lastModified: newest, changeFrequency: "daily", priority: 1 },
+    { url: `${SITE_URL}/catalog`, lastModified: newest, changeFrequency: "daily", priority: 0.9 },
+    ...categoryPages.map((category) => ({
+      url: `${SITE_URL}/catalog/${category.slug}`,
+      lastModified: latest([category.updated_at]),
       changeFrequency: "daily" as const,
-      priority: 0.8,
+      priority: category.parent_id === null ? 0.8 : 0.7,
     })),
-    ...productIds.map((id) => ({
-      url: `${SITE_URL}${productHref(id)}`,
+    ...brandPages
+      .filter(({ products }) => products.length > 0)
+      .map(({ brand, products }) => ({
+        url: `${SITE_URL}${brandHref(brand.slug)}`,
+        lastModified: latest(products.map((p) => p.updated_at)),
+        changeFrequency: "weekly" as const,
+        priority: 0.7,
+      })),
+    ...products.map((p) => ({
+      url: `${SITE_URL}${productHref(p)}`,
+      lastModified: latest([p.updated_at]),
       changeFrequency: "weekly" as const,
       priority: 0.6,
     })),

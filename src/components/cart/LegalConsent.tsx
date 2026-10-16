@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { FileText } from "lucide-react";
 
-import { LegalText } from "@/components/legal/LegalText";
+import { RichText } from "@/components/ui/RichText";
 import { Dialog } from "@/components/ui/Dialog";
 import type { LegalDocument, LegalKey } from "@/types";
 
@@ -81,7 +81,7 @@ export function LegalConsent({
         title={shown?.title ?? ITEMS.find((item) => item.key === open)?.fallback ?? "Sözleşme"}
       >
         {shown ? (
-          <LegalText body={shown.body} headingLevel={3} />
+          <RichText html={shown.body} nested className="text-sm text-slate-700 dark:text-zinc-300" />
         ) : (
           <p className="text-sm text-slate-500 dark:text-zinc-400">
             Sözleşme metni yüklenemedi. Sayfayı yenileyip tekrar deneyebilirsiniz.
