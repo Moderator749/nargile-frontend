@@ -3,7 +3,7 @@ const SECONDS_PER_BRAND = 3;
 /**
  * The brand ticker: a single line of names (from "Ana Sayfa Düzenleme") sliding between the deals and the
  * gallery, on a flat track with square ends and no surface of its own, so it
- * sits in the page rather than on it.
+ * sits in the page rather than on it; a hairline above and below frames it.
  *
  * The names are small, wide-tracked and muted — a credits line, not a
  * headline — and answer one at a time under the pointer. The track's ends are
@@ -54,14 +54,19 @@ export function BrandTicker({ brands }: { brands: string[] }) {
   return (
     <section aria-label="Dünya markaları" className="mb-2 mt-7 sm:mb-2 sm:mt-8">
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6">
-        {/* Still, the list wraps instead, so there is no moving edge to fade. */}
-        <div className="overflow-hidden rounded-none py-4 [mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)] sm:py-5 motion-reduce:[mask-image:none]">
-          <div
-            className="flex w-max text-xs font-bold uppercase tracking-[0.2em] text-neutral-500 motion-safe:animate-[marquee_var(--marquee-duration)_linear_infinite] hover:[animation-play-state:paused] motion-reduce:w-full motion-reduce:justify-center sm:text-sm dark:text-neutral-500"
-            style={{ "--marquee-duration": duration } as React.CSSProperties}
-          >
-            {band(0)}
-            {band(1)}
+        {/* Framed by hairlines above and below, open at the ends. The lines are
+            on this wrapper and the mask on the track inside, so only the names
+            and dots fade; the lines run solid edge to edge. */}
+        <div className="border-y border-gray-200 dark:border-border">
+          {/* Still, the list wraps instead, so there is no moving edge to fade. */}
+          <div className="overflow-hidden rounded-none py-4 [mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)] sm:py-5 motion-reduce:[mask-image:none]">
+            <div
+              className="flex w-max text-xs font-bold uppercase tracking-[0.2em] text-neutral-500 motion-safe:animate-[marquee_var(--marquee-duration)_linear_infinite] hover:[animation-play-state:paused] motion-reduce:w-full motion-reduce:justify-center sm:text-sm dark:text-neutral-500"
+              style={{ "--marquee-duration": duration } as React.CSSProperties}
+            >
+              {band(0)}
+              {band(1)}
+            </div>
           </div>
         </div>
       </div>
