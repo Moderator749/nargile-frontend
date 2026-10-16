@@ -30,7 +30,7 @@ const TAB_IDLE =
 
 /**
  * "Sizin İçin Seçtiklerimiz": two short lists behind a pair of tabs, as plain
- * photo-and-caption cards — the photo on a warm off-white tile, the brand, the
+ * photo-and-caption cards — the photo straight on the section's white, the brand, the
  * name and the price set beneath it, with no card around any of it.
  *
  * The lists arrive server-rendered at the public (retail) price. A signed-in
@@ -69,8 +69,8 @@ export function FeaturedProductsShowcase({ lists }: { lists: Record<TabKey, Cata
   const publicPrices = !mine;
 
   return (
-    // On a white band in the light theme: the tiles' beige is all but the page's
-    // own #f5f5f7, so on the bare canvas the boxes would not show at all.
+    // On a white band in the light theme, the same white the supplier photos are
+    // shot on, so each product stands on the page with no tile around it.
     <section aria-labelledby="sectiklerimiz-baslik" className="bg-white py-12 sm:py-16 dark:bg-transparent">
       {/* The page's gutters on the wrapper, so the header and the grid inside it
           line up with every other row. */}
@@ -113,7 +113,10 @@ export function FeaturedProductsShowcase({ lists }: { lists: Record<TabKey, Cata
                   href={productHref(product)}
                   className="group block rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-gray-900 dark:focus-visible:outline-white"
                 >
-                  <div className="relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-2xl bg-[#f8f7f5] p-6">
+                  {/* No surface of its own on white. On the dark theme the photo still
+                      needs a light one: it is multiplied into what is behind it,
+                      and over black it would go black. */}
+                  <div className="relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-2xl bg-transparent p-6 dark:bg-zinc-100">
                     <ProductImage
                       src={product.image_url}
                       alt={productImageAlt(product)}
