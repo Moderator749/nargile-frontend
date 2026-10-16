@@ -5,11 +5,12 @@ import { homeIcon } from "@/lib/homeIcons";
 import type { HomeAdvantageCard, HomeIconKey, Homepage } from "@/types";
 
 /*
- * "Avantajlar": each advantage as its own small piece of design rather than a
- * box with an icon in it. The figure is the hero, set large and tight; beside
- * or beneath it, a quiet visual that says the same thing — a parcel on its
- * route, a delivery window, three equal instalments, a discount staircase, a
- * transfer slip, a loyalty coin, a filling money box.
+ * "Avantajlar": each advantage as its own small widget rather than a box with
+ * an icon in it — compact, and laid out across rather than down. Every card
+ * puts its figure on the left and a quiet visual that says the same thing on
+ * the right, on one line (a parcel on its route, a delivery window, three
+ * equal instalments, a discount staircase, a transfer slip, a loyalty coin, a
+ * filling money box), with its words packed tight beneath.
  *
  * Every card is still the admin's ("Ana Sayfa Düzenleme"): the theme is read
  * from what the card says (a "Kumbara" or "SultanPuan" badge) and otherwise
@@ -36,10 +37,10 @@ function themeOf(card: HomeAdvantageCard): Theme {
 }
 
 /**
- * The grid is six columns on a desktop: shipping runs four (with the courier's
- * two beside it), the three money cards two each, the two loyalty cards three
- * each. Two columns on a tablet, one on a phone. `grid-flow-dense` packs any
- * other mix of cards the admin makes.
+ * Six columns on a desktop: shipping runs four (with the courier's two beside
+ * it), the three money cards two each, the two loyalty cards three each. Two
+ * columns on a tablet, one on a phone. `grid-flow-dense` packs any other mix
+ * of cards the admin makes.
  */
 const SPAN: Record<Theme, string> = {
   shipping: "md:col-span-2 lg:col-span-4",
@@ -53,7 +54,7 @@ const SPAN: Record<Theme, string> = {
 };
 
 const CARD = [
-  "group relative isolate flex min-w-0 flex-col overflow-hidden rounded-3xl p-5 md:p-6",
+  "group relative isolate flex min-w-0 flex-col overflow-hidden rounded-2xl p-4 md:p-5",
   "border shadow-sm transition-[transform,border-color,box-shadow] duration-500 ease-out",
   "motion-safe:hover:scale-[1.01] hover:shadow-md",
 ].join(" ");
@@ -63,15 +64,18 @@ const SURFACE = {
   gold: "border-amber-100/80 bg-gradient-to-br from-amber-50/60 via-white to-white hover:border-amber-200 dark:border-amber-400/10 dark:from-amber-400/[0.06] dark:via-zinc-900/60 dark:to-zinc-900/60 dark:hover:border-amber-400/20",
 };
 
-/** The hero figure: large, tight, in graphite fading to grey (or gold). */
-const FIGURE = "bg-clip-text font-semibold leading-none tracking-tighter text-transparent";
+/** The figure: tight, in graphite fading to grey (or gold). */
+const FIGURE =
+  "bg-clip-text py-0.5 text-2xl font-semibold leading-none tracking-tighter text-transparent tabular-nums md:text-3xl";
 const INK = "bg-gradient-to-br from-gray-950 to-gray-500 dark:from-white dark:to-zinc-500";
 const GOLD = "bg-gradient-to-br from-amber-500 to-amber-800 dark:from-amber-200 dark:to-amber-500";
 
-const LABEL = "text-[11px] font-semibold uppercase tracking-[0.18em]";
-const TITLE = "text-base font-semibold tracking-tight text-gray-900 dark:text-white";
-const BODY = "text-sm leading-relaxed text-gray-500 dark:text-zinc-400";
-const NOTE = "text-xs leading-relaxed text-gray-400 dark:text-zinc-500";
+const LABEL = "text-[10px] font-semibold uppercase tracking-[0.16em]";
+const TITLE = "text-sm font-semibold tracking-tight text-gray-900 dark:text-white";
+const BODY = "text-xs leading-snug text-gray-500 dark:text-zinc-400";
+const NOTE = "text-[11px] leading-snug text-gray-400 dark:text-zinc-500";
+/** Room for the visual on the right of the figure. */
+const VISUAL = "w-[45%] max-w-40 shrink-0";
 
 export function AdvantagesSection({ content }: { content: Homepage["advantages"] }) {
   if (content.cards.length === 0 && !content.title) return null;
@@ -83,7 +87,7 @@ export function AdvantagesSection({ content }: { content: Homepage["advantages"]
       // be the last before the footer and still carried the padding for it.
       className="mx-auto w-full max-w-7xl scroll-mt-[var(--header-height)] px-4 pb-4 pt-5 sm:px-6 sm:pt-6"
     >
-      <div className="mx-auto mb-8 max-w-2xl text-center">
+      <div className="mx-auto mb-6 max-w-2xl text-center">
         {content.eyebrow && (
           <p className="text-xs font-bold uppercase tracking-widest text-red-700 dark:text-red-400">
             {content.eyebrow}
@@ -91,14 +95,16 @@ export function AdvantagesSection({ content }: { content: Homepage["advantages"]
         )}
         <h2
           id="advantages-heading"
-          className="mt-3 text-balance text-3xl font-semibold tracking-tighter text-foreground md:text-5xl"
+          className="mt-2 text-balance text-3xl font-semibold tracking-tighter text-foreground md:text-4xl"
         >
           {content.title}
         </h2>
-        {content.subtitle && <p className={`mt-4 text-balance text-base ${BODY}`}>{content.subtitle}</p>}
+        {content.subtitle && (
+          <p className="mt-2 text-balance text-sm text-gray-500 dark:text-zinc-400">{content.subtitle}</p>
+        )}
       </div>
 
-      <ul className="grid grid-flow-dense grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-6">
+      <ul className="grid grid-flow-dense grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-6">
         {content.cards.map((card, i) => {
           const theme = themeOf(card);
           const gold = theme === "points" || theme === "piggy";
@@ -149,9 +155,14 @@ const linesOf = (text: string) =>
 const AMOUNT = /(\d{1,3}(?:\.\d{3})+)\s*TL/g;
 const PERCENT = /%\s?(\d+(?:[.,]\d+)?)/;
 
+/** "30.000" → "30K", "49.999" → "50K": the short form the visuals have room for. */
+const short = (amount: string) => `${Math.round(Number(amount.replace(/\./g, "")) / 1000)}K`;
+
 interface Tier {
-  /** Who it applies to, in short: "30.000 TL+", "≤ 29.999 TL", "30.000–49.999 TL". */
+  /** Who it applies to, in full: "30.000 TL+", "≤ 29.999 TL", "30.000–49.999 TL". */
   range: string;
+  /** The same, short: "30K+", "≤30K", "30–50K". */
+  brief: string;
   percent: number;
 }
 
@@ -160,14 +171,13 @@ function tierOf(line: string): Tier | null {
   const percent = line.match(PERCENT);
   const amounts = [...line.matchAll(AMOUNT)].map((m) => m[1]);
   if (!percent || amounts.length === 0) return null;
-  const lower = line.toLocaleLowerCase("tr-TR");
-  const range =
-    amounts.length > 1
-      ? `${amounts[0]}–${amounts[1]} TL`
-      : lower.includes("kadar")
-        ? `≤ ${amounts[0]} TL`
-        : `${amounts[0]} TL+`;
-  return { range, percent: Number(percent[1].replace(",", ".")) };
+  const upTo = line.toLocaleLowerCase("tr-TR").includes("kadar");
+  const [from, to] = amounts;
+  return {
+    range: to ? `${from}–${to} TL` : upTo ? `≤ ${from} TL` : `${from} TL+`,
+    brief: to ? `${short(from).replace("K", "")}–${short(to)}` : upTo ? `≤${short(from)}` : `${short(from)}+`,
+    percent: Number(percent[1].replace(",", ".")),
+  };
 }
 
 function splitTiers(description: string) {
@@ -181,17 +191,47 @@ function splitTiers(description: string) {
 
 /* ── Shared pieces ────────────────────────────────────────────────────────── */
 
+/** The words, packed tight under the figure. */
 function Copy({ card, lead, className = "" }: { card: HomeAdvantageCard; lead?: string[]; className?: string }) {
   const body = lead ?? linesOf(card.description);
   return (
     <div className={className}>
       <h3 className={TITLE}>{card.title}</h3>
       {body.map((line, i) => (
-        <p key={i} className={`mt-1.5 ${BODY}`}>
+        <p key={i} className={`mt-1 ${BODY}`}>
           {line}
         </p>
       ))}
-      {card.note && <p className={`mt-2.5 ${NOTE}`}>{card.note}</p>}
+      {card.note && <p className={`mt-1.5 ${NOTE}`}>{card.note}</p>}
+    </div>
+  );
+}
+
+/** The figure on the left (its label above it), the visual on the right, on one line. */
+function Head({
+  label,
+  gold = false,
+  figure,
+  children,
+}: {
+  label: ReactNode;
+  gold?: boolean;
+  figure: ReactNode;
+  children?: ReactNode;
+}) {
+  return (
+    <div className="flex items-end justify-between gap-4">
+      <div className="min-w-0">
+        <p className={`${LABEL} ${gold ? "text-amber-700 dark:text-amber-400" : "text-gray-400 dark:text-zinc-500"}`}>
+          {label}
+        </p>
+        <div className="mt-1.5">{figure}</div>
+      </div>
+      {children && (
+        <div aria-hidden className={VISUAL}>
+          {children}
+        </div>
+      )}
     </div>
   );
 }
@@ -200,29 +240,21 @@ function AdvantageIcon({ icon, ...props }: { icon: HomeIconKey } & LucideProps) 
   return createElement(homeIcon(icon), props);
 }
 
-function Eyebrow({ children, gold = false }: { children: ReactNode; gold?: boolean }) {
-  return (
-    <p className={`${LABEL} ${gold ? "text-amber-700 dark:text-amber-400" : "text-gray-400 dark:text-zinc-500"}`}>
-      {children}
-    </p>
-  );
-}
-
 /* ── The cards ────────────────────────────────────────────────────────────── */
 
-/** Free shipping: the threshold as the figure, a parcel crossing the route on the right. */
+/** Free shipping: the threshold, the words beside it, a parcel crossing the route on the right. */
 function ShippingCard({ card }: { card: HomeAdvantageCard }) {
   const stops = ["Sipariş", "Sevk", "Kapınızda"];
   return (
-    <div className="flex h-full flex-col gap-6 md:flex-row md:items-center">
-      <div className="flex-1">
-        <Eyebrow>Ücretsiz kargo</Eyebrow>
-        <p className={`${FIGURE} ${INK} mt-2 py-1 text-4xl md:text-5xl`}>{card.badge}</p>
-        <Copy card={card} className="mt-3 max-w-sm" />
+    <div className="grid h-full items-center gap-4 md:grid-cols-[auto_minmax(0,1fr)_minmax(0,0.9fr)] md:gap-6">
+      <div>
+        <p className={`${LABEL} text-gray-400 dark:text-zinc-500`}>Ücretsiz kargo</p>
+        <p className={`${FIGURE} ${INK} mt-1.5`}>{card.badge}</p>
       </div>
-      <div aria-hidden className="w-full md:w-[46%]">
-        <div className="relative mx-3">
-          <div className="h-px w-full bg-[repeating-linear-gradient(90deg,var(--color-gray-300)_0_6px,transparent_6px_12px)] dark:bg-[repeating-linear-gradient(90deg,var(--color-zinc-700)_0_6px,transparent_6px_12px)]" />
+      <Copy card={card} />
+      <div aria-hidden>
+        <div className="relative mx-1.5">
+          <div className="h-px w-full bg-[repeating-linear-gradient(90deg,var(--color-gray-300)_0_5px,transparent_5px_10px)] dark:bg-[repeating-linear-gradient(90deg,var(--color-zinc-700)_0_5px,transparent_5px_10px)]" />
           {stops.map((stop, i) => (
             <span
               key={stop}
@@ -230,7 +262,7 @@ function ShippingCard({ card }: { card: HomeAdvantageCard }) {
               style={{ left: `${(i / (stops.length - 1)) * 100}%` }}
             >
               <span
-                className={`block h-2.5 w-2.5 rounded-full ring-4 ring-white dark:ring-zinc-900 ${
+                className={`block h-1.5 w-1.5 rounded-full ring-[3px] ring-white dark:ring-zinc-900 ${
                   i === stops.length - 1 ? "bg-gray-900 dark:bg-white" : "bg-gray-300 dark:bg-zinc-600"
                 }`}
               />
@@ -238,15 +270,15 @@ function ShippingCard({ card }: { card: HomeAdvantageCard }) {
           ))}
           {/* The parcel: crosses once and waits at the door, then goes again. */}
           <span className="absolute top-0 -translate-x-1/2 -translate-y-1/2 motion-safe:animate-[advantage-route_4.5s_cubic-bezier(0.65,0,0.35,1)_infinite] motion-reduce:left-full">
-            <span className="block h-4 w-4 rounded-[5px] bg-red-600 shadow-[0_6px_16px_-4px_rgba(220,38,38,0.6)]" />
+            <span className="block h-2.5 w-2.5 rounded-[3px] bg-red-600 shadow-[0_4px_10px_-2px_rgba(220,38,38,0.6)]" />
           </span>
         </div>
-        <div className="mt-3 flex justify-between text-[10px] font-medium text-gray-400 dark:text-zinc-500">
+        <div className="mt-2.5 flex justify-between text-[10px] font-medium text-gray-400 dark:text-zinc-500">
           {stops.map((stop) => (
             <span key={stop}>{stop}</span>
           ))}
         </div>
-        <p className="mt-4 text-right text-sm font-medium text-gray-900 dark:text-white">
+        <p className="mt-1.5 text-right text-xs font-medium text-gray-900 dark:text-white">
           Kargo <span className="tabular-nums">₺0</span>
         </p>
       </div>
@@ -254,106 +286,112 @@ function ShippingCard({ card }: { card: HomeAdvantageCard }) {
   );
 }
 
-/** Same-day courier: the delivery window as a line with a live dot on it. */
+/** Same-day courier: the delivery window as the figure, a line with a live dot on it. */
 function CourierCard({ card }: { card: HomeAdvantageCard }) {
   const window = card.title.match(/(\d{1,2}[:.]\d{2})\s*[–-]\s*(\d{1,2}[:.]\d{2})/);
   if (!window) return <PlainCard card={card} />;
   const rest = card.title.replace(window[0], "").trim();
   return (
     <>
-      <Eyebrow>{card.badge}</Eyebrow>
-      <div className="mt-3 flex items-baseline justify-between gap-3">
-        <span className={`${FIGURE} ${INK} text-2xl tabular-nums md:text-3xl`}>{window[1]}</span>
-        <span className={`${FIGURE} ${INK} text-2xl tabular-nums md:text-3xl`}>{window[2]}</span>
-      </div>
-      <div aria-hidden className="relative mt-3 h-1 rounded-full bg-gray-100 dark:bg-white/[0.06]">
-        <span className="absolute inset-y-0 left-0 w-[58%] rounded-full bg-gradient-to-r from-gray-200 to-gray-900 dark:from-zinc-700 dark:to-white" />
-        <span className="absolute left-[58%] top-1/2 -translate-x-1/2 -translate-y-1/2">
-          <span className="absolute inline-flex h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-400 opacity-60 motion-safe:animate-ping" />
-          <span className="relative block h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-500 ring-4 ring-white dark:ring-zinc-900" />
-        </span>
-      </div>
-      <p className="mt-2 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">Aynı gün kapınızda</p>
-      <Copy card={{ ...card, title: rest || card.title }} className="mt-auto pt-4" />
+      <Head label={card.badge} figure={<p className={`${FIGURE} ${INK}`}>{`${window[1]}–${window[2]}`}</p>}>
+        <div className="relative h-1 rounded-full bg-gray-100 dark:bg-white/[0.06]">
+          <span className="absolute inset-y-0 left-0 w-[58%] rounded-full bg-gradient-to-r from-gray-200 to-gray-900 dark:from-zinc-700 dark:to-white" />
+          <span className="absolute left-[58%] top-1/2">
+            <span className="absolute inline-flex h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-400 opacity-60 motion-safe:animate-ping" />
+            <span className="relative block h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-500 ring-[3px] ring-white dark:ring-zinc-900" />
+          </span>
+        </div>
+        <p className="mt-2 text-right text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
+          Aynı gün kapınızda
+        </p>
+      </Head>
+      <Copy card={{ ...card, title: rest || card.title }} className="mt-3" />
     </>
   );
 }
 
-/** Instalments: the count as the figure, and that many equal payments under it. */
+/** Instalments: the count as the figure, that many equal payments beside it. */
 function InstallmentsCard({ card }: { card: HomeAdvantageCard }) {
   const count = Math.min(Math.max(Number(card.badge.match(/\d+/)?.[0] ?? 0), 0), 12);
   if (!count) return <PlainCard card={card} />;
   return (
     <>
-      <Eyebrow>Taksit</Eyebrow>
-      <div className="mt-2 flex items-end gap-3">
-        <span className={`${FIGURE} ${INK} text-4xl md:text-5xl`}>{count}</span>
-        <span className="pb-1 text-sm font-medium text-gray-500 dark:text-zinc-400">eşit taksit, sıfır fark</span>
-      </div>
-      <div aria-hidden className="mt-3 flex gap-1.5">
-        {Array.from({ length: count }, (_, i) => (
-          <div key={i} className="flex-1">
-            <div
-              className="h-1 rounded-full bg-gray-900 transition-opacity duration-500 dark:bg-white"
-              style={{ opacity: 1 - i * (0.55 / count) }}
-            />
-            <p className="mt-1.5 text-[10px] font-medium text-gray-400 tabular-nums dark:text-zinc-500">{i + 1}. ay</p>
-          </div>
-        ))}
-      </div>
-      <Copy card={card} className="mt-auto pt-4" />
+      <Head
+        label="Taksit"
+        figure={
+          <p className="flex items-baseline gap-1.5">
+            <span className={`${FIGURE} ${INK}`}>{count}</span>
+            <span className="text-xs font-medium text-gray-500 dark:text-zinc-400">eşit taksit</span>
+          </p>
+        }
+      >
+        <div className="flex gap-1">
+          {Array.from({ length: count }, (_, i) => (
+            <div key={i} className="flex-1">
+              <div className="h-1 rounded-full bg-gray-900 dark:bg-white" style={{ opacity: 1 - i * (0.55 / count) }} />
+              <p className="mt-1.5 text-[10px] font-medium text-gray-400 tabular-nums dark:text-zinc-500">
+                {i + 1}. ay
+              </p>
+            </div>
+          ))}
+        </div>
+      </Head>
+      <Copy card={card} className="mt-3" />
     </>
   );
 }
 
-/** A tiered discount: the range as the figure, a staircase of its tiers beneath. */
+/** A tiered discount: the range as the figure, a little staircase of its tiers beside it. */
 function TiersCard({ card }: { card: HomeAdvantageCard }) {
   const { lead, tiers } = splitTiers(card.description);
   const top = Math.max(...tiers.map((t) => t.percent), 1);
   return (
     <>
-      <Eyebrow>Otomatik indirim</Eyebrow>
-      <p className={`${FIGURE} ${INK} mt-2 py-1 text-3xl md:text-4xl`}>{card.badge}</p>
-      {tiers.length > 0 && (
-        <div className="mt-3 flex items-end gap-3" aria-label="İndirim kademeleri">
-          {tiers.map((tier) => (
-            <div key={tier.range} className="flex-1">
-              <p className="text-xs font-semibold tabular-nums text-gray-900 dark:text-white">%{tier.percent}</p>
-              <div
-                className="mt-1.5 rounded-lg bg-gradient-to-t from-gray-900 to-gray-600 dark:from-white dark:to-zinc-400"
-                style={{ height: `${Math.round(14 + (tier.percent / top) * 22)}px` }}
-              />
-              <p className="mt-1.5 text-[10px] font-medium leading-tight text-gray-400 tabular-nums dark:text-zinc-500">
-                {tier.range}
-              </p>
-            </div>
-          ))}
-        </div>
-      )}
-      <Copy card={card} lead={lead} className="mt-auto pt-4" />
+      <Head label="Otomatik indirim" figure={<p className={`${FIGURE} ${INK}`}>{card.badge}</p>}>
+        {tiers.length > 0 && (
+          <div className="flex items-end justify-end gap-1.5">
+            {tiers.map((tier) => (
+              <div key={tier.range} className="w-9 text-center" title={`${tier.range}: %${tier.percent}`}>
+                <p className="text-[10px] font-semibold tabular-nums text-gray-900 dark:text-white">%{tier.percent}</p>
+                <div
+                  className="mt-1 rounded-md bg-gradient-to-t from-gray-900 to-gray-600 dark:from-white dark:to-zinc-400"
+                  style={{ height: `${Math.round(8 + (tier.percent / top) * 14)}px` }}
+                />
+                <p className="mt-1 text-[9px] font-medium text-gray-400 tabular-nums dark:text-zinc-500">
+                  {tier.brief}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </Head>
+      {/* The tiers in full for anyone who cannot see the bars. */}
+      {tiers.length > 0 && <p className="sr-only">{tiers.map((t) => `${t.range}: %${t.percent}`).join(", ")}</p>}
+      <Copy card={card} lead={lead} className="mt-3" />
     </>
   );
 }
 
-/** Bank transfer: the range as the figure, the tiers as the lines of a transfer slip. */
+/** Bank transfer: the range as the figure, the tiers as the lines of a small transfer slip. */
 function TransferCard({ card }: { card: HomeAdvantageCard }) {
   const { lead, tiers } = splitTiers(card.description);
   return (
     <>
-      <Eyebrow>Havale & EFT</Eyebrow>
-      <p className={`${FIGURE} ${INK} mt-2 py-1 text-3xl md:text-4xl`}>{card.badge}</p>
-      {tiers.length > 0 && (
-        <dl className="mt-3 rounded-xl border border-dashed border-gray-200 px-3 py-1.5 font-mono text-[11px] dark:border-white/10">
-          {tiers.map((tier) => (
-            <div key={tier.range} className="flex items-baseline gap-2 py-0.5">
-              <dt className="shrink-0 text-gray-500 dark:text-zinc-400">{tier.range}</dt>
-              <span aria-hidden className="mb-1 flex-1 border-b border-dotted border-gray-200 dark:border-white/10" />
-              <dd className="font-semibold text-gray-900 dark:text-white">−%{tier.percent}</dd>
-            </div>
-          ))}
-        </dl>
-      )}
-      <Copy card={card} lead={lead} className="mt-auto pt-4" />
+      <Head label="Havale & EFT" figure={<p className={`${FIGURE} ${INK}`}>{card.badge}</p>}>
+        {tiers.length > 0 && (
+          <div className="rounded-lg border border-dashed border-gray-200 px-2 py-1 font-mono text-[10px] dark:border-white/10">
+            {tiers.map((tier) => (
+              <div key={tier.range} className="flex items-baseline gap-1.5">
+                <span className="shrink-0 text-gray-500 dark:text-zinc-400">{tier.brief}</span>
+                <span className="mb-0.5 flex-1 border-b border-dotted border-gray-200 dark:border-white/10" />
+                <span className="font-semibold text-gray-900 dark:text-white">−%{tier.percent}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </Head>
+      {tiers.length > 0 && <p className="sr-only">{tiers.map((t) => `${t.range}: %${t.percent}`).join(", ")}</p>}
+      <Copy card={card} lead={lead} className="mt-3" />
     </>
   );
 }
@@ -363,59 +401,53 @@ function PointsCard({ card }: { card: HomeAdvantageCard }) {
   const { lead, tiers } = splitTiers(card.description);
   const rate = tiers[0];
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex items-start justify-between gap-6">
-        <div>
-          <Eyebrow gold>{card.badge}</Eyebrow>
+    <>
+      <div className="flex items-end justify-between gap-4">
+        <div className="min-w-0">
+          <p className={`${LABEL} text-amber-700 dark:text-amber-400`}>{card.badge}</p>
           {rate && (
-            <>
-              <p className={`${FIGURE} ${GOLD} mt-2 py-1 text-3xl md:text-4xl`}>%{rate.percent}</p>
-              <p className="mt-1 text-xs font-medium text-amber-800/70 tabular-nums dark:text-amber-200/60">
+            <p className="mt-1.5 flex flex-wrap items-baseline gap-x-2">
+              <span className={`${FIGURE} ${GOLD}`}>%{rate.percent}</span>
+              <span className="text-[11px] font-medium text-amber-800/70 tabular-nums dark:text-amber-200/60">
                 {rate.range} alışverişlerde
-              </p>
-            </>
+              </span>
+            </p>
           )}
         </div>
         <Coin />
       </div>
-      <Copy card={card} lead={lead} className="mt-auto pt-4" />
-    </div>
+      <Copy card={card} lead={lead} className="mt-3" />
+    </>
   );
 }
 
-/** The money box: small purchases filling up to the amount that tips them into the wallet. */
+/** The money box: the amount that tips it into the wallet, and small purchases filling up towards it. */
 function PiggyCard({ card }: { card: HomeAdvantageCard }) {
   const threshold = [...card.description.matchAll(AMOUNT)][0]?.[1];
   // Purchases of different sizes, adding up towards the threshold.
   const parts = [18, 11, 24, 15];
   return (
-    <div className="flex h-full flex-col">
-      <Eyebrow gold>{card.badge}</Eyebrow>
-      {threshold && (
-        <div className="mt-2">
-          <div className="flex items-baseline justify-between gap-3">
-            <p className={`${FIGURE} ${GOLD} py-1 text-3xl tabular-nums md:text-4xl`}>{threshold} TL</p>
-            <p className="text-xs font-medium text-amber-800/70 dark:text-amber-200/60">cüzdana aktarım</p>
-          </div>
-          <div
-            aria-hidden
-            className="mt-3 flex h-1.5 gap-1 overflow-hidden rounded-full bg-amber-100/70 dark:bg-amber-400/10"
-          >
-            {parts.map((width, i) => (
-              <span
-                key={i}
-                className="h-full bg-gradient-to-r from-amber-300 to-amber-500 first:rounded-l-full dark:from-amber-300/70 dark:to-amber-500/80"
-                style={{ width: `${width}%`, opacity: 0.55 + i * 0.15 }}
-              />
-            ))}
-          </div>
-          <p className="mt-1.5 text-[11px] font-medium text-amber-800/60 dark:text-amber-200/50">
-            Her alışveriş kumbaraya eklenir
-          </p>
-        </div>
-      )}
-      <Copy card={card} className="mt-auto pt-4" />
-    </div>
+    <>
+      <Head label={card.badge} gold figure={threshold ? <p className={`${FIGURE} ${GOLD}`}>{threshold} TL</p> : null}>
+        {threshold && (
+          <>
+            <div className="flex h-1.5 gap-0.5 overflow-hidden rounded-full bg-amber-100/70 dark:bg-amber-400/10">
+              {parts.map((width, i) => (
+                <span
+                  key={i}
+                  className="h-full bg-gradient-to-r from-amber-300 to-amber-500 first:rounded-l-full dark:from-amber-300/70 dark:to-amber-500/80"
+                  style={{ width: `${width}%`, opacity: 0.55 + i * 0.15 }}
+                />
+              ))}
+            </div>
+            <p className="mt-2 text-right text-[10px] font-medium text-amber-800/70 dark:text-amber-200/60">
+              cüzdana aktarım
+            </p>
+          </>
+        )}
+      </Head>
+      <Copy card={card} className="mt-3" />
+    </>
   );
 }
 
@@ -426,13 +458,13 @@ function PlainCard({ card }: { card: HomeAdvantageCard }) {
       <div className="flex items-center justify-between gap-3">
         <AdvantageIcon
           icon={card.icon}
-          className="h-5 w-5 text-gray-900 dark:text-white"
+          className="h-4 w-4 text-gray-900 dark:text-white"
           strokeWidth={1.5}
           aria-hidden
         />
-        {card.badge && <Eyebrow>{card.badge}</Eyebrow>}
+        {card.badge && <p className={`${LABEL} text-gray-400 dark:text-zinc-500`}>{card.badge}</p>}
       </div>
-      <Copy card={card} className="mt-auto pt-6" />
+      <Copy card={card} className="mt-3" />
     </>
   );
 }
@@ -442,11 +474,11 @@ function Coin() {
   return (
     <span
       aria-hidden
-      className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-amber-200 via-amber-400 to-amber-600 shadow-[0_12px_30px_-10px_rgba(217,119,6,0.55)] transition-transform duration-700 ease-out motion-safe:group-hover:rotate-12"
+      className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-amber-200 via-amber-400 to-amber-600 shadow-[0_8px_20px_-8px_rgba(217,119,6,0.55)] transition-transform duration-700 ease-out motion-safe:group-hover:rotate-12"
     >
-      <span className="absolute inset-1 rounded-full border border-white/50" />
+      <span className="absolute inset-[3px] rounded-full border border-white/50" />
       <span className="absolute inset-0 rounded-full bg-gradient-to-tr from-transparent via-white/40 to-transparent" />
-      <span className="relative text-sm font-bold tracking-tight text-amber-950/80">SP</span>
+      <span className="relative text-[11px] font-bold tracking-tight text-amber-950/80">SP</span>
     </span>
   );
 }
