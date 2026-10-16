@@ -70,7 +70,7 @@ interface BrandShowcaseProps {
  *
  * On the page's own background, like the rest of the homepage. From `xl` the
  * brand column runs the full height of the cards beside it: the logo level
- * with their tops, the button (and arrows) level with their bottoms.
+ * with their tops, the arrows under the button level with their bottoms.
  */
 export function BrandShowcase({
   brandName,
@@ -150,14 +150,21 @@ export function BrandShowcase({
             )}
           </h3>
           <p className="mt-4 mb-4 text-sm leading-relaxed text-gray-600 dark:text-neutral-400">{description}</p>
-          {/* Pushed to the column's foot, the button level with the cards'
-              bottoms and the arrows above it (the column is too narrow for
-              both side by side). The scrollbar is hidden and a mouse wheel
-              scrolls the page, not the row, so on a desktop the arrows are the
-              way through it; a touch screen swipes the row and sees the next
-              card at the edge. Only when there is something past the fourth
-              card. */}
+          {/* Pushed to the column's foot: the button, and under it the
+              arrows, level with the cards' bottoms (the column is too narrow
+              for both side by side). The scrollbar is hidden and a mouse
+              wheel scrolls the page, not the row, so on a desktop the arrows
+              are the way through it; a touch screen swipes the row and sees
+              the next card at the edge. Only when there is something past the
+              fourth card; without them the button is the bottom. */}
           <div className="mt-auto flex flex-col items-start gap-3">
+            <Link
+              href={brandLink}
+              className="inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-red-700 px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-red-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700"
+            >
+              Koleksiyonu Keşfet
+              <ArrowUpRight className="h-4 w-4" aria-hidden />
+            </Link>
             {products.length > VISIBLE && (
               <div className="hidden gap-2 lg:flex">
                 {([-1, 1] as const).map((direction) => (
@@ -178,13 +185,6 @@ export function BrandShowcase({
                 ))}
               </div>
             )}
-            <Link
-              href={brandLink}
-              className="inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-red-700 px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-red-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700"
-            >
-              Koleksiyonu Keşfet
-              <ArrowUpRight className="h-4 w-4" aria-hidden />
-            </Link>
           </div>
         </div>
 

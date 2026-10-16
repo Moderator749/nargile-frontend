@@ -249,10 +249,12 @@ export default async function HomePage() {
           <section aria-labelledby="markalarimiz-baslik">
             <h2
               id="markalarimiz-baslik"
-              className="mb-8 pt-12 text-center text-3xl font-extrabold text-gray-900 md:text-4xl dark:text-white"
+              className="pt-12 text-center text-3xl font-extrabold text-gray-900 md:text-4xl dark:text-white"
             >
               Markalarımız
             </h2>
+            {/* The red rule under the heading, as "Premium Ürün Yelpazesi" has. */}
+            <span aria-hidden className="mx-auto mt-4 mb-8 block h-1.5 w-14 rounded-full bg-red-600" />
             {BRAND_SHOWCASES.map(({ slug, brandName, logo, description }, i) => (
               <BrandShowcase
                 key={slug}
