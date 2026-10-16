@@ -19,17 +19,13 @@ export const SIDEBAR_WIDTH_LG = "lg:w-64";
  * Kategoriler: the column down the left of the storefront, closed until the
  * visitor opens it with "KATEGORİLER" in the bar.
  *
- * Open, every category the shop leads with is on screen — no hover, nothing to
- * discover, and no scrollbar of its own: the column runs down the page with
- * the hero and the promos beside it and ends where their row does, at the
- * deals. Below `lg` it steps aside, where the same list is one tap away in
- * the bar's drawer.
- *
- * It hangs from the top of its row, level with the hero: `self-start h-max`
- * gives it its own height instead of the row's, and the empty space falls
- * below it. It stays under the header while the row scrolls by, and on a
- * window too short to show all of it the list scrolls inside the column
- * instead (see `globals.css`).
+ * Open, it is exactly as tall as the hero beside it, whatever the window: the
+ * list sits in a box pinned to the column's edges, so it adds nothing to the
+ * row's height, which the hero alone sets (the column stretches to it). The
+ * list scrolls inside that height, with the scrollbar hidden — the wheel,
+ * trackpad and keyboard still move it — so a long list never holds the row
+ * open below the hero. Below `lg` it steps aside, where the same list is one
+ * tap away in the bar's drawer.
  *
  * "KATEGORİLER" in that bar opens and closes it, and the choice is remembered (see
  * `lib/sidebar`): the `category-sidebar` class is what the CSS gives up the
@@ -41,11 +37,11 @@ export function CategorySidebar({ items }: { items: ResolvedNav[] }) {
   return (
     <nav
       aria-label="Kategoriler"
-      className={`category-sidebar hidden shrink-0 ${SIDEBAR_WIDTH} lg:mr-6 lg:block lg:h-max lg:self-start`}
+      className={`category-sidebar hidden shrink-0 ${SIDEBAR_WIDTH} lg:relative lg:mr-6 lg:block lg:self-stretch`}
     >
       {/* No shell: the list stands on the page itself, held together by the
           hairlines between its rows. */}
-      <div>
+      <div className="lg:absolute lg:inset-0 lg:overflow-y-auto lg:overscroll-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {/* The list reads the current search to mark a brand row; on a static
             page that is known after hydration, so it waits for it. */}
         <Suspense fallback={<CategoryListSkeleton count={items.length} />}>

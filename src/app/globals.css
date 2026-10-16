@@ -345,36 +345,6 @@ html[data-sidebar="collapsed"] .category-sidebar {
 
 
 /*
- * The category column hangs from the top of its row, level with the hero, and
- * stays under the header as the page scrolls — at every window height and
- * zoom level.
- *
- * Its sticky offset is the row's own top padding (1rem) below the header, so
- * at rest it sits exactly where the flow puts it: nothing pushes it down.
- *
- * The column is 676px of pills (fifteen 36px, fourteen 8px gaps, the shell's
- * 2 × 12px). Where the window cannot show all of it under the header — a
- * laptop, or any window zoomed past ~110% — it is capped to the space that is
- * there and its list scrolls inside it, so it stays pinned and every
- * category is still reachable. The scrollbar is hidden; the wheel, trackpad
- * and keyboard still scroll it.
- */
-@media (min-width: 1024px) {
-  .category-sidebar {
-    position: sticky;
-    top: calc(var(--header-height, 4rem) + 1rem);
-    max-height: calc(100vh - var(--header-height, 4rem) - 2rem);
-    overflow-y: auto;
-    scrollbar-width: none;
-  }
-  .category-sidebar::-webkit-scrollbar {
-    display: none;
-  }
-}
-
-
-
-/*
  * Rich text from the panel's editor (components/ui/RichText, ReadMore): the
  * few tags the API lets through, spaced for reading. Colour and size come from
  * the element it sits in; only the structure is set here. One 1.5rem line

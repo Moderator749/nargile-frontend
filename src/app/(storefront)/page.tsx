@@ -194,7 +194,7 @@ export default async function HomePage() {
         {/* Module 4: the category column (closed until "KATEGORİLER" opens
             it), with the hero beside it. */}
         {sections.hero && (
-          <div className={`${PAGE_CONTAINER} pt-3 sm:pt-4 lg:flex lg:items-start`}>
+          <div className={`${PAGE_CONTAINER} pt-3 sm:pt-4 lg:flex lg:items-stretch`}>
             <CategorySidebar items={sidebar} />
             <div className="min-w-0 flex-1">
               {/* Module 5: hero slider. With the column closed it takes two
@@ -211,15 +211,13 @@ export default async function HomePage() {
         )}
 
         {/* Modules 6 & 7: the channels, the brand and the advantages, in
-            columns split by hairlines under the hero row. With the category
-            column open its top line sits flush under the column's last row,
-            closing the list; with it closed (and below lg, where there is no
-            column) the band keeps clear of the hero's rounded corners. The
-            bottom margin is short because the deals section below brings its
+            columns split by hairlines under the hero row, clear of the hero's
+            rounded corners (the category column, open or closed, ends where
+            the hero does). The bottom margin is short because the deals section below brings its
             own padding: together they make the same 48px as the top. */}
         {sections.promos && spotlight && (
           <div
-            className={`${PAGE_CONTAINER} mt-12 mb-6 sm:mb-4 lg:mt-0 lg:transition-[margin] lg:duration-300 lg:ease-[ease] motion-reduce:transition-none lg:sidebar-closed:mt-12`}
+            className={`${PAGE_CONTAINER} mt-12 mb-6 sm:mb-4`}
           >
             <PromoSpotlight box={spotlight} />
           </div>
