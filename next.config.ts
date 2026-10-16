@@ -15,17 +15,67 @@ const MEDIA = mediaUrl();
 /** The API is on this machine, so uploads are served from a loopback address. */
 const MEDIA_IS_LOCAL = ["localhost", "127.0.0.1", "[::1]", "::1"].includes(MEDIA.hostname);
 
-/** Old category slug → the category its products moved to. */
+/**
+ * Old category slug → the live category its products are in now. A slug the
+ * current tree uses (celik-takimlar, komurler, sultan…) must never be listed
+ * here: the redirect would hide that category's page.
+ */
 const RETIRED_CATEGORIES: Record<string, string> = {
-  komurler: "nargile-komurleri",
-  "tuketim-sarf": "tutun-bitkisel-ve-sarf",
-  "donanim-parcalar": "sipsiler-ve-aksesuarlar",
-  aksesuarlar: "sipsiler-ve-aksesuarlar",
-  "rus-takimlar": "rus-takimlari",
-  "masaustu-takimlar": "mini-masaustu-takimlar",
-  "bitkisel-urunler": "bitkisel-karisimlar",
-  marpuclar: "marpuc-ve-hortumlar",
-  "yedek-siseler": "yedek-sise-ve-govde",
+  "nargile-komurleri": "komurler",
+  "hindistan-cevizi-komurleri": "komurler",
+  "bitkisel-karisimlar": "bitkisel-urunler",
+  "marpuc-ve-hortumlar": "marpuclar",
+  "kozlukler-isi-yonetimi": "kozlukler",
+  "yedek-siseler": "siseler",
+  "yedek-sise-ve-govde": "siseler",
+  "nargile-siseleri": "siseler",
+  "masaustu-nargile-takimlari": "masaustu-takimlar",
+  "mini-masaustu-takimlar": "masaustu-takimlar",
+  "rus-takimlari": "rus-takimlar",
+  "panada-hookah": "panada",
+  "sultan-nargile": "sultan",
+  "legend-hookah": "legend",
+  "oduman-nargile": "oduman",
+  "mr-wood-nargile": "mr-wood",
+  "steamulation-nargile-takimlari": "steamulation",
+  "quasar-arguile": "quasar",
+  "meduse-nargile-takimlari": "meduse",
+};
+
+/**
+ * The old store's (OpenCart) category address → where those products are now.
+ * Measured, not guessed: each old category page was read and its products
+ * looked up here; nearly all of each landed in the one category named. The
+ * tobacco category is left out on purpose — it is not sold online, and its
+ * address must not lead to anything that looks like a replacement.
+ */
+const LEGACY_CATEGORIES: Record<string, string> = {
+  "paslanmaz-celik-nargile-takimlari": "celik-takimlar",
+  "legend-hookah-nargile-takimlari": "legend",
+  "oduman-nargile-takimlari": "oduman",
+  "meduse-experience-hookah-nargile-takimi": "meduse",
+  "mr-wood-nargile-takimlari": "mr-wood",
+  "sultan-nargile-takimlari-ve-malzemeleri": "sultan",
+  "dokum-nargile-takimlari": "klasik-takimlar",
+  "rus-nargile-takimlari-ve-modelleri": "rus-takimlar",
+  "masaustu-ve-led-isikli-nargile-takimlari": "masaustu-takimlar",
+  "nargile-siseleri": "siseler",
+  "nargile-komuru": "komurler",
+  "nargile-lule-cesitleri": "luleler",
+  kozlukler: "kozlukler",
+  "nargile-marpuclari": "marpuclar",
+  "plastik-ve-ozel-sipsiler": "sipsiler",
+  "nargile-malzemeleri-ve-aksesuarlari": "malzemeler",
+  "yedek-parca": "malzemeler",
+  "okey-tavla-ve-iskambil-kartlari": "oyun-eglence",
+  kampanyalar: "kampanyalar",
+};
+
+/** The old store's information pages → ours. */
+const LEGACY_PAGES: Record<string, string> = {
+  "teslimat-ve-kargolama-bilgileri": "/bilgi/kargo-ve-teslimat",
+  "sartlar-ve-kosullar": "/bilgi/uyelik-ve-kullanim-sartlari",
+  "sikca-sorulan-sorular": "/sss",
 };
 
 const nextConfig: NextConfig = {
@@ -33,13 +83,31 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       { source: "/admin/overview", destination: "/admin", permanent: false },
-      // Category pages retired with the clean taxonomy (migration e7c4b19a2f60),
+      // "Teslimat Ayarları" moved into Parametreler with every other threshold.
+      // Exact path only: /admin/settings/legal (Sözleşmeler) stays where it is.
+      { source: "/admin/settings", destination: "/admin/parameters", permanent: true },
+      // Category pages retired by the taxonomy migrations (see RETIRED_CATEGORIES),
       // forwarded for good to where their products went, so an old link or a
       // search result never lands on a 404.
+      // 301 rather than Next's default 308 for `permanent`: the code every
+      // crawler and old client has treated as "moved for good" the longest.
       ...Object.entries(RETIRED_CATEGORIES).map(([from, to]) => ({
         source: `/catalog/${from}`,
         destination: `/catalog/${to}`,
-        permanent: true,
+        statusCode: 301 as const,
+      })),
+      // The old store's addresses, so its links and its search results keep
+      // landing on the same shelf when the domain moves here. (Its product
+      // addresses are answered by src/proxy.ts, which asks the API.)
+      ...Object.entries(LEGACY_CATEGORIES).map(([from, to]) => ({
+        source: `/${from}`,
+        destination: `/catalog/${to}`,
+        statusCode: 301 as const,
+      })),
+      ...Object.entries(LEGACY_PAGES).map(([from, to]) => ({
+        source: `/${from}`,
+        destination: to,
+        statusCode: 301 as const,
       })),
       // Category management moved into Ana Sayfa Düzenleme.
       { source: "/admin/categories", destination: "/admin/homepage?tab=katalog-kategorileri", permanent: true },
