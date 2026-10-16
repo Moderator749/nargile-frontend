@@ -58,9 +58,9 @@ const showable = (products: CatalogProduct[] | null, count = PICKS_COUNT) =>
   (products ?? []).filter((p) => p.image_url && p.variants.some((v) => v.price)).slice(0, count);
 
 /**
- * "Markalarımız": one band per brand under a single heading, down the page in
- * a zig-zag (brand on the left, then the right, then the left), each on a pale
- * tint of its own colours. `brand` is the products' own brand name and the
+ * "Markalarımız": one island per brand under a single heading, down the page
+ * in a zig-zag (brand on the left, then the right, then the left), each on a
+ * pale tint of its own colours. `brand` is the products' own brand name and the
  * term they are searched by; `slug` is its /marka page.
  */
 const BRAND_SHOWCASES = [
@@ -77,7 +77,8 @@ const BRAND_SHOWCASES = [
     brand: "Oduman",
     slug: "oduman",
     brandName: "Oduman",
-    logo: { src: "/images/oduman_logo.png", width: 960, height: 960 },
+    // A square file with the mark across its middle: framed to the mark's band.
+    logo: { src: "/images/oduman_logo.png", width: 960, height: 960, frameHeight: 116 },
     bg: "bg-[#fcf8f2] dark:bg-amber-950/20",
     description:
       "Camın zarafetini paslanmaz çelikle birleştiren Oduman, kompakt ve yenilikçi tasarımlarıyla nargile deneyimine modern bir dokunuş katıyor. Her detayıyla kusursuz bir içim keyfi.",
@@ -87,7 +88,7 @@ const BRAND_SHOWCASES = [
     slug: "legend",
     brandName: "Legend Hookah",
     logo: { src: "/images/logo_legend.png", width: 2892, height: 710 },
-    bg: "bg-gradient-to-r from-red-50 via-gray-50 to-blue-50 dark:from-red-950/20 dark:via-neutral-900/40 dark:to-blue-950/20",
+    bg: "bg-gradient-to-r from-red-50 via-gray-100 to-blue-50 dark:from-red-950/20 dark:via-neutral-900/40 dark:to-blue-950/20",
     description:
       "Geleneksel estetiği modern nargile mühendisliğiyle buluşturan Legend Hookah, benzersiz tahliye sistemleri ve kusursuz işçiliğiyle elit bir performans sunar.",
   },
@@ -253,7 +254,7 @@ export default async function HomePage() {
               id="markalarimiz-baslik"
               className="mb-8 pt-12 text-center text-3xl font-extrabold text-gray-900 md:text-4xl dark:text-white"
             >
-              MARKALARIMIZ
+              Markalarımız
             </h2>
             {BRAND_SHOWCASES.map(({ slug, brandName, logo, bg, description }, i) => (
               <BrandShowcase
@@ -262,6 +263,7 @@ export default async function HomePage() {
                 logoSrc={logo.src}
                 logoWidth={logo.width}
                 logoHeight={logo.height}
+                logoFrameHeight={"frameHeight" in logo ? logo.frameHeight : undefined}
                 description={description}
                 brandLink={brandHref(slug)}
                 products={brandRows[i]}

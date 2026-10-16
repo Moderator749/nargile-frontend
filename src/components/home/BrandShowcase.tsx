@@ -40,13 +40,21 @@ interface BrandShowcaseProps {
   /** The logo file's own size, for its proportions. */
   logoWidth: number;
   logoHeight: number;
+  /**
+   * For a file with wide blank margins above and below the mark (a square
+   * export of a wide logo): the frame's height at the logo's 280px width. The
+   * logo keeps its width and the frame shows just the band the mark sits in,
+   * centred, so the text below starts where the mark ends. Left out, the
+   * whole file is shown.
+   */
+  logoFrameHeight?: number;
   description: string;
   /** The brand's own page: every product carrying its name. */
   brandLink: string;
   products: CatalogProduct[];
   /** The brand on the right and the products on the left from `lg`, for a zig-zag down the page. */
   reverseLayout?: boolean;
-  /** The band's own background, edge to edge behind it (with its `dark:` counterpart). */
+  /** The island's own background (with its `dark:` counterpart). */
   bgClassName?: string;
 }
 
@@ -60,15 +68,16 @@ interface BrandShowcaseProps {
  * Each section keeps its own track and arrows; `reverseLayout` swaps only the
  * columns' visual order, so the scrolling works the same both ways round.
  *
- * A full-width band in its own colour, spaced by padding rather than margin,
- * so the bands of consecutive brands meet with no gap between them. The
- * content inside keeps the page's container and lines up with every other row.
+ * An island in its own colour: a rounded panel just inset from the page's
+ * edges, with the page showing between consecutive brands. The content inside
+ * keeps the page's container and lines up with every other row.
  */
 export function BrandShowcase({
   brandName,
   logoSrc,
   logoWidth,
   logoHeight,
+  logoFrameHeight,
   description,
   brandLink,
   products,
@@ -105,19 +114,34 @@ export function BrandShowcase({
   if (products.length === 0) return null;
 
   return (
-    <section aria-labelledby={headingId} className={`w-full py-12 ${bgClassName}`}>
+    <section
+      aria-labelledby={headingId}
+      className={`mx-auto mb-12 w-full max-w-[98%] rounded-3xl py-12 ${bgClassName}`}
+    >
       <div className={`${PAGE_CONTAINER} grid grid-cols-1 items-center gap-8 lg:grid-cols-12`}>
         <div className={`order-1 flex flex-col items-start lg:col-span-3 ${reverseLayout ? "lg:order-2" : ""}`}>
           {/* The logo is the heading, under the group's "Markalarımız": it
             already says the name, so no text repeats it on screen. */}
           <h3 id={headingId} className="w-full">
-            <Image
-              src={logoSrc}
-              alt={brandName}
-              width={280}
-              height={Math.round((280 * logoHeight) / logoWidth)}
-              className={`h-auto w-[280px] max-w-full object-contain ${LOGO_TONE}`}
-            />
+            {logoFrameHeight ? (
+              <span className="relative block w-[280px] max-w-full overflow-hidden" style={{ height: logoFrameHeight }}>
+                <Image
+                  src={logoSrc}
+                  alt={brandName}
+                  fill
+                  sizes="280px"
+                  className={`object-cover object-center ${LOGO_TONE}`}
+                />
+              </span>
+            ) : (
+              <Image
+                src={logoSrc}
+                alt={brandName}
+                width={280}
+                height={Math.round((280 * logoHeight) / logoWidth)}
+                className={`h-auto w-[280px] max-w-full object-contain ${LOGO_TONE}`}
+              />
+            )}
           </h3>
           <p className="mt-4 mb-6 text-sm leading-relaxed text-gray-600 dark:text-neutral-400">{description}</p>
           <Link
