@@ -12,6 +12,13 @@
  */
 @custom-variant dark (&:where(.dark, .dark *):not(:where(.light, .light *)));
 
+/*
+ * `sidebar-closed:` applies while the category column is collapsed — the
+ * attribute lib/sidebar sets on <html> before first paint, so a layout that
+ * follows it never flashes the other state.
+ */
+@custom-variant sidebar-closed (&:where(html[data-sidebar="collapsed"] *));
+
 @theme inline {
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
@@ -277,6 +284,9 @@ html[data-auth] .guest-only {
 
 html[data-sidebar="collapsed"] .category-sidebar {
   width: 0;
+  /* No height either: a closed column would still hold the row open to its
+     own length, leaving a gap under the hero. */
+  height: 0;
   margin-right: 0;
   opacity: 0;
   overflow: hidden;

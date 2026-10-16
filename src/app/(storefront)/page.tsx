@@ -5,8 +5,9 @@ import { CatalogShowcase } from "@/components/home/CatalogShowcase";
 import { CorporateTrust } from "@/components/home/CorporateTrust";
 import { BrandTicker } from "@/components/home/BrandTicker";
 import { DealsFunnel } from "@/components/home/DealsFunnel";
+import { HeroAside } from "@/components/home/HeroAside";
 import { HeroSlider } from "@/components/home/HeroSlider";
-import { PromoGrid } from "@/components/home/PromoGrid";
+import { PromoSpotlight } from "@/components/home/PromoSpotlight";
 import { CategorySidebar } from "@/components/layout/CategorySidebar";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { FEATURED_PRODUCTS_COUNT } from "@/lib/config";
@@ -77,7 +78,11 @@ export default async function HomePage() {
   const has = { flash_sales: (flashSales ?? []).some((p) => p.variants.some((v) => v.flash_sale)) };
   const cmsSlides = (content?.slides ?? []).filter((s) => meets(s.requires, has)).map(toHeroSlide);
   const slides = cmsSlides.length > 0 ? cmsSlides : [FALLBACK_SLIDE];
-  const rows = promoRows(content?.promos ?? [], has);
+  // Of the promo boxes, only the red "Ayrıcalıklar & Avantajlar" card is
+  // shown now; the rest stay in /admin/promos but no longer reach the page.
+  const spotlight = promoRows(content?.promos ?? [], has)
+    .flat()
+    .find((box) => box.variant === "social");
 
   return (
     <>
@@ -99,23 +104,35 @@ export default async function HomePage() {
             off, the page still needs one. */}
         {!sections.hero && <h1 className="sr-only">{TITLE}</h1>}
 
-        {/* Module 4: the category column, open at all times, with the hero and
-            the showcase beside it — the wireframe's shape. Either half can be
-            switched off; the promos then take the full width. */}
-        {(sections.hero || sections.promos) && (
+        {/* Module 4: the category column (closed until "KATEGORİLER" opens
+            it), with the hero beside it. */}
+        {sections.hero && (
           <div className={`${PAGE_CONTAINER} pt-3 sm:pt-4 lg:flex lg:items-start`}>
-            {sections.hero && <CategorySidebar items={sidebar} />}
-            <div className="min-w-0 flex-1 space-y-4">
-              {/* Module 5: hero slider. */}
-              {sections.hero && <HeroSlider slides={slides} />}
-              {/* Modules 6 & 7: smart promo grids. */}
-              {sections.promos && (
-                <>
-                  <PromoGrid boxes={rows[0]} label="Öne çıkan kampanyalar" />
-                  <PromoGrid boxes={rows[1]} label="Koleksiyonlar" />
-                </>
-              )}
+            <CategorySidebar items={sidebar} />
+            <div className="min-w-0 flex-1">
+              {/* Module 5: hero slider. With the column closed it takes two
+                  thirds of the row and the two promo boxes the last third;
+                  opening the column folds the boxes away and the slider keeps
+                  the rest. Animated sizes rather than a 12-column span, so the
+                  fold runs alongside the column opening instead of jumping. */}
+              <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,0fr)] lg:gap-x-0 lg:transition-[grid-template-columns,column-gap] lg:duration-300 lg:ease-[ease] motion-reduce:transition-none lg:sidebar-closed:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:sidebar-closed:gap-x-4">
+                <HeroSlider slides={slides} />
+                <HeroAside />
+              </div>
             </div>
+          </div>
+        )}
+
+        {/* Modules 6 & 7: the channels, the brand and the advantages, in
+            columns split by hairlines under the hero row. With the category
+            column open its top line sits flush under the column's last row,
+            closing the list; with it closed (and below lg, where there is no
+            column) the band keeps clear of the hero's rounded corners. */}
+        {sections.promos && spotlight && (
+          <div
+            className={`${PAGE_CONTAINER} my-12 lg:mt-0 lg:transition-[margin] lg:duration-300 lg:ease-[ease] motion-reduce:transition-none lg:sidebar-closed:mt-12`}
+          >
+            <PromoSpotlight box={spotlight} />
           </div>
         )}
 

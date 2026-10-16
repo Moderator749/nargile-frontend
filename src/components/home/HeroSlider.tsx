@@ -49,7 +49,17 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
     >
       <HeroBackdrop />
 
-      <div className="grid [grid-template-areas:'stack']" aria-live={paused ? "polite" : "off"}>
+      {/* Every slide fills the stack, held to the frame's width and stretched
+          to the tallest slide's height. A positioned slide is a 16:9 stage, and
+          an aspect ratio left to itself does neither: next to a taller slide it
+          either took its width from that height and ran past the frame, or kept
+          its own height and left a black band under its photo — both whenever
+          the slider is narrower than ≈952px (two thirds of the row, beside the
+          promo boxes). */}
+      <div
+        className="grid grid-cols-[minmax(0,1fr)] [grid-template-areas:'stack'] [&>*]:min-w-0 [&>*]:self-stretch [&>*]:justify-self-stretch"
+        aria-live={paused ? "polite" : "off"}
+      >
         {slides.map((slide, i) => {
           const active = i === index;
           return (

@@ -1,5 +1,7 @@
 /**
- * Whether the category column is open, remembered per visitor.
+ * Whether the category column is open, remembered per visitor. Closed until the
+ * visitor opens it: the homepage's hero then has the two promo boxes beside it
+ * (see `HeroAside`), and the red "KATEGORİLER" button brings the column back.
  *
  * Kept in localStorage and mirrored onto `<html data-sidebar>` by a script that
  * runs before first paint — the same trick this app uses for the theme and the
@@ -14,7 +16,7 @@ const ATTRIBUTE = "data-sidebar";
 const COLLAPSED = "collapsed";
 
 /** Runs in <head>: sets the attribute before anything is painted. */
-export const SIDEBAR_SCRIPT = `try{if(localStorage.getItem(${JSON.stringify(KEY)})==="1"){document.documentElement.setAttribute(${JSON.stringify(ATTRIBUTE)},${JSON.stringify(COLLAPSED)})}}catch(_){}`;
+export const SIDEBAR_SCRIPT = `try{if(localStorage.getItem(${JSON.stringify(KEY)})!=="0"){document.documentElement.setAttribute(${JSON.stringify(ATTRIBUTE)},${JSON.stringify(COLLAPSED)})}}catch(_){}`;
 
 export function isSidebarCollapsed(): boolean {
   return document.documentElement.getAttribute(ATTRIBUTE) === COLLAPSED;

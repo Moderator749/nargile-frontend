@@ -34,7 +34,7 @@ export interface ResolvedNav {
 /**
  * The default lists, shown until "Ana Sayfa Düzenleme" saves its own.
  *
- * The horizontal bar. "KATAGORİLER" is not here: it is the header cell above
+ * The horizontal bar. "KATEGORİLER" is not here: it is the header cell above
  * the sidebar (and the drawer's handle on a phone) — see `TopNav`.
  */
 export const TOP_NAV: NavEntry[] = [
