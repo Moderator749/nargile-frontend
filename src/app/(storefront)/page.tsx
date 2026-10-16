@@ -5,6 +5,7 @@ import { CatalogShowcase } from "@/components/home/CatalogShowcase";
 import { CorporateTrust } from "@/components/home/CorporateTrust";
 import { BrandTicker } from "@/components/home/BrandTicker";
 import { DealsFunnel } from "@/components/home/DealsFunnel";
+import { FeaturedProductsShowcase } from "@/components/home/FeaturedProductsShowcase";
 import { HeroAside } from "@/components/home/HeroAside";
 import { HeroSlider } from "@/components/home/HeroSlider";
 import { PromoSpotlight } from "@/components/home/PromoSpotlight";
@@ -26,6 +27,7 @@ import { resolveShowcase, tileSlug } from "@/lib/showcase";
 import { resolveNav } from "@/lib/storefrontNav";
 import { DEFAULT_DESCRIPTION, SITE_NAME } from "@/lib/site";
 import { PAGE_CONTAINER } from "@/lib/layout";
+import type { CatalogProduct } from "@/types";
 
 // Rendered per request so a flash sale that starts or ends is reflected at once
 // (its countdowns and the slides that depend on one). Catalog fetches keep their
@@ -35,6 +37,23 @@ export const revalidate = 0;
 
 /** Category whose products are featured on the homepage. */
 const FEATURED_CATEGORY_SLUG = "nargile-takimlari";
+
+/**
+ * "Sizin İçin Seçtiklerimiz": the category each tab is drawn from, and how many
+ * it shows (two rows of five on a desktop).
+ *
+ * TEMPORARY: there is nothing yet to rank by. No order has been placed and the
+ * migrated catalog carries one creation time for every product, so neither
+ * "best selling" nor "newest" means anything. Until it does, each tab is a
+ * fixed category's first products; swap these for a real sort once the API
+ * offers one.
+ */
+const PICKS = { bestsellers: "celik-takimlar", newest: "oduman" } as const;
+const PICKS_COUNT = 10;
+
+/** A pick worth showing: one with a photo and a price to put under it. */
+const showable = (products: CatalogProduct[] | null) =>
+  (products ?? []).filter((p) => p.image_url && p.variants.some((v) => v.price)).slice(0, PICKS_COUNT);
 
 const TITLE = `${SITE_NAME} — Endüstriyel Toptan & Perakende Nargile Çözümleri`;
 
@@ -46,7 +65,7 @@ export default async function HomePage() {
   // What to show and what it says: "Ana Sayfa Düzenleme" (/admin/homepage).
   const home = await getHomepage();
   const { sections } = home;
-  const [categories, featured, flashSales, brands, content, artwork] = await Promise.all([
+  const [categories, featured, flashSales, brands, content, artwork, bestsellers, newest] = await Promise.all([
     getCategories(),
     getPublicProducts(FEATURED_CATEGORY_SLUG, FEATURED_PRODUCTS_COUNT),
     getFlashSaleProducts(),
@@ -64,6 +83,9 @@ export default async function HomePage() {
           }),
         )
       : [],
+    // Asked for with room to spare: some products have no photo or no price.
+    getPublicProducts(PICKS.bestsellers, PICKS_COUNT * 2),
+    getPublicProducts(PICKS.newest, PICKS_COUNT * 2),
   ]);
   const allCategories = categories ?? [];
   const sidebar = resolveNav(home.navigation.sidebar, allCategories, brands ?? []);
@@ -152,6 +174,9 @@ export default async function HomePage() {
         {/* Module 9b: the brand ticker between the deals and the gallery. No
             heading — the names are the content. */}
         {sections.brands && <BrandTicker brands={home.brands.items} />}
+
+        {/* Module 9c: "Sizin İçin Seçtiklerimiz", two tabbed product lists. */}
+        <FeaturedProductsShowcase lists={{ bestsellers: showable(bestsellers), newest: showable(newest) }} />
 
         {/* Module 10: the catalog as a gallery, in place of the old
             "Öne çıkanlar" carousel. */}
