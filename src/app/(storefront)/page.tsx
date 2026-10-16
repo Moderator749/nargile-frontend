@@ -58,9 +58,8 @@ const showable = (products: CatalogProduct[] | null, count = PICKS_COUNT) =>
   (products ?? []).filter((p) => p.image_url && p.variants.some((v) => v.price)).slice(0, count);
 
 /**
- * "Markalarımız": one island per brand under a single heading, down the page
- * in a zig-zag (brand on the left, then the right, then the left), each on a
- * pale tint of its own colours. `brand` is the products' own brand name and the
+ * "Markalarımız": one section per brand under a single heading, down the page
+ * in a zig-zag (brand on the left, then the right, then the left). `brand` is the products' own brand name and the
  * term they are searched by; `slug` is its /marka page.
  */
 const BRAND_SHOWCASES = [
@@ -69,7 +68,6 @@ const BRAND_SHOWCASES = [
     slug: "sultan",
     brandName: "Sultan Nargile",
     logo: { src: "/images/logo.png", width: 2756, height: 359 },
-    bg: "bg-[#fff8f8] dark:bg-red-950/20",
     description:
       "Geleneksel nargile zanaatını modern mühendislikle buluşturan Sultan Nargile; dayanıklı çelik takımları, tescilli aksesuarları ve benzersiz içim kalitesiyle sektör standartlarını belirliyor.",
   },
@@ -77,9 +75,9 @@ const BRAND_SHOWCASES = [
     brand: "Oduman",
     slug: "oduman",
     brandName: "Oduman",
-    // A square file with the mark across its middle: framed to the mark's band.
-    logo: { src: "/images/oduman_logo.png", width: 960, height: 960, frameHeight: 116 },
-    bg: "bg-[#fcf8f2] dark:bg-amber-950/20",
+    // A square file with the mark across its middle: framed to the mark's band
+    // (about 942×385), and shown smaller than the wordmarks, being taller.
+    logo: { src: "/images/oduman_logo.png", width: 960, height: 960, displayWidth: 180, frameRatio: 2.45 },
     description:
       "Camın zarafetini paslanmaz çelikle birleştiren Oduman, kompakt ve yenilikçi tasarımlarıyla nargile deneyimine modern bir dokunuş katıyor. Her detayıyla kusursuz bir içim keyfi.",
   },
@@ -88,7 +86,6 @@ const BRAND_SHOWCASES = [
     slug: "legend",
     brandName: "Legend Hookah",
     logo: { src: "/images/logo_legend.png", width: 2892, height: 710 },
-    bg: "bg-gradient-to-r from-red-50 via-gray-100 to-blue-50 dark:from-red-950/20 dark:via-neutral-900/40 dark:to-blue-950/20",
     description:
       "Geleneksel estetiği modern nargile mühendisliğiyle buluşturan Legend Hookah, benzersiz tahliye sistemleri ve kusursuz işçiliğiyle elit bir performans sunar.",
   },
@@ -256,19 +253,19 @@ export default async function HomePage() {
             >
               Markalarımız
             </h2>
-            {BRAND_SHOWCASES.map(({ slug, brandName, logo, bg, description }, i) => (
+            {BRAND_SHOWCASES.map(({ slug, brandName, logo, description }, i) => (
               <BrandShowcase
                 key={slug}
                 brandName={brandName}
                 logoSrc={logo.src}
                 logoWidth={logo.width}
                 logoHeight={logo.height}
-                logoFrameHeight={"frameHeight" in logo ? logo.frameHeight : undefined}
+                logoDisplayWidth={"displayWidth" in logo ? logo.displayWidth : undefined}
+                logoFrameRatio={"frameRatio" in logo ? logo.frameRatio : undefined}
                 description={description}
                 brandLink={brandHref(slug)}
                 products={brandRows[i]}
                 reverseLayout={i % 2 === 1}
-                bgClassName={bg}
               />
             ))}
           </section>

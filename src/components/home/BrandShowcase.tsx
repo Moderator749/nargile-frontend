@@ -40,49 +40,49 @@ interface BrandShowcaseProps {
   /** The logo file's own size, for its proportions. */
   logoWidth: number;
   logoHeight: number;
+  /** How wide the logo is shown, at most (it never outgrows its column). */
+  logoDisplayWidth?: number;
   /**
    * For a file with wide blank margins above and below the mark (a square
-   * export of a wide logo): the frame's height at the logo's 280px width. The
-   * logo keeps its width and the frame shows just the band the mark sits in,
+   * export of a wide logo): the width/height ratio of the band the mark sits
+   * in. The logo keeps its width and a frame of that ratio shows just the band,
    * centred, so the text below starts where the mark ends. Left out, the
    * whole file is shown.
    */
-  logoFrameHeight?: number;
+  logoFrameRatio?: number;
   description: string;
   /** The brand's own page: every product carrying its name. */
   brandLink: string;
   products: CatalogProduct[];
-  /** The brand on the right and the products on the left from `lg`, for a zig-zag down the page. */
+  /** The brand on the right and the products on the left from `xl`, for a zig-zag down the page. */
   reverseLayout?: boolean;
-  /** The island's own background (with its `dark:` counterpart). */
-  bgClassName?: string;
 }
 
 /**
  * One brand under "Markalarımız": the brand on one side — its logo, a line on what it stands for
  * and the way into its collection — and its products on the other as a row of
  * boxed cards that scrolls sideways, four in view on a desktop. Stacked below
- * `lg`, the brand first either way. The cards are re-priced for a signed-in
+ * `xl` (the brand column is too narrow beside the cards before it), the brand first either way. The cards are re-priced for a signed-in
  * visitor.
  *
  * Each section keeps its own track and arrows; `reverseLayout` swaps only the
  * columns' visual order, so the scrolling works the same both ways round.
  *
- * An island in its own colour: a rounded panel just inset from the page's
- * edges, with the page showing between consecutive brands. The content inside
- * keeps the page's container and lines up with every other row.
+ * On the page's own background, like the rest of the homepage. From `xl` the
+ * brand column runs the full height of the cards beside it: the logo level
+ * with their tops, the button (and arrows) level with their bottoms.
  */
 export function BrandShowcase({
   brandName,
   logoSrc,
   logoWidth,
   logoHeight,
-  logoFrameHeight,
+  logoDisplayWidth = 280,
+  logoFrameRatio,
   description,
   brandLink,
   products,
   reverseLayout = false,
-  bgClassName = "",
 }: BrandShowcaseProps) {
   const headingId = useId();
   const mine = useOwnPrices(products);
@@ -114,22 +114,27 @@ export function BrandShowcase({
   if (products.length === 0) return null;
 
   return (
-    <section
-      aria-labelledby={headingId}
-      className={`mx-auto mb-12 w-full max-w-[98%] rounded-3xl py-12 ${bgClassName}`}
-    >
-      <div className={`${PAGE_CONTAINER} grid grid-cols-1 items-center gap-8 lg:grid-cols-12`}>
-        <div className={`order-1 flex flex-col items-start lg:col-span-3 ${reverseLayout ? "lg:order-2" : ""}`}>
+    <section aria-labelledby={headingId} className="w-full py-8">
+      <div className={`${PAGE_CONTAINER} grid grid-cols-1 gap-8 xl:grid-cols-12 xl:items-stretch`}>
+        {/* The same top and bottom insets as the track beside it (room for the
+            cards' shadow), so the logo starts level with the cards' tops and
+            the button ends level with their bottoms. */}
+        <div
+          className={`order-1 flex h-full flex-col items-start xl:col-span-3 xl:pt-2 xl:pb-6 ${reverseLayout ? "xl:order-2" : ""}`}
+        >
           {/* The logo is the heading, under the group's "Markalarımız": it
             already says the name, so no text repeats it on screen. */}
           <h3 id={headingId} className="w-full">
-            {logoFrameHeight ? (
-              <span className="relative block w-[280px] max-w-full overflow-hidden" style={{ height: logoFrameHeight }}>
+            {logoFrameRatio ? (
+              <span
+                className="relative block max-w-full overflow-hidden"
+                style={{ width: logoDisplayWidth, aspectRatio: logoFrameRatio }}
+              >
                 <Image
                   src={logoSrc}
                   alt={brandName}
                   fill
-                  sizes="280px"
+                  sizes={`${logoDisplayWidth}px`}
                   className={`object-cover object-center ${LOGO_TONE}`}
                 />
               </span>
@@ -137,47 +142,53 @@ export function BrandShowcase({
               <Image
                 src={logoSrc}
                 alt={brandName}
-                width={280}
-                height={Math.round((280 * logoHeight) / logoWidth)}
-                className={`h-auto w-[280px] max-w-full object-contain ${LOGO_TONE}`}
+                width={logoDisplayWidth}
+                height={Math.round((logoDisplayWidth * logoHeight) / logoWidth)}
+                style={{ width: logoDisplayWidth }}
+                className={`h-auto max-w-full object-contain ${LOGO_TONE}`}
               />
             )}
           </h3>
-          <p className="mt-4 mb-6 text-sm leading-relaxed text-gray-600 dark:text-neutral-400">{description}</p>
-          <Link
-            href={brandLink}
-            className="inline-flex items-center gap-2 rounded-full bg-red-700 px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-red-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700"
-          >
-            Koleksiyonu Keşfet
-            <ArrowUpRight className="h-4 w-4" aria-hidden />
-          </Link>
-          {/* The scrollbar is hidden and a mouse wheel scrolls the page, not the
-            row, so on a desktop these are the way through it. A touch screen
-            swipes the row itself and sees the next card at the edge. Only
-            when there is something past the fourth card. */}
-          {products.length > VISIBLE && (
-            <div className="mt-6 hidden gap-2 lg:flex">
-              {([-1, 1] as const).map((direction) => (
-                <button
-                  key={direction}
-                  type="button"
-                  onClick={() => slide(direction)}
-                  disabled={direction === -1 ? ends.start : ends.end}
-                  aria-label={direction === -1 ? "Önceki ürünler" : "Sonraki ürünler"}
-                  className={ARROW}
-                >
-                  {direction === -1 ? (
-                    <ChevronLeft className="h-4 w-4" aria-hidden />
-                  ) : (
-                    <ChevronRight className="h-4 w-4" aria-hidden />
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
+          <p className="mt-4 mb-4 text-sm leading-relaxed text-gray-600 dark:text-neutral-400">{description}</p>
+          {/* Pushed to the column's foot, the button level with the cards'
+              bottoms and the arrows above it (the column is too narrow for
+              both side by side). The scrollbar is hidden and a mouse wheel
+              scrolls the page, not the row, so on a desktop the arrows are the
+              way through it; a touch screen swipes the row and sees the next
+              card at the edge. Only when there is something past the fourth
+              card. */}
+          <div className="mt-auto flex flex-col items-start gap-3">
+            {products.length > VISIBLE && (
+              <div className="hidden gap-2 lg:flex">
+                {([-1, 1] as const).map((direction) => (
+                  <button
+                    key={direction}
+                    type="button"
+                    onClick={() => slide(direction)}
+                    disabled={direction === -1 ? ends.start : ends.end}
+                    aria-label={direction === -1 ? "Önceki ürünler" : "Sonraki ürünler"}
+                    className={ARROW}
+                  >
+                    {direction === -1 ? (
+                      <ChevronLeft className="h-4 w-4" aria-hidden />
+                    ) : (
+                      <ChevronRight className="h-4 w-4" aria-hidden />
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+            <Link
+              href={brandLink}
+              className="inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-red-700 px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-red-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700"
+            >
+              Koleksiyonu Keşfet
+              <ArrowUpRight className="h-4 w-4" aria-hidden />
+            </Link>
+          </div>
         </div>
 
-        <div className={`order-2 w-full overflow-hidden lg:col-span-9 ${reverseLayout ? "lg:order-1" : ""}`}>
+        <div className={`order-2 w-full overflow-hidden xl:col-span-9 ${reverseLayout ? "xl:order-1" : ""}`}>
           {/* The top padding keeps the cards' shadow from being clipped: a
             sideways scroller clips vertically too. */}
           <ul
