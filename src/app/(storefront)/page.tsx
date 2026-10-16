@@ -58,9 +58,10 @@ const showable = (products: CatalogProduct[] | null, count = PICKS_COUNT) =>
   (products ?? []).filter((p) => p.image_url && p.variants.some((v) => v.price)).slice(0, count);
 
 /**
- * "Markalarımız": one section per brand, down the page in a zig-zag (brand on
- * the left, then the right, then the left). `brand` is the products' own brand
- * name and the term they are searched by; `slug` is its /marka page.
+ * "Markalarımız": one band per brand under a single heading, down the page in
+ * a zig-zag (brand on the left, then the right, then the left), each on a pale
+ * tint of its own colours. `brand` is the products' own brand name and the
+ * term they are searched by; `slug` is its /marka page.
  */
 const BRAND_SHOWCASES = [
   {
@@ -68,6 +69,7 @@ const BRAND_SHOWCASES = [
     slug: "sultan",
     brandName: "Sultan Nargile",
     logo: { src: "/images/logo.png", width: 2756, height: 359 },
+    bg: "bg-[#fff8f8] dark:bg-red-950/20",
     description:
       "Geleneksel nargile zanaatını modern mühendislikle buluşturan Sultan Nargile; dayanıklı çelik takımları, tescilli aksesuarları ve benzersiz içim kalitesiyle sektör standartlarını belirliyor.",
   },
@@ -75,8 +77,8 @@ const BRAND_SHOWCASES = [
     brand: "Oduman",
     slug: "oduman",
     brandName: "Oduman",
-    // A square export with the mark across its middle third: shown cropped.
-    logo: { src: "/images/oduman_logo.png", width: 960, height: 960, crop: 2.4 },
+    logo: { src: "/images/oduman_logo.png", width: 960, height: 960 },
+    bg: "bg-[#fcf8f2] dark:bg-amber-950/20",
     description:
       "Camın zarafetini paslanmaz çelikle birleştiren Oduman, kompakt ve yenilikçi tasarımlarıyla nargile deneyimine modern bir dokunuş katıyor. Her detayıyla kusursuz bir içim keyfi.",
   },
@@ -85,6 +87,7 @@ const BRAND_SHOWCASES = [
     slug: "legend",
     brandName: "Legend Hookah",
     logo: { src: "/images/logo_legend.png", width: 2892, height: 710 },
+    bg: "bg-gradient-to-r from-red-50 via-gray-50 to-blue-50 dark:from-red-950/20 dark:via-neutral-900/40 dark:to-blue-950/20",
     description:
       "Geleneksel estetiği modern nargile mühendisliğiyle buluşturan Legend Hookah, benzersiz tahliye sistemleri ve kusursuz işçiliğiyle elit bir performans sunar.",
   },
@@ -242,22 +245,32 @@ export default async function HomePage() {
         {/* Module 9c: "Sizin İçin Seçtiklerimiz", two tabbed product lists. */}
         <FeaturedProductsShowcase lists={{ bestsellers: showable(bestsellers), newest: showable(newest) }} />
 
-        {/* Module 9d: "Markalarımız", one section per brand, alternating
-            sides, just above the gallery. */}
-        {BRAND_SHOWCASES.map(({ slug, brandName, logo, description }, i) => (
-          <BrandShowcase
-            key={slug}
-            brandName={brandName}
-            logoSrc={logo.src}
-            logoWidth={logo.width}
-            logoHeight={logo.height}
-            logoCrop={"crop" in logo ? logo.crop : undefined}
-            description={description}
-            brandLink={brandHref(slug)}
-            products={brandRows[i]}
-            reverseLayout={i % 2 === 1}
-          />
-        ))}
+        {/* Module 9d: "Markalarımız", one heading over a band per brand,
+            alternating sides, just above the gallery. */}
+        {brandRows.some((row) => row.length > 0) && (
+          <section aria-labelledby="markalarimiz-baslik">
+            <h2
+              id="markalarimiz-baslik"
+              className="mb-8 pt-12 text-center text-3xl font-extrabold text-gray-900 md:text-4xl dark:text-white"
+            >
+              MARKALARIMIZ
+            </h2>
+            {BRAND_SHOWCASES.map(({ slug, brandName, logo, bg, description }, i) => (
+              <BrandShowcase
+                key={slug}
+                brandName={brandName}
+                logoSrc={logo.src}
+                logoWidth={logo.width}
+                logoHeight={logo.height}
+                description={description}
+                brandLink={brandHref(slug)}
+                products={brandRows[i]}
+                reverseLayout={i % 2 === 1}
+                bgClassName={bg}
+              />
+            ))}
+          </section>
+        )}
 
         {/* Module 10: the catalog as a gallery, in place of the old
             "Öne çıkanlar" carousel. */}
