@@ -199,7 +199,8 @@ export default async function HomePage() {
             <CategorySidebar items={sidebar} />
             <div className="min-w-0 flex-1">
               {/* Module 5: hero slider. With the column closed it takes two
-                  thirds of the row and the channels and advantages the last third;
+                  thirds of the row and the channels and advantages the last third
+                  (below lg they stand under it);
                   opening the column folds the boxes away and the slider keeps
                   the rest. Animated sizes rather than a 12-column span, so the
                   fold runs alongside the column opening instead of jumping. */}
@@ -211,11 +212,11 @@ export default async function HomePage() {
           </div>
         )}
 
-        {/* Modules 6 & 7: "Sektörde Referans Noktası", a wide band under the
-            hero row, clear of the hero's rounded corners (the category column,
-            open or closed, ends where the hero does). */}
+        {/* Modules 6 & 7: "Sektörde Referans Noktası", under the hero row,
+            clear of the hero's rounded corners (the category column, open or
+            closed, ends where the hero does). */}
         {sections.promos && (
-          <div className={`${PAGE_CONTAINER} mt-6 mb-12`}>
+          <div className={`${PAGE_CONTAINER} mt-10 mb-12`}>
             <BrandStatement />
           </div>
         )}

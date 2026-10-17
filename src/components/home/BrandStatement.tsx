@@ -15,8 +15,8 @@ const REST =
 const COLLECTION_HREF = "/catalog";
 
 /**
- * "Sektörde Referans Noktası": the brand in a sentence, as a wide band under
- * the hero row — the heading on the right from `md`, the text on the left.
+ * "Sektörde Referans Noktası": the brand in a sentence under the hero row, on
+ * the page itself rather than in a box — the heading above, the text below.
  *
  * As with `SeoIntro`, the rest is folded, not left out: it is in the markup
  * from the server for a crawler to read, and the fold only hides it from view
@@ -29,18 +29,15 @@ export function BrandStatement() {
   const moreId = useId();
 
   return (
-    <section
-      aria-labelledby={headingId}
-      className="flex flex-col items-start justify-between gap-8 rounded-3xl border border-gray-100 bg-white p-6 shadow-sm md:flex-row-reverse md:p-8 dark:border-white/[0.06] dark:bg-zinc-900"
-    >
-      <div className="md:w-1/3 md:text-right">
+    <section aria-labelledby={headingId} className="flex flex-col items-start gap-4 text-left">
+      <div>
         <p className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-neutral-400">Güvenilir Marka</p>
         <h2 id={headingId} className="mt-2 text-2xl font-bold text-gray-900 dark:text-white">
           Sektörde Referans Noktası
         </h2>
       </div>
 
-      <div className="text-left md:w-2/3">
+      <div>
         <p className={PARAGRAPH}>{LEAD}</p>
         <div
           id={moreId}
