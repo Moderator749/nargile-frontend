@@ -243,13 +243,16 @@ export default async function HomePage() {
           <div className={`${PAGE_CONTAINER} pt-3 sm:pt-4 lg:flex lg:items-stretch`}>
             <CategorySidebar items={sidebar} />
             <div className="min-w-0 flex-1">
-              {/* Module 5: hero slider. With the column closed it takes two
-                  thirds of the row and the channels and advantages the last third
-                  (below lg they stand under it);
-                  opening the column folds the boxes away and the slider keeps
-                  the rest. Animated sizes rather than a 12-column span, so the
-                  fold runs alongside the column opening instead of jumping. */}
-              <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,0fr)] lg:gap-x-0 lg:transition-[grid-template-columns,column-gap] lg:duration-300 lg:ease-[ease] motion-reduce:transition-none lg:sidebar-closed:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:sidebar-closed:gap-x-4">
+              {/* Module 5: hero slider, with the channels and advantages beside
+                  it (below lg they stand under it). The slider is the same size
+                  with the category column open or closed: the boxes give up
+                  exactly the column's 280px (16rem + its 1.5rem margin) as it
+                  opens, over the same 300ms and the same curve, so the slider
+                  only slides aside — never wider, never taller.
+                  From xl the row is a fixed 1232px: slider 811 + boxes 405
+                  closed, boxes 125 (compact) open. Below it there is no room
+                  for compact boxes: 280px boxes closed, none open. */}
+              <div className="lg:grid lg:transition-[grid-template-columns,column-gap] lg:duration-300 lg:ease-[ease] motion-reduce:transition-none lg:max-xl:grid-cols-[minmax(0,1fr)_0px] lg:max-xl:gap-x-0 lg:max-xl:sidebar-closed:grid-cols-[minmax(0,1fr)_264px] lg:max-xl:sidebar-closed:gap-x-4 xl:grid-cols-[minmax(0,1fr)_125px] xl:gap-x-4 xl:sidebar-closed:grid-cols-[minmax(0,1fr)_405px]">
                 <HeroSlider slides={slides} />
                 <HeroAside box={spotlight} />
               </div>
