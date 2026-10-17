@@ -514,6 +514,10 @@ export interface CartItemBreakdown {
   image_url?: string | null;
   /** Percent; `unit_price` and `line_total` include it. */
   vat_rate?: DecimalString;
+  /** A bayi's line whose product has "Bayide Havale / EFT İndirimi" on (whatever the payment). */
+  dealer_havale?: boolean;
+  /** The havale discount on this line (VAT-inclusive); "0.00" unless paid by transfer. */
+  havale_discount?: DecimalString;
 }
 
 /** What the "%50 Kuralı" minimum counts: kilograms of coal, or units (adet). */
@@ -578,6 +582,8 @@ export interface Cart {
    * carries no promotional discounts.
    */
   subtotal_excl_tax?: DecimalString;
+  /** A bayi's line discounts (havale) before VAT; subtotal_excl_tax − this + vat_total = the lines' total. */
+  line_discount_excl_tax?: DecimalString;
   vat_total?: DecimalString;
   vat_rates?: DecimalString[];
   loyalty_points_to_earn: number;

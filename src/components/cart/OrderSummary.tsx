@@ -154,6 +154,9 @@ export function OrderSummary(props: OrderSummaryProps) {
     !!quote && !quote.perks_eligible && !props.quoteOnly && quote.subtotal_excl_tax != null && quote.vat_total != null;
   // Sultan Puan is a retail promotion and can be switched off in the panel.
   const loyalty = props.perks && params.loyalty.enabled;
+  // A bayi's cart with products that give it the havale discount ("Bayide Havale / EFT İndirimi").
+  const dealerHavale = !!quote?.items.some((i) => i.dealer_havale);
+  const transferHint = transferDiscountHint(params);
 
   return (
     <section
@@ -180,8 +183,9 @@ export function OrderSummary(props: OrderSummaryProps) {
             value={props.paymentMethod}
             onChange={props.onPaymentMethodChange}
             /* The havale discount is a retail promotion: a B2B account pays its
-               tier price whichever way it pays. */
-            transferDiscount={props.perks ? transferDiscountHint(params) : null}
+               tier price whichever way it pays — except a bayi, on the products
+               that give it the discount. */
+            transferDiscount={props.perks ? transferHint : dealerHavale && transferHint ? `${transferHint}, işaretli ürünlerde` : null}
             cardAvailable={props.cardAvailable}
             saveCard={props.saveCard}
             onSaveCardChange={props.onSaveCardChange}
@@ -208,6 +212,18 @@ export function OrderSummary(props: OrderSummaryProps) {
           // Bayi / Toptan / Kafe: invoice lines, before VAT, the VAT, and the total.
           <>
             <Row label={<span>Ara toplam <span className="text-xs opacity-75">(KDV hariç)</span></span>} value={formatMoney(quote.subtotal_excl_tax!)} />
+            {Number(quote.discount_amount) > 0 && (
+              <Row
+                label={
+                  <>
+                    Havale/EFT indirimi (−{formatRate(quote.discount_rate)}) <span className="text-xs opacity-75">(KDV hariç)</span>
+                    <span className="block text-xs opacity-75">yalnızca işaretli ürünlerde</span>
+                  </>
+                }
+                value={`−${formatMoney(quote.line_discount_excl_tax ?? quote.discount_amount)}`}
+                tone="discount"
+              />
+            )}
             <Row
               label={`Hesaplanan KDV (${(quote.vat_rates ?? []).map((r) => formatRate(Number(r) / 100)).join(" / ") || "%0"})`}
               value={formatMoney(quote.vat_total!)}
@@ -234,8 +250,9 @@ export function OrderSummary(props: OrderSummaryProps) {
               </div>
             )}
             <p className="text-xs text-slate-500 dark:text-zinc-400">
-              Fiyatlarınız hesabınıza tanımlı fiyat listesinden gelir; ciro, havale ve Sultan Puan indirimleri
-              bireysel (perakende) hesaplara tanımlıdır.
+              {dealerHavale
+                ? "Fiyatlarınız hesabınıza tanımlı fiyat listesinden gelir. Havale/EFT ile ödemede işaretli ürünlerde havale indirimi uygulanır; ciro ve Sultan Puan indirimleri bireysel (perakende) hesaplara tanımlıdır."
+                : "Fiyatlarınız hesabınıza tanımlı fiyat listesinden gelir; ciro, havale ve Sultan Puan indirimleri bireysel (perakende) hesaplara tanımlıdır."}
             </p>
           </>
         ) : quote ? (

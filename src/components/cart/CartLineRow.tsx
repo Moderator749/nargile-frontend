@@ -20,6 +20,9 @@ interface CartLineRowProps {
   serverImageUrl?: string | null;
   /** Product page, when known. */
   productHref?: string;
+  /** A bayi's line with "Bayide Havale / EFT İndirimi" on, and what a transfer takes off it now. */
+  dealerHavale?: boolean;
+  havaleDiscount?: DecimalString;
 }
 
 export function CartLineRow({
@@ -28,6 +31,8 @@ export function CartLineRow({
   serverColorName,
   serverImageUrl,
   productHref,
+  dealerHavale = false,
+  havaleDiscount,
 }: CartLineRowProps) {
   const image = serverImageUrl ?? item.image_url ?? null;
   // Which colour this line is. The quote is authoritative; the snapshot covers a
@@ -79,6 +84,13 @@ export function CartLineRow({
           <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">
             {formatMoney(unitPrice)} <span className="text-xs">/ adet</span>
           </p>
+          {dealerHavale && (
+            <p className="mt-1.5 inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/30">
+              {Number(havaleDiscount ?? 0) > 0
+                ? `Havale/EFT indirimi −${formatMoney(havaleDiscount!)}`
+                : "Havale/EFT ile ödemede indirimli"}
+            </p>
+          )}
         </div>
 
         <div className="flex items-center justify-between gap-4 sm:justify-end">

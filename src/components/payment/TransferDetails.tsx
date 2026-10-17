@@ -43,7 +43,8 @@ export function TransferDetails({ quote }: { quote: Cart | null }) {
           {Number(quote.discount_rate) > 0 && (
             <span className="text-xs text-slate-500 dark:text-zinc-400">
               {" "}
-              ({formatRate(quote.discount_rate)} havale indirimi dahil)
+              ({quote.items.some((i) => Number(i.havale_discount ?? 0) > 0) ? "işaretli ürünlerde " : ""}
+              {formatRate(quote.discount_rate)} havale indirimi dahil)
             </span>
           )}
         </p>
