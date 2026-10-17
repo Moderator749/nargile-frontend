@@ -1,6 +1,6 @@
 import type { ComponentType } from "react";
 import Image from "next/image";
-import { ArrowUpRight, BadgePercent } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 
 import { InstagramIcon, YouTubeIcon } from "@/components/icons/SocialIcons";
 import { SmoothAnchor } from "@/components/home/SmoothAnchor";
@@ -48,27 +48,15 @@ const BACKDROPS = {
 /**
  * A card on a photograph: dark in either theme, as the slider beside it is.
  * Its own height below `lg` (where it stands under the slider), half the
- * slider's from `lg`. The hairline is drawn over the photograph, which would
+ * slider's from `lg`, in the 264px column beside it — hence the tighter
+ * padding there. The hairline is drawn over the photograph, which would
  * otherwise cover a ring on the card itself.
  */
 const CARD = [
-  "relative isolate flex min-h-[200px] flex-col justify-between overflow-hidden rounded-2xl bg-neutral-950 p-6 shadow-sm lg:min-h-0 lg:flex-1",
+  "relative isolate flex min-h-[200px] flex-col justify-between overflow-hidden rounded-2xl bg-neutral-950 p-6 shadow-sm lg:min-h-0 lg:flex-1 lg:p-5",
   "after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:ring-1 after:ring-inset after:ring-white/10",
 ].join(" ");
 const OVERLINE = "text-xs font-bold uppercase tracking-widest";
-
-/**
- * A card's two faces. From xl the boxes stay beside the slider with the
- * category column open, narrowed to 125px (see the homepage's hero row), and
- * show a compact face there: the full one keeps its closed width while it fades
- * (so its words never reflow mid-way) and the compact one fades in over it.
- * Whichever is hidden is `invisible`, so only one set of links is reachable.
- */
-const FULL_FACE =
-  "flex flex-1 flex-col justify-between transition-[opacity,visibility] duration-300 motion-reduce:transition-none xl:w-[357px] xl:shrink-0 xl:sidebar-open:invisible xl:sidebar-open:opacity-0";
-const COMPACT_FACE =
-  "invisible absolute inset-0 hidden flex-col items-center justify-center gap-3 p-3 text-center opacity-0 transition-[opacity,visibility] duration-300 motion-reduce:transition-none xl:flex xl:sidebar-open:visible xl:sidebar-open:opacity-100";
-const COMPACT_LABEL = "text-[10px] font-bold uppercase leading-tight tracking-widest";
 const TITLE = "mt-1.5 text-balance text-xl font-extrabold leading-tight text-white";
 
 /**
@@ -104,10 +92,10 @@ function Backdrop({ src, flip, zoom }: { src: string; flip?: boolean; zoom?: boo
  *
  * Below `lg` they stand under the slider, side by side from `sm` and stacked on
  * a phone, so a small screen keeps the channels and the way to the advantages.
- * From `lg` they are stacked beside it to its height. Opening the category
- * column takes its width from this one, never from the slider: from `xl` the
- * cards narrow to their compact face, and between `lg` and `xl`, with no room
- * for that, they fold away and fade out.
+ * From `lg` they are stacked beside it to its height, in the 264px the closed
+ * category column leaves, and only while it is closed: opening the column
+ * folds this column away (the row's grid takes its width to 0) and the cards
+ * fade out with it, while the slider keeps its size (see the homepage).
  *
  * `h-0 min-h-full`: from `lg` the column takes the slider's height and gives
  * the row none of its own — folded to no width, its text would otherwise stand
@@ -125,54 +113,34 @@ export function HeroAside({ box }: { box?: PromoBox }) {
   return (
     <aside
       aria-label="Öne çıkanlar"
-      className="mt-4 grid min-w-0 gap-4 sm:grid-cols-2 lg:invisible lg:mt-0 lg:flex lg:h-0 lg:min-h-full lg:flex-col lg:overflow-hidden lg:opacity-0 lg:transition-[opacity,visibility] lg:duration-300 motion-reduce:transition-none lg:sidebar-closed:visible lg:sidebar-closed:opacity-100 xl:visible xl:opacity-100"
+      className="mt-4 grid min-w-0 gap-4 sm:grid-cols-2 lg:invisible lg:mt-0 lg:flex lg:h-0 lg:min-h-full lg:flex-col lg:overflow-hidden lg:opacity-0 lg:transition-[opacity,visibility] lg:duration-300 motion-reduce:transition-none lg:sidebar-closed:visible lg:sidebar-closed:opacity-100"
     >
       <div className={CARD}>
         <Backdrop {...BACKDROPS.channels} />
-        <div className={FULL_FACE}>
-          <div>
-            <p className={`${OVERLINE} text-white/70`}>{box?.text || "Bizi takip edin"}</p>
-            <h2 className={TITLE}>Topluluğa Katılın</h2>
-          </div>
-          {channels.length > 0 && (
-            <ul className="mt-4 flex gap-2">
-              {channels.map(({ key, href, label, Icon, tone, glyph }) => (
-                <li key={key} className="min-w-0 flex-1">
-                  <a
-                    href={href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`group/channel flex w-full items-center justify-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-2.5 text-sm font-semibold text-white backdrop-blur-sm transition-all focus-visible:outline-2 focus-visible:outline-offset-2 ${tone}`}
-                  >
-                    <Icon className={`h-4.5 w-4.5 shrink-0 transition-colors group-hover/channel:text-white ${glyph}`} />
-                    <span className="truncate">{label}</span>
-                    <span className="sr-only">(yeni sekmede açılır)</span>
-                  </a>
-                </li>
-              ))}
-            </ul>
-          )}
+        <div>
+          <p className={`${OVERLINE} text-white/70`}>{box?.text || "Bizi takip edin"}</p>
+          <h2 className={TITLE}>Topluluğa Katılın</h2>
         </div>
-        <div className={COMPACT_FACE}>
-          <p className={`${COMPACT_LABEL} text-white/80`}>Takip edin</p>
-          {channels.length > 0 && (
-            <ul className="flex flex-col gap-2">
-              {channels.map(({ key, href, label, Icon, tone, glyph }) => (
-                <li key={key}>
-                  <a
-                    href={href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={`${label} (yeni sekmede açılır)`}
-                    className={`group/channel flex h-11 w-11 items-center justify-center rounded-full border border-white/25 bg-white/10 text-white backdrop-blur-sm transition-all focus-visible:outline-2 focus-visible:outline-offset-2 ${tone}`}
-                  >
-                    <Icon className={`h-5 w-5 transition-colors group-hover/channel:text-white ${glyph}`} />
-                  </a>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+        {/* One under the other in the narrow column, where side by side the
+            labels would be cut short. */}
+        {channels.length > 0 && (
+          <ul className="mt-4 flex gap-2 lg:flex-col">
+            {channels.map(({ key, href, label, Icon, tone, glyph }) => (
+              <li key={key} className="min-w-0 flex-1 lg:flex-none">
+                <a
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`group/channel flex w-full items-center justify-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-2.5 text-sm font-semibold text-white backdrop-blur-sm transition-all focus-visible:outline-2 focus-visible:outline-offset-2 ${tone}`}
+                >
+                  <Icon className={`h-4.5 w-4.5 shrink-0 transition-colors group-hover/channel:text-white ${glyph}`} />
+                  <span className="truncate">{label}</span>
+                  <span className="sr-only">(yeni sekmede açılır)</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       <SmoothAnchor
@@ -180,30 +148,18 @@ export function HeroAside({ box }: { box?: PromoBox }) {
         className={`group ${CARD} transition-shadow duration-300 hover:shadow-xl hover:shadow-black/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent`}
       >
         <Backdrop {...BACKDROPS.advantages} zoom />
-        <div className={FULL_FACE}>
-          <div>
-            <p className={`${OVERLINE} text-red-400`}>{eyebrow}</p>
-            <h2 className={TITLE}>{box?.title || "Hacim büyür. Maliyet küçülür."}</h2>
-            <p className="mt-2 max-w-[22rem] text-sm leading-relaxed text-white/80">{ADVANTAGES_TEXT}</p>
-          </div>
-          <span className="mt-4 inline-flex w-max items-center text-sm font-semibold text-red-400 transition-colors group-hover:text-red-300">
-            {widget?.anchor_label || "Avantajları keşfet"}
-            <ArrowUpRight
-              className="ml-1 h-4 w-4 transition-transform motion-safe:group-hover:-translate-y-0.5 motion-safe:group-hover:translate-x-0.5"
-              aria-hidden
-            />
-          </span>
+        <div>
+          <p className={`${OVERLINE} text-red-400`}>{eyebrow}</p>
+          <h2 className={TITLE}>{box?.title || "Hacim büyür. Maliyet küçülür."}</h2>
+          <p className="mt-2 max-w-[22rem] text-sm leading-relaxed text-white/80 lg:text-[13px] lg:leading-snug">{ADVANTAGES_TEXT}</p>
         </div>
-        <div className={COMPACT_FACE}>
-          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-red-500/20 text-red-300 ring-1 ring-red-400/40">
-            <BadgePercent className="h-5 w-5" aria-hidden />
-          </span>
-          <p className={`${COMPACT_LABEL} text-white`}>Avantajlar</p>
+        <span className="mt-4 inline-flex w-max items-center text-sm font-semibold text-red-400 transition-colors group-hover:text-red-300">
+          {widget?.anchor_label || "Avantajları keşfet"}
           <ArrowUpRight
-            className="h-4 w-4 text-red-400 transition-transform motion-safe:group-hover:-translate-y-0.5 motion-safe:group-hover:translate-x-0.5"
+            className="ml-1 h-4 w-4 transition-transform motion-safe:group-hover:-translate-y-0.5 motion-safe:group-hover:translate-x-0.5"
             aria-hidden
           />
-        </div>
+        </span>
       </SmoothAnchor>
     </aside>
   );

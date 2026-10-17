@@ -18,8 +18,6 @@
  * follows it never flashes the other state.
  */
 @custom-variant sidebar-closed (&:where(html[data-sidebar="collapsed"] *));
-/* …and `sidebar-open:` while it is showing. */
-@custom-variant sidebar-open (&:where(html:not([data-sidebar="collapsed"]) *));
 
 @theme inline {
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;

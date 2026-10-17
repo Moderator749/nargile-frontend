@@ -245,14 +245,13 @@ export default async function HomePage() {
             <div className="min-w-0 flex-1">
               {/* Module 5: hero slider, with the channels and advantages beside
                   it (below lg they stand under it). The slider is the same size
-                  with the category column open or closed: the boxes give up
-                  exactly the column's 280px (16rem + its 1.5rem margin) as it
-                  opens, over the same 300ms and the same curve, so the slider
-                  only slides aside — never wider, never taller.
-                  From xl the row is a fixed 1232px: slider 811 + boxes 405
-                  closed, boxes 125 (compact) open. Below it there is no room
-                  for compact boxes: 280px boxes closed, none open. */}
-              <div className="lg:grid lg:transition-[grid-template-columns,column-gap] lg:duration-300 lg:ease-[ease] motion-reduce:transition-none lg:max-xl:grid-cols-[minmax(0,1fr)_0px] lg:max-xl:gap-x-0 lg:max-xl:sidebar-closed:grid-cols-[minmax(0,1fr)_264px] lg:max-xl:sidebar-closed:gap-x-4 xl:grid-cols-[minmax(0,1fr)_125px] xl:gap-x-4 xl:sidebar-closed:grid-cols-[minmax(0,1fr)_405px]">
+                  with the category column open or closed — the row less the
+                  column's 280px (16rem + its 1.5rem margin), 952px from xl.
+                  Open, the column takes those 280px and the boxes are hidden;
+                  closed, the boxes take them (264px + a 16px gap). Both sides
+                  change over the same 300ms on the same curve, so the slider
+                  only slides aside: never wider, never taller. */}
+              <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_0px] lg:gap-x-0 lg:transition-[grid-template-columns,column-gap] lg:duration-300 lg:ease-[ease] motion-reduce:transition-none lg:sidebar-closed:grid-cols-[minmax(0,1fr)_264px] lg:sidebar-closed:gap-x-4">
                 <HeroSlider slides={slides} />
                 <HeroAside box={spotlight} />
               </div>
