@@ -2,18 +2,35 @@ import type { NextConfig } from "next";
 
 const FALLBACK_API_URL = "http://127.0.0.1:8000/api/v1";
 
-/** Where the API serves uploaded media from, derived from the API base URL. */
+/**
+ * Where browsers load uploaded media from: beside /api/v1 under the API's
+ * public address (NEXT_PUBLIC_API_URL) — /media on the API itself, or
+ * /api/backend/media through this site's proxy (the backend's PUBLIC_MEDIA_URL).
+ */
 function mediaUrl(): URL {
+  let api: URL;
   try {
-    return new URL(process.env.NEXT_PUBLIC_API_URL ?? FALLBACK_API_URL);
+    api = new URL(process.env.NEXT_PUBLIC_API_URL ?? FALLBACK_API_URL);
   } catch {
-    return new URL(FALLBACK_API_URL);
+    api = new URL(FALLBACK_API_URL);
   }
+  return new URL(`${api.pathname.replace(/\/api\/v1\/?$/, "")}/media/`, api.origin);
 }
 
 const MEDIA = mediaUrl();
 /** The API is on this machine, so uploads are served from a loopback address. */
 const MEDIA_IS_LOCAL = ["localhost", "127.0.0.1", "[::1]", "::1"].includes(MEDIA.hostname);
+
+/**
+ * The API's own address (origin, no path), as src/lib/config.ts reads it. The
+ * browser never sees it: it reaches the API through /api/backend (below).
+ */
+const BACKEND_URL = (process.env.BACKEND_URL ?? "http://127.0.0.1:8000").replace(/\/+$/, "");
+// Rewrites are fixed at build time: a deployment built without the variable
+// would forward every API call to its own loopback. Fail the build instead.
+if (process.env.VERCEL && !process.env.BACKEND_URL) {
+  throw new Error("BACKEND_URL is not set (e.g. http://209.38.195.227:8000): the /api/backend proxy has nowhere to go.");
+}
 
 /**
 - Old category slug → the live category its products are in now. A slug the
@@ -89,14 +106,16 @@ const nextConfig: NextConfig = {
    */
   htmlLimitedBots: /.*/,
 
-  // --- DIGITALOCEAN BACKEND PROXY (HTTPS/MIXED CONTENT ÇÖZÜMÜ) ---
+  /*
+   * The browser's one way to the API (API_PROXY_PATH in src/lib/config.ts):
+   * the page's own origin, so HTTPS whenever the page is, forwarded from here
+   * to the API's plain-http address. The API's answer comes back as it is, so
+   * the API must never redirect: a Location would name BACKEND_URL itself —
+   * which is why it serves `/path/` and `/path` alike (the backend's
+   * app/core/trailing_slash.py), Next having already dropped the slash.
+   */
   async rewrites() {
-    return [
-      {
-        source: "/api/backend/:path*",
-        destination: "http://209.38.195.227:8000/:path*",
-      },
-    ];
+    return [{ source: "/api/backend/:path*", destination: `${BACKEND_URL}/:path*` }];
   },
 
   // The dashboard ("Genel Bakış") lives at /admin; keep /admin/overview working too.
@@ -150,11 +169,12 @@ const nextConfig: NextConfig = {
       new URL("https://www.nargilemalzemesi.com/image/**"),
       // A product video's poster frame (gallery thumbnails).
       new URL("https://i.ytimg.com/vi/**"),
-      // Photos the admin uploads, served by the API at /media. Both loopback
+      // Photos the admin uploads, served by the API at /media (here at
+      // /api/backend/media, through the proxy). Both loopback
       // spellings, since the stored URL carries whichever host the admin used.
       ...(MEDIA_IS_LOCAL
-        ? [new URL(`${MEDIA.protocol}//localhost:${MEDIA.port}/media/**`), new URL(`${MEDIA.protocol}//127.0.0.1:${MEDIA.port}/media/**`)]
-        : [new URL(`${MEDIA.origin}/media/**`)]),
+        ? [new URL(`${MEDIA.protocol}//localhost:${MEDIA.port}${MEDIA.pathname}**`), new URL(`${MEDIA.protocol}//127.0.0.1:${MEDIA.port}${MEDIA.pathname}**`)]
+        : [new URL(`${MEDIA.href}**`)]),
     ],
     /*
 - Next 16 refuses to optimise an image whose host resolves to a private or

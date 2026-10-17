@@ -20,7 +20,7 @@ async function getJson<T>(path: string): Promise<T | null> {
 }
 
 export function getCategories(): Promise<Category[] | null> {
-  return getJson<Category[]>("/categories/");
+  return getJson<Category[]>("/categories");
 }
 
 /**
@@ -41,7 +41,7 @@ export function getPublicProducts(
   const params = new URLSearchParams({ skip: String(skip), limit: String(limit) });
   if (category) params.set("category", category);
   if (q) params.set("q", q);
-  return getJson<CatalogProduct[]>(`/products/?${params}`);
+  return getJson<CatalogProduct[]>(`/products?${params}`);
 }
 
 /**
@@ -76,7 +76,7 @@ export async function getFlashSaleProducts(): Promise<CatalogProduct[] | null> {
 
 /** Active brands (menu + marquee); cached with the catalog, refreshed by admin saves. */
 export function getBrands(): Promise<Brand[] | null> {
-  return getJson<Brand[]>("/brands/");
+  return getJson<Brand[]>("/brands");
 }
 
 /** Homepage CMS content (slides, promo boxes, advantages); refreshed by admin saves. */
@@ -98,7 +98,7 @@ export async function getTileArtwork(tile: { slug?: string | null; search?: stri
   const params = new URLSearchParams({ limit: "1" });
   if (tile.slug) params.set("category", tile.slug);
   else if (tile.search) params.set("q", tile.search);
-  const rows = await getJson<CatalogProduct[]>(`/products/?${params}`);
+  const rows = await getJson<CatalogProduct[]>(`/products?${params}`);
   return rows?.[0]?.image_url ?? null;
 }
 

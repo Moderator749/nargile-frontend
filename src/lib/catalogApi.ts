@@ -17,7 +17,7 @@ export async function fetchProducts(
   { skip = 0, limit = CATALOG_PAGE_SIZE, category, q }: CatalogQuery = {},
   signal?: AbortSignal,
 ): Promise<CatalogProduct[]> {
-  const { data } = await api.get<CatalogProduct[]>("/products/", {
+  const { data } = await api.get<CatalogProduct[]>("/products", {
     params: { skip, limit, category: category || undefined, q: q || undefined },
     signal,
   });
@@ -31,12 +31,12 @@ export async function fetchProducts(
 export async function fetchProductsByIds(ids: string[], signal?: AbortSignal): Promise<CatalogProduct[]> {
   const params = new URLSearchParams({ limit: String(Math.min(ids.length, 100)) });
   for (const id of ids) params.append("ids", id);
-  const { data } = await api.get<CatalogProduct[]>(`/products/?${params}`, { signal });
+  const { data } = await api.get<CatalogProduct[]>(`/products?${params}`, { signal });
   return data;
 }
 
 export async function fetchCategories(signal?: AbortSignal): Promise<Category[]> {
-  const { data } = await api.get<Category[]>("/categories/", { signal });
+  const { data } = await api.get<Category[]>("/categories", { signal });
   return data;
 }
 

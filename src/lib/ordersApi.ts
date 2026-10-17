@@ -92,7 +92,7 @@ export async function checkout(payload: CheckoutRequest): Promise<Order> {
 }
 
 export async function fetchMyOrders(signal?: AbortSignal): Promise<Order[]> {
-  const { data } = await api.get<Order[]>("/orders/", { signal });
+  const { data } = await api.get<Order[]>("/orders", { signal });
   return data;
 }
 

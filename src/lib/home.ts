@@ -2,7 +2,6 @@
 // /admin/promos, /admin/advantages) and served by /home/content; this file maps
 // it to what the components render.
 
-import { API_URL } from "@/lib/config";
 import type {
   ContentRequirement,
   HeroLayout,
@@ -127,10 +126,17 @@ const OPTIMISED_HOSTS = new Set(["www.nargilemalzemesi.com"]);
 
 const LOOPBACK = new Set(["localhost", "127.0.0.1", "[::1]", "::1"]);
 
-/** Where the API serves uploads from: its own origin, under /media. */
-const MEDIA_ORIGIN = (() => {
+/**
+ * Where browsers load the API's uploads from, as next.config.ts reads it:
+ * beside /api/v1 under NEXT_PUBLIC_API_URL — /media on the API itself, or
+ * /api/backend/media through this site's proxy. Not API_URL, which is one
+ * address on the server and another in the browser, and would render a photo
+ * two ways.
+ */
+const MEDIA = (() => {
   try {
-    return new URL(API_URL);
+    const api = new URL(process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000/api/v1");
+    return new URL(`${api.pathname.replace(/\/api\/v1\/?$/, "")}/media/`, api.origin);
   } catch {
     return null;
   }
@@ -148,9 +154,9 @@ export function canOptimiseImage(src: string): boolean {
   try {
     const url = new URL(src);
     if (OPTIMISED_HOSTS.has(url.hostname)) return true;
-    if (!MEDIA_ORIGIN || !url.pathname.startsWith("/media/")) return false;
-    if (url.origin === MEDIA_ORIGIN.origin) return true;
-    return LOOPBACK.has(MEDIA_ORIGIN.hostname) && LOOPBACK.has(url.hostname) && url.port === MEDIA_ORIGIN.port;
+    if (!MEDIA || !url.pathname.startsWith(MEDIA.pathname)) return false;
+    if (url.origin === MEDIA.origin) return true;
+    return LOOPBACK.has(MEDIA.hostname) && LOOPBACK.has(url.hostname) && url.port === MEDIA.port;
   } catch {
     return false;
   }

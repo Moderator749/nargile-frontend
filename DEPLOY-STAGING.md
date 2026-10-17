@@ -48,9 +48,18 @@ Vercel → Project → Settings → Environment Variables (Production ve Preview
 |---|---|
 | `NEXT_PUBLIC_SITE_URL` | `https://test.nargilemalzemesi.com` |
 | `NEXT_PUBLIC_API_URL` | `https://api-test.nargilemalzemesi.com/api/v1` |
+| `BACKEND_URL` | Backend'in kendi adresi, örn. `http://209.38.195.227:8000` |
 | `NEXT_PUBLIC_ALLOW_INDEXING` | **eklemeyin** (staging indekslenmemeli) |
 
-`NEXT_PUBLIC_*` değerleri build sırasında koda gömülür. Bir değeri
+Tarayıcı API'ye her zaman sitenin kendi `/api/backend/api/v1` yolundan
+ulaşır; `next.config.ts` bunu `BACKEND_URL`'e iletir, sunucu tarafı da
+`BACKEND_URL`'i doğrudan çağırır. `BACKEND_URL` olmadan Vercel build'i bilerek
+hata verir. Backend bu proxy'nin arkasındaysa `NEXT_PUBLIC_API_URL` proxy
+yoludur (`https://<site>/api/backend/api/v1`) ve backend `.env`'inde
+`PUBLIC_MEDIA_URL=https://<site>/api/backend/media` olmalıdır; görseller de
+böylece proxy'den gelir.
+
+`NEXT_PUBLIC_*` değerleri ve `BACKEND_URL` build sırasında koda gömülür. Bir değeri
 değiştirdikten sonra yeniden deploy edin. `NEXT_PUBLIC_ALLOW_INDEXING=true`
 yalnızca gerçek mağaza alan adına geçildiğinde eklenecek.
 
@@ -63,6 +72,7 @@ npx vercel login
 npx vercel link            # yeni proje oluşturun, kök klasör: ./ (saas_frontend)
 npx vercel env add NEXT_PUBLIC_SITE_URL production
 npx vercel env add NEXT_PUBLIC_API_URL production
+npx vercel env add BACKEND_URL production
 npx vercel --prod
 ```
 

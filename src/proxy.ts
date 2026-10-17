@@ -21,7 +21,8 @@ import { NextResponse, type NextRequest } from "next/server";
  * proxy code is built and run apart from the pages.
  */
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000/api/v1";
+/** The API itself, as src/lib/config.ts calls it on the server. */
+const API_URL = `${(process.env.BACKEND_URL ?? "http://127.0.0.1:8000").replace(/\/+$/, "")}/api/v1`;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const SLUG = /^[a-z0-9]+(?:[.-][a-z0-9]+)*$/;
