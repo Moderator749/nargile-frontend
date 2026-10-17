@@ -458,6 +458,20 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
               onChange={(v) => set("rules", { ...draft.rules, has_dealer_havale_discount: v })}
             />
             <RuleSwitch
+              id="rule-toptan-havale"
+              label="Toptanda Havale / EFT İndirimi"
+              hint="Havale / EFT indirimi toptan fiyat grubundaki müşteriler için de geçerli."
+              checked={draft.rules.has_toptan_havale_discount}
+              onChange={(v) => set("rules", { ...draft.rules, has_toptan_havale_discount: v })}
+            />
+            <RuleSwitch
+              id="rule-cafe-havale"
+              label="Kafede Havale / EFT İndirimi"
+              hint="Havale / EFT indirimi kafe fiyat grubundaki müşteriler için de geçerli."
+              checked={draft.rules.has_cafe_havale_discount}
+              onChange={(v) => set("rules", { ...draft.rules, has_cafe_havale_discount: v })}
+            />
+            <RuleSwitch
               id="rule-volume"
               label="Sepet İndirimi"
               hint={VOLUME_DISCOUNT_HINT}

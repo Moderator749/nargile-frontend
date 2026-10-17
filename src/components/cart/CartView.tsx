@@ -531,7 +531,7 @@ export function CartView() {
                   serverColorName={line?.color_name}
                   serverImageUrl={line?.image_url}
                   productHref={line?.product_id ? productHref({ id: line.product_id, slug: line.product_slug }) : undefined}
-                  dealerHavale={line?.dealer_havale}
+                  havaleEligible={line?.havale_eligible}
                   havaleDiscount={line?.havale_discount}
                 />
               );

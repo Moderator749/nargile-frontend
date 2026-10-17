@@ -514,8 +514,8 @@ export interface CartItemBreakdown {
   image_url?: string | null;
   /** Percent; `unit_price` and `line_total` include it. */
   vat_rate?: DecimalString;
-  /** A bayi's line whose product has "Bayide Havale / EFT İndirimi" on (whatever the payment). */
-  dealer_havale?: boolean;
+  /** A B2B line (bayi, toptan, kafe) whose product has that list's havale switch on (whatever the payment). */
+  havale_eligible?: boolean;
   /** The havale discount on this line (VAT-inclusive); "0.00" unless paid by transfer. */
   havale_discount?: DecimalString;
 }
@@ -582,7 +582,7 @@ export interface Cart {
    * carries no promotional discounts.
    */
   subtotal_excl_tax?: DecimalString;
-  /** A bayi's line discounts (havale) before VAT; subtotal_excl_tax − this + vat_total = the lines' total. */
+  /** A B2B account's line discounts (havale) before VAT; subtotal_excl_tax − this + vat_total = the lines' total. */
   line_discount_excl_tax?: DecimalString;
   vat_total?: DecimalString;
   vat_rates?: DecimalString[];
@@ -861,8 +861,10 @@ export interface SheetRules {
   /** "Adet şartı": free carriage only from this many units; null = no condition. */
   free_shipping_min_quantity?: number | null;
   has_havale_discount: boolean;
-  /** "Bayide Havale / EFT İndirimi": the havale/EFT discount for a bayi (DEALER) too; off by default. */
+  /** "Bayide / Toptanda / Kafede Havale / EFT İndirimi": the havale/EFT discount for that B2B list too, line by line; off by default. */
   has_dealer_havale_discount: boolean;
+  has_toptan_havale_discount: boolean;
+  has_cafe_havale_discount: boolean;
   /** "Ciro indirimi": counts towards, and is discounted by, the volume tiers. */
   has_volume_discount: boolean;
   gives_points: boolean;

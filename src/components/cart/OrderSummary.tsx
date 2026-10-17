@@ -154,8 +154,8 @@ export function OrderSummary(props: OrderSummaryProps) {
     !!quote && !quote.perks_eligible && !props.quoteOnly && quote.subtotal_excl_tax != null && quote.vat_total != null;
   // Sultan Puan is a retail promotion and can be switched off in the panel.
   const loyalty = props.perks && params.loyalty.enabled;
-  // A bayi's cart with products that give it the havale discount ("Bayide Havale / EFT İndirimi").
-  const dealerHavale = !!quote?.items.some((i) => i.dealer_havale);
+  // A B2B cart with products that give its list the havale discount ("Bayide / Toptanda / Kafede …").
+  const b2bHavale = !!quote?.items.some((i) => i.havale_eligible);
   const transferHint = transferDiscountHint(params);
 
   return (
@@ -183,9 +183,9 @@ export function OrderSummary(props: OrderSummaryProps) {
             value={props.paymentMethod}
             onChange={props.onPaymentMethodChange}
             /* The havale discount is a retail promotion: a B2B account pays its
-               tier price whichever way it pays — except a bayi, on the products
-               that give it the discount. */
-            transferDiscount={props.perks ? transferHint : dealerHavale && transferHint ? `${transferHint}, işaretli ürünlerde` : null}
+               tier price whichever way it pays — except on the products that
+               give its list the discount. */
+            transferDiscount={props.perks ? transferHint : b2bHavale && transferHint ? `${transferHint}, işaretli ürünlerde` : null}
             cardAvailable={props.cardAvailable}
             saveCard={props.saveCard}
             onSaveCardChange={props.onSaveCardChange}
@@ -250,7 +250,7 @@ export function OrderSummary(props: OrderSummaryProps) {
               </div>
             )}
             <p className="text-xs text-slate-500 dark:text-zinc-400">
-              {dealerHavale
+              {b2bHavale
                 ? "Fiyatlarınız hesabınıza tanımlı fiyat listesinden gelir. Havale/EFT ile ödemede işaretli ürünlerde havale indirimi uygulanır; ciro ve Sultan Puan indirimleri bireysel (perakende) hesaplara tanımlıdır."
                 : "Fiyatlarınız hesabınıza tanımlı fiyat listesinden gelir; ciro, havale ve Sultan Puan indirimleri bireysel (perakende) hesaplara tanımlıdır."}
             </p>

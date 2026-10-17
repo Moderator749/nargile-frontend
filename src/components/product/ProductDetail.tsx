@@ -326,6 +326,7 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
         categories={categories}
         isLoggedIn={loggedIn}
         pricesPending={pricesPending}
+        mainPrice={price}
       />
     </div>
   );
