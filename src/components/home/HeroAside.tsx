@@ -34,8 +34,16 @@ const CHANNELS: {
 /** The advantages card's line under its title; the promo box has no field for it. */
 const ADVANTAGES_TEXT = "Sultan Nargile ile alışverişlerinizde toptan ve perakende ayrıcalıklarından yararlanın.";
 
-/** The shop's own photographs (also on the advantage tiles), dark and red: accessories, and a set for the trade. */
-const BACKDROPS = { channels: "/images/avantaj-hero-3.jpg", advantages: "/images/avantaj-legend.jpg" };
+/**
+ * The shop's own photographs (also on the advantage tiles), dark and red:
+ * accessories, and an ornate set. Neither carries another brand's name, as the
+ * Legend and Oduman shots do — the advantages card speaks for Sultan Nargile.
+ * The set stands on the left of its frame, so it is mirrored to clear the words.
+ */
+const BACKDROPS = {
+  channels: { src: "/images/avantaj-hero-3.jpg" },
+  advantages: { src: "/images/avantaj-hero-1.jpg", flip: true },
+};
 
 /**
  * A card on a photograph: dark in either theme, as the slider beside it is.
@@ -54,18 +62,22 @@ const TITLE = "mt-1.5 text-balance text-xl font-extrabold leading-tight text-whi
  * The photograph behind a card, under a veil that is darkest on the left,
  * where the words are, and clears towards the subject on the right.
  */
-function Backdrop({ src, zoom }: { src: string; zoom?: boolean }) {
+function Backdrop({ src, flip, zoom }: { src: string; flip?: boolean; zoom?: boolean }) {
   return (
     <>
-      <Image
-        src={src}
-        alt=""
-        fill
-        sizes="(min-width: 1280px) 420px, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-        className={`-z-10 object-cover object-right ${
-          zoom ? "transition-transform duration-700 ease-out motion-safe:group-hover:scale-105" : ""
-        }`}
-      />
+      {/* The mirror is on a wrapper: on the image itself the hover zoom would
+          set the same `scale` and turn it back. */}
+      <span aria-hidden className={`absolute inset-0 -z-10 ${flip ? "-scale-x-100" : ""}`}>
+        <Image
+          src={src}
+          alt=""
+          fill
+          sizes="(min-width: 1280px) 420px, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+          className={`object-cover ${flip ? "object-left" : "object-right"} ${
+            zoom ? "transition-transform duration-700 ease-out motion-safe:group-hover:scale-105" : ""
+          }`}
+        />
+      </span>
       <span aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-r from-black/85 via-black/55 to-black/25" />
     </>
   );
@@ -103,7 +115,7 @@ export function HeroAside({ box }: { box?: PromoBox }) {
       className="mt-4 grid min-w-0 gap-4 sm:grid-cols-2 lg:invisible lg:mt-0 lg:flex lg:h-0 lg:min-h-full lg:flex-col lg:overflow-hidden lg:opacity-0 lg:transition-[opacity,visibility] lg:duration-300 motion-reduce:transition-none lg:sidebar-closed:visible lg:sidebar-closed:opacity-100"
     >
       <div className={CARD}>
-        <Backdrop src={BACKDROPS.channels} />
+        <Backdrop {...BACKDROPS.channels} />
         <div>
           <p className={`${OVERLINE} text-white/70`}>{box?.text || "Bizi takip edin"}</p>
           <h2 className={TITLE}>Topluluğa Katılın</h2>
@@ -132,7 +144,7 @@ export function HeroAside({ box }: { box?: PromoBox }) {
         href={box?.href || "/#avantajlar"}
         className={`group ${CARD} transition-shadow duration-300 hover:shadow-xl hover:shadow-black/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent`}
       >
-        <Backdrop src={BACKDROPS.advantages} zoom />
+        <Backdrop {...BACKDROPS.advantages} zoom />
         <div>
           <p className={`${OVERLINE} text-red-400`}>{eyebrow}</p>
           <h2 className={TITLE}>{box?.title || "Hacim büyür. Maliyet küçülür."}</h2>
