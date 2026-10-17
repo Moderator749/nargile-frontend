@@ -186,7 +186,7 @@ function CatalogGrid({
                 ? "Aramanızla eşleşen ürün bulunamadı."
                 : brand
                   ? `${brand.name} ürünleri şu an satışta değil.`
-                  : "Bu kategoride henüz ürün yok."}
+                  : "Bu kategoride henüz ürün bulunmamaktadır."}
           </p>
           <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">
             {filtered
