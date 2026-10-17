@@ -4,6 +4,7 @@ import { Suspense, useMemo, useState, type ReactNode } from "react";
 import { SearchX } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 
+import { AdminCatalogPdf, useIsAdmin } from "@/components/catalog/AdminCatalogPdf";
 import { PriceCatalogExport } from "@/components/catalog/PriceCatalogExport";
 import { isExportAccount } from "@/lib/exportAccount";
 import { isB2BSegment } from "@/lib/priceList";
@@ -114,6 +115,7 @@ function CatalogGrid({
   const segment = user?.segment_code;
   // Bayi / Toptan / Kafe (not export) accounts get the PDF price catalogue.
   const canExport = !!user && isB2BSegment(segment) && !isExportAccount(user);
+  const isAdmin = useIsAdmin();
 
   // Sales expire while the page is open; the filters price what the cards price.
   const now = useNow(catalog.products.some((p) => p.variants.some((v) => v.flash_sale)));
@@ -126,6 +128,7 @@ function CatalogGrid({
   const filtered = shown.length === 0 && catalog.products.length > 0;
 
   const patch = (next: Partial<CatalogFilters>) => setFilters((f) => ({ ...f, ...next }));
+  const collection = brand ? brand.name : searched ? `“${searched}” araması` : (activeCategory?.name ?? "Tüm ürünler");
 
   return (
     <>
@@ -133,16 +136,13 @@ function CatalogGrid({
         value={filters}
         onChange={patch}
         bounds={bounds}
-        // Bayi / Toptan / Kafe only: the grid as shown, as a PDF price catalogue.
+        // The grid as shown, as a PDF price catalogue: an admin's at any
+        // group's prices, a Bayi / Toptan / Kafe account's at the ones below it.
         trailing={
-          canExport ? (
-            <PriceCatalogExport
-              products={shown}
-              collection={
-                brand ? brand.name : searched ? `“${searched}” araması` : (activeCategory?.name ?? "Tüm ürünler")
-              }
-              hasMore={catalog.hasMore}
-            />
+          isAdmin ? (
+            <AdminCatalogPdf products={shown} collection={collection} hasMore={catalog.hasMore} />
+          ) : canExport ? (
+            <PriceCatalogExport products={shown} collection={collection} hasMore={catalog.hasMore} />
           ) : undefined
         }
       />

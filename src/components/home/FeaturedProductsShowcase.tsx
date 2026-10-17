@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { AdminCatalogPdf } from "@/components/catalog/AdminCatalogPdf";
 import { ShowcaseProductCard, useOwnPrices } from "@/components/home/ShowcaseProductCard";
 import { PAGE_CONTAINER } from "@/lib/layout";
 import type { CatalogProduct } from "@/types";
@@ -53,21 +54,28 @@ export function FeaturedProductsShowcase({ lists }: { lists: Record<TabKey, Cata
             </h2>
             <p className="mt-2 text-gray-500 dark:text-neutral-400">En çok tercih edilen ve yeni gelen ürünler</p>
           </div>
-          {visible.length > 1 && (
-            <div className="flex flex-wrap gap-2" role="group" aria-label="Ürün listesi">
-              {visible.map(({ key, label }) => (
-                <button
-                  key={key}
-                  type="button"
-                  aria-pressed={key === active}
-                  onClick={() => setTab(key)}
-                  className={`${TAB} ${key === active ? TAB_ACTIVE : TAB_IDLE}`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          )}
+          <div className="flex flex-wrap items-center gap-2">
+            {visible.length > 1 && (
+              <div className="flex flex-wrap gap-2" role="group" aria-label="Ürün listesi">
+                {visible.map(({ key, label }) => (
+                  <button
+                    key={key}
+                    type="button"
+                    aria-pressed={key === active}
+                    onClick={() => setTab(key)}
+                    className={`${TAB} ${key === active ? TAB_ACTIVE : TAB_IDLE}`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+            {/* Admin only: the tab on screen, as a price catalogue. */}
+            <AdminCatalogPdf
+              products={lists[active]}
+              collection={`Sizin İçin Seçtiklerimiz · ${TABS.find((t) => t.key === active)?.label ?? ""}`}
+            />
+          </div>
         </div>
 
         <ul className="mx-auto grid w-full max-w-7xl grid-cols-2 gap-4 md:grid-cols-3 md:gap-6 lg:grid-cols-5">

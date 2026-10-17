@@ -5,6 +5,7 @@ import Link from "next/link";
 import axios from "axios";
 import { ArrowRight, ChevronLeft, ChevronRight, Package } from "lucide-react";
 
+import { AdminCatalogPdf } from "@/components/catalog/AdminCatalogPdf";
 import { ProductImage } from "@/components/catalog/ProductImage";
 import { useDisplayMoney } from "@/hooks/useDisplayMoney";
 import { useNow } from "@/hooks/useNow";
@@ -369,6 +370,8 @@ export function DealsFunnel({ initialProducts, categories, title, subtitle }: De
             {subtitle && (
               <p className="mx-auto mt-1 max-w-lg text-[13px] leading-relaxed text-white/70">{subtitle}</p>
             )}
+            {/* Admin only: the deals on show, as a price catalogue. */}
+            <AdminCatalogPdf products={products} collection={title} tone="dark" className="mt-3" />
           </div>
         </div>
 

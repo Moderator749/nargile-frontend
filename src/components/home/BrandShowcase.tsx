@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
 
+import { AdminCatalogPdf } from "@/components/catalog/AdminCatalogPdf";
 import { ShowcaseProductCard, useOwnPrices } from "@/components/home/ShowcaseProductCard";
 import { PAGE_CONTAINER } from "@/lib/layout";
 import type { CatalogProduct } from "@/types";
@@ -165,6 +166,8 @@ export function BrandShowcase({
               Koleksiyonu Keşfet
               <ArrowUpRight className="h-4 w-4" aria-hidden />
             </Link>
+            {/* Admin only: the brand's row, as a price catalogue. */}
+            <AdminCatalogPdf products={products} collection={brandName} />
             {products.length > VISIBLE && (
               <div className="hidden gap-2 lg:flex">
                 {([-1, 1] as const).map((direction) => (

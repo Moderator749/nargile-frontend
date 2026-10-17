@@ -8,7 +8,7 @@ import { Lookbook, PrintableLookbook, printLookbook, type LookbookItem, type Loo
 import { Alert } from "@/components/ui/Alert";
 import { getApiErrorMessage } from "@/lib/errors";
 import { formatDateParts } from "@/lib/format";
-import { CATALOG_GROUP_LABELS, fetchPriceList, readCatalogRequest, type PriceListItem } from "@/lib/priceList";
+import { CATALOG_GROUP_LABELS, fetchAdminCatalog, fetchPriceList, readCatalogRequest, type PriceListItem } from "@/lib/priceList";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useAuthHydrated } from "@/store/useHasHydrated";
 import type { SegmentType } from "@/types";
@@ -51,7 +51,11 @@ export function PriceCatalogPage({ requestKey }: { requestKey: string }) {
   useEffect(() => {
     if (!hydrated || !token || !request) return;
     const controller = new AbortController();
-    fetchPriceList(request.productIds, request.groups, controller.signal)
+    // An admin's catalogue (one group, any group) comes from the admin endpoint.
+    const rows = request.admin
+      ? fetchAdminCatalog(request.productIds, request.groups[0], controller.signal)
+      : fetchPriceList(request.productIds, request.groups, controller.signal);
+    rows
       .then(setItems)
       .catch((err) => {
         if (!controller.signal.aborted) setError(getApiErrorMessage(err, "Katalog hazırlanamadı."));

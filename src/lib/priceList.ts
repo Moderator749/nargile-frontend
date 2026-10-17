@@ -26,6 +26,9 @@ export const CATALOG_CHOICES: Record<B2BSegment, { pick: SegmentType[] } | { fix
   CAFE: { fixed: ["CAFE", "RETAIL"] },
 };
 
+/** An admin's catalogue from the storefront ("PDF Oluştur") takes any one group. */
+export const ADMIN_CATALOG_GROUPS: readonly SegmentType[] = ["DEALER", "WHOLESALE", "CAFE", "RETAIL"];
+
 export const isB2BSegment = (code: SegmentType | null | undefined): code is B2BSegment =>
   code === "DEALER" || code === "WHOLESALE" || code === "CAFE";
 
@@ -46,6 +49,12 @@ export async function fetchPriceList(productIds: UUID[], groups: SegmentType[], 
   return data;
 }
 
+/** The same rows for an admin, at any one group's prices (admin only, checked by the server). */
+export async function fetchAdminCatalog(productIds: UUID[], segment: SegmentType, signal?: AbortSignal): Promise<PriceListItem[]> {
+  const { data } = await api.post<PriceListItem[]>("/admin/pricing/custom-catalog", { product_ids: productIds, segment }, { signal });
+  return data;
+}
+
 // ── Hand-off to the printing tab ─────────────────────────────────────────────
 // A catalogue can hold 200 products, too many ids for a link, so the request
 // waits in localStorage under a one-off key the new tab is opened with.
@@ -55,6 +64,8 @@ export interface PriceCatalogRequest {
   groups: SegmentType[];
   /** The page header's collection line: the category, the search, or "Tüm ürünler". */
   collection: string;
+  /** An admin's, from a storefront section's "PDF Oluştur": one group, any group. */
+  admin?: boolean;
 }
 
 const PREFIX = "price-catalog:";
