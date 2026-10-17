@@ -55,14 +55,27 @@ export const toHeroSlide = (s: HeroSlideContent): HeroSlide => ({
   layout: s.layout ?? null,
 });
 
-/** Shown only if the CMS is unreachable, so the homepage never loses its hero. */
+/**
+ * The shop's own hero photographs, for a slide without a photo of its own. The
+ * three slides a new database is seeded with (the backend's homepage_content
+ * migration) have none until one is uploaded in /admin/hero, and would stand
+ * as bare dark banners. In those slides' order, so each gets the photo it was
+ * first shown with.
+ */
+export const DEFAULT_HERO_IMAGES = ["/images/hero-1.jpg", "/images/hero-2.jpg", "/images/hero-3.jpg"] as const;
+
+/** The slide, with the default photo for its place in the CMS list if it has none of its own. */
+export const withDefaultImage = (slide: HeroSlide, index: number): HeroSlide =>
+  slide.image ? slide : { ...slide, image: DEFAULT_HERO_IMAGES[index % DEFAULT_HERO_IMAGES.length] };
+
+/** Shown when the CMS has no slide to show (or is unreachable), so the homepage never loses its hero. */
 export const FALLBACK_SLIDE: HeroSlide = {
   id: "fallback",
   eyebrow: "Nargile Malzemesi",
   title: "Kusursuz Mühendislik. Saf Deneyim.",
   subtitle: "Endüstriyel Nargile ve Premium Sarf Malzemeleri.",
   cta: { label: "Kataloğu Keşfet", href: "/catalog" },
-  image: null,
+  image: DEFAULT_HERO_IMAGES[0],
   align: "center",
   focus: { x: 50, y: 50 },
   zoom: 100,

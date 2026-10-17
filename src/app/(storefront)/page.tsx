@@ -14,7 +14,7 @@ import { CategorySidebar } from "@/components/layout/CategorySidebar";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { FEATURED_PRODUCTS_COUNT } from "@/lib/config";
 import { brandHref, organizationJsonLd, pageMetadata, productListJsonLd, websiteJsonLd } from "@/lib/seo";
-import { FALLBACK_SLIDE, meets, promoRows, toHeroSlide } from "@/lib/home";
+import { FALLBACK_SLIDE, meets, promoRows, toHeroSlide, withDefaultImage } from "@/lib/home";
 import {
   getBrands,
   getCategories,
@@ -47,15 +47,43 @@ const FEATURED_CATEGORY_SLUG = "celik-takimlar";
  * TEMPORARY: there is nothing yet to rank by. No order has been placed and the
  * migrated catalog carries one creation time for every product, so neither
  * "best selling" nor "newest" means anything. Until it does, each tab is a
- * fixed category's first products; swap these for a real sort once the API
- * offers one.
+ * fixed category's first products (or, where the catalog has no such category,
+ * the house brands' — see `fillPicks`); swap these for a real sort once the
+ * API offers one.
  */
 const PICKS = { bestsellers: FEATURED_CATEGORY_SLUG, newest: "oduman" } as const;
 const PICKS_COUNT = 10;
 
+type Picks = Record<keyof typeof PICKS, CatalogProduct[]>;
+
 /** A product worth showing: one with a photo and a price to put under it. */
 const showable = (products: CatalogProduct[] | null, count = PICKS_COUNT) =>
   (products ?? []).filter((p) => p.image_url && p.variants.some((v) => v.price)).slice(0, count);
+
+/** The rows' items taken in turn: the first of each row, then the second of each… */
+function interleave<T>(rows: readonly T[][]): T[] {
+  const out: T[] = [];
+  for (let i = 0; rows.some((row) => i < row.length); i++) {
+    for (const row of rows) if (i < row.length) out.push(row[i]);
+  }
+  return out;
+}
+
+/**
+ * A tab whose category has nothing to show — a catalog whose taxonomy has no
+ * such category, as an import's may not — takes its products from `spare`
+ * instead, skipping any the other tab already shows. So the section stays on
+ * the page while the catalog has products to put in it.
+ */
+function fillPicks(lists: Picks, spare: CatalogProduct[]): Picks {
+  const taken = new Set(Object.values(lists).flat().map((p) => p.id));
+  const rest = spare.filter((p) => !taken.has(p.id));
+  const filled = { ...lists };
+  for (const key of Object.keys(PICKS) as (keyof Picks)[]) {
+    if (filled[key].length === 0) filled[key] = rest.splice(0, PICKS_COUNT);
+  }
+  return filled;
+}
 
 /**
  * "Markalarımız": one section per brand under a single heading, down the page
@@ -163,7 +191,12 @@ export default async function HomePage() {
   // Managed in /admin/hero and /admin/promos.
   // Any colour of any product carrying a claimable sale is enough.
   const has = { flash_sales: (flashSales ?? []).some((p) => p.variants.some((v) => v.flash_sale)) };
-  const cmsSlides = (content?.slides ?? []).filter((s) => meets(s.requires, has)).map(toHeroSlide);
+  const cmsSlides = (content?.slides ?? [])
+    // Numbered before the filter, so a slide keeps its default photo whether or
+    // not the one before it is showing.
+    .map((slide, index) => ({ slide, index }))
+    .filter(({ slide }) => meets(slide.requires, has))
+    .map(({ slide, index }) => withDefaultImage(toHeroSlide(slide), index));
   const slides = cmsSlides.length > 0 ? cmsSlides : [FALLBACK_SLIDE];
   // Of the promo boxes, only the "social" one is read now (the channels and
   // the advantages beside the hero); the rest stay in /admin/promos but no
@@ -171,6 +204,18 @@ export default async function HomePage() {
   const spotlight = promoRows(content?.promos ?? [], has)
     .flat()
     .find((box) => box.variant === "social");
+
+  // A tab short of its category falls back on the brand rows (the house
+  // brands, dearest first: the hookah sets), taken a brand at a time; with
+  // none of those either, on the catalog's first page.
+  const lists: Picks = { bestsellers: showable(bestsellers), newest: showable(newest) };
+  const short = Object.values(lists).some((list) => list.length === 0);
+  const spare = !short
+    ? []
+    : brandRows.some((row) => row.length > 0)
+      ? interleave(brandRows)
+      : showable(await getPublicProducts(undefined, PICKS_COUNT * 4), PICKS_COUNT * 4);
+  const picks = fillPicks(lists, spare);
 
   return (
     <>
@@ -227,7 +272,7 @@ export default async function HomePage() {
 
         {/* Module 9b: "Sizin İçin Seçtiklerimiz", two tabbed product lists, on
             the ticker's white. */}
-        <FeaturedProductsShowcase lists={{ bestsellers: showable(bestsellers), newest: showable(newest) }} />
+        <FeaturedProductsShowcase lists={picks} />
 
         {/* Module 9c: "Fırsatları Kaçırma" — the deals, and the page's only
             deals section, its dark band straight after the white of the picks.
