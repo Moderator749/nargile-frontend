@@ -53,7 +53,8 @@ export function AdminCatalogPdf({
         type="button"
         onClick={() => setOpen(true)}
         title="Yalnızca adminler görür"
-        className="inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-dashed border-red-500/70 bg-white px-3.5 text-xs font-semibold text-red-700 transition-colors hover:bg-red-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 dark:border-red-400/60 dark:bg-transparent dark:text-red-300 dark:hover:bg-red-500/10"
+        // The same solid red as the B2B accounts' "Fiyat Kataloğu İndir" in this bar.
+        className="inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl border border-red-600 bg-red-600 px-3 text-[11px] font-bold uppercase tracking-wider text-white shadow-sm transition-colors duration-200 hover:border-red-500 hover:bg-red-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       >
         <FileDown className="h-3.5 w-3.5" aria-hidden /> PDF Oluştur
       </button>

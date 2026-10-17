@@ -91,7 +91,8 @@ export default async function ProductPage(props: PageProps<"/product/[slug]">) {
   ];
 
   return (
-    <main className="flex flex-1 flex-col">
+    // White, the same white the product photos are shot on.
+    <main className="flex flex-1 flex-col bg-white dark:bg-background">
       <JsonLd data={productJsonLd(product, category)} />
       <JsonLd data={breadcrumbJsonLd(crumbs)} />
       <ProductDetail initialProduct={product} category={category} categories={categories} breadcrumbs={crumbs} />

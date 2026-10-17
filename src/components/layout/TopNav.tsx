@@ -76,8 +76,8 @@ export function TopNav({ categories, links }: { categories: ResolvedNav[]; links
     );
   }
 
-  // A band under the header in the same grey as it and the category column,
-  // a hairline between the two.
+  // A band under the white logo row in the category column's grey, framing
+  // the page with it; a hairline between the two rows.
   return (
     <nav aria-label="Ana menü" className="border-t border-gray-200 bg-background dark:border-border">
       {/* The gap after the red button is the category column's right margin,
