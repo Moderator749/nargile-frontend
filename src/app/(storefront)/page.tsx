@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { AdvantagesSection } from "@/components/home/AdvantagesSection";
+import { BrandStatement } from "@/components/home/BrandStatement";
 import { CatalogShowcase } from "@/components/home/CatalogShowcase";
 import { BrandShowcase } from "@/components/home/BrandShowcase";
 import { BrandTicker } from "@/components/home/BrandTicker";
@@ -8,7 +9,6 @@ import { DealsFunnel } from "@/components/home/DealsFunnel";
 import { FeaturedProductsShowcase } from "@/components/home/FeaturedProductsShowcase";
 import { HeroAside } from "@/components/home/HeroAside";
 import { HeroSlider } from "@/components/home/HeroSlider";
-import { PromoSpotlight } from "@/components/home/PromoSpotlight";
 import { SeoIntro } from "@/components/home/SeoIntro";
 import { CategorySidebar } from "@/components/layout/CategorySidebar";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -165,8 +165,9 @@ export default async function HomePage() {
   const has = { flash_sales: (flashSales ?? []).some((p) => p.variants.some((v) => v.flash_sale)) };
   const cmsSlides = (content?.slides ?? []).filter((s) => meets(s.requires, has)).map(toHeroSlide);
   const slides = cmsSlides.length > 0 ? cmsSlides : [FALLBACK_SLIDE];
-  // Of the promo boxes, only the red "Ayrıcalıklar & Avantajlar" card is
-  // shown now; the rest stay in /admin/promos but no longer reach the page.
+  // Of the promo boxes, only the "social" one is read now (the channels and
+  // the advantages beside the hero); the rest stay in /admin/promos but no
+  // longer reach the page.
   const spotlight = promoRows(content?.promos ?? [], has)
     .flat()
     .find((box) => box.variant === "social");
@@ -198,28 +199,24 @@ export default async function HomePage() {
             <CategorySidebar items={sidebar} />
             <div className="min-w-0 flex-1">
               {/* Module 5: hero slider. With the column closed it takes two
-                  thirds of the row and the two promo boxes the last third;
+                  thirds of the row and the channels and advantages the last third;
                   opening the column folds the boxes away and the slider keeps
                   the rest. Animated sizes rather than a 12-column span, so the
                   fold runs alongside the column opening instead of jumping. */}
               <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,0fr)] lg:gap-x-0 lg:transition-[grid-template-columns,column-gap] lg:duration-300 lg:ease-[ease] motion-reduce:transition-none lg:sidebar-closed:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:sidebar-closed:gap-x-4">
                 <HeroSlider slides={slides} />
-                <HeroAside />
+                <HeroAside box={spotlight} />
               </div>
             </div>
           </div>
         )}
 
-        {/* Modules 6 & 7: the channels, the brand and the advantages, in
-            columns split by hairlines under the hero row, clear of the hero's
-            rounded corners (the category column, open or closed, ends where
-            the hero does). The bottom margin is short because the deals section below brings its
-            own padding: together they make the same 48px as the top. */}
-        {sections.promos && spotlight && (
-          <div
-            className={`${PAGE_CONTAINER} mt-12 mb-6 sm:mb-4`}
-          >
-            <PromoSpotlight box={spotlight} />
+        {/* Modules 6 & 7: "Sektörde Referans Noktası", a wide band under the
+            hero row, clear of the hero's rounded corners (the category column,
+            open or closed, ends where the hero does). */}
+        {sections.promos && (
+          <div className={`${PAGE_CONTAINER} mt-6 mb-12`}>
+            <BrandStatement />
           </div>
         )}
 
