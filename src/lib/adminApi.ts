@@ -42,6 +42,7 @@ import type {
   LegalKey,
   OrderApproveResponse,
   OrderStatus,
+  PriceImportAlias,
   PriceImportResult,
   ProductDeleteResult,
   ProductSheet,
@@ -592,4 +593,17 @@ export async function adminImportPrices(file: File, dryRun: boolean): Promise<Pr
     timeout: 60_000,
   });
   return data;
+}
+
+/** A suggestion confirmed: this workbook name means this product on every later upload. */
+export async function adminSaveImportAlias(excelName: string, productId: string): Promise<PriceImportAlias> {
+  const { data } = await api.post<PriceImportAlias>("/admin/pricing/import-aliases", {
+    excel_name: excelName,
+    product_id: productId,
+  });
+  return data;
+}
+
+export async function adminDeleteImportAlias(id: number): Promise<void> {
+  await api.delete(`/admin/pricing/import-aliases/${id}`);
 }

@@ -1521,14 +1521,31 @@ export interface PriceImportMatched extends PriceImportRow {
   product_id: string;
   product_code: string;
   product_name: string;
-  matched_by: "code" | "sku" | "name";
+  /** "alias": tied to the product by the admin on an earlier upload (`alias_id`). */
+  matched_by: "alias" | "code" | "sku" | "name";
+  alias_id: number | null;
   variants: number;
   old_prices: Partial<Record<SegmentType, { currency: CurrencyType; price_incl_tax: DecimalString }>>;
 }
 
+/** A product a row may mean; priced only once the admin confirms it. */
+export interface PriceImportCandidate {
+  product_id: string;
+  code: string;
+  name: string;
+  /** 0–1. */
+  score: number;
+  /** "abbreviation": a word spelled the other way (GOLD/G); "similar": a code like it, same model; "same_code": one of several sharing the name. */
+  basis: "abbreviation" | "similar" | "same_code";
+  retail: { currency: CurrencyType; price_incl_tax: DecimalString } | null;
+}
+
+export interface PriceImportSuggested extends PriceImportRow {
+  candidates: PriceImportCandidate[];
+}
+
 export interface PriceImportUnmatched extends PriceImportRow {
-  reason: "unnamed" | "incomplete" | "not_found" | "ambiguous" | "conflict" | "no_variants";
-  candidates: { product_id: string; code: string; name: string }[];
+  reason: "unnamed" | "incomplete" | "not_found" | "conflict" | "no_variants";
 }
 
 export interface PriceImportSkipped {
@@ -1542,8 +1559,19 @@ export interface PriceImportSkipped {
 export interface PriceImportResult {
   dry_run: boolean;
   matched: PriceImportMatched[];
+  suggested: PriceImportSuggested[];
   unmatched: PriceImportUnmatched[];
   skipped: PriceImportSkipped[];
   updated_products: number;
   updated_variants: number;
+}
+
+/** A workbook name the admin tied to a product by confirming a suggestion. */
+export interface PriceImportAlias {
+  id: number;
+  excel_name: string;
+  product_id: string;
+  product_code: string;
+  product_name: string;
+  created_at: string;
 }
