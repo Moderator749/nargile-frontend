@@ -17,7 +17,8 @@ export const SIDEBAR_WIDTH_LG = "lg:w-64";
 
 /**
  * Kategoriler: the column down the left of the storefront, closed until the
- * visitor opens it with "KATEGORİLER" in the bar.
+ * visitor opens it with "KATEGORİLER" in the bar — except on the catalog's own
+ * pages, which open with it (see `lib/sidebar`).
  *
  * Open, it is exactly as tall as the hero beside it, whatever the window: the
  * list sits in a box pinned to the column's edges, so it adds nothing to the

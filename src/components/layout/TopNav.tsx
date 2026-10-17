@@ -1,14 +1,14 @@
 "use client";
 
-import { Suspense, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { Suspense, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowLeft, ChevronDown, LayoutGrid, PanelLeftClose, X } from "lucide-react";
+import { ArrowLeft, ChevronDown, LayoutGrid, X } from "lucide-react";
 
 import { CategoryList } from "@/components/layout/CategoryList";
 import { SIDEBAR_WIDTH } from "@/components/layout/CategorySidebar";
 
-import { isSidebarCollapsed, setSidebarCollapsed, subscribeSidebar } from "@/lib/sidebar";
+import { applySidebarFor, isSidebarCollapsed, opensByDefault, setSidebarCollapsed, subscribeSidebar } from "@/lib/sidebar";
 import type { ResolvedNav } from "@/lib/storefrontNav";
 import { PAGE_CONTAINER } from "@/lib/layout";
 
@@ -29,8 +29,10 @@ const LINK =
  * "KATEGORİLER" is the cell above that column, the same width as it so the two
  * read as one shape — and the handle for it: on a desktop it collapses the
  * column and gives its width to the page, and the choice is remembered for the
- * next visit. Below `lg` the column lives in a drawer, and the same cell opens
- * it.
+ * next visit (the catalog's pages open with it whatever was chosen; see
+ * `lib/sidebar`). Its chevron points the way the column will go and turns over
+ * as it does; on hover it nudges that way, on a lighter disc. Below `lg` the
+ * column lives in a drawer, and the same cell opens it.
  */
 export function TopNav({ categories, links }: { categories: ResolvedNav[]; links: ResolvedNav[] }) {
   const pathname = usePathname();
@@ -38,7 +40,11 @@ export function TopNav({ categories, links }: { categories: ResolvedNav[]; links
   const dialog = useRef<HTMLDialogElement>(null);
   // The column's own state lives on <html>, set before first paint; this only
   // follows it, so the chevron and the label always say what is on screen.
-  const collapsed = useSyncExternalStore(subscribeSidebar, isSidebarCollapsed, () => true);
+  const collapsed = useSyncExternalStore(subscribeSidebar, isSidebarCollapsed, () => !opensByDefault(pathname));
+
+  // Arriving on a page by a link: the column as that page opens with. Before
+  // paint, so a category page never shows a frame without it.
+  useLayoutEffect(() => applySidebarFor(pathname), [pathname]);
 
   // The native dialog brings the focus trap, Escape and the inert background.
   useEffect(() => {
@@ -88,16 +94,23 @@ export function TopNav({ categories, links }: { categories: ResolvedNav[]; links
           onClick={() => setSidebarCollapsed(!collapsed)}
           aria-expanded={!collapsed}
           aria-label={collapsed ? "Kategori sütununu aç" : "Kategori sütununu kapat"}
-          className={`hidden shrink-0 items-center gap-2 rounded-md bg-red-700 px-6 py-2 text-[11px] font-bold uppercase tracking-wider text-white shadow-sm transition-colors hover:bg-red-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent lg:flex ${SIDEBAR_WIDTH}`}
+          className={`group hidden shrink-0 items-center gap-2 rounded-md bg-red-700 px-6 py-2 text-[11px] font-bold uppercase tracking-wider text-white shadow-sm transition-colors hover:bg-red-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent lg:flex ${SIDEBAR_WIDTH}`}
         >
           <LayoutGrid className="h-3.5 w-3.5 shrink-0 text-white" aria-hidden />
           Kategoriler
-          <PanelLeftClose
-            className={`ml-auto h-3.5 w-3.5 shrink-0 text-white/75 transition-transform duration-300 ${
-              collapsed ? "rotate-180" : ""
-            }`}
+          <span
             aria-hidden
-          />
+            className="ml-auto flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/15 ring-1 ring-white/25 transition-[background-color,box-shadow] duration-300 group-hover:bg-white/30 group-hover:ring-white/60 group-focus-visible:bg-white/30"
+          >
+            {/* Down while the column is closed, up once it is open; on hover it
+                nudges that way (`--bob`); with reduced motion it neither turns nor nudges. */}
+            <ChevronDown
+              strokeWidth={2.75}
+              className={`h-3.5 w-3.5 text-white transition-transform duration-300 ease-out motion-reduce:transition-none motion-safe:group-hover:animate-chevron-bob ${
+                collapsed ? "" : "rotate-180 [--bob:-2px]"
+              }`}
+            />
+          </span>
         </button>
         <button
           type="button"

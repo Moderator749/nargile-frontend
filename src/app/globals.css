@@ -29,6 +29,7 @@
      smoke under the deals panel never moved. */
   --animate-smoke: smoke-rise var(--smoke-dur, 7s) ease-out infinite;
   --animate-chrome-sweep: chrome-sweep 4s linear infinite;
+  --animate-chevron-bob: chevron-bob 0.9s ease-in-out infinite;
 
   /* Semantic colour tokens ("industrial luxury"): bg-background, text-muted-foreground, border-border… */
   --color-background: var(--background);
@@ -121,6 +122,18 @@ html[data-auth] .guest-only {
   50% {
     opacity: 1;
     transform: scale(1.06);
+  }
+}
+
+/* "KATEGORİLER": the chevron nudging the way the column will go, while hovered.
+   The `translate` property, so it adds to the chevron's own `rotate`. */
+@keyframes chevron-bob {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 var(--bob, 2px);
   }
 }
 
