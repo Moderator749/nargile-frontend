@@ -16,7 +16,8 @@ const COLLECTION_HREF = "/catalog";
 
 /**
  * "Sektörde Referans Noktası": the brand in a sentence under the hero row, on
- * the page itself rather than in a box — the heading above, the text below.
+ * the page itself rather than in a box, centred across the row's full width —
+ * from the slider's left edge to the cards' right — with the heading above.
  *
  * As with `SeoIntro`, the rest is folded, not left out: it is in the markup
  * from the server for a crawler to read, and the fold only hides it from view
@@ -29,15 +30,12 @@ export function BrandStatement() {
   const moreId = useId();
 
   return (
-    <section aria-labelledby={headingId} className="flex flex-col items-start gap-4 text-left">
-      <div>
-        <p className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-neutral-400">Güvenilir Marka</p>
-        <h2 id={headingId} className="mt-2 text-2xl font-bold text-gray-900 dark:text-white">
-          Sektörde Referans Noktası
-        </h2>
-      </div>
+    <section aria-labelledby={headingId} className="flex w-full flex-col items-center gap-4 text-center">
+      <h2 id={headingId} className="text-center text-2xl font-bold text-gray-900 dark:text-white">
+        Sektörde Referans Noktası
+      </h2>
 
-      <div>
+      <div className="w-full text-center">
         <p className={PARAGRAPH}>{LEAD}</p>
         <div
           id={moreId}
@@ -62,7 +60,7 @@ export function BrandStatement() {
           aria-expanded={open}
           aria-controls={moreId}
           onClick={() => setOpen((value) => !value)}
-          className="mt-4 inline-flex cursor-pointer items-center gap-1 text-sm font-medium text-red-600 transition-colors hover:text-red-700 focus-visible:rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 dark:text-red-400 dark:hover:text-red-300"
+          className="mx-auto mt-4 flex w-fit cursor-pointer items-center gap-1 text-sm font-medium text-red-600 transition-colors hover:text-red-700 focus-visible:rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 dark:text-red-400 dark:hover:text-red-300"
         >
           {open ? "Daralt" : "Devamını Oku"}
           <span aria-hidden>{open ? "↑" : "↓"}</span>
