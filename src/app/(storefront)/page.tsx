@@ -221,8 +221,17 @@ export default async function HomePage() {
           </div>
         )}
 
-        {/* Module 9: "Fırsatları Kaçırma" — the deals, and the page's only
-            deals section. It renders nothing when none are running. */}
+        {/* Module 9: the brand ticker, where the white bands begin below the
+            statement. No heading — the names are the content. */}
+        {sections.brands && <BrandTicker brands={home.brands.items} />}
+
+        {/* Module 9b: "Sizin İçin Seçtiklerimiz", two tabbed product lists, on
+            the ticker's white. */}
+        <FeaturedProductsShowcase lists={{ bestsellers: showable(bestsellers), newest: showable(newest) }} />
+
+        {/* Module 9c: "Fırsatları Kaçırma" — the deals, and the page's only
+            deals section, its dark band straight after the white of the picks.
+            It renders nothing when none are running. */}
         {sections.deals && (
           <DealsFunnel
             initialProducts={deals}
@@ -231,13 +240,6 @@ export default async function HomePage() {
             subtitle={home.deals.subtitle}
           />
         )}
-
-        {/* Module 9b: the brand ticker between the deals and the gallery. No
-            heading — the names are the content. */}
-        {sections.brands && <BrandTicker brands={home.brands.items} />}
-
-        {/* Module 9c: "Sizin İçin Seçtiklerimiz", two tabbed product lists. */}
-        <FeaturedProductsShowcase lists={{ bestsellers: showable(bestsellers), newest: showable(newest) }} />
 
         {/* Module 9d: "Markalarımız", one heading over a band per brand,
             alternating sides, just above the gallery. */}
