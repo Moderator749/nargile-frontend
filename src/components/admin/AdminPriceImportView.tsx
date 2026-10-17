@@ -1,36 +1,31 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, CheckCircle2, FileSpreadsheet, Link2, Loader2, RotateCcw, Sparkles, Unlink } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { AlertTriangle, CheckCircle2, FileSpreadsheet, Link2, Loader2, RotateCcw, Search, ShieldCheck, Sparkles, Unlink } from "lucide-react";
 
 import { AdminPageHeader, panelClass } from "@/components/admin/AdminShell";
+import { AliasDictionary } from "@/components/admin/price-import/AliasDictionary";
+import { BatchAcceptDialog, safePicks } from "@/components/admin/price-import/BatchAcceptDialog";
+import { CatalogSearch } from "@/components/admin/price-import/CatalogSearch";
+import { ProductThumb } from "@/components/admin/price-import/ProductThumb";
+import { GROUPS, rowKey, where } from "@/components/admin/price-import/shared";
+import { RowSummary, SuggestionRow } from "@/components/admin/price-import/SuggestionRow";
 import { useFileDrop } from "@/components/admin/useFileDrop";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
-import { adminDeleteImportAlias, adminImportPrices, adminSaveImportAlias } from "@/lib/adminApi";
+import {
+  adminDeleteImportAlias,
+  adminImportPrices,
+  adminListImportAliases,
+  adminSaveImportAlias,
+  adminSaveImportAliases,
+} from "@/lib/adminApi";
 import { getApiErrorMessage } from "@/lib/errors";
 import { formatMoney } from "@/lib/format";
 import { refreshStorefront } from "@/lib/revalidate";
-import type {
-  PriceImportCandidate,
-  PriceImportMatched,
-  PriceImportResult,
-  PriceImportRow,
-  PriceImportSkipped,
-  PriceImportSuggested,
-  PriceImportUnmatched,
-  SegmentType,
-} from "@/types";
+import type { PriceImportAlias, PriceImportMatched, PriceImportResult, PriceImportSkipped, PriceImportUnmatched, SegmentType } from "@/types";
 
 const MAX_BYTES = 10 * 1024 * 1024;
-
-/** The workbook's order, left to right. */
-const GROUPS: { key: SegmentType; label: string }[] = [
-  { key: "DEALER", label: "Bayi" },
-  { key: "WHOLESALE", label: "Toptan" },
-  { key: "CAFE", label: "Kafe" },
-  { key: "RETAIL", label: "Perakende" },
-];
 
 const MISS_REASONS: Record<PriceImportUnmatched["reason"], string> = {
   unnamed: "Ürün adı hücresi boş",
@@ -48,15 +43,6 @@ const SKIP_REASONS: Record<PriceImportSkipped["reason"], string> = {
 
 /** A change this large is worth a second look before it goes live. */
 const LARGE_CHANGE = 25;
-
-const BASIS: Record<PriceImportCandidate["basis"], string> = {
-  abbreviation: "kısaltma",
-  similar: "benzer kod",
-  same_code: "aynı kod",
-};
-
-const where = (r: Pick<PriceImportRow, "row" | "side">) => `${r.side === "sol" ? "Sol" : "Sağ"} · ${r.row}. satır`;
-const rowKey = (r: Pick<PriceImportRow, "sheet" | "row" | "side">) => `${r.sheet}-${r.row}-${r.side}`;
 
 function change(oldPrice: string, newPrice: string): number {
   return ((Number(newPrice) - Number(oldPrice)) / Number(oldPrice)) * 100;
@@ -95,9 +81,11 @@ function PriceCell({ row, group }: { row: PriceImportMatched; group: SegmentType
  * to be written — all four customer groups, every colour of each product, in
  * one transaction.
  *
- * A guess is never priced: the admin picks the right product with one click,
- * which saves the name as an eşleştirme, matched by itself on every later
- * upload (and removable from the matched row).
+ * A guess is never priced. The admin ties a name to its product — one
+ * suggestion at a time, every safe suggestion at once, or a product found in
+ * the catalog by hand — and the eşleştirme is kept (the dictionary at the
+ * foot of the page), matched by itself on every later upload. Each change
+ * reads the same file again, so the server always says where every row stands.
  */
 export function AdminPriceImportView() {
   const input = useRef<HTMLInputElement>(null);
@@ -106,14 +94,36 @@ export function AdminPriceImportView() {
   const [busy, setBusy] = useState<"checking" | "applying" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  // The row whose eşleştirme is being saved or removed.
+  // What an eşleştirme change is in flight for: a row, "batch", or an alias id.
   const [pending, setPending] = useState<string | null>(null);
+  const [aliases, setAliases] = useState<PriceImportAlias[]>([]);
+  const [aliasesLoading, setAliasesLoading] = useState(true);
+  const [batchOpen, setBatchOpen] = useState(false);
+  const [searchingRow, setSearchingRow] = useState<string | null>(null);
 
   useEffect(() => {
     if (!toast) return;
     const timer = window.setTimeout(() => setToast(null), 5000);
     return () => window.clearTimeout(timer);
   }, [toast]);
+
+  // The dictionary, once on arrival and again after every eşleştirme change.
+  const loadAliases = useCallback(
+    (signal?: AbortSignal) =>
+      adminListImportAliases(signal)
+        .then(setAliases)
+        .catch(() => {
+          // Aborted, or unreachable: the dictionary keeps what it showed.
+        })
+        .finally(() => setAliasesLoading(false)),
+    [],
+  );
+
+  useEffect(() => {
+    const controller = new AbortController();
+    loadAliases(controller.signal);
+    return () => controller.abort();
+  }, [loadAliases]);
 
   async function preview(chosen: File | undefined) {
     if (!chosen || busy) return;
@@ -132,14 +142,15 @@ export function AdminPriceImportView() {
     }
   }
 
-  /** An eşleştirme saved or removed: the same file read again, so the server says where every row stands. */
-  async function rematch(change: () => Promise<unknown>, done: string, key: string) {
-    if (!file || busy) return;
+  /** An eşleştirme saved or removed: the dictionary and the file read again. */
+  async function rematch(work: () => Promise<unknown>, done: string, key: string) {
+    if (pending || busy) return;
     setPending(key);
     setError(null);
     try {
-      await change();
-      setResult(await adminImportPrices(file, true));
+      await work();
+      const [next] = await Promise.all([file ? adminImportPrices(file, true) : Promise.resolve(null), loadAliases()]);
+      if (next) setResult(next);
       setToast(done);
     } catch (err) {
       setError(getApiErrorMessage(err, "Eşleştirme kaydedilemedi."));
@@ -148,17 +159,18 @@ export function AdminPriceImportView() {
     }
   }
 
-  const confirm = (row: PriceImportSuggested, candidate: PriceImportCandidate) =>
-    rematch(
-      () => adminSaveImportAlias(row.name, candidate.product_id),
-      `“${row.name}” artık ${candidate.code} ile eşleşiyor; bir sonraki yüklemede de hatırlanacak.`,
-      rowKey(row),
-    );
+  const bind = (name: string, key: string, productId: string, code: string) =>
+    rematch(() => adminSaveImportAlias(name, productId), `“${name}” artık ${code} ile eşleşiyor; sonraki yüklemelerde de hatırlanacak.`, key);
 
-  const unlink = (row: PriceImportMatched) =>
-    row.alias_id === null
-      ? undefined
-      : rematch(() => adminDeleteImportAlias(row.alias_id!), `“${row.name}” eşleştirmesi kaldırıldı.`, rowKey(row));
+  const picks = result ? safePicks(result.suggested) : [];
+  async function acceptSafe() {
+    await rematch(
+      () => adminSaveImportAliases(picks.map(({ row, candidate }) => ({ excelName: row.name, productId: candidate.product_id }))),
+      `${picks.length} güvenli öneri eşleştirildi.`,
+      "batch",
+    );
+    setBatchOpen(false);
+  }
 
   async function apply() {
     if (!file || !result || busy) return;
@@ -184,6 +196,7 @@ export function AdminPriceImportView() {
 
   const { over, handlers } = useFileDrop({ onFiles: (files) => void preview(files[0]), disabled: busy !== null });
   const applied = result !== null && !result.dry_run;
+  const locked = pending !== null || busy !== null;
 
   return (
     <div>
@@ -292,7 +305,7 @@ export function AdminPriceImportView() {
               <p className="px-4 py-8 text-center text-sm text-slate-500 dark:text-zinc-400">Bu dosyada hiçbir ürün eşleşmedi.</p>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[760px] text-sm">
+                <table className="w-full min-w-[820px] text-sm">
                   <thead className="bg-slate-50 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:bg-white/[0.03] dark:text-zinc-400">
                     <tr>
                       <th className="px-3 py-2.5">Excel</th>
@@ -315,29 +328,36 @@ export function AdminPriceImportView() {
                           </span>
                         </td>
                         <td className="px-3 py-2.5 align-top">
-                          <span className="font-medium">{row.product_name}</span>
-                          <span className="block text-[11px] text-slate-500 dark:text-zinc-400">
-                            {row.product_code}
-                            {row.matched_by === "sku" ? " · SKU ile" : row.matched_by === "name" ? " · ad ile" : ""}
-                            {row.variants > 1 ? ` · ${row.variants} renk` : ""}
-                          </span>
-                          {row.matched_by === "alias" && (
-                            <span className="mt-1 inline-flex items-center gap-1.5 text-[11px]">
-                              <span className="inline-flex items-center gap-1 rounded bg-sky-50 px-1.5 py-0.5 font-medium text-sky-700 dark:bg-sky-500/10 dark:text-sky-300">
-                                <Link2 className="h-3 w-3" aria-hidden /> kayıtlı eşleştirme
+                          <span className="flex items-start gap-2.5">
+                            <ProductThumb src={row.image_url} />
+                            <span className="min-w-0">
+                              <span className="block font-medium">{row.product_name}</span>
+                              <span className="block text-[11px] text-slate-500 dark:text-zinc-400">
+                                {row.product_code}
+                                {row.matched_by === "sku" ? " · SKU ile" : row.matched_by === "name" ? " · ad ile" : ""}
+                                {row.variants > 1 ? ` · ${row.variants} renk` : ""}
                               </span>
-                              <button
-                                type="button"
-                                onClick={() => void unlink(row)}
-                                disabled={pending !== null || busy !== null}
-                                aria-label={`“${row.name}” eşleştirmesini kaldır`}
-                                className="inline-flex items-center gap-1 rounded px-1 py-0.5 text-slate-500 hover:bg-slate-100 hover:text-red-600 disabled:opacity-50 dark:hover:bg-white/5"
-                              >
-                                {pending === rowKey(row) ? <Loader2 className="h-3 w-3 animate-spin" aria-hidden /> : <Unlink className="h-3 w-3" aria-hidden />}
-                                kaldır
-                              </button>
+                              {row.matched_by === "alias" && row.alias_id !== null && (
+                                <span className="mt-1 inline-flex items-center gap-1.5 text-[11px]">
+                                  <span className="inline-flex items-center gap-1 rounded bg-sky-50 px-1.5 py-0.5 font-medium text-sky-700 dark:bg-sky-500/10 dark:text-sky-300">
+                                    <Link2 className="h-3 w-3" aria-hidden /> kayıtlı eşleştirme
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      void rematch(() => adminDeleteImportAlias(row.alias_id!), `“${row.name}” eşleştirmesi kaldırıldı.`, rowKey(row))
+                                    }
+                                    disabled={locked}
+                                    aria-label={`“${row.name}” eşleştirmesini kaldır`}
+                                    className="inline-flex items-center gap-1 rounded px-1 py-0.5 text-slate-500 hover:bg-slate-100 hover:text-red-600 disabled:opacity-50 dark:hover:bg-white/5"
+                                  >
+                                    {pending === rowKey(row) ? <Loader2 className="h-3 w-3 animate-spin" aria-hidden /> : <Unlink className="h-3 w-3" aria-hidden />}
+                                    kaldır
+                                  </button>
+                                </span>
+                              )}
                             </span>
-                          )}
+                          </span>
                         </td>
                         {GROUPS.map((g) => (
                           <PriceCell key={g.key} row={row} group={g.key} />
@@ -352,10 +372,8 @@ export function AdminPriceImportView() {
 
           {!applied && result.matched.length > 0 && (
             <div className="mt-4 flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-end">
-              <p className="text-xs text-slate-500 dark:text-zinc-400 sm:mr-3">
-                Eşleşmeyen ve okunmayan satırlara dokunulmaz.
-              </p>
-              <Button type="button" onClick={apply} loading={busy === "applying"} className="sm:w-auto sm:px-6">
+              <p className="text-xs text-slate-500 dark:text-zinc-400 sm:mr-3">Önerilen, eşleşmeyen ve okunmayan satırlara dokunulmaz.</p>
+              <Button type="button" onClick={apply} loading={busy === "applying"} disabled={pending !== null} className="sm:w-auto sm:px-6">
                 Onayla ve Güncelle ({result.matched.length} ürün)
               </Button>
             </div>
@@ -366,14 +384,26 @@ export function AdminPriceImportView() {
               aria-labelledby="onerilen"
               className="mt-6 rounded-2xl border border-sky-200 bg-sky-50/50 dark:border-sky-500/30 dark:bg-sky-500/10"
             >
-              <div className="border-b border-sky-200 px-4 py-3 dark:border-sky-500/30">
-                <h2 id="onerilen" className="flex items-center gap-2 text-sm font-semibold text-sky-900 dark:text-sky-200">
-                  <Sparkles className="h-4 w-4" aria-hidden /> Önerilen eşleşmeler ({result.suggested.length})
-                </h2>
-                <p className="mt-0.5 text-xs text-sky-800/80 dark:text-sky-200/70">
-                  Doğru ürünü tıklayın: eşleştirme kaydedilir, satır güncellenecekler listesine geçer ve sonraki yüklemelerde
-                  sorulmaz. Yanlışsa hiçbirini seçmeyin; onaylanmayan satırın fiyatı değişmez.
-                </p>
+              <div className="flex flex-col gap-3 border-b border-sky-200 px-4 py-3 sm:flex-row sm:items-center sm:justify-between dark:border-sky-500/30">
+                <div>
+                  <h2 id="onerilen" className="flex items-center gap-2 text-sm font-semibold text-sky-900 dark:text-sky-200">
+                    <Sparkles className="h-4 w-4" aria-hidden /> Önerilen eşleşmeler ({result.suggested.length})
+                  </h2>
+                  <p className="mt-0.5 text-xs text-sky-800/80 dark:text-sky-200/70">
+                    Doğru ürünü tıklayın ya da katalogda arayın: eşleştirme kaydedilir, satır güncellenecekler listesine geçer ve sonraki
+                    yüklemelerde sorulmaz. Onaylanmayan satırın fiyatı değişmez.
+                  </p>
+                </div>
+                {picks.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setBatchOpen(true)}
+                    disabled={locked}
+                    className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 disabled:opacity-60"
+                  >
+                    <ShieldCheck className="h-4 w-4" aria-hidden /> Tüm güvenli önerileri eşleştir ({picks.length})
+                  </button>
+                )}
               </div>
               <ul className="divide-y divide-sky-200/70 dark:divide-sky-500/20">
                 {result.suggested.map((row) => (
@@ -381,8 +411,8 @@ export function AdminPriceImportView() {
                     key={rowKey(row)}
                     row={row}
                     saving={pending === rowKey(row)}
-                    disabled={pending !== null || busy !== null}
-                    onConfirm={(candidate) => void confirm(row, candidate)}
+                    disabled={locked}
+                    onBind={(productId, code) => void bind(row.name, rowKey(row), productId, code)}
                   />
                 ))}
               </ul>
@@ -394,18 +424,48 @@ export function AdminPriceImportView() {
               aria-labelledby="eslesmeyen"
               className="mt-6 rounded-2xl border border-amber-200 bg-amber-50/60 dark:border-amber-500/30 dark:bg-amber-500/10"
             >
-              <h2 id="eslesmeyen" className="flex items-center gap-2 border-b border-amber-200 px-4 py-3 text-sm font-semibold text-amber-900 dark:border-amber-500/30 dark:text-amber-200">
+              <h2 id="eslesmeyen" className="flex flex-wrap items-center gap-2 border-b border-amber-200 px-4 py-3 text-sm font-semibold text-amber-900 dark:border-amber-500/30 dark:text-amber-200">
                 <AlertTriangle className="h-4 w-4" aria-hidden /> Eşleşmeyen satırlar ({result.unmatched.length})
-                <span className="font-normal text-amber-800/80 dark:text-amber-200/70">— bu satırların fiyatına dokunulmaz</span>
+                <span className="font-normal text-amber-800/80 dark:text-amber-200/70">
+                  — fiyatlarına dokunulmaz; bulunamayanları katalogda arayıp eşleştirebilirsiniz
+                </span>
               </h2>
               <ul className="divide-y divide-amber-200/70 dark:divide-amber-500/20">
-                {result.unmatched.map((row) => (
-                  <li key={rowKey(row)} className="flex flex-col gap-1 px-4 py-2.5 text-sm sm:flex-row sm:items-baseline sm:gap-4">
-                    <span className="w-44 shrink-0 font-mono text-xs font-semibold">{row.name || "(adsız)"}</span>
-                    <span className="w-28 shrink-0 text-xs text-slate-500 dark:text-zinc-400">{where(row)}</span>
-                    <span className="text-amber-900 dark:text-amber-200">{MISS_REASONS[row.reason]}</span>
-                  </li>
-                ))}
+                {result.unmatched.map((row) => {
+                  const key = rowKey(row);
+                  const searchable = row.reason === "not_found";
+                  return (
+                    <li key={key} className="flex flex-col gap-2 px-4 py-2.5 text-sm lg:flex-row lg:items-start lg:gap-6">
+                      <RowSummary row={row} />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-amber-900 dark:text-amber-200">{MISS_REASONS[row.reason]}</p>
+                        {searchable &&
+                          (searchingRow === key ? (
+                            <div className="mt-2">
+                              <CatalogSearch
+                                label={`“${row.name}” için ürün ara`}
+                                disabled={locked}
+                                onPick={(product) => {
+                                  setSearchingRow(null);
+                                  void bind(row.name, key, product.id, product.base_code);
+                                }}
+                              />
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setSearchingRow(key)}
+                              disabled={locked}
+                              className="mt-1 inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium text-amber-900 hover:bg-white disabled:opacity-50 dark:text-amber-200 dark:hover:bg-white/5"
+                            >
+                              {pending === key ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <Search className="h-3.5 w-3.5" aria-hidden />}
+                              Katalogda ara ve eşleştir
+                            </button>
+                          ))}
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             </section>
           )}
@@ -414,9 +474,7 @@ export function AdminPriceImportView() {
             <details className={`${panelClass} mt-6`}>
               <summary className="cursor-pointer px-4 py-3 text-sm font-semibold">
                 Okunmayan bloklar ({result.skipped.length}){" "}
-                <span className="font-normal text-slate-500 dark:text-zinc-400">
-                  — yalnızca TL ve KDV dahil, BAYİ kolonlu bloklar okunur
-                </span>
+                <span className="font-normal text-slate-500 dark:text-zinc-400">— yalnızca TL ve KDV dahil, BAYİ kolonlu bloklar okunur</span>
               </summary>
               <ul className="max-h-80 divide-y divide-slate-100 overflow-y-auto border-t border-slate-200 dark:divide-white/5 dark:border-white/10">
                 {result.skipped.map((row) => (
@@ -432,6 +490,23 @@ export function AdminPriceImportView() {
         </>
       )}
 
+      <AliasDictionary
+        aliases={aliases}
+        loading={aliasesLoading}
+        removing={pending?.startsWith("alias-") ? Number(pending.slice(6)) : null}
+        onRemove={(alias) =>
+          void rematch(() => adminDeleteImportAlias(alias.id), `“${alias.excel_name}” eşleştirmesi silindi.`, `alias-${alias.id}`)
+        }
+      />
+
+      <BatchAcceptDialog
+        open={batchOpen}
+        picks={picks}
+        saving={pending === "batch"}
+        onClose={() => setBatchOpen(false)}
+        onConfirm={() => void acceptSafe()}
+      />
+
       {toast && (
         <div
           role="status"
@@ -442,78 +517,6 @@ export function AdminPriceImportView() {
         </div>
       )}
     </div>
-  );
-}
-
-/**
- * One row the server could only guess at: its prices, and the products it may
- * mean as buttons — each with how it was found, how close, and its price today
- * (a candidate already at the row's retail price is very likely the one).
- */
-function SuggestionRow({
-  row,
-  saving,
-  disabled,
-  onConfirm,
-}: {
-  row: PriceImportSuggested;
-  saving: boolean;
-  disabled: boolean;
-  onConfirm: (candidate: PriceImportCandidate) => void;
-}) {
-  const retail = row.prices.RETAIL;
-  return (
-    <li className="flex flex-col gap-3 px-4 py-3 lg:flex-row lg:items-start lg:gap-6">
-      <div className="lg:w-64 lg:shrink-0">
-        <p className="font-mono text-xs font-semibold">{row.name}</p>
-        <p className="text-[11px] text-slate-500 dark:text-zinc-400">
-          {where(row)}
-          {row.section ? ` · ${row.section}` : ""}
-        </p>
-        <p className="mt-1 text-[11px] tabular-nums text-slate-600 dark:text-zinc-300">
-          {GROUPS.map((g) => `${g.label} ${row.prices[g.key] ? formatMoney(row.prices[g.key]!) : "—"}`).join(" · ")}
-        </p>
-      </div>
-      <div className="flex min-w-0 flex-1 flex-wrap gap-2">
-        {row.candidates.map((candidate) => {
-          const samePrice =
-            retail !== null && candidate.retail?.currency === "TRY" && Number(candidate.retail.price_incl_tax) === Number(retail);
-          return (
-            <button
-              key={candidate.product_id}
-              type="button"
-              onClick={() => onConfirm(candidate)}
-              disabled={disabled}
-              className={`group flex min-w-[13rem] max-w-xs flex-col items-start rounded-xl border bg-white px-3 py-2 text-left transition-colors hover:border-sky-400 hover:bg-sky-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-900 dark:hover:bg-sky-500/10 ${
-                samePrice ? "border-emerald-300 dark:border-emerald-500/40" : "border-slate-200 dark:border-white/10"
-              }`}
-            >
-              <span className="flex w-full items-center justify-between gap-2">
-                <span className="font-mono text-xs font-semibold">{candidate.code}</span>
-                <span className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                  {BASIS[candidate.basis]} · %{Math.round(candidate.score * 100)}
-                </span>
-              </span>
-              <span className="mt-0.5 line-clamp-1 text-xs text-slate-600 dark:text-zinc-300">{candidate.name}</span>
-              <span className="mt-1 flex w-full items-center justify-between gap-2 text-[11px]">
-                <span className="tabular-nums text-slate-500 dark:text-zinc-400">
-                  {candidate.retail ? `Perakende şu an ${formatMoney(candidate.retail.price_incl_tax, candidate.retail.currency)}` : "Fiyatı yok"}
-                </span>
-                {samePrice && (
-                  <span className="rounded bg-emerald-50 px-1.5 py-0.5 font-medium text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
-                    fiyatı aynı
-                  </span>
-                )}
-              </span>
-              <span className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-semibold text-sky-700 dark:text-sky-300">
-                {saving ? <Loader2 className="h-3 w-3 animate-spin" aria-hidden /> : <Link2 className="h-3 w-3" aria-hidden />}
-                Bu ürünle eşleştir
-              </span>
-            </button>
-          );
-        })}
-      </div>
-    </li>
   );
 }
 

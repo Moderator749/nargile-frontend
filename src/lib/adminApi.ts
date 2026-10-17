@@ -604,6 +604,21 @@ export async function adminSaveImportAlias(excelName: string, productId: string)
   return data;
 }
 
+/** Several at once ("Güvenli önerileri eşleştir"): all saved, or none. */
+export async function adminSaveImportAliases(
+  aliases: { excelName: string; productId: string }[],
+): Promise<PriceImportAlias[]> {
+  const { data } = await api.post<PriceImportAlias[]>("/admin/pricing/import-aliases/batch", {
+    aliases: aliases.map((a) => ({ excel_name: a.excelName, product_id: a.productId })),
+  });
+  return data;
+}
+
+export async function adminListImportAliases(signal?: AbortSignal): Promise<PriceImportAlias[]> {
+  const { data } = await api.get<PriceImportAlias[]>("/admin/pricing/import-aliases", { signal });
+  return data;
+}
+
 export async function adminDeleteImportAlias(id: number): Promise<void> {
   await api.delete(`/admin/pricing/import-aliases/${id}`);
 }

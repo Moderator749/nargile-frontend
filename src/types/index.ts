@@ -1526,6 +1526,7 @@ export interface PriceImportMatched extends PriceImportRow {
   alias_id: number | null;
   variants: number;
   old_prices: Partial<Record<SegmentType, { currency: CurrencyType; price_incl_tax: DecimalString }>>;
+  image_url: string | null;
 }
 
 /** A product a row may mean; priced only once the admin confirms it. */
@@ -1538,10 +1539,13 @@ export interface PriceImportCandidate {
   /** "abbreviation": a word spelled the other way (GOLD/G); "similar": a code like it, same model; "same_code": one of several sharing the name. */
   basis: "abbreviation" | "similar" | "same_code";
   retail: { currency: CurrencyType; price_incl_tax: DecimalString } | null;
+  image_url: string | null;
 }
 
 export interface PriceImportSuggested extends PriceImportRow {
   candidates: PriceImportCandidate[];
+  /** The one candidate safe to accept in bulk (the name spelled the other way, or close and already at this retail price); null when it is the admin's choice. */
+  recommended_id: string | null;
 }
 
 export interface PriceImportUnmatched extends PriceImportRow {
@@ -1573,5 +1577,6 @@ export interface PriceImportAlias {
   product_id: string;
   product_code: string;
   product_name: string;
+  image_url: string | null;
   created_at: string;
 }
