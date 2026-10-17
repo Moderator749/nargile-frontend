@@ -171,6 +171,7 @@ export function emptyDraft(): SheetDraft {
       is_free_shipping: false,
       free_shipping_min_quantity: null,
       has_havale_discount: true,
+      has_dealer_havale_discount: false,
       has_volume_discount: true,
       gives_points: true,
       can_use_points: true,
@@ -246,7 +247,8 @@ export function draftFromSheet(sheet: SavedProductSheet): SheetDraft {
     // On a coloured product the colours hold the stock and this is only the
     // total the server computed, so it is not carried into the form.
     stock: stockDraft(standard?.stock ?? sheet.stock),
-    rules: { ...sheet.rules },
+    // A sheet saved before the dealer switch existed reads it as off.
+    rules: { ...sheet.rules, has_dealer_havale_discount: sheet.rules.has_dealer_havale_discount ?? false },
     opportunity: {
       is_opportunity: sheet.opportunity.is_opportunity,
       price: money(sheet.opportunity.opportunity_price),

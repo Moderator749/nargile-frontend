@@ -109,7 +109,9 @@ export function ProductLookup({
         <ul
           id={`${id}-list`}
           role="listbox"
-          className="absolute z-20 mt-1 max-h-72 w-full overflow-auto rounded-xl border border-slate-200 bg-white py-1 shadow-lg dark:border-white/10 dark:bg-zinc-900"
+          // Wider than the cell it hangs from (the code column is narrow): the
+          // names read on one line, up to the width of the screen.
+          className="absolute left-0 z-20 mt-1 max-h-72 w-max min-w-full max-w-[min(40rem,calc(100vw-2rem))] overflow-auto rounded-xl border border-slate-200 bg-white py-1 shadow-lg sm:min-w-[28rem] dark:border-white/10 dark:bg-zinc-900"
         >
           {shown.map((p, i) => (
             <li
@@ -121,10 +123,12 @@ export function ProductLookup({
                 e.preventDefault();
                 pick(p);
               }}
-              className={`cursor-pointer px-3.5 py-2 text-sm ${i === active ? "bg-red-50 dark:bg-red-500/10" : "hover:bg-slate-50 dark:hover:bg-white/5"}`}
+              className={`flex cursor-pointer items-baseline gap-2 whitespace-nowrap px-3.5 py-2 text-sm ${i === active ? "bg-red-50 dark:bg-red-500/10" : "hover:bg-slate-50 dark:hover:bg-white/5"}`}
             >
-              <span className="font-mono text-xs text-slate-500 dark:text-zinc-400">{p.base_code}</span>{" "}
-              <span className="text-slate-900 dark:text-zinc-100">{p.name}</span>
+              <span className="shrink-0 font-mono text-xs text-slate-500 dark:text-zinc-400">{p.base_code}</span>
+              <span className="min-w-0 truncate text-slate-900 dark:text-zinc-100" title={p.name}>
+                {p.name}
+              </span>
             </li>
           ))}
         </ul>

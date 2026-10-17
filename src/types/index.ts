@@ -855,6 +855,8 @@ export interface SheetRules {
   /** "Adet şartı": free carriage only from this many units; null = no condition. */
   free_shipping_min_quantity?: number | null;
   has_havale_discount: boolean;
+  /** "Bayide Havale / EFT İndirimi": the havale/EFT discount for a bayi (DEALER) too; off by default. */
+  has_dealer_havale_discount: boolean;
   /** "Ciro indirimi": counts towards, and is discounted by, the volume tiers. */
   has_volume_discount: boolean;
   gives_points: boolean;

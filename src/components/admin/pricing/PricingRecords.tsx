@@ -85,7 +85,13 @@ export function PricingRecords({
                   {r.product_name || "Adsız ürün"}
                 </p>
                 <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">
-                  {formatDate(r.created_at)} · {s.vat_mode === "EXCL" ? "KDV hariç" : "KDV dahil"} · {c}
+                  {formatDate(r.created_at)} ·{" "}
+                  {s.vat_mode === "EXCL" ? (
+                    `KDV hariç · ${c}`
+                  ) : (
+                    // The basis every figure on the card is in: missed, a price is read 20% off.
+                    <span className="font-bold text-red-600 dark:text-red-400">KDV dahil · {c}</span>
+                  )}
                   {r.file_name && ` · ${r.file_name}`}
                 </p>
               </div>

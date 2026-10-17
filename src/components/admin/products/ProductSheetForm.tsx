@@ -451,6 +451,13 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
               onChange={(v) => set("rules", { ...draft.rules, has_havale_discount: v })}
             />
             <RuleSwitch
+              id="rule-dealer-havale"
+              label="Bayide Havale / EFT İndirimi"
+              hint="Havale / EFT indirimi bayi fiyat grubundaki müşteriler için de geçerli."
+              checked={draft.rules.has_dealer_havale_discount}
+              onChange={(v) => set("rules", { ...draft.rules, has_dealer_havale_discount: v })}
+            />
+            <RuleSwitch
               id="rule-volume"
               label="Sepet İndirimi"
               hint={VOLUME_DISCOUNT_HINT}
