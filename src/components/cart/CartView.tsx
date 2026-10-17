@@ -407,8 +407,8 @@ export function CartView() {
     method,
   );
   const needsConsent = !!quote?.shipping.receiver_pays;
-  // A line above what the buyer may have (their quota, or the shared retail
-  // pool) would be refused at checkout: say which, here. A request has no limit.
+  // A line above what the buyer may have (their own list's quota) would be
+  // refused at checkout: say which, here. A request has no limit.
   const overStock = quoteOnly
     ? undefined
     : quote?.items.find((i) => i.available_quantity !== undefined && i.quantity > i.available_quantity);

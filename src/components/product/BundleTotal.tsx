@@ -1,15 +1,38 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Equal, Plus } from "lucide-react";
+import { Check, Equal, Plus, ShoppingCart } from "lucide-react";
 
 import { useDisplayMoney } from "@/hooks/useDisplayMoney";
 import { useNow } from "@/hooks/useNow";
+import { cartLineFor } from "@/lib/cartLine";
+import { isExportAccount } from "@/lib/exportAccount";
 import { saleState } from "@/lib/flashSale";
 import { formatDisplayMoney, loadExchangeRates } from "@/lib/money";
 import { displayVariant, soldOut } from "@/lib/variants";
+import { useAuthStore } from "@/store/useAuthStore";
+import { useCartStore } from "@/store/useCartStore";
 import { useCurrencyStore } from "@/store/useCurrencyStore";
-import type { CatalogPrice, CatalogProduct, ExchangeRates } from "@/types";
+import type { CatalogPrice, CatalogProduct, CatalogVariant, ExchangeRates } from "@/types";
+
+/** The product the page is about, as the page has it. */
+export interface BundleMain {
+  product: CatalogProduct;
+  /** The colour chosen on the page. */
+  variant: CatalogVariant | undefined;
+  /** Its price as the page shows it (a live sale's, else the viewer's own). */
+  price: CatalogPrice | null;
+  saleLive: boolean;
+  /** Whether the page's own "Sepete Ekle" could add it right now. */
+  purchasable: boolean;
+}
+
+interface BundleLine {
+  product: CatalogProduct;
+  variant: CatalogVariant;
+  price: CatalogPrice;
+  saleLive: boolean;
+}
 
 /** A price in TRY: as it is, or at the day's TCMB rate; null without a rate for it. */
 function inTry(price: CatalogPrice, rates: ExchangeRates | null): number | null {
@@ -20,7 +43,9 @@ function inTry(price: CatalogPrice, rates: ExchangeRates | null): number | null 
 
 /**
  * Under "Birlikte İyi Gider": the product, plus the pinned products, makes the
- * whole set — "Ana Ürün ₺X + Ekstralar ₺Y = Toplam ₺Z".
+ * whole set — "Ana Ürün ₺X + Ekstralar ₺Y = Toplam ₺Z" — and "Hepsini Sepete
+ * Ekle" puts the set in the cart in one go: one of each, the product in the
+ * colour chosen on the page, each extra in the colour its card shows.
  *
  * Each extra is counted at the price its card shows (a live flash sale's, else
  * the viewer's own), a sold-out or unpriced one not at all. A price kept in
@@ -28,20 +53,29 @@ function inTry(price: CatalogPrice, rates: ExchangeRates | null): number | null 
  * the visitor's display currency, as every other price on the page. Nothing
  * while the viewer's own prices are on their way, like the cards above it.
  */
-export function BundleTotal({ main, extras }: { main: CatalogPrice | null; extras: CatalogProduct[] }) {
+export function BundleTotal({
+  main,
+  extras,
+  isLoggedIn,
+}: {
+  main: BundleMain;
+  extras: CatalogProduct[];
+  isLoggedIn: boolean;
+}) {
   const money = useDisplayMoney();
   const currency = useCurrencyStore((s) => s.currency);
+  const quoteOnly = isExportAccount(useAuthStore((s) => s.user));
   const now = useNow(extras.some((p) => displayVariant(p)?.flash_sale));
-  const priced = extras.flatMap((product) => {
+  const priced = extras.flatMap<BundleLine>((product) => {
     if (soldOut(product)) return [];
     const variant = displayVariant(product);
     const sale = saleState(product, variant, now);
     const price = sale.kind === "live" ? sale.price : (variant?.price ?? null);
-    return price ? [price] : [];
+    return price && variant ? [{ product, variant, price, saleLive: sale.kind === "live" }] : [];
   });
 
   // The page loads TCMB rates only for a foreign display currency; a foreign price needs them too.
-  const foreign = [main, ...priced].some((p) => p && p.currency !== "TRY");
+  const foreign = [main.price, ...priced.map((l) => l.price)].some((p) => p && p.currency !== "TRY");
   const [ownRates, setOwnRates] = useState<ExchangeRates | null>(null);
   useEffect(() => {
     if (!foreign || money.rates) return;
@@ -55,13 +89,41 @@ export function BundleTotal({ main, extras }: { main: CatalogPrice | null; extra
   }, [foreign, money.rates]);
   const rates = money.rates ?? ownRates;
 
-  if (!main || priced.length === 0) return null;
-  const mainTry = inTry(main, rates);
-  const extrasTry = priced.map((p) => inTry(p, rates));
+  const [added, setAdded] = useState(false);
+  useEffect(() => {
+    if (!added) return;
+    const t = setTimeout(() => setAdded(false), 1800);
+    return () => clearTimeout(t);
+  }, [added]);
+
+  if (!main.price || priced.length === 0) return null;
+  const mainTry = inTry(main.price, rates);
+  const extrasTry = priced.map((l) => inTry(l.price, rates));
   if (mainTry === null || extrasTry.some((v) => v === null)) return null;
   const extrasSum = extrasTry.reduce<number>((sum, v) => sum + (v ?? 0), 0);
   // In TRY until the rates are in, as formatDisplayMoney falls back.
   const show = (amount: number) => formatDisplayMoney(amount, currency, rates);
+  const canAdd = main.purchasable && !!main.variant;
+
+  function addAll() {
+    if (!canAdd || !main.variant || !main.price) return;
+    const cart = useCartStore.getState().items;
+    const set: BundleLine[] = [
+      { product: main.product, variant: main.variant, price: main.price, saleLive: main.saleLive },
+      ...priced,
+    ];
+    // One more of each — except where the buyer already has all their stock
+    // allows (a request has no limit): the cart would only refuse it.
+    const lines = set
+      .filter(({ variant }) => {
+        const limit = variant.available_quantity;
+        const inCart = cart.find((i) => i.variant_id === variant.id)?.quantity ?? 0;
+        return quoteOnly || limit == null || inCart < limit;
+      })
+      .map(({ product, variant, price, saleLive }) => cartLineFor(product, variant, price, { quantity: 1, isLoggedIn, saleLive }));
+    useCartStore.getState().addItems(lines);
+    setAdded(true);
+  }
 
   return (
     <div
@@ -87,6 +149,23 @@ export function BundleTotal({ main, extras }: { main: CatalogPrice | null; extra
           <span className="font-mono text-xl font-bold tabular-nums text-red-700 dark:text-red-300">{show(mainTry + extrasSum)}</span>
         </span>
       </div>
+      <div className="mt-4 flex justify-center">
+        <button
+          type="button"
+          onClick={addAll}
+          disabled={!canAdd}
+          title={canAdd ? undefined : "Ana ürün şu an sepete eklenemiyor"}
+          className={`inline-flex h-11 items-center gap-2 rounded-full px-6 text-sm font-semibold text-white shadow-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 disabled:cursor-not-allowed disabled:opacity-50 ${
+            added ? "bg-emerald-600" : "bg-red-600 enabled:hover:bg-red-500"
+          }`}
+        >
+          {added ? <Check className="h-4 w-4" aria-hidden /> : <ShoppingCart className="h-4 w-4" aria-hidden />}
+          {added ? "Hepsi sepete eklendi" : `Hepsini Sepete Ekle (${priced.length + 1} ürün)`}
+        </button>
+      </div>
+      <span className="sr-only" aria-live="polite">
+        {added ? `${priced.length + 1} ürün sepete eklendi` : ""}
+      </span>
       <p className="mt-2 text-center text-xs text-muted-foreground">
         Hepsi birlikte, KDV dahil. Kargo ve indirimler sepette hesaplanır.
       </p>

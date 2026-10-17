@@ -7,6 +7,8 @@ interface CartState {
   items: CartLineItem[];
   loyaltyPointsToRedeem: number;
   addItem: (item: CartLineItem) => void;
+  /** Several lines in one update (one save, one re-render): "Hepsini Sepete Ekle". */
+  addItems: (items: CartLineItem[]) => void;
   removeItem: (variantId: UUID) => void;
   updateQuantity: (variantId: UUID, quantity: number) => void;
   setLoyaltyPointsToRedeem: (points: number) => void;
@@ -14,6 +16,15 @@ interface CartState {
 }
 
 const toCount = (n: number) => (Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 0);
+
+/** The cart with `item` added: a new line, or more of one already there (its details refreshed). */
+function withItem(items: CartLineItem[], item: CartLineItem): CartLineItem[] {
+  const quantity = toCount(item.quantity);
+  if (quantity === 0) return items;
+  const existing = items.find((i) => i.variant_id === item.variant_id);
+  if (!existing) return [...items, { ...item, quantity }];
+  return items.map((i) => (i.variant_id === item.variant_id ? { ...item, quantity: i.quantity + quantity } : i));
+}
 
 export const useCartStore = create<CartState>()(
   persist(
@@ -23,17 +34,14 @@ export const useCartStore = create<CartState>()(
 
       addItem: (item) =>
         set((state) => {
-          const quantity = toCount(item.quantity);
-          if (quantity === 0) return state;
-          const existing = state.items.find((i) => i.variant_id === item.variant_id);
-          if (!existing) return { items: [...state.items, { ...item, quantity }] };
-          return {
-            items: state.items.map((i) =>
-              i.variant_id === item.variant_id
-                ? { ...item, quantity: i.quantity + quantity }
-                : i,
-            ),
-          };
+          const items = withItem(state.items, item);
+          return items === state.items ? state : { items };
+        }),
+
+      addItems: (added) =>
+        set((state) => {
+          const items = added.reduce(withItem, state.items);
+          return items === state.items ? state : { items };
         }),
 
       removeItem: (variantId) =>

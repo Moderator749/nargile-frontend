@@ -38,10 +38,12 @@ export function CategorySidebar({ items }: { items: ResolvedNav[] }) {
   return (
     <nav
       aria-label="Kategoriler"
-      className={`category-sidebar hidden shrink-0 ${SIDEBAR_WIDTH} lg:relative lg:mr-6 lg:block lg:self-stretch`}
+      className={`category-sidebar hidden shrink-0 ${SIDEBAR_WIDTH} lg:relative lg:mr-6 lg:block lg:self-stretch lg:overflow-hidden lg:rounded-xl lg:bg-background`}
     >
-      {/* No shell: the list stands on the page itself, held together by the
-          hairlines between its rows. */}
+      {/* No shell of its own: the list stands on the page's grey, held
+          together by the hairlines between its rows. On a white page (the
+          catalog's) that grey is the column's own, framing the page with the
+          header. */}
       <div className="scroll-sidebar lg:absolute lg:inset-0 lg:overflow-y-auto lg:overscroll-contain">
         {/* The list reads the current search to mark a brand row; on a static
             page that is known after hydration, so it waits for it. */}

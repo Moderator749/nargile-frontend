@@ -135,7 +135,7 @@ html[data-auth] .guest-only {
     translate: 0 0;
   }
   50% {
-    translate: 0 var(--bob, 2px);
+    translate: var(--bob-x, 0) var(--bob, 2px);
   }
 }
 

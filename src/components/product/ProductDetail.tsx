@@ -103,8 +103,8 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
   // The server agrees — nothing is deducted for a request (`is_quote_account`).
   const quoteOnly = isExportAccount(user);
   const canAdd = !!variant && !!price && !pricesPending && (!soldOut || quoteOnly);
-  // The most this buyer may order of this colour: their list's own quota, or
-  // the retail pool it shares. Sent to a signed-in buyer only; a request has none.
+  // The most this buyer may order of this colour: their list's own quota.
+  // Sent to a signed-in buyer only; a request has none.
   const maxQuantity = !quoteOnly && variant?.available_quantity ? variant.available_quantity : null;
   const capped = (q: number) => Math.max(1, maxQuantity !== null ? Math.min(q, maxQuantity) : q);
 
@@ -330,7 +330,7 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
         categories={categories}
         isLoggedIn={loggedIn}
         pricesPending={pricesPending}
-        mainPrice={price}
+        main={{ product, variant, price, saleLive: sale.kind === "live", purchasable: canAdd }}
       />
     </div>
   );

@@ -1,8 +1,8 @@
 "use client";
 
-import { BundleTotal } from "@/components/product/BundleTotal";
+import { BundleTotal, type BundleMain } from "@/components/product/BundleTotal";
 import { ProductShelf } from "@/components/product/ProductShelf";
-import type { CatalogPrice, CatalogProduct, Category } from "@/types";
+import type { CatalogProduct, Category } from "@/types";
 
 /**
  * "Birlikte İyi Gider": the products the admin pinned to this one, as the same
@@ -11,22 +11,22 @@ import type { CatalogPrice, CatalogProduct, Category } from "@/types";
  * They arrive with the product and are priced for the same viewer, so a dealer
  * sees dealer prices here too, and nothing is shown while the viewer's own prices
  * are still loading rather than flashing the public ones. Under the cards, the
- * product and its extras added up (`BundleTotal`).
+ * product and its extras added up, and put in the cart in one go (`BundleTotal`).
  */
 export function CrossSells({
   products,
   categories,
   isLoggedIn,
   pricesPending,
-  mainPrice,
+  main,
 }: {
   /** Absent in a cached payload from before cross-sells existed. */
   products: CatalogProduct[] | undefined;
   categories: Category[];
   isLoggedIn: boolean;
   pricesPending: boolean;
-  /** The product's own price as its page shows it (the chosen colour, a live sale's). */
-  mainPrice: CatalogPrice | null;
+  /** The product itself, as its page has it: the chosen colour, at the price shown. */
+  main: BundleMain;
 }) {
   return (
     <ProductShelf
@@ -36,7 +36,9 @@ export function CrossSells({
       categories={categories}
       isLoggedIn={isLoggedIn}
       pricesPending={pricesPending}
-      footer={pricesPending ? undefined : <BundleTotal main={mainPrice} extras={products ?? []} />}
+      footer={
+        pricesPending ? undefined : <BundleTotal main={main} extras={products ?? []} isLoggedIn={isLoggedIn} />
+      }
     />
   );
 }

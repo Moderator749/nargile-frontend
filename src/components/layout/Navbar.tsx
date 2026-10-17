@@ -46,7 +46,7 @@ function SearchForm({ id, className = "", q }: SearchProps & { q: string }) {
         defaultValue={q}
         maxLength={100}
         placeholder="Ürün, marka veya kod ara"
-        className="h-10 w-full rounded-md border border-gray-200 bg-gray-50 pl-10 pr-4 text-sm text-foreground transition-colors placeholder:text-muted-foreground focus:border-red-700 focus:bg-white focus:outline-none focus:ring-1 focus:ring-red-700 dark:border-white/10 dark:bg-white/[0.04] dark:focus:border-red-400 dark:focus:bg-background dark:focus:ring-red-400 [&::-webkit-search-cancel-button]:hidden"
+        className="h-10 w-full rounded-md border border-gray-200 bg-white pl-10 pr-4 text-sm text-foreground transition-colors placeholder:text-muted-foreground focus:border-red-700 focus:bg-white focus:outline-none focus:ring-1 focus:ring-red-700 dark:border-white/10 dark:bg-white/[0.04] dark:focus:border-red-400 dark:focus:bg-background dark:focus:ring-red-400 [&::-webkit-search-cancel-button]:hidden"
       />
     </Form>
   );
@@ -113,7 +113,9 @@ export function Navbar({
   return (
     <header
       ref={headerRef}
-      className="sticky top-0 z-50 w-full border-b border-gray-100 bg-white text-foreground dark:border-border dark:bg-background"
+      // The category column's grey (the page's own --background), so the
+      // header and the column frame the page as one piece.
+      className="sticky top-0 z-50 w-full border-b border-gray-200 bg-background text-foreground dark:border-border"
     >
       {/* Module 2: logo · search · currency · order tracking · account · cart */}
       <div className={`${PAGE_CONTAINER} flex h-16 items-center gap-1.5 sm:gap-2`}>

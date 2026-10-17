@@ -21,37 +21,27 @@ export function useIsAdmin(): boolean {
   return hydrated && isAdminRole(role);
 }
 
-const BUTTON = {
-  light:
-    "border-red-500/70 bg-white text-red-700 hover:bg-red-50 dark:border-red-400/60 dark:bg-transparent dark:text-red-300 dark:hover:bg-red-500/10",
-  dark: "border-white/60 bg-white/10 text-white hover:bg-white/20",
-} as const;
-
 /**
- * "PDF Oluştur", for an admin only: the products of the section it sits in,
- * as the printable price catalogue a B2B account downloads, at the prices of
- * whichever group the admin picks — Bayi, Toptan, Kafe or Perakende. The
- * catalogue opens in a new tab, ready for "PDF olarak kaydet".
+ * "PDF Oluştur", for an admin only, on the catalog's grid (catalog, category,
+ * brand and search pages — not the homepage's sections): the products as
+ * shown, as the printable price catalogue a B2B account downloads, at the
+ * prices of whichever group the admin picks — Bayi, Toptan, Kafe or
+ * Perakende. The catalogue opens in a new tab, ready for "PDF olarak kaydet".
  *
- * Renders nothing at all for anyone else (or for an empty section), so it
- * takes no room in the storefront's layout; `className` places it where it is.
+ * Renders nothing at all for anyone else (or for an empty grid), so it takes
+ * no room in the layout.
  */
 export function AdminCatalogPdf({
   products,
   collection,
   hasMore = false,
-  tone = "light",
-  className = "",
 }: {
-  /** The section as shown, in its order. */
+  /** The grid as shown: filtered and sorted. */
   products: CatalogProduct[];
-  /** The catalogue's collection line: the section, category or brand. */
+  /** The catalogue's collection line: the category, the brand or the search. */
   collection: string;
   /** More products behind "Daha fazla göster" that are not on screen yet. */
   hasMore?: boolean;
-  /** `dark` on a band that is dark in either theme. */
-  tone?: keyof typeof BUTTON;
-  className?: string;
 }) {
   const isAdmin = useIsAdmin();
   const [open, setOpen] = useState(false);
@@ -63,7 +53,7 @@ export function AdminCatalogPdf({
         type="button"
         onClick={() => setOpen(true)}
         title="Yalnızca adminler görür"
-        className={`inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-dashed px-3.5 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 ${BUTTON[tone]} ${className}`}
+        className="inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-dashed border-red-500/70 bg-white px-3.5 text-xs font-semibold text-red-700 transition-colors hover:bg-red-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 dark:border-red-400/60 dark:bg-transparent dark:text-red-300 dark:hover:bg-red-500/10"
       >
         <FileDown className="h-3.5 w-3.5" aria-hidden /> PDF Oluştur
       </button>
@@ -151,7 +141,7 @@ function GroupDialog({
         </div>
 
         <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
-          Bu bölümdeki {count.toLocaleString("tr-TR")} ürün, gördüğünüz sırayla kataloğa eklenir.
+          Ekrandaki {count.toLocaleString("tr-TR")} ürün, gördüğünüz sırayla kataloğa eklenir.
           {products.length > PRICE_LIST_MAX && ` Bir katalog en fazla ${PRICE_LIST_MAX} ürün alır; ilk ${PRICE_LIST_MAX} ürün eklenecek.`}
           {hasMore && " Listede henüz yüklenmemiş ürünler var; onları da eklemek için önce “Daha fazla göster” ile yükleyin."}{" "}
           Fiyatlar grubun liste fiyatlarıdır (fırsat indirimleri hariç). Katalog yeni sekmede açılır; “PDF olarak kaydet” ile indirin.

@@ -43,7 +43,8 @@ export async function CatalogScreen({
   const categoryById = new Map(categories.map((c) => [c.id, c]));
 
   return (
-    <main className="flex flex-1 flex-col bg-background text-foreground">
+    // White under the grid; the grey header and category column frame it.
+    <main className="flex flex-1 flex-col bg-white text-foreground dark:bg-background">
       <JsonLd data={breadcrumbJsonLd(breadcrumbs)} />
       {products && products.length > 0 && (
         <JsonLd data={productListJsonLd(products, pageHref, categoryById)} />

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Check, Hourglass, Minus, Palette, Plus, Truck } from "lucide-react";
+import { Check, Hourglass, Minus, Plus, Truck } from "lucide-react";
 
 import { ProductImage } from "@/components/catalog/ProductImage";
 import { useDisplayMoney } from "@/hooks/useDisplayMoney";
@@ -201,15 +201,15 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
           </div>
         ) : needsColorChoice && !soldOut ? (
           // Nothing to add yet: which colour is the visitor's to say, so the
-          // button opens the page where the pills are instead of guessing.
+          // same + as every other card opens the page where the pills are
+          // instead of guessing.
           <Link
             href={productHref(product)}
             aria-label={`Renk seçin: ${product.name}`}
             title="Renk seçin"
-            className="absolute bottom-3 right-3 z-10 flex h-11 items-center gap-1.5 rounded-full bg-black/80 px-3.5 text-xs font-medium text-white shadow-lg backdrop-blur-md transition-[background-color,transform] duration-300 ease-out hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-safe:active:scale-95"
+            className="absolute bottom-3 right-3 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-black/80 text-white shadow-lg backdrop-blur-md transition-[background-color,transform] duration-300 ease-out hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-safe:active:scale-95"
           >
-            <Palette className="h-4 w-4 shrink-0" strokeWidth={1.75} aria-hidden />
-            Renk seç
+            <Plus className="h-5 w-5" strokeWidth={1.75} aria-hidden />
           </Link>
         ) : (
           // Always visible (touch has no hover); frosted ink, crimson on hover. z-10: above

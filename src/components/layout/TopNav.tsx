@@ -62,10 +62,7 @@ export function TopNav({ categories, links }: { categories: ResolvedNav[]; links
   // back out. Every other page keeps the bar exactly as it is.
   if (pathname === "/cart") {
     return (
-      <nav
-        aria-label="Alışverişe dön"
-        className="border-t border-gray-100 bg-white dark:border-border dark:bg-background"
-      >
+      <nav aria-label="Alışverişe dön" className="border-t border-gray-200 bg-background dark:border-border">
         <div className={`${PAGE_CONTAINER} flex items-center py-2`}>
           <Link
             href="/"
@@ -79,12 +76,10 @@ export function TopNav({ categories, links }: { categories: ResolvedNav[]; links
     );
   }
 
-  // A plain white band under the header, a hairline between the two.
+  // A band under the header in the same grey as it and the category column,
+  // a hairline between the two.
   return (
-    <nav
-      aria-label="Ana menü"
-      className="border-t border-gray-100 bg-white dark:border-border dark:bg-background"
-    >
+    <nav aria-label="Ana menü" className="border-t border-gray-200 bg-background dark:border-border">
       {/* The gap after the red button is the category column's right margin,
           not a gap of its own choosing: 16rem of button plus 1.5rem of gap is
           what puts the first link on the hero's left edge, exactly as the
@@ -96,23 +91,24 @@ export function TopNav({ categories, links }: { categories: ResolvedNav[]; links
           onClick={() => setSidebarCollapsed(!collapsed)}
           aria-expanded={!collapsed}
           aria-label={collapsed ? "Kategori sütununu aç" : "Kategori sütununu kapat"}
-          className={`group hidden shrink-0 items-center gap-2 rounded-md bg-red-700 px-6 py-2 text-[11px] font-bold uppercase tracking-wider text-white shadow-sm transition-colors hover:bg-red-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent lg:flex ${SIDEBAR_WIDTH} ${
+          className={`group hidden shrink-0 items-center gap-2.5 rounded-md bg-red-700 px-6 py-2 text-sm font-bold uppercase tracking-wider text-white shadow-sm transition-colors hover:bg-red-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent lg:flex ${SIDEBAR_WIDTH} ${
             collapsed ? "motion-safe:animate-kategori-glow" : ""
           }`}
         >
-          <LayoutGrid className="h-3.5 w-3.5 shrink-0 text-white" aria-hidden />
+          <LayoutGrid className="h-4 w-4 shrink-0 text-white" aria-hidden />
           Kategoriler
           <span
             aria-hidden
-            className="ml-auto flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/15 ring-1 ring-white/25 transition-[background-color,box-shadow] duration-300 group-hover:bg-white/30 group-hover:ring-white/60 group-focus-visible:bg-white/30"
+            className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/15 ring-1 ring-white/25 transition-[background-color,box-shadow] duration-300 group-hover:bg-white/30 group-hover:ring-white/60 group-focus-visible:bg-white/30"
           >
-            {/* Down while the column is closed (floating with the glow), up once
-                it is open; on hover it nudges that way (`--bob`). With reduced
+            {/* Down while the column is closed (floating with the glow); once it
+                is open it turns to point left, the way the column folds away,
+                and on hover it nudges that way (`--bob-x`). With reduced
                 motion it neither turns nor moves. */}
             <ChevronDown
               strokeWidth={2.75}
-              className={`h-3.5 w-3.5 text-white transition-transform duration-300 ease-out motion-reduce:transition-none motion-safe:group-hover:animate-chevron-bob ${
-                collapsed ? "motion-safe:animate-chevron-float" : "rotate-180 [--bob:-2px]"
+              className={`h-4 w-4 text-white transition-transform duration-300 ease-out motion-reduce:transition-none motion-safe:group-hover:animate-chevron-bob ${
+                collapsed ? "motion-safe:animate-chevron-float" : "rotate-90 [--bob:0px] [--bob-x:-2px]"
               }`}
             />
           </span>
@@ -122,11 +118,11 @@ export function TopNav({ categories, links }: { categories: ResolvedNav[]; links
           onClick={() => setDrawer(true)}
           aria-expanded={drawer}
           aria-controls="category-drawer"
-          className="flex shrink-0 items-center gap-2 rounded-md bg-red-700 px-6 py-2 text-[11px] font-bold uppercase tracking-wider text-white shadow-sm transition-colors hover:bg-red-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-safe:animate-kategori-glow lg:hidden"
+          className="flex shrink-0 items-center gap-2.5 rounded-md bg-red-700 px-6 py-2 text-sm font-bold uppercase tracking-wider text-white shadow-sm transition-colors hover:bg-red-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-safe:animate-kategori-glow lg:hidden"
         >
-          <LayoutGrid className="h-3.5 w-3.5 shrink-0 text-white" aria-hidden />
+          <LayoutGrid className="h-4 w-4 shrink-0 text-white" aria-hidden />
           Kategoriler
-          <ChevronDown className="h-3.5 w-3.5 shrink-0 text-white/75 motion-safe:animate-chevron-float" aria-hidden />
+          <ChevronDown className="h-4 w-4 shrink-0 text-white/75 motion-safe:animate-chevron-float" aria-hidden />
         </button>
 
         {/* All seven are on screen at once and nothing scrolls sideways. From
