@@ -1503,3 +1503,47 @@ export interface HomepageSettingsResponse {
   data: Partial<Homepage>;
   updated_at?: string | null;
 }
+
+// ── Toplu fiyat (Excel) ─────────────────────────────────────────────────────────
+
+/** One block of the pricing workbook: where it is, and its four prices (TL, VAT included). */
+export interface PriceImportRow {
+  sheet: string;
+  /** 1-based Excel row of the product's name; its prices are two rows below. */
+  row: number;
+  side: "sol" | "sağ";
+  section: string | null;
+  name: string;
+  prices: Record<SegmentType, DecimalString | null>;
+}
+
+export interface PriceImportMatched extends PriceImportRow {
+  product_id: string;
+  product_code: string;
+  product_name: string;
+  matched_by: "code" | "sku" | "name";
+  variants: number;
+  old_prices: Partial<Record<SegmentType, { currency: CurrencyType; price_incl_tax: DecimalString }>>;
+}
+
+export interface PriceImportUnmatched extends PriceImportRow {
+  reason: "unnamed" | "incomplete" | "not_found" | "ambiguous" | "conflict" | "no_variants";
+  candidates: { product_id: string; code: string; name: string }[];
+}
+
+export interface PriceImportSkipped {
+  sheet: string;
+  row: number;
+  side: "sol" | "sağ";
+  name: string;
+  reason: "foreign_currency" | "vat_excluded" | "no_dealer_price";
+}
+
+export interface PriceImportResult {
+  dry_run: boolean;
+  matched: PriceImportMatched[];
+  unmatched: PriceImportUnmatched[];
+  skipped: PriceImportSkipped[];
+  updated_products: number;
+  updated_variants: number;
+}

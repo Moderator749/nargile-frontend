@@ -42,6 +42,7 @@ import type {
   LegalKey,
   OrderApproveResponse,
   OrderStatus,
+  PriceImportResult,
   ProductDeleteResult,
   ProductSheet,
   ProductSort,
@@ -573,5 +574,22 @@ export async function adminGetHomepage(signal?: AbortSignal): Promise<HomepageSe
 /** Replaces the document; sections left out go back to the storefront default. */
 export async function adminSaveHomepage(body: Partial<Homepage>): Promise<HomepageSettingsResponse> {
   const { data } = await api.put<HomepageSettingsResponse>("/admin/home/settings", body);
+  return data;
+}
+
+/**
+ * Toplu fiyat: the supplier's pricing workbook, matched to products. With
+ * `dryRun` (the preview) nothing is written; without it every matched row's
+ * four group prices are, all or nothing.
+ */
+export async function adminImportPrices(file: File, dryRun: boolean): Promise<PriceImportResult> {
+  const form = new FormData();
+  form.append("file", file);
+  const { data } = await api.post<PriceImportResult>("/admin/pricing/import-excel", form, {
+    params: { dry_run: dryRun },
+    headers: { "Content-Type": "multipart/form-data" },
+    // A workbook of a few hundred blocks is matched against the whole catalog.
+    timeout: 60_000,
+  });
   return data;
 }
