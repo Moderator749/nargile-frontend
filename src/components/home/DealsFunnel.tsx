@@ -23,10 +23,10 @@ import type { CatalogPrice, CatalogProduct, Category } from "@/types";
  * — near-black, three stacked background layers (two radial washes, a
  * diagonal sheen, a masked 52px grid), rising smoke, and a centred title — as
  * a band across the full width of the page rather than a card in its column.
- * What sits inside is this shop's own: the live deals, four across, each a
- * white card whose photo runs flush across the top of it, kept to the page's
- * container (with the inset the card used to give them) so they sit exactly
- * where they did.
+ * What sits inside is this shop's own: the live deals, each a white card whose
+ * photo runs flush across the top of it, in a cover flow across the page's
+ * container — the cards in the middle at full size, the ones peeking in at
+ * the edges smaller and dimmed.
  *
  * It renders only while there is something to show. A dark panel announcing
  * deals with nothing in it is worse than no panel, so with no claimable deal
@@ -45,25 +45,62 @@ import type { CatalogPrice, CatalogProduct, Category } from "@/types";
 
 /** Where the smoke rises from, as percentages across the card. */
 const SMOKE = [12, 38, 64, 86];
-/** Four fit the row at once; a fifth deal is a scroll away, not a cut. */
-const VISIBLE = 4;
 /**
- * A snapping track rather than a grid: four cards fill the row on a desktop
- * and the rest wait just off the right edge, where a swipe, a trackpad or the
- * arrows bring them in. Slicing the list at four was the alternative, and it
- * quietly hid live deals from the one section that exists to show them.
+ * A cover flow: a snapping track whose cards stop at its centre, with the
+ * cards either side of the middle peeking in at the edges — where a swipe, a
+ * trackpad or the arrows bring them in. Every live deal is on it; slicing the
+ * list to what fits would quietly hide deals from the one section that exists
+ * to show them.
  *
- * The widths are arithmetic, not guesses: with a 24px gap, four across is
- * `calc(25% - 18px)` (three gaps shared between four cards) and two across is
- * `calc(50% - 12px)`. On a phone a card takes 82% of the track, so the next
- * one shows at the edge — the only hint a touch screen needs that there is
- * more to the right.
+ * A card is `--card` of the track: 64% on a phone and 46% from `sm`, so one
+ * card holds the middle with the next showing either side (wide enough to see
+ * once it is scaled down), and 26% from `lg`, so three do. The spacers before the first card and after the last are half
+ * of what is left, less a gap, so the end cards can come to the centre too.
+ * The faded edges are a mask, as on the brand ticker.
  */
 const TRACK = [
-  "relative flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-2 sm:gap-6",
+  "relative flex snap-x snap-mandatory gap-[var(--gap)] overflow-x-auto scroll-smooth py-3",
+  "[--gap:1rem] sm:[--gap:1.5rem] [--card:64%] sm:[--card:46%] lg:[--card:26%]",
+  "before:w-[calc((100%-var(--card))/2-var(--gap))] before:shrink-0 before:content-['']",
+  "after:w-[calc((100%-var(--card))/2-var(--gap))] after:shrink-0 after:content-['']",
+  "[mask-image:linear-gradient(to_right,transparent,black_4%,black_96%,transparent)]",
   "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
 ].join(" ");
-const SLIDE = "w-[82%] shrink-0 snap-start sm:w-[calc(50%-12px)] lg:w-[calc(25%-18px)]";
+/** The depth: in focus, full size and full strength; peeking, smaller and dimmed. The change eases either way. */
+const SLIDE = "flex w-[var(--card)] min-w-0 shrink-0 snap-center transition-all duration-500 ease-out motion-reduce:transition-none";
+const IN_FOCUS = "scale-100 opacity-100";
+const PEEKING = "scale-[0.85] opacity-60";
+
+/**
+ * Which cards are in focus: every one the track shows whole, and whichever is
+ * nearest its centre even mid-swipe, when a phone may show none whole.
+ *
+ * Measured off the layout (`offsetLeft`, `offsetWidth`) against the scroll
+ * position, not off what is painted: a card scaled down for peeking is smaller
+ * on screen, and measuring that would bring it back into focus.
+ */
+function cardsInFocus(track: HTMLElement): Set<number> {
+  const left = track.scrollLeft;
+  const right = left + track.clientWidth;
+  const middle = (left + right) / 2;
+  const focus = new Set<number>();
+  let nearest = -1;
+  let nearestDistance = Infinity;
+  Array.from(track.children as HTMLCollectionOf<HTMLElement>).forEach((card, index) => {
+    const start = card.offsetLeft;
+    const end = start + card.offsetWidth;
+    if (start >= left - 1 && end <= right + 1) focus.add(index);
+    const distance = Math.abs((start + end) / 2 - middle);
+    if (distance < nearestDistance) {
+      nearestDistance = distance;
+      nearest = index;
+    }
+  });
+  if (nearest >= 0) focus.add(nearest);
+  return focus;
+}
+
+const sameSet = (a: Set<number>, b: Set<number>) => a.size === b.size && [...a].every((i) => b.has(i));
 /**
  * One white body, and the photo's canvas is the same white: nothing to see
  * between them, which is what the flush layout was for. The product reads as
@@ -109,6 +146,9 @@ export function DealsFunnel({ initialProducts, categories, title, subtitle }: De
   const now = useNow(true);
   const [own, setOwn] = useState<{ token: string; products: CatalogProduct[] } | null>(null);
   const track = useRef<HTMLUListElement>(null);
+  // Null until measured: the server's render, and the first paint, show every card in focus.
+  const [focus, setFocus] = useState<Set<number> | null>(null);
+  const centred = useRef(false);
 
   /** One card and one gap, measured off the track rather than assumed. */
   function slide(direction: 1 | -1) {
@@ -137,7 +177,44 @@ export function DealsFunnel({ initialProducts, categories, title, subtitle }: De
   const products = (loggedIn ? (mine ?? initialProducts) : initialProducts).filter(
     (p) => p.is_opportunity && p.variants.some((v) => v.flash_sale),
   );
-  if (products.length === 0) return null;
+  const count = products.length;
+
+  // The flow opens on the middle deal, so both sides have cards to peek in —
+  // once, on the first render that has a track, without the smooth scroll.
+  useEffect(() => {
+    const element = track.current;
+    if (!element || centred.current) return;
+    const card = element.children[Math.floor(element.children.length / 2)] as HTMLElement | undefined;
+    if (!card) return;
+    centred.current = true;
+    element.scrollTo({ left: card.offsetLeft + card.offsetWidth / 2 - element.clientWidth / 2, behavior: "instant" });
+  }, [count]);
+
+  // Re-read which cards are in focus as the track scrolls or resizes, at most once a frame.
+  useEffect(() => {
+    const element = track.current;
+    if (!element) return;
+    let frame = 0;
+    const measure = () => {
+      frame = 0;
+      const next = cardsInFocus(element);
+      setFocus((current) => (current && sameSet(current, next) ? current : next));
+    };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(measure);
+    };
+    schedule();
+    element.addEventListener("scroll", schedule, { passive: true });
+    const resize = new ResizeObserver(schedule);
+    resize.observe(element);
+    return () => {
+      cancelAnimationFrame(frame);
+      element.removeEventListener("scroll", schedule);
+      resize.disconnect();
+    };
+  }, [count]);
+
+  if (count === 0) return null;
   const publicPrices = !mine;
   const categoryById = new Map(categories.map((c) => [c.id, c]));
 
@@ -208,11 +285,11 @@ export function DealsFunnel({ initialProducts, categories, title, subtitle }: De
               <p className="mx-auto mt-1 max-w-lg text-[13px] leading-relaxed text-white/70">{subtitle}</p>
             )}
 
-            {/* Only when there is something past the fourth card: a control
-                that cannot do anything is worse than no control. A touch
-                screen scrolls the track itself, and sees the next card
+            {/* Only when there is a second card to bring to the centre: a
+                control that cannot do anything is worse than no control. A
+                touch screen scrolls the track itself, and sees the next card
                 peeking at the edge, so these are for the pointer. */}
-            {products.length > VISIBLE && (
+            {count > 1 && (
               <div className="absolute right-0 top-1 hidden gap-2 lg:flex">
                 {([-1, 1] as const).map((direction) => (
                   <button
@@ -232,107 +309,109 @@ export function DealsFunnel({ initialProducts, categories, title, subtitle }: De
               </div>
             )}
           </div>
+        </div>
 
-          <ul ref={track} className={`mt-5 ${TRACK}`}>
-            {products.map((product) => {
-              const variant = displayVariant(product);
-              const sale = saleState(product, variant, now);
-              const regular = variant?.price ?? null;
-              // The sale price while one is claimable, the regular one after.
-              const price = sale.kind === "live" ? sale.price : regular;
-              // "Was": the viewer's own regular price during a sale, else the
-              // public RETAIL price — the same rule the catalog card follows.
-              const was = sale.kind === "live" ? regular : (variant?.list_price ?? null);
-              const saving = savingPercent(price, was);
-              const gone = allSoldOut(product);
-              const category = product.category_id != null ? categoryById.get(product.category_id) : undefined;
+        {/* The track runs the container's full width, past the heading's
+            inset, so the peeking cards reach its edges. */}
+        <ul ref={track} className={`mt-5 ${TRACK}`}>
+          {products.map((product, index) => {
+            const variant = displayVariant(product);
+            const sale = saleState(product, variant, now);
+            const regular = variant?.price ?? null;
+            // The sale price while one is claimable, the regular one after.
+            const price = sale.kind === "live" ? sale.price : regular;
+            // "Was": the viewer's own regular price during a sale, else the
+            // public RETAIL price — the same rule the catalog card follows.
+            const was = sale.kind === "live" ? regular : (variant?.list_price ?? null);
+            const saving = savingPercent(price, was);
+            const gone = allSoldOut(product);
+            const category = product.category_id != null ? categoryById.get(product.category_id) : undefined;
 
-              return (
-                <li key={product.id} className={`flex min-w-0 ${SLIDE}`}>
-                  <Link href={productHref(product)} className={CARD}>
-                    {/* The photo's canvas: flush to the card's top and sides,
-                        and the same white as the card, so there is no seam to
-                        find. The photos are opaque JPEGs shot on white, which is
-                        exactly why a white card carries them with no frame, no
-                        plate and no blend trick. The card's own
-                        `overflow-hidden` rounds the corners. */}
-                    <div className="relative flex aspect-square w-full items-center justify-center overflow-hidden bg-white p-3">
-                      <div className="relative h-full w-full">
-                        <ProductImage
-                          src={product.image_url}
-                          alt={productImageAlt(product, category)}
-                          sizes="(min-width: 1024px) 15vw, (min-width: 768px) 28vw, 44vw"
-                          surfaceClassName="bg-transparent"
-                          imageClassName="h-full w-full object-contain transition-transform duration-300 motion-safe:group-hover:scale-[1.08]"
-                          fallback={
-                            <div className="flex h-full items-center justify-center text-neutral-300">
-                              <Package className="h-10 w-10" strokeWidth={1} aria-hidden />
-                            </div>
-                          }
-                        />
-                      </div>
+            return (
+              <li key={product.id} className={`${SLIDE} ${!focus || focus.has(index) ? IN_FOCUS : PEEKING}`}>
+                <Link href={productHref(product)} className={CARD}>
+                  {/* The photo's canvas: flush to the card's top and sides,
+                      and the same white as the card, so there is no seam to
+                      find. The photos are opaque JPEGs shot on white, which is
+                      exactly why a white card carries them with no frame, no
+                      plate and no blend trick. The card's own
+                      `overflow-hidden` rounds the corners. */}
+                  <div className="relative flex aspect-square w-full items-center justify-center overflow-hidden bg-white p-3">
+                    <div className="relative h-full w-full">
+                      <ProductImage
+                        src={product.image_url}
+                        alt={productImageAlt(product, category)}
+                        sizes="(min-width: 1280px) 320px, (min-width: 1024px) 25vw, (min-width: 640px) 44vw, 62vw"
+                        surfaceClassName="bg-transparent"
+                        imageClassName="h-full w-full object-contain transition-transform duration-300 motion-safe:group-hover:scale-[1.08]"
+                        fallback={
+                          <div className="flex h-full items-center justify-center text-neutral-300">
+                            <Package className="h-10 w-10" strokeWidth={1} aria-hidden />
+                          </div>
+                        }
+                      />
+                    </div>
 
-                      {sale.kind === "missed" ? (
-                        <span className="absolute left-3 top-3 z-10 rounded-lg bg-neutral-800 px-2.5 py-1 text-[11px] font-bold tracking-wider text-neutral-200 shadow-md">
-                          Fırsat Kaçtı
-                        </span>
+                    {sale.kind === "missed" ? (
+                      <span className="absolute left-3 top-3 z-10 rounded-lg bg-neutral-800 px-2.5 py-1 text-[11px] font-bold tracking-wider text-neutral-200 shadow-md">
+                        Fırsat Kaçtı
+                      </span>
+                    ) : (
+                      <span className="absolute left-3 top-3 z-10 rounded-lg bg-red-600 px-2.5 py-1 text-[11px] font-bold tracking-wider text-white shadow-md">
+                        {saving > 0 ? `-%${saving}` : "Fırsat"}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Everything else sits on the same white sheet, in its own padding. */}
+                  <div className="flex flex-1 flex-col justify-between space-y-3 bg-white p-4">
+                    <div>
+                      <p className="truncate text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+                        {category?.name ?? "Fırsat ürünü"}
+                      </p>
+                      <h3
+                        className="mt-1 line-clamp-2 min-h-10 text-[15px] font-medium leading-5 tracking-tight text-foreground transition-colors duration-200 group-hover:text-red-600"
+                        title={product.name}
+                      >
+                        {product.name}
+                      </h3>
+                    </div>
+
+                    {/* h-11 is the two lines it can hold — a struck price of
+                        text-xs over a deal price of text-lg — so the row is
+                        the same height with one line or two, and the switch
+                        from public to the visitor's own prices moves nothing. */}
+                    <div className={`flex h-11 flex-col justify-center ${publicPrices ? "public-price" : ""}`}>
+                      {gone ? (
+                        <span className="text-sm font-semibold tracking-tight text-neutral-500">Tükendi</span>
                       ) : (
-                        <span className="absolute left-3 top-3 z-10 rounded-lg bg-red-600 px-2.5 py-1 text-[11px] font-bold tracking-wider text-white shadow-md">
-                          {saving > 0 ? `-%${saving}` : "Fırsat"}
-                        </span>
+                        <>
+                          {saving > 0 && was && (
+                            <span className="text-xs font-medium text-neutral-400 line-through">
+                              {money.format(was)}
+                            </span>
+                          )}
+                          <span className="text-lg font-semibold leading-7 tracking-tight text-red-600">
+                            {price ? money.format(price) : "—"}
+                          </span>
+                        </>
                       )}
                     </div>
 
-                    {/* Everything else sits on the same white sheet, in its own padding. */}
-                    <div className="flex flex-1 flex-col justify-between space-y-3 bg-white p-4">
-                      <div>
-                        <p className="truncate text-[10px] font-bold uppercase tracking-wider text-neutral-500">
-                          {category?.name ?? "Fırsat ürünü"}
-                        </p>
-                        <h3
-                          className="mt-1 line-clamp-2 min-h-10 text-[15px] font-medium leading-5 tracking-tight text-foreground transition-colors duration-200 group-hover:text-red-600"
-                          title={product.name}
-                        >
-                          {product.name}
-                        </h3>
-                      </div>
-
-                      {/* h-11 is the two lines it can hold — a struck price of
-                          text-xs over a deal price of text-lg — so the row is
-                          the same height with one line or two, and the switch
-                          from public to the visitor's own prices moves nothing. */}
-                      <div className={`flex h-11 flex-col justify-center ${publicPrices ? "public-price" : ""}`}>
-                        {gone ? (
-                          <span className="text-sm font-semibold tracking-tight text-neutral-500">Tükendi</span>
-                        ) : (
-                          <>
-                            {saving > 0 && was && (
-                              <span className="text-xs font-medium text-neutral-400 line-through">
-                                {money.format(was)}
-                              </span>
-                            )}
-                            <span className="text-lg font-semibold leading-7 tracking-tight text-red-600">
-                              {price ? money.format(price) : "—"}
-                            </span>
-                          </>
-                        )}
-                      </div>
-
-                      <span className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-red-600 px-3 py-2.5 text-xs font-semibold text-white shadow-md shadow-red-600/30 transition-all duration-200 group-hover:bg-red-700">
-                        İncele
-                        <ArrowRight
-                          className="h-3.5 w-3.5 transition-transform duration-300 motion-safe:group-hover:translate-x-0.5"
-                          strokeWidth={2.5}
-                          aria-hidden
-                        />
-                      </span>
-                    </div>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
+                    <span className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-red-600 px-3 py-2.5 text-xs font-semibold text-white shadow-md shadow-red-600/30 transition-all duration-200 group-hover:bg-red-700">
+                      İncele
+                      <ArrowRight
+                        className="h-3.5 w-3.5 transition-transform duration-300 motion-safe:group-hover:translate-x-0.5"
+                        strokeWidth={2.5}
+                        aria-hidden
+                      />
+                    </span>
+                  </div>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
       </div>
     </section>
   );
