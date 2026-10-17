@@ -16,9 +16,9 @@ const MEDIA = mediaUrl();
 const MEDIA_IS_LOCAL = ["localhost", "127.0.0.1", "[::1]", "::1"].includes(MEDIA.hostname);
 
 /**
- * Old category slug → the live category its products are in now. A slug the
- * current tree uses (celik-takimlar, komurler, sultan…) must never be listed
- * here: the redirect would hide that category's page.
+- Old category slug → the live category its products are in now. A slug the
+- current tree uses (celik-takimlar, komurler, sultan…) must never be listed
+- here: the redirect would hide that category's page.
  */
 const RETIRED_CATEGORIES: Record<string, string> = {
   "nargile-komurleri": "komurler",
@@ -43,11 +43,11 @@ const RETIRED_CATEGORIES: Record<string, string> = {
 };
 
 /**
- * The old store's (OpenCart) category address → where those products are now.
- * Measured, not guessed: each old category page was read and its products
- * looked up here; nearly all of each landed in the one category named. The
- * tobacco category is left out on purpose — it is not sold online, and its
- * address must not lead to anything that looks like a replacement.
+- The old store's (OpenCart) category address → where those products are now.
+- Measured, not guessed: each old category page was read and its products
+- looked up here; nearly all of each landed in the one category named. The
+- tobacco category is left out on purpose — it is not sold online, and its
+- address must not lead to anything that looks like a replacement.
  */
 const LEGACY_CATEGORIES: Record<string, string> = {
   "paslanmaz-celik-nargile-takimlari": "celik-takimlar",
@@ -80,14 +80,25 @@ const LEGACY_PAGES: Record<string, string> = {
 
 const nextConfig: NextConfig = {
   /*
-   * Metadata (title, description, canonical, Open Graph) always in <head>.
-   * By default Next streams it into <body> for ordinary browsers and blocks
-   * only for a list of known bots; crawlers outside that list (AI crawlers,
-   * SEO tools, smaller search engines) would then find no <title> in the first
-   * HTML they read. Every page's metadata comes from cached catalog reads, so
-   * waiting for it costs little.
+- Metadata (title, description, canonical, Open Graph) always in <head>.
+- By default Next streams it into <body> for ordinary browsers and blocks
+- only for a list of known bots; crawlers outside that list (AI crawlers,
+- SEO tools, smaller search engines) would then find no <title> in the first
+- HTML they read. Every page's metadata comes from cached catalog reads, so
+- waiting for it costs little.
    */
   htmlLimitedBots: /.*/,
+
+  // --- DIGITALOCEAN BACKEND PROXY (HTTPS/MIXED CONTENT ÇÖZÜMÜ) ---
+  async rewrites() {
+    return [
+      {
+        source: "/api/backend/:path*",
+        destination: "http://209.38.195.227:8000/:path*",
+      },
+    ];
+  },
+
   // The dashboard ("Genel Bakış") lives at /admin; keep /admin/overview working too.
   async redirects() {
     return [
@@ -146,13 +157,13 @@ const nextConfig: NextConfig = {
         : [new URL(`${MEDIA.origin}/media/**`)]),
     ],
     /*
-     * Next 16 refuses to optimise an image whose host resolves to a private or
-     * loopback address (an SSRF guard), which blocks every uploaded photo while
-     * the API runs on this machine — whatever the patterns above say.
+- Next 16 refuses to optimise an image whose host resolves to a private or
+- loopback address (an SSRF guard), which blocks every uploaded photo while
+- the API runs on this machine — whatever the patterns above say.
      *
-     * So it is allowed exactly when the media host *is* local, which is a
-     * developer's setup; point NEXT_PUBLIC_API_URL at a real host and the guard
-     * goes back to doing its job.
+- So it is allowed exactly when the media host *is* local, which is a
+- developer's setup; point NEXT_PUBLIC_API_URL at a real host and the guard
+- goes back to doing its job.
      */
     dangerouslyAllowLocalIP: MEDIA_IS_LOCAL,
   },
