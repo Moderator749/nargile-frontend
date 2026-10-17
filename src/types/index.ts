@@ -358,8 +358,13 @@ export interface CatalogVariant {
   list_price: CatalogPrice | null;
   /** Live sale that beats `price` for this caller; null/absent when none. */
   flash_sale?: FlashSaleInfo | null;
-  /** Stock in the caller's warehouse; absent (older API) means unknown → treated as in stock. */
+  /**
+   * Whether the caller can buy it: their B2B list's own quota when one is set,
+   * else the retail pool it shares. Absent (older API) means unknown → treated as in stock.
+   */
   in_stock?: boolean;
+  /** How many of it the caller may order — sent to a signed-in caller only; absent or null = no limit to show. */
+  available_quantity?: number | null;
 }
 
 export interface CatalogProduct extends Product {
@@ -518,6 +523,8 @@ export interface CartItemBreakdown {
   havale_eligible?: boolean;
   /** The havale discount on this line (VAT-inclusive); "0.00" unless paid by transfer. */
   havale_discount?: DecimalString;
+  /** How many the buyer may have (their quota, or the shared retail pool); a line above it cannot be ordered. */
+  available_quantity?: number;
 }
 
 /** What the "%50 Kuralı" minimum counts: kilograms of coal, or units (adet). */

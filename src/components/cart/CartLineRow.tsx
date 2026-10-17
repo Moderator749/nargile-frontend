@@ -22,6 +22,8 @@ interface CartLineRowProps {
   productHref?: string;
   /** A B2B line with its list's havale switch on, and what a transfer takes off it now. */
   havaleEligible?: boolean;
+  /** The most of it the buyer may order (from the server quote); none when there is no limit to hold to. */
+  maxQuantity?: number | null;
   havaleDiscount?: DecimalString;
 }
 
@@ -33,6 +35,7 @@ export function CartLineRow({
   productHref,
   havaleEligible = false,
   havaleDiscount,
+  maxQuantity,
 }: CartLineRowProps) {
   const image = serverImageUrl ?? item.image_url ?? null;
   // Which colour this line is. The quote is authoritative; the snapshot covers a
@@ -98,6 +101,7 @@ export function CartLineRow({
             value={item.quantity}
             onChange={(q) => updateQuantity(item.variant_id, q)}
             label={label}
+            max={maxQuantity}
           />
           <p className="w-28 text-right text-sm font-semibold tabular-nums text-slate-900 dark:text-zinc-100">
             {formatMoney(lineTotal)}

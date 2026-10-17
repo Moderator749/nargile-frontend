@@ -1,61 +1,95 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Minus, Plus } from "lucide-react";
 
 interface QuantityStepperProps {
   value: number;
   onChange: (quantity: number) => void;
   label: string;
+  /** The most that may be ordered (the buyer's stock limit); none when there is no limit to hold to. */
+  max?: number | null;
 }
 
 const stepClass =
   "flex h-9 w-9 items-center justify-center text-slate-600 dark:text-zinc-400 transition-colors hover:bg-slate-100 dark:hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40";
 
-/** +/- buttons plus a typeable field, so B2B buyers can enter "50" directly. */
-export function QuantityStepper({ value, onChange, label }: QuantityStepperProps) {
+/**
+ * +/- buttons around a field the buyer can type into, so a B2B order of "150"
+ * is typed, not clicked. Whole numbers from 1 only: anything else is dropped as
+ * it is typed. A number counts as soon as it is typed (so "Sepete Ekle" right
+ * after takes it); one above `max` is held to `max`, with a warning saying why,
+ * and the field shows the corrected number once the buyer leaves it. A cleared
+ * field goes back to what it was; Escape undoes the typing.
+ */
+export function QuantityStepper({ value, onChange, label, max }: QuantityStepperProps) {
   const [draft, setDraft] = useState<string | null>(null);
+  const before = useRef(value);
+  const limit = max != null && max > 0 ? max : null;
+  const typed = draft ? Number.parseInt(draft, 10) : value;
+  const over = limit !== null && typed > limit;
 
-  function commit() {
-    if (draft === null) return;
-    const n = Number.parseInt(draft, 10);
-    if (Number.isFinite(n) && n >= 1) onChange(n);
-    setDraft(null);
+  function type(text: string) {
+    const digits = text.replace(/\D/g, "").replace(/^0+/, "").slice(0, 6);
+    setDraft(digits);
+    const n = Number.parseInt(digits, 10);
+    if (n >= 1) onChange(limit !== null ? Math.min(n, limit) : n);
   }
 
   return (
-    <div className="inline-flex items-center overflow-hidden rounded-lg border border-slate-300 dark:border-white/15 bg-white dark:bg-zinc-900">
-      <button
-        type="button"
-        className={stepClass}
-        onClick={() => onChange(value - 1)}
-        disabled={value <= 1}
-        aria-label={`${label}: adedi azalt`}
+    <div className="relative inline-flex">
+      <div className="inline-flex items-center overflow-hidden rounded-lg border border-slate-300 dark:border-white/15 bg-white dark:bg-zinc-900">
+        <button
+          type="button"
+          className={stepClass}
+          onClick={() => onChange(limit !== null ? Math.min(value - 1, limit) : value - 1)}
+          disabled={value <= 1}
+          aria-label={`${label}: adedi azalt`}
+        >
+          <Minus className="h-4 w-4" aria-hidden />
+        </button>
+        <input
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          autoComplete="off"
+          aria-label={`${label}: adet`}
+          aria-invalid={over || undefined}
+          className={`h-9 w-16 bg-transparent border-x border-slate-300 dark:border-white/15 text-center text-sm font-medium tabular-nums focus:outline-none focus:ring-2 focus:ring-inset ${
+            over ? "text-red-600 focus:ring-red-500/60 dark:text-red-400" : "focus:ring-red-500/40"
+          }`}
+          value={draft ?? String(value)}
+          onFocus={(e) => {
+            before.current = value;
+            e.currentTarget.select();
+          }}
+          onChange={(e) => type(e.target.value)}
+          onBlur={() => setDraft(null)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") e.currentTarget.blur();
+            if (e.key === "Escape") {
+              onChange(before.current);
+              setDraft(null);
+            }
+          }}
+        />
+        <button
+          type="button"
+          className={stepClass}
+          onClick={() => onChange(value + 1)}
+          disabled={limit !== null && value >= limit}
+          aria-label={`${label}: adedi artır`}
+        >
+          <Plus className="h-4 w-4" aria-hidden />
+        </button>
+      </div>
+      {/* Under the field, without moving anything around it. */}
+      <p
+        aria-live="polite"
+        className="pointer-events-none absolute left-0 top-full mt-1 whitespace-nowrap text-[11px] font-medium text-red-600 dark:text-red-400"
       >
-        <Minus className="h-4 w-4" aria-hidden />
-      </button>
-      <input
-        type="text"
-        inputMode="numeric"
-        pattern="[0-9]*"
-        aria-label={`${label}: adet`}
-        className="h-9 w-12 bg-transparent border-x border-slate-300 dark:border-white/15 text-center text-sm font-medium tabular-nums focus:outline-none focus:ring-2 focus:ring-inset focus:ring-red-500/40"
-        value={draft ?? String(value)}
-        onChange={(e) => setDraft(e.target.value.replace(/\D/g, ""))}
-        onBlur={commit}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") e.currentTarget.blur();
-          if (e.key === "Escape") setDraft(null);
-        }}
-      />
-      <button
-        type="button"
-        className={stepClass}
-        onClick={() => onChange(value + 1)}
-        aria-label={`${label}: adedi artır`}
-      >
-        <Plus className="h-4 w-4" aria-hidden />
-      </button>
+        {over ? `Stokta en fazla ${limit!.toLocaleString("tr-TR")} adet var` : ""}
+      </p>
     </div>
   );
 }

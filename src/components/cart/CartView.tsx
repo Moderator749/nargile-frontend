@@ -407,11 +407,22 @@ export function CartView() {
     method,
   );
   const needsConsent = !!quote?.shipping.receiver_pays;
+  // A line above what the buyer may have (their quota, or the shared retail
+  // pool) would be refused at checkout: say which, here. A request has no limit.
+  const overStock = quoteOnly
+    ? undefined
+    : quote?.items.find((i) => i.available_quantity !== undefined && i.quantity > i.available_quantity);
+  const stockProblem = overStock
+    ? overStock.available_quantity
+      ? `${overStock.product_name} için stokta en fazla ${overStock.available_quantity} adet var; adedi düşürün.`
+      : `${overStock.product_name} tükendi; sepetinizden çıkarın.`
+    : null;
   const checkoutBlocker = quoteOnly
     ? // A request asks for one thing the cart cannot supply: how it travels.
       (deliveryProblem ??
       (transportMode === null ? "Please confirm how your order should travel." : null))
-    : (deliveryProblem ??
+    : (stockProblem ??
+      deliveryProblem ??
       (needsConsent && !shippingConsent
         ? "Gönderim ücretinin teslimatta alıcı tarafından ödeneceğini onaylayın."
         : null) ??
@@ -533,6 +544,7 @@ export function CartView() {
                   productHref={line?.product_id ? productHref({ id: line.product_id, slug: line.product_slug }) : undefined}
                   havaleEligible={line?.havale_eligible}
                   havaleDiscount={line?.havale_discount}
+                  maxQuantity={quoteOnly ? null : line?.available_quantity}
                 />
               );
             })}
