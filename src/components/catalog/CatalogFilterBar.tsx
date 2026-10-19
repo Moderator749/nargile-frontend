@@ -1,9 +1,10 @@
 "use client";
 
-import { useId, type ReactNode } from "react";
-import { Check } from "lucide-react";
+import { useId, useSyncExternalStore, type ReactNode } from "react";
+import { Check, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
 import { SORT_OPTIONS, type CatalogFilters, type SortKey } from "@/lib/catalogFilters";
+import { isSidebarCollapsed, setSidebarCollapsed, subscribeSidebar } from "@/lib/sidebar";
 
 const LABEL = "text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400";
 // One height for every control in the bar: the price boxes, the stock pill,
@@ -32,6 +33,30 @@ interface CatalogFilterBarProps {
  * so the controls are plain inputs rather than links: there is no URL behind
  * them to crawl, and the grid answers immediately.
  */
+/**
+ * The category column's switch, where the shopping happens: the same state as
+ * the header's "KATEGORİLER" button (lib/sidebar), so hiding the column for a
+ * wider grid is in reach from the grid itself. Desktop only — on a phone the
+ * column is a drawer, opened from the header.
+ */
+function SidebarToggle() {
+  // Catalog pages open with the column showing, which is what the server renders.
+  const collapsed = useSyncExternalStore(subscribeSidebar, isSidebarCollapsed, () => false);
+  const Icon = collapsed ? PanelLeftOpen : PanelLeftClose;
+  return (
+    <button
+      type="button"
+      onClick={() => setSidebarCollapsed(!collapsed)}
+      aria-expanded={!collapsed}
+      aria-label={collapsed ? "Kategori sütununu aç" : "Kategori sütununu kapat"}
+      title={collapsed ? "Kategorileri göster" : "Kategorileri gizle: daha geniş liste"}
+      className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-neutral-200 text-neutral-600 transition-colors hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent lg:inline-flex dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-white/5 dark:hover:text-white"
+    >
+      <Icon className="h-4 w-4" aria-hidden />
+    </button>
+  );
+}
+
 export function CatalogFilterBar({ value, onChange, bounds, trailing }: CatalogFilterBarProps) {
   const minId = useId();
   const maxId = useId();
@@ -40,6 +65,8 @@ export function CatalogFilterBar({ value, onChange, bounds, trailing }: CatalogF
   return (
     <div className="mb-8 flex w-full flex-wrap items-center justify-between gap-3 rounded-2xl xl:flex-nowrap border border-neutral-200/80 bg-white p-3 shadow-sm sm:p-4 dark:border-neutral-800 dark:bg-neutral-900">
       <div className="flex shrink-0 items-center gap-2">
+        <SidebarToggle />
+        <span aria-hidden className="mx-1 hidden h-6 w-px bg-neutral-200 lg:block dark:bg-neutral-700" />
         <span className={`${LABEL} whitespace-nowrap`} id={`${minId}-label`}>
           Fiyat Aralığı
         </span>

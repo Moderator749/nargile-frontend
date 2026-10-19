@@ -34,7 +34,9 @@ const SEGMENT_LABELS: Record<SegmentType, string> = {
 /** Cards whose photos load eagerly: the first row at the widest grid. */
 const EAGER_CARDS = 4;
 
-const gridClass = "grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 xl:grid-cols-4";
+// Three to a row beside the open category column, four once it is closed and
+// the grid has the width (the column's state is on <html>, see lib/sidebar).
+const gridClass = "grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 lg:sidebar-closed:grid-cols-4";
 
 interface CatalogViewProps {
   categories: Category[];
