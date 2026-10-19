@@ -24,7 +24,7 @@ import {
   draftStockTotal,
   emptyDraft,
   toPayload,
-  withVat,
+  atRate,
   type CellDraft,
   type SheetDraft,
   type VatRate,
@@ -158,7 +158,8 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
   const setCell = (currency: CurrencyType, segment: SheetSegment, cell: CellDraft) =>
     setDraft((d) => ({ ...d, prices: { ...d.prices, [currency]: { ...d.prices[currency], [segment]: cell } } }));
 
-  /** A new rate re-derives every KDV dahil box that has a net price behind it. */
+  /** A new rate re-derives every cell from the price the admin typed in it
+   * (the net one, unless they typed the KDV dahil one). */
   const setVatRate = (vatRate: VatRate) =>
     setDraft((d) => ({
       ...d,
@@ -167,7 +168,7 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
         Object.entries(d.prices).map(([currency, row]) => [
           currency,
           Object.fromEntries(
-            Object.entries(row).map(([segment, cell]) => [segment, { ...cell, incl: withVat(cell.excl, vatRate) }]),
+            Object.entries(row).map(([segment, cell]) => [segment, atRate(cell, vatRate)]),
           ),
         ]),
       ) as SheetDraft["prices"],
@@ -424,7 +425,10 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
           />
         </SheetSection>
 
-        <SheetSection title="Fiyat Tablosu" hint="KDV hariç fiyatı yazın; KDV dahil otomatik hesaplanır.">
+        <SheetSection
+          title="Fiyat Tablosu"
+          hint="KDV hariç ya da KDV dahil fiyatı yazın; diğeri seçili KDV oranına göre hesaplanır."
+        >
           <div className="mb-4 flex flex-wrap items-end gap-4">
             <SheetField id="sheet-vat" label="KDV Oranı" className="w-40">
               <select

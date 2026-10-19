@@ -34,11 +34,42 @@ export const CURRENCY_LABEL: Record<CurrencyType, string> = { TRY: "TL", USD: "U
 export const VAT_RATES = [0, 1, 10, 20] as const;
 export type VatRate = (typeof VAT_RATES)[number];
 
-/** KDV dahil from KDV hariç, as the form fills the read-only box. */
+/** KDV dahil from KDV hariç, as the form fills the other box. */
 export function withVat(excl: string, rate: VatRate): string {
   const net = parseDecimalInput(excl);
   if (net === null) return "";
   return (Number(net) * (1 + rate / 100)).toFixed(2).replace(".", ",");
+}
+
+/** KDV hariç from KDV dahil, rounded to kuruş — the reverse of `withVat`. */
+export function withoutVat(incl: string, rate: VatRate): string {
+  const gross = parseDecimalInput(incl);
+  if (gross === null) return "";
+  return (Number(gross) / (1 + rate / 100)).toFixed(2).replace(".", ",");
+}
+
+/**
+ * A cell after the admin typed `raw` into one of its boxes: the other box follows
+ * at `rate`. While the entry is half-typed ("12,") the other box keeps its value
+ * rather than blinking empty; clearing one box clears both.
+ */
+export function typedCell(cell: CellDraft, side: "excl" | "incl", raw: string, rate: VatRate): CellDraft {
+  const other = side === "excl" ? cell.incl : cell.excl;
+  const derived = !raw.trim()
+    ? ""
+    : parseDecimalInput(raw) === null
+      ? other
+      : side === "excl"
+        ? withVat(raw, rate)
+        : withoutVat(raw, rate);
+  return side === "excl" ? { excl: raw, incl: derived } : { excl: derived, incl: raw, basis: "incl" };
+}
+
+/** A cell re-derived at a new rate, from whichever price the admin typed. */
+export function atRate(cell: CellDraft, rate: VatRate): CellDraft {
+  return cell.basis === "incl"
+    ? { ...cell, excl: withoutVat(cell.incl, rate) }
+    : { ...cell, incl: withVat(cell.excl, rate) };
 }
 
 /** The rate a saved sheet was priced at, for the select. */
@@ -93,6 +124,9 @@ export const foldColor = (label: string) => label.trim().replace(/\s+/g, " ").to
 export interface CellDraft {
   excl: string;
   incl: string;
+  /** "incl" once the admin typed the KDV dahil price: a new rate keeps it and
+   * re-derives the net one. Otherwise the net price is the one kept. */
+  basis?: "incl";
 }
 
 export interface SheetDraft {

@@ -4,7 +4,7 @@ import {
   CURRENCY_LABEL,
   SHEET_COLUMNS,
   SHEET_CURRENCIES,
-  withVat,
+  typedCell,
   type CellDraft,
   type SheetDraft,
   type VatRate,
@@ -16,9 +16,9 @@ const cellInput =
 
 /**
  * The sheet's price matrix: a row per currency, a column per customer group, and
- * two boxes per cell. The admin types the net price (KDV hariç) and the gross box
- * (KDV dahil) follows from the sheet's KDV rate — read-only, so the two can never
- * disagree with each other or with the rate.
+ * two boxes per cell. The admin types either price — net (KDV hariç) or gross
+ * (KDV dahil) — and the other follows from the sheet's KDV rate, so the two
+ * always agree with each other and with the rate.
  */
 export function PricingGrid({
   prices,
@@ -56,7 +56,7 @@ export function PricingGrid({
               <th key={segment} scope="col" className="border border-slate-300 px-2 py-1 dark:border-white/15">
                 <span className="grid grid-cols-2 gap-2 text-[10px] font-medium uppercase tracking-wide text-slate-500 dark:text-zinc-400">
                   <span>KDV hariç</span>
-                  <span>KDV dahil (otom.)</span>
+                  <span>KDV dahil</span>
                 </span>
               </th>
             ))}
@@ -77,21 +77,19 @@ export function PricingGrid({
                         type="text"
                         inputMode="decimal"
                         value={cell.excl}
-                        onChange={(e) =>
-                          onChange(currency, segment, { excl: e.target.value, incl: withVat(e.target.value, vatRate) })
-                        }
+                        onChange={(e) => onChange(currency, segment, typedCell(cell, "excl", e.target.value, vatRate))}
                         aria-label={`${label} ${CURRENCY_LABEL[currency]} KDV hariç fiyat`}
                         placeholder="0,00"
                         className={cellInput}
                       />
                       <input
                         type="text"
+                        inputMode="decimal"
                         value={cell.incl}
-                        readOnly
-                        tabIndex={-1}
-                        aria-label={`${label} ${CURRENCY_LABEL[currency]} KDV dahil fiyat (otomatik)`}
+                        onChange={(e) => onChange(currency, segment, typedCell(cell, "incl", e.target.value, vatRate))}
+                        aria-label={`${label} ${CURRENCY_LABEL[currency]} KDV dahil fiyat`}
                         placeholder="0,00"
-                        className={`${cellInput} cursor-default bg-slate-50 text-slate-600 dark:bg-white/5 dark:text-zinc-300`}
+                        className={cellInput}
                       />
                     </div>
                   </td>
