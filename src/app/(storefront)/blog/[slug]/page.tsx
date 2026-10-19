@@ -39,7 +39,7 @@ function articleJsonLd(article: Article) {
     datePublished: article.datePublished,
     mainEntityOfPage: `${SITE_URL}${articleHref(article)}`,
     author: { "@type": "Organization", name: SITE_NAME, url: SITE_URL },
-    publisher: { "@type": "Organization", name: SITE_NAME, logo: `${SITE_URL}/icon.svg` },
+    publisher: { "@type": "Organization", name: SITE_NAME, logo: `${SITE_URL}/icon.png` },
   };
 }
 
