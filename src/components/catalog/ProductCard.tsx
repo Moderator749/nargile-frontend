@@ -33,11 +33,16 @@ interface ProductCardProps {
 }
 
 // Shared by card and skeleton so both occupy identical space (0 CLS).
-// Studio light: a pure white, borderless card, so the photos' white backdrop is seamless.
+// The admin's "Birlikte Satılanlar" frame: a hairline border draws the card on
+// the white page (a shadow alone let it melt into it), and a lighter rule
+// under the photo parts it from the text. The photos' white backdrop still
+// runs edge to edge inside the frame.
 const cardClass =
-  "group relative flex flex-col overflow-hidden rounded-3xl bg-white dark:bg-zinc-900 dark:ring-1 dark:ring-inset dark:ring-white/[0.06]";
-// Dark mode: supplier photos (shot on white) sit on an inset light plate, not a harsh white square.
-const mediaClass = "relative aspect-square overflow-hidden dark:m-2 dark:rounded-[1.25rem] dark:bg-zinc-100";
+  "group relative flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-white/10 dark:bg-zinc-900";
+// Dark mode: supplier photos (shot on white) sit on an inset light plate, not a
+// harsh white square — the plate is its own edge there, so no rule under it.
+const mediaClass =
+  "relative aspect-square overflow-hidden border-b border-slate-100 dark:m-2 dark:rounded-[1.25rem] dark:border-b-0 dark:bg-zinc-100";
 // Widest card: 3 columns in the 80rem container (catalog); 4 on the homepage is smaller.
 // What a card actually measures: four to a row beside the 16rem category
 // column from xl (≈ 240px), three from lg (≈ a quarter of the screen), two
@@ -117,7 +122,8 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
 
   return (
     <article
-      className={`${cardClass} shadow-sm shadow-black/[0.04] transition-[box-shadow,transform] duration-500 ease-out hover:shadow-xl hover:shadow-black/[0.08] motion-safe:hover:-translate-y-1 dark:shadow-none dark:hover:shadow-black/50`}
+      // Hover: the frame darkens and lifts a touch, rather than the card floating up.
+      className={`${cardClass} transition-[border-color,box-shadow] duration-300 ease-out hover:border-slate-300 hover:shadow-sm dark:hover:border-white/20 dark:hover:shadow-black/40`}
     >
       <div className={mediaClass}>
         {/* Only the photo dims when sold out; badges and the button stay crisp. */}
@@ -258,7 +264,7 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
           {/* Stretched link: the whole card opens the product page; the "+" sits above it. */}
           <Link
             href={productHref(product)}
-            className="after:absolute after:inset-0 after:rounded-3xl after:content-[''] focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:outline-offset-2 focus-visible:after:outline-accent"
+            className="after:absolute after:inset-0 after:rounded-2xl after:content-[''] focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:outline-offset-2 focus-visible:after:outline-accent"
           >
             {product.name}
           </Link>
