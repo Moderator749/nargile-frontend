@@ -58,19 +58,19 @@ const CARD = [
   "border shadow-sm transition-[transform,border-color,box-shadow] duration-500 ease-out",
   "motion-safe:hover:scale-[1.01] hover:shadow-md",
 ].join(" ");
-const SURFACE = {
+export const SURFACE = {
   neutral:
     "border-gray-100 bg-white hover:border-gray-200 dark:border-white/[0.06] dark:bg-zinc-900/60 dark:hover:border-white/[0.12]",
   gold: "border-amber-100/80 bg-gradient-to-br from-amber-50/60 via-white to-white hover:border-amber-200 dark:border-amber-400/10 dark:from-amber-400/[0.06] dark:via-zinc-900/60 dark:to-zinc-900/60 dark:hover:border-amber-400/20",
 };
 
 /** The figure: tight, in graphite fading to grey (or gold). */
-const FIGURE =
+export const FIGURE =
   "bg-clip-text py-0.5 text-2xl font-semibold leading-none tracking-tighter text-transparent tabular-nums md:text-3xl";
 const INK = "bg-gradient-to-br from-gray-950 to-gray-500 dark:from-white dark:to-zinc-500";
-const GOLD = "bg-gradient-to-br from-amber-500 to-amber-800 dark:from-amber-200 dark:to-amber-500";
+export const GOLD = "bg-gradient-to-br from-amber-500 to-amber-800 dark:from-amber-200 dark:to-amber-500";
 
-const LABEL = "text-[10px] font-semibold uppercase tracking-[0.16em]";
+export const LABEL = "text-[10px] font-semibold uppercase tracking-[0.16em]";
 const TITLE = "text-sm font-semibold tracking-tight text-gray-900 dark:text-white";
 const BODY = "text-xs leading-snug text-gray-500 dark:text-zinc-400";
 const NOTE = "text-[11px] leading-snug text-gray-400 dark:text-zinc-500";
@@ -470,7 +470,7 @@ function PlainCard({ card }: { card: HomeAdvantageCard }) {
 }
 
 /** A minted SultanPuan coin: warm gold, a fine inner rim, a soft sheen. */
-function Coin() {
+export function Coin() {
   return (
     <span
       aria-hidden

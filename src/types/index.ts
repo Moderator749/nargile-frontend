@@ -370,6 +370,17 @@ export interface CatalogVariant {
   available_quantity?: number | null;
 }
 
+/** GET /products/sultanpuan: the homepage's Sultan Puan row. */
+export interface SultanPuanShowcase {
+  enabled: boolean;
+  /** The earn rate in percent ("10.00"); the band is one order's subtotal, TRY, bounds included. */
+  rate_percent: DecimalString;
+  band_min: DecimalString;
+  band_max: DecimalString;
+  /** Every published product whose current retail price is in the band, cheapest first. */
+  products: CatalogProduct[];
+}
+
 export interface CatalogProduct extends Product {
   variants: CatalogVariant[];
 }

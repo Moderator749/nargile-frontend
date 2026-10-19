@@ -2,7 +2,7 @@
 // participate in Next.js caching. Always anonymous: public RETAIL prices only.
 
 import { API_URL, CATALOG_PAGE_SIZE } from "@/lib/config";
-import type { Brand, CatalogProduct, CatalogProductDetail, Category, HomeContent } from "@/types";
+import type { Brand, CatalogProduct, CatalogProductDetail, Category, HomeContent, SultanPuanShowcase } from "@/types";
 
 /** Seconds a cached catalog response is served before revalidating. */
 export const CATALOG_REVALIDATE = 300;
@@ -59,6 +59,14 @@ export function getNewestProducts(limit: number): Promise<CatalogProduct[] | nul
  */
 export function getBestsellers(limit: number): Promise<CatalogProduct[] | null> {
   return getJson<CatalogProduct[]>(`/products/bestsellers?limit=${limit}`);
+}
+
+/**
+ * The Sultan Puan row: the earning rule and the products priced inside its
+ * band. Saving "Parametreler" drops the catalog cache, so a new band shows at once.
+ */
+export function getSultanPuanShowcase(): Promise<SultanPuanShowcase | null> {
+  return getJson<SultanPuanShowcase>("/products/sultanpuan");
 }
 
 /**

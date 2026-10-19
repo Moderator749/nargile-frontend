@@ -10,6 +10,7 @@ import { FeaturedProductsShowcase } from "@/components/home/FeaturedProductsShow
 import { HeroAside } from "@/components/home/HeroAside";
 import { HeroSlider } from "@/components/home/HeroSlider";
 import { SeoIntro } from "@/components/home/SeoIntro";
+import { SultanPuanShowcase } from "@/components/home/SultanPuanShowcase";
 import { CategorySidebar } from "@/components/layout/CategorySidebar";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { FEATURED_PRODUCTS_COUNT } from "@/lib/config";
@@ -23,6 +24,7 @@ import {
   getBestsellers,
   getNewestProducts,
   getPublicProducts,
+  getSultanPuanShowcase,
   getTileArtwork,
 } from "@/lib/server/catalog";
 import { getHomepage } from "@/lib/server/homepage";
@@ -159,29 +161,31 @@ export default async function HomePage() {
   // What to show and what it says: "Ana Sayfa Düzenleme" (/admin/homepage).
   const home = await getHomepage();
   const { sections } = home;
-  const [categories, featured, flashSales, brands, content, artwork, bestsellers, newest, brandRows] = await Promise.all([
-    getCategories(),
-    getPublicProducts(FEATURED_CATEGORY_SLUG, FEATURED_PRODUCTS_COUNT),
-    getFlashSaleProducts(),
-    getBrands(),
-    getHomeContent(),
-    // One photo per showcase tile that has none of its own; cached with the
-    // rest of the catalog reads, and not asked for at all while it is hidden.
-    sections.showcase
-      ? Promise.all(
-          home.showcase.tiles.map((tile) => {
-            // Only a tile with a category (or a search) has products to borrow a
-            // photo from; an unfiltered query would return any product at all.
-            const slug = tileSlug(tile);
-            return tile.image || (!slug && !tile.search) ? null : getTileArtwork({ slug, search: tile.search });
-          }),
-        )
-      : [],
-    // Asked for with room to spare: some products have no photo or no price.
-    getBestsellers(PICKS_COUNT * 2),
-    getNewestProducts(PICKS_COUNT * 2),
-    Promise.all(BRAND_SHOWCASES.map(({ brand }) => getBrandShowcase(brand))),
-  ]);
+  const [categories, featured, flashSales, brands, content, artwork, bestsellers, newest, brandRows, sultanPuan] =
+    await Promise.all([
+      getCategories(),
+      getPublicProducts(FEATURED_CATEGORY_SLUG, FEATURED_PRODUCTS_COUNT),
+      getFlashSaleProducts(),
+      getBrands(),
+      getHomeContent(),
+      // One photo per showcase tile that has none of its own; cached with the
+      // rest of the catalog reads, and not asked for at all while it is hidden.
+      sections.showcase
+        ? Promise.all(
+            home.showcase.tiles.map((tile) => {
+              // Only a tile with a category (or a search) has products to borrow a
+              // photo from; an unfiltered query would return any product at all.
+              const slug = tileSlug(tile);
+              return tile.image || (!slug && !tile.search) ? null : getTileArtwork({ slug, search: tile.search });
+            }),
+          )
+        : [],
+      // Asked for with room to spare: some products have no photo or no price.
+      getBestsellers(PICKS_COUNT * 2),
+      getNewestProducts(PICKS_COUNT * 2),
+      Promise.all(BRAND_SHOWCASES.map(({ brand }) => getBrandShowcase(brand))),
+      getSultanPuanShowcase(),
+    ]);
   const allCategories = categories ?? [];
   const sidebar = resolveNav(home.navigation.sidebar, allCategories, brands ?? []);
   const showcase = resolveShowcase(home.showcase.tiles, allCategories, brands ?? [], artwork);
@@ -275,6 +279,12 @@ export default async function HomePage() {
         {/* Module 9b: "Sizin İçin Seçtiklerimiz", two tabbed product lists, on
             the ticker's white. */}
         <FeaturedProductsShowcase lists={picks} categories={allCategories} />
+
+        {/* Module 9b½: "%10 SultanPuan" — the loyalty card and the products
+            whose price alone earns it, on the same white, before the dark
+            deals band. Nothing while the programme is off or no product is
+            priced in its band. */}
+        {sultanPuan && <SultanPuanShowcase showcase={sultanPuan} categories={allCategories} />}
 
         {/* Module 9c: "Fırsatları Kaçırma" — the deals, and the page's only
             deals section, its dark band straight after the white of the picks.

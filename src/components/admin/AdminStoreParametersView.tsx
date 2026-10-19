@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { adminGetStoreParameters, adminUpdateStoreParameters } from "@/lib/adminApi";
 import { getApiErrorMessage } from "@/lib/errors";
 import { parseDecimalInput } from "@/lib/format";
+import { refreshStorefront } from "@/lib/revalidate";
 import { transferDiscountHint } from "@/lib/storeParameters";
 import type { CoalRuleBasis, LoyaltyParameters, ParameterTier, StoreParameters } from "@/types";
 
@@ -533,6 +534,9 @@ export function AdminStoreParametersView() {
       const next = await adminUpdateStoreParameters(body);
       setSaved(next);
       setDraft(toDraft(next));
+      // The homepage's Sultan Puan row lists the products in the band: a new
+      // band (or the programme switched off) must show there now, not in minutes.
+      void refreshStorefront();
       setResult({ kind: "success", text: "Kaydedildi. Yeni parametreler bir sonraki sepet hesaplamasından itibaren geçerli." });
     } catch (err) {
       setResult({ kind: "error", text: getApiErrorMessage(err, "Kaydedilemedi.") });
