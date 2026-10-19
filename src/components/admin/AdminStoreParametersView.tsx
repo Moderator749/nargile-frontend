@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useState, type ReactNode } from "react";
-import { CreditCard, Crown, Plus, Save, TrendingUp, Trash2, Truck, type LucideIcon } from "lucide-react";
+import { CreditCard, Crown, Info, Plus, Save, TrendingUp, Trash2, Truck, type LucideIcon } from "lucide-react";
 
 import { AdminPageHeader, panelClass } from "@/components/admin/AdminShell";
 import { Alert } from "@/components/ui/Alert";
@@ -202,27 +202,60 @@ function sameRules(a: StoreParameters, b: StoreParameters): boolean {
 
 // ── Pieces ───────────────────────────────────────────────────────────────────
 
-function Card({ Icon, title, description, children }: {
+/**
+ * A small (i) beside a title or label: the explanation an admin may want, kept
+ * out of the page until hovered or focused (keyboard and screen readers get it
+ * through the button's description).
+ */
+function InfoTip({ label, text }: { label: string; text: string }) {
+  const id = useId();
+  return (
+    <span className="group/tip relative inline-flex align-middle">
+      <button
+        type="button"
+        aria-label={`${label}: açıklama`}
+        aria-describedby={id}
+        className="inline-flex h-5 w-5 items-center justify-center rounded-full text-slate-400 transition-colors hover:text-slate-700 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-red-600 dark:text-zinc-500 dark:hover:text-zinc-200"
+      >
+        <Info className="h-3.5 w-3.5" aria-hidden />
+      </button>
+      <span
+        id={id}
+        role="tooltip"
+        className="pointer-events-none invisible absolute left-0 top-full z-30 mt-1.5 w-72 max-w-[80vw] rounded-lg bg-slate-900 px-3 py-2 text-xs font-normal leading-5 text-white opacity-0 shadow-lg transition-opacity duration-150 group-focus-within/tip:visible group-focus-within/tip:opacity-100 group-hover/tip:visible group-hover/tip:opacity-100 dark:bg-zinc-800"
+      >
+        {text}
+      </span>
+    </span>
+  );
+}
+
+function Card({ Icon, title, description, info, children }: {
   Icon: LucideIcon;
   title: string;
-  description: string;
+  /** A line under the title; leave it out for a card that explains itself, with `info` if anything is worth saying. */
+  description?: string;
+  info?: string;
   children: ReactNode;
 }) {
   return (
     <section className={`${panelClass} p-5 sm:p-6`}>
-      <h2 className="flex items-center gap-2 text-base font-semibold tracking-tight">
-        <Icon className="h-4 w-4 text-slate-400 dark:text-zinc-500" aria-hidden />
+      <h2 className="flex items-center gap-1.5 text-base font-semibold tracking-tight">
+        <Icon className="mr-0.5 h-4 w-4 text-slate-400 dark:text-zinc-500" aria-hidden />
         {title}
+        {info && <InfoTip label={title} text={info} />}
       </h2>
-      <p className="mt-1 max-w-3xl text-xs leading-5 text-slate-500 dark:text-zinc-400">{description}</p>
-      <div className="mt-5">{children}</div>
+      {description && <p className="mt-1 max-w-3xl text-xs leading-5 text-slate-500 dark:text-zinc-400">{description}</p>}
+      <div className={description ? "mt-5" : "mt-4"}>{children}</div>
     </section>
   );
 }
 
 /** A labelled input with its unit inside the field and its error below. */
-function Field({ label, unit, value, onChange, error, note, srLabel, disabled = false }: {
+function Field({ label, unit, value, onChange, error, note, srLabel, info, disabled = false }: {
   label?: string;
+  /** A tooltip beside the label, for what the label alone does not say. */
+  info?: string;
   /** For a field whose visible label is a column header. */
   srLabel?: string;
   unit: "TL" | "%" | "kg" | "adet" | "puan" | "gün";
@@ -236,9 +269,12 @@ function Field({ label, unit, value, onChange, error, note, srLabel, disabled = 
   return (
     <div className="space-y-1.5">
       {label && (
-        <label htmlFor={id} className="block text-sm font-medium text-slate-700 dark:text-zinc-300">
-          {label}
-        </label>
+        <div className="flex items-center gap-1">
+          <label htmlFor={id} className="block text-sm font-medium text-slate-700 dark:text-zinc-300">
+            {label}
+          </label>
+          {info && <InfoTip label={label} text={info} />}
+        </div>
       )}
       <div className="relative">
         <input
@@ -303,7 +339,6 @@ function BasisPicker({ value, onChange }: { value: CoalRuleBasis; onChange: (val
           </button>
         ))}
       </div>
-      <p className="text-xs text-slate-500 dark:text-zinc-400">Minimum yalnızca seçilen ölçüyle aranır.</p>
     </div>
   );
 }
@@ -528,17 +563,16 @@ export function AdminStoreParametersView() {
         <div className="space-y-6">
           <Card
             Icon={Truck}
-            title="Kargo & Operasyon"
-            description="Bu tutarın altındaki siparişler karşı ödemeli gönderilir. %50 Kuralı: ürün formunda Sepet Kuralı açık olan ürünler ara toplamın belirlenen oranından fazlasını tutuyorsa sepet, seçilen ölçüdeki minimuma (ağırlık ya da adet) ulaşmadıkça ücretsiz kargodan yararlanamaz; ağırlığı tanımsız ürün 0 kg sayılır."
+            title="Kargo Kuralları"
+            info="Ücretsiz kargo baremi altındaki siparişler karşı ödemeli gönderilir. %50 Kuralı: ürün formunda Sepet Kuralı açık ürünler ara toplamın bu oranından fazlasını tutuyorsa, sepet seçilen ölçüdeki minimuma ulaşmadan ücretsiz kargo almaz. Ağırlığı tanımsız ürün 0 kg sayılır."
           >
-            <div className="grid gap-5 sm:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <Field
                 label="Ücretsiz kargo baremi"
                 unit="TL"
                 value={draft.free}
                 onChange={(free) => update({ free })}
                 error={errors.free}
-                note={body ? `${formatMoneyCompact(body.free_shipping_threshold)} ve üzeri siparişlerde kargo ücretsiz.` : undefined}
               />
               <Field
                 label="%50 Kuralı sepet oranı"
@@ -546,56 +580,45 @@ export function AdminStoreParametersView() {
                 value={draft.coalRatio}
                 onChange={(coalRatio) => update({ coalRatio })}
                 error={errors.coalRatio}
-                note={
-                  body
-                    ? `Sepet Kuralı açık ürünler ara toplamın ${formatRate(body.coal_max_ratio)}'inden fazlaysa kural uygulanır.`
-                    : undefined
-                }
               />
               <BasisPicker value={draft.coalBasis} onChange={(coalBasis) => update({ coalBasis })} />
-            </div>
-            <div className="mt-5 grid gap-5 sm:grid-cols-3">
-              <Field
-                label="%50 Kuralı minimum ağırlığı"
-                unit="kg"
-                value={draft.coalKg}
-                onChange={(coalKg) => update({ coalKg })}
-                error={errors.coalKg}
-                disabled={draft.coalBasis !== "kg"}
-                note={draft.coalBasis === "kg" ? "Bu ağırlığın altında ücretsiz kargo yok." : "Ölçü Adet seçili; kullanılmıyor."}
-              />
-              <Field
-                label="%50 Kuralı minimum adedi"
-                unit="adet"
-                value={draft.coalQty}
-                onChange={(coalQty) => update({ coalQty })}
-                error={errors.coalQty}
-                disabled={draft.coalBasis !== "quantity"}
-                note={draft.coalBasis === "quantity" ? "Bu adedin altında ücretsiz kargo yok." : "Ölçü Ağırlık seçili; kullanılmıyor."}
-              />
+              {/* Only the minimum the chosen measure uses; the other keeps its value, unseen. */}
+              {draft.coalBasis === "kg" ? (
+                <Field
+                  label="Minimum ağırlık"
+                  unit="kg"
+                  value={draft.coalKg}
+                  onChange={(coalKg) => update({ coalKg })}
+                  error={errors.coalKg}
+                />
+              ) : (
+                <Field
+                  label="Minimum adet"
+                  unit="adet"
+                  value={draft.coalQty}
+                  onChange={(coalQty) => update({ coalQty })}
+                  error={errors.coalQty}
+                />
+              )}
             </div>
 
             {/* Moved here from the old "Teslimat Ayarları" page: one hub for
                 every threshold the checkout applies. */}
-            <div className="mt-6 border-t border-slate-200 pt-5 dark:border-white/10">
-              <h3 className="text-sm font-semibold text-slate-900 dark:text-zinc-100">İstanbul içi B2B teslimat</h3>
-              <p className="mt-1 max-w-3xl text-xs leading-5 text-slate-500 dark:text-zinc-400">
-                Kafe, toptan ve diğer kurumsal hesaplar için: kayıtlı fatura adresi İstanbul’da olan bir firmanın
-                sepeti bu tutara ulaştığında teslimat kendi aracımızla ve ücretsiz yapılır. Altında kaldığında
-                seçenek sepette kapalı görünür ve ne kadar eksik olduğu yazar.
-              </p>
-              <div className="mt-3 grid gap-5 sm:grid-cols-3">
+            <div className="mt-5 border-t border-slate-200 pt-4 dark:border-white/10">
+              <h3 className="flex items-center gap-1 text-sm font-semibold text-slate-900 dark:text-zinc-100">
+                İstanbul içi B2B teslimat
+                <InfoTip
+                  label="İstanbul içi B2B teslimat"
+                  text="Kafe, toptan ve diğer kurumsal hesaplar için: fatura adresi İstanbul’da olan firmanın sepeti bu tutara ulaşınca teslimat kendi aracımızla ücretsiz yapılır. Altında kalırsa seçenek sepette kapalı görünür ve ne kadar eksik olduğu yazar."
+                />
+              </h3>
+              <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <Field
                   label="Ücretsiz teslimat alt limiti"
                   unit="TL"
                   value={draft.istanbul}
                   onChange={(istanbul) => update({ istanbul })}
                   error={errors.istanbul}
-                  note={
-                    body
-                      ? `Sepette “${formatMoneyCompact(body.istanbul_free_min_subtotal)} ve üzeri alışverişlerde ücretsiz teslimat” olarak görünür.`
-                      : undefined
-                  }
                 />
               </div>
             </div>
