@@ -12,14 +12,14 @@ const CHANNELS: { key: "instagram" | "youtube"; Icon: ComponentType<{ className?
 ];
 
 /**
- * The split promo card (variant "social"), in two bands: a crimson band on top
+ * The promo card beside the hero, in two bands: a crimson band on top
  * with the jump to the advantages, and a dark glass band below with the shop's
  * channels.
  *
  * The two channel pills sit side by side wherever the card is wide enough for
  * both labels (a container query, not a breakpoint: the grid makes the card
  * narrowest on a tablet, not a phone) and stack otherwise, so nothing clips.
- * The card holds three links, so unlike the other cards it is not one link.
+ * The card holds three links, so it is not one link as a whole.
  */
 export function PromoSocialCard({ box, preview = false }: { box: PromoBox; preview?: boolean }) {
   const widget = box.widget;

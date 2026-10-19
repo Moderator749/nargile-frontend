@@ -14,7 +14,7 @@ import { CategorySidebar } from "@/components/layout/CategorySidebar";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { FEATURED_PRODUCTS_COUNT } from "@/lib/config";
 import { brandHref, organizationJsonLd, pageMetadata, productListJsonLd, websiteJsonLd } from "@/lib/seo";
-import { FALLBACK_SLIDE, meets, promoRows, toHeroSlide, withDefaultImage } from "@/lib/home";
+import { FALLBACK_SLIDE, heroPromo, meets, toHeroSlide, withDefaultImage } from "@/lib/home";
 import {
   getBrands,
   getCategories,
@@ -200,12 +200,9 @@ export default async function HomePage() {
     .filter(({ slide }) => meets(slide.requires, has))
     .map(({ slide, index }) => withDefaultImage(toHeroSlide(slide), index));
   const slides = cmsSlides.length > 0 ? cmsSlides : [FALLBACK_SLIDE];
-  // Of the promo boxes, only the "social" one is read now (the channels and
-  // the advantages beside the hero); the rest stay in /admin/promos but no
-  // longer reach the page.
-  const spotlight = promoRows(content?.promos ?? [], has)
-    .flat()
-    .find((box) => box.variant === "social");
+  // The promo box beside the hero (the channels and the way to the
+  // advantages), from /admin/promos.
+  const spotlight = heroPromo(content?.promos ?? [], has);
 
   // A short tab is topped up from the featured category, then the brand rows
   // (the house brands, dearest first: the hookah sets), taken a brand at a

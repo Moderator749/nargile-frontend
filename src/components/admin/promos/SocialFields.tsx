@@ -1,7 +1,6 @@
 "use client";
 
 import { PromoSocialCard } from "@/components/home/PromoSocialCard";
-import { PROMO_CARD_WIDTH } from "@/components/home/PromoCardView";
 import { Input } from "@/components/ui/Input";
 import type { PromoBox } from "@/lib/home";
 import type { PromoBoxWrite, SocialWidget } from "@/types";
@@ -70,20 +69,17 @@ export function SocialFields({
   );
 }
 
+/** The card at its widest: a third of the 952 px row, less two 16 px gaps. */
+const CARD_WIDTH = 920 / 3;
+
 /** The widget as the storefront renders it, at a card's real width; inert here. */
 export function SocialPreview({ value: v }: { value: PromoBoxWrite }) {
   const box: PromoBox = {
     id: "preview",
-    variant: "social",
     eyebrow: v.eyebrow,
     title: v.title || "Başlık",
     text: v.text ?? undefined,
     href: v.href || "/",
-    badge: undefined,
-    layout: null,
-    overlay: v.overlay_direction,
-    focus: { x: 50, y: 50 },
-    zoom: 100,
     widget: v.widget,
   };
   return (
@@ -91,7 +87,7 @@ export function SocialPreview({ value: v }: { value: PromoBoxWrite }) {
       <p className="text-sm font-medium text-slate-700 dark:text-zinc-300">Önizleme</p>
       <div className="flex flex-wrap items-start justify-center gap-6 rounded-xl bg-background p-6">
         {/* The widest the card gets (side by side) and a phone-width card. */}
-        <div inert className="flex" style={{ width: PROMO_CARD_WIDTH }}>
+        <div inert className="flex" style={{ width: CARD_WIDTH }}>
           <PromoSocialCard box={box} preview />
         </div>
         <div inert className="flex" style={{ width: 230 }}>

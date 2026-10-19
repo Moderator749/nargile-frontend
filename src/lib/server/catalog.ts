@@ -96,7 +96,7 @@ export function getBrands(): Promise<Brand[] | null> {
   return getJson<Brand[]>("/brands");
 }
 
-/** Homepage CMS content (slides, promo boxes, advantages); refreshed by admin saves. */
+/** Homepage CMS content (slides, the promo box); refreshed by admin saves. */
 export function getHomeContent(): Promise<HomeContent | null> {
   return getJson<HomeContent>("/home/content");
 }

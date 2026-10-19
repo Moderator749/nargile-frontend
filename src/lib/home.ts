@@ -1,15 +1,13 @@
 // Homepage modules. Content is managed in the admin panel (/admin/hero,
-// /admin/promos, /admin/advantages) and served by /home/content; this file maps
-// it to what the components render.
+// /admin/promos) and served by /home/content; this file maps it to what the
+// components render.
 
 import type {
   ContentRequirement,
   HeroLayout,
   HeroSlideContent,
   HeroTextAlign,
-  OverlayDirection,
   PromoBoxContent,
-  PromoLayout,
   SocialWidget,
 } from "@/types";
 
@@ -82,54 +80,22 @@ export const FALLBACK_SLIDE: HeroSlide = {
   layout: null,
 };
 
-// ── Modules 6 & 7: smart promo grids ──────────────────────────────────────────
-// Up to 3 boxes per row; inactive boxes (or ones whose requirement is unmet)
-// drop out and the rest stretch to fill the row.
+// ── The promo box beside the hero ─────────────────────────────────────────────
 
 export interface PromoBox {
   id: string;
-  variant: PromoBoxContent["variant"];
   eyebrow: string;
   title: string;
   text?: string;
   href: string;
-  image?: string;
-  badge?: "sok";
-  /** Free part positions on a wide screen (lg and up); null = the stacked card. */
-  layout: PromoLayout | null;
-  /** The full-bleed photo's dark veil direction, focal point and zoom. */
-  overlay: OverlayDirection;
-  focus: { x: number; y: number };
-  zoom: number;
-  /** The split social & advantages card's links (variant "social"). */
+  /** The channel links and the jump button's text. */
   widget: SocialWidget | null;
 }
 
-export const PROMO_ROWS_COUNT = 2;
-export const PROMO_BOXES_PER_ROW = 3;
-
-/** Active boxes per row (row 1, row 2), in order, at most 3 each. */
-export function promoRows(boxes: PromoBoxContent[], has: Record<Requirement, boolean>): PromoBox[][] {
-  return Array.from({ length: PROMO_ROWS_COUNT }, (_, i) =>
-    boxes
-      .filter((b) => b.row === i + 1 && b.is_active && meets(b.requires, has))
-      .slice(0, PROMO_BOXES_PER_ROW)
-      .map((b) => ({
-        id: String(b.id),
-        variant: b.variant,
-        eyebrow: b.eyebrow,
-        title: b.title,
-        text: b.text ?? undefined,
-        href: b.href,
-        image: b.image ?? undefined,
-        badge: b.badge ?? undefined,
-        layout: b.layout ?? null,
-        overlay: b.overlay_direction ?? "to-t",
-        focus: { x: b.image_focus_x ?? 50, y: b.image_focus_y ?? 50 },
-        zoom: b.image_zoom ?? 100,
-        widget: b.widget ?? null,
-      })),
-  );
+/** The box beside the hero: the first active one whose requirement is met (the API sends them in order). */
+export function heroPromo(boxes: PromoBoxContent[], has: Record<Requirement, boolean>): PromoBox | undefined {
+  const b = boxes.find((box) => box.is_active && meets(box.requires, has));
+  return b && { id: String(b.id), eyebrow: b.eyebrow, title: b.title, text: b.text ?? undefined, href: b.href, widget: b.widget };
 }
 
 // ── Images ────────────────────────────────────────────────────────────────────

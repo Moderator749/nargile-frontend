@@ -1038,7 +1038,7 @@ export interface AdminFlashSaleWrite {
   is_active: boolean;
 }
 
-// ── Homepage CMS (/home/content, /admin/hero-slides|promo-boxes|advantages) ──
+// ── Homepage CMS (/home/content, /admin/hero-slides|promo-boxes) ──────────────
 
 /** Content shown only while something exists (e.g. a live flash sale). */
 export type ContentRequirement = "flash_sales";
@@ -1077,8 +1077,6 @@ export type HeroPart = "eyebrow" | "title" | "subtitle" | "button";
 /** Each part's centre, in % of the slide's width (x) and height (y). */
 export type HeroLayout = Record<HeroPart, { x: number; y: number }>;
 
-export type PromoVariant = "image" | "text" | "transparent" | "social";
-
 /** The "social" card's channels (left half) and its jump button's text (right half, linking to `href`). */
 export interface SocialWidget {
   instagram_href: string | null;
@@ -1088,49 +1086,15 @@ export interface SocialWidget {
   anchor_label: string;
 }
 
+/** The promo box beside the hero ("Sosyal & Avantaj"): its top band jumps to `href`, its bottom band lists the channels. */
 export interface PromoBoxContent {
   id: number;
-  /** 1 = first promo grid, 2 = second. */
-  row: number;
-  variant: PromoVariant;
   eyebrow: string;
   title: string;
   text: string | null;
   href: string;
-  image: string | null;
-  image_url: string | null;
-  has_upload: boolean;
-  badge: "sok" | null;
   requires: ContentRequirement | null;
-  /** Free positions of the card's parts on a wide screen; null = the stacked card. */
-  layout: PromoLayout | null;
-  /** Which way the photo's dark veil runs ("to-t" = dark at the foot). */
-  overlay_direction: OverlayDirection;
-  /** The photo's focal point (0–100 %) and zoom (100 = cover, up to 200). */
-  image_focus_x: number;
-  image_focus_y: number;
-  image_zoom: number;
-  /** The "social" variant's links and labels; null for other cards. */
   widget: SocialWidget | null;
-  is_active: boolean;
-  sort_order: number;
-}
-
-export type OverlayDirection = "to-r" | "to-l" | "to-b" | "to-t";
-
-export type PromoPart = "eyebrow" | "title" | "text" | "button";
-
-/** Each text part's centre, in % of the card. (`image` is a retired key, ignored.) */
-export type PromoLayout = Record<PromoPart, { x: number; y: number }> & { image?: { x: number; y: number } | null };
-
-export interface AdvantageContent {
-  id: number;
-  icon: string;
-  title: string;
-  highlight: string;
-  highlight_label: string;
-  details: string[];
-  footnote: string | null;
   is_active: boolean;
   sort_order: number;
 }
@@ -1138,12 +1102,10 @@ export interface AdvantageContent {
 export interface HomeContent {
   slides: HeroSlideContent[];
   promos: PromoBoxContent[];
-  advantages: AdvantageContent[];
 }
 
 export type HeroSlideWrite = Omit<HeroSlideContent, "id" | "image" | "has_upload">;
-export type PromoBoxWrite = Omit<PromoBoxContent, "id" | "image" | "has_upload">;
-export type AdvantageWrite = Omit<AdvantageContent, "id">;
+export type PromoBoxWrite = Omit<PromoBoxContent, "id"> & { widget: SocialWidget };
 
 // ── Wallet (Sultan Puan), bank accounts, admin customers ─────────────────────
 

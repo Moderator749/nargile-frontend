@@ -35,7 +35,7 @@ const NAV = [
     href: "/admin/homepage",
     label: "Ana Sayfa Düzenleme",
     icon: House,
-    also: ["/admin/hero", "/admin/promos", "/admin/brands", "/admin/flash-sales", "/admin/advantages"],
+    also: ["/admin/hero", "/admin/promos", "/admin/brands", "/admin/flash-sales"],
   },
   // The special-day strip and the landing popup.
   { href: "/admin/banner", label: "Duyurular", icon: Megaphone },

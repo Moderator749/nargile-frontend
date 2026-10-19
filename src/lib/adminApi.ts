@@ -10,8 +10,6 @@ import type {
   AdminFlashSaleWrite,
   AdminOrder,
   AdminProduct,
-  AdvantageContent,
-  AdvantageWrite,
   Announcement,
   AnnouncementUpdate,
   AudienceCount,
@@ -332,7 +330,7 @@ export async function adminDeleteBrandLogo(id: number): Promise<Brand> {
   return data;
 }
 
-// ── Homepage CMS: hero slides, promo boxes, advantages (same REST shape) ──────
+// ── Homepage CMS: hero slides and the promo box (same REST shape) ────────────
 
 function contentApi<Row, Write>(path: string) {
   return {
@@ -361,11 +359,7 @@ export const adminHeroSlides = {
   ...contentApi<HeroSlideContent, HeroSlideWrite>("/admin/hero-slides"),
   ...imageApi<HeroSlideContent>("/admin/hero-slides"),
 };
-export const adminPromoBoxes = {
-  ...contentApi<PromoBoxContent, PromoBoxWrite>("/admin/promo-boxes"),
-  ...imageApi<PromoBoxContent>("/admin/promo-boxes"),
-};
-export const adminAdvantages = contentApi<AdvantageContent, AdvantageWrite>("/admin/advantages");
+export const adminPromoBoxes = contentApi<PromoBoxContent, PromoBoxWrite>("/admin/promo-boxes");
 
 // ── Orders: mark paid / cancel; customers & wallets; bank accounts ────────────
 
