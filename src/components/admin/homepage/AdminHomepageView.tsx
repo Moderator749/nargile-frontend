@@ -11,6 +11,7 @@ import { isSiteOrHttpsLink } from "@/components/admin/ContentEditor";
 import {
   AboutTab,
   AdvantagesTab,
+  SeoIntroTab,
   BrandsTab,
   DealsTab,
   FooterTab,
@@ -38,6 +39,7 @@ type TabKey =
   | "showcase"
   | "advantages"
   | "about"
+  | "seo"
   | "footer";
 
 /** Deep links (/admin/homepage?tab=katalog-kategorileri), e.g. from the retired /admin/categories. */
@@ -53,7 +55,9 @@ const TABS: { key: TabKey; label: string; doc?: keyof Homepage; section?: keyof 
   { key: "brands", label: "Markalar Şeridi", doc: "brands", section: "brands" },
   { key: "showcase", label: "Premium Yelpaze", doc: "showcase", section: "showcase" },
   { key: "advantages", label: "Avantajlar", doc: "advantages", section: "advantages" },
-  { key: "about", label: "Hakkımızda", doc: "about", section: "about" },
+  { key: "about", label: "Hakkımızda", doc: "about" },
+  // The "about" switch is the one that shows this passage on the homepage.
+  { key: "seo", label: "Alt SEO Metni", doc: "seo_intro", section: "about" },
   { key: "footer", label: "Footer", doc: "footer", section: "footer" },
 ];
 
@@ -79,6 +83,7 @@ const SECTION_NAMES: Record<string, string> = {
   showcase: "Premium Yelpaze",
   advantages: "Avantajlar",
   about: "Hakkımızda",
+  seo_intro: "Alt SEO Metni",
   footer: "Footer",
 };
 
@@ -299,6 +304,7 @@ export function AdminHomepageView() {
             {tab === "showcase" && <ShowcaseTab value={doc.showcase} set={set("showcase")} categories={categories} brands={brands} />}
             {tab === "advantages" && <AdvantagesTab value={doc.advantages} set={set("advantages")} />}
             {tab === "about" && <AboutTab value={doc.about} set={set("about")} />}
+            {tab === "seo" && <SeoIntroTab value={doc.seo_intro} set={set("seo_intro")} />}
             {tab === "footer" && <FooterTab value={doc.footer} set={set("footer")} />}
           </div>
 

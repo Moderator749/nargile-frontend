@@ -58,12 +58,14 @@ export function TextArea({
   onChange,
   max,
   rows = 4,
+  hint,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   max: number;
   rows?: number;
+  hint?: string;
 }) {
   const id = useId();
   return (
@@ -82,6 +84,7 @@ export function TextArea({
         onChange={(e) => onChange(e.target.value)}
         className={`${inputClass} h-auto py-2 leading-relaxed`}
       />
+      {hint && <p className="text-[11px] text-slate-500 dark:text-zinc-500">{hint}</p>}
     </div>
   );
 }

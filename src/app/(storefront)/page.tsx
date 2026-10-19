@@ -332,7 +332,7 @@ export default async function HomePage() {
 
         {/* Module 12: the close before the footer — the shop in a few plain
             paragraphs (still switched by "Hakkımızda" in Ana Sayfa Düzenleme). */}
-        {sections.about && <SeoIntro />}
+        {sections.about && <SeoIntro copy={home.seo_intro} />}
       </main>
     </>
   );

@@ -18,7 +18,7 @@ import { FAQ_HREF } from "@/lib/faq";
 import { BLOG_LINKS, BRANCHES, FAQ_LINKS, SOCIAL_LINKS, WORKING_HOURS } from "@/lib/footer";
 import { SHOWCASE_TILES } from "@/lib/showcase";
 import { SIDEBAR_NAV, TOP_NAV } from "@/lib/storefrontNav";
-import type { Homepage, HomeSections } from "@/types";
+import type { Homepage, HomeSections, HomeSeoIntro } from "@/types";
 
 export const SECTION_LABELS: Record<keyof HomeSections, { title: string; hint: string }> = {
   hero: { title: "Hero Slider & Sol Kategori Menüsü", hint: "Sayfanın üstündeki kayan bant ve yanındaki kategori sütunu." },
@@ -27,8 +27,17 @@ export const SECTION_LABELS: Record<keyof HomeSections, { title: string; hint: s
   brands: { title: "Markalar Şeridi", hint: "Kayan marka adlarının olduğu kapsül." },
   showcase: { title: "Premium Ürün Yelpazesi", hint: "Başlık ve altındaki büyük kategori kutuları." },
   advantages: { title: "Ayrıcalıklar & Avantajlar", hint: "“Hacim büyür. Maliyet küçülür.” kartları." },
-  about: { title: "Hakkımızda Yazı Alanı", hint: "“17+ Yıllık Tecrübe” rakamları ve kurumsal metin." },
+  about: { title: "Alt SEO Tanıtım Metni", hint: "Ana sayfanın sonundaki tanıtım metni; içeriği “Alt SEO Metni” sekmesinde." },
   footer: { title: "Footer (Alt Bilgi)", hint: "İletişim kartları, dört kolon ve yasal uyarı. Tüm sayfalarda." },
+};
+
+/** The shop's own copy for "Alt SEO Metni": shown until an admin writes theirs, and for any field left empty. */
+export const DEFAULT_SEO_INTRO: HomeSeoIntro = {
+  title: "Türkiye'nin Lider Nargile Malzemeleri ve Toptan Tedarikçisi",
+  summary:
+    "Geleneksel nargile kültürünü modern mühendislikle buluşturan NargileMalzemesi, birinci sınıf paslanmaz çelik nargile takımları, premium lüle çeşitleri ve yüksek kaliteli nargile kömürleri ile sektörün öncüsüdür. Sultan Nargile, Oduman ve Legend Hookah gibi dünya standartlarındaki markaları tek bir çatı altında sunuyoruz.",
+  content:
+    "Bireysel nargile severler için kusursuz bir içim deneyimi sunarken, kafeler ve işletmeler için toptan nargile malzemeleri tedariğinde güvenilir çözüm ortağınızız. Hızlı kargo, orijinal ürün garantisi ve otomatik ciro indirimleriyle, ihtiyacınız olan tüm profesyonel aksesuarlar güvenle kapınızda.",
 };
 
 export const DEFAULT_HOMEPAGE: Homepage = {
@@ -85,6 +94,7 @@ export const DEFAULT_HOMEPAGE: Homepage = {
       "adresiyiz.",
     badges: ["Orijinal Ürün Garantisi", "Aynı Gün Sevkiyat", "Toptan & Perakende"],
   },
+  seo_intro: DEFAULT_SEO_INTRO,
   footer: {
     brand_name: "SULTAN NARGİLE",
     tagline: "EST. 2008 · İSTANBUL",

@@ -71,7 +71,7 @@ export async function CatalogScreen({
           listing page ends the same way above the footer. A category's own
           description is not repeated here: it already opens the page, under
           its heading. */}
-      <SeoIntro />
+      <SeoIntro copy={home.seo_intro} />
     </main>
   );
 }

@@ -2,28 +2,37 @@
 
 import { useId, useState } from "react";
 
+import { DEFAULT_SEO_INTRO } from "@/lib/homepage";
+import type { HomeSeoIntro } from "@/types";
+
 const PARAGRAPH = "text-sm leading-relaxed text-gray-600 md:text-base dark:text-zinc-400";
 
-/** In order; the first is shown, the rest wait behind "Devamını Oku". Add a paragraph here and it folds in with them. */
-const PARAGRAPHS = [
-  "Geleneksel nargile kültürünü modern mühendislikle buluşturan NargileMalzemesi, birinci sınıf paslanmaz çelik nargile takımları, premium lüle çeşitleri ve yüksek kaliteli nargile kömürleri ile sektörün öncüsüdür. Sultan Nargile, Oduman ve Legend Hookah gibi dünya standartlarındaki markaları tek bir çatı altında sunuyoruz.",
-  "Bireysel nargile severler için kusursuz bir içim deneyimi sunarken, kafeler ve işletmeler için toptan nargile malzemeleri tedariğinde güvenilir çözüm ortağınızız. Hızlı kargo, orijinal ürün garantisi ve otomatik ciro indirimleriyle, ihtiyacınız olan tüm profesyonel aksesuarlar güvenle kapınızda.",
-];
+/** The fold's paragraphs: split at blank lines, single line breaks kept within one. */
+const paragraphs = (text: string) =>
+  text
+    .split(/\n\s*\n/)
+    .map((p) => p.trim())
+    .filter(Boolean);
 
 /**
  * The page's one passage of plain Turkish about the business, set like a
  * magazine standfirst: a short centred column, a heading, the first paragraph,
  * and "Devamını Oku" for the rest.
  *
+ * The copy is "Alt SEO Metni" in Ana Sayfa Düzenleme; any field left empty
+ * shows the shop's own (DEFAULT_SEO_INTRO).
+ *
  * The rest is folded, not left out: every paragraph is in the markup from the
  * server, there to be read by a crawler as much as by a visitor, and the fold
  * only hides it from view (and from the keyboard and screen readers while
  * shut). It opens by easing its height from nothing to its own.
  */
-export function SeoIntro() {
+export function SeoIntro({ copy }: { copy?: Partial<HomeSeoIntro> | null }) {
   const [open, setOpen] = useState(false);
   const moreId = useId();
-  const [first, ...rest] = PARAGRAPHS;
+  const title = copy?.title?.trim() || DEFAULT_SEO_INTRO.title;
+  const first = copy?.summary?.trim() || DEFAULT_SEO_INTRO.summary;
+  const rest = paragraphs(copy?.content?.trim() || DEFAULT_SEO_INTRO.content);
 
   return (
     <section
@@ -35,9 +44,9 @@ export function SeoIntro() {
         id="seo-intro-heading"
         className="mb-6 text-balance text-2xl font-extrabold tracking-tight text-gray-900 md:text-3xl dark:text-white"
       >
-        Türkiye&apos;nin Lider Nargile Malzemeleri ve Toptan Tedarikçisi
+        {title}
       </h2>
-      <p className={PARAGRAPH}>{first}</p>
+      <p className={`whitespace-pre-line ${PARAGRAPH}`}>{first}</p>
 
       {rest.length > 0 && (
         <>
@@ -50,7 +59,7 @@ export function SeoIntro() {
           >
             <div className="overflow-hidden">
               {rest.map((text, i) => (
-                <p key={i} className={`mt-4 ${PARAGRAPH}`}>
+                <p key={i} className={`mt-4 whitespace-pre-line ${PARAGRAPH}`}>
                   {text}
                 </p>
               ))}

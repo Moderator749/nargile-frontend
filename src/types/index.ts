@@ -1527,7 +1527,17 @@ export interface Homepage {
   showcase: { title: string; subtitle: string; tiles: HomeShowcaseTile[] };
   advantages: { eyebrow: string; title: string; subtitle: string; cards: HomeAdvantageCard[] };
   about: { stats: { value: string; label: string }[]; text: string; badges: string[] };
+  /** "Alt SEO Metni": the passage closing the homepage and catalog pages; an empty field means the default's. */
+  seo_intro: HomeSeoIntro;
   footer: HomeFooter;
+}
+
+export interface HomeSeoIntro {
+  title: string;
+  /** The paragraph always shown. */
+  summary: string;
+  /** What "Devamını Oku" opens; a blank line starts a new paragraph. */
+  content: string;
 }
 
 export interface HomepageSettingsResponse {

@@ -16,7 +16,7 @@ import {
   TextField,
 } from "@/components/admin/homepage/fields";
 import { Switch } from "@/components/ui/Switch";
-import { SECTION_LABELS } from "@/lib/homepage";
+import { DEFAULT_SEO_INTRO, SECTION_LABELS } from "@/lib/homepage";
 import { navHref } from "@/lib/storefrontNav";
 import type {
   Brand,
@@ -374,6 +374,49 @@ export function AdvantagesTab({ value, set }: { value: Homepage["advantages"]; s
             </div>
           )}
         />
+      </Panel>
+    </div>
+  );
+}
+
+// ── Alt SEO Metni ────────────────────────────────────────────────────────────
+
+/**
+ * "Alt SEO Tanıtım Metni": the passage that closes the homepage and every
+ * catalog page above the footer. An empty field shows the shop's own copy for
+ * it, so clearing one is how it goes back to the default.
+ */
+export function SeoIntroTab({ value, set }: { value: Homepage["seo_intro"]; set: Set<"seo_intro"> }) {
+  return (
+    <div className="space-y-6">
+      <Panel
+        title="Alt SEO Tanıtım Metni (Footer SEO)"
+        hint="Ana sayfanın ve tüm kategori sayfalarının en altında, footer'ın hemen üstünde. Boş bırakılan alan varsayılan metni gösterir."
+      >
+        <div className="space-y-4">
+          <TextField
+            label="Başlık"
+            value={value.title}
+            max={150}
+            onChange={(title) => set({ ...value, title })}
+            placeholder={DEFAULT_SEO_INTRO.title}
+          />
+          <TextArea
+            label="Özet (her zaman görünen paragraf)"
+            value={value.summary}
+            max={1500}
+            rows={4}
+            onChange={(summary) => set({ ...value, summary })}
+          />
+          <TextArea
+            label="Devamı (“Devamını Oku” ile açılan metin)"
+            hint="Boş bir satır yeni paragraf başlatır. Metin kapalıyken de sayfada bulunur; arama motorları okur."
+            value={value.content}
+            max={6000}
+            rows={10}
+            onChange={(content) => set({ ...value, content })}
+          />
+        </div>
       </Panel>
     </div>
   );
