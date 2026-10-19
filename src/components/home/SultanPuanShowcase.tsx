@@ -25,9 +25,6 @@ const SLIDE =
 const ARROW =
   "flex h-10 w-10 items-center justify-center rounded-full border border-amber-200 bg-white text-amber-900 transition-colors duration-200 hover:border-amber-500 disabled:pointer-events-none disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600 dark:border-amber-400/20 dark:bg-transparent dark:text-amber-200 dark:hover:border-amber-300";
 
-/** The thin rule between the offer's parts, where they sit in one line. */
-const DIVIDER = "hidden h-6 w-px shrink-0 bg-amber-300/70 sm:block dark:bg-amber-400/20";
-
 /** The small minted coin on each card: the advantages section's, card-sized. */
 const CARD_COIN =
   "pointer-events-none absolute left-3 top-3 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-amber-200 via-amber-400 to-amber-600 text-[9px] font-bold tracking-tight text-amber-950/80 shadow-[0_6px_14px_-6px_rgba(217,119,6,0.6)] ring-1 ring-inset ring-white/50";
@@ -47,7 +44,7 @@ export function rateText(percent: string): string {
 /**
  * "%10 SultanPuan": the loyalty programme's own row on the homepage — one gold
  * panel, the offer across its top (the rate and the band it is earned in, both
- * live from "Parametreler"), and under it, sliding sideways, every product
+ * live from "Parametreler", and "Kazanan Siz Olun!" by the coin), and under it, sliding sideways, every product
  * whose price alone lands an order in that band, each marked with the coin.
  *
  * Sultan Puan is a retail perk: a signed-in B2B account (which cannot earn it)
@@ -98,26 +95,29 @@ export function SultanPuanShowcase({ showcase, categories }: { showcase: Showcas
     <section aria-labelledby={headingId} className="w-full py-10">
       <div className={PAGE_CONTAINER}>
         {/* One gold panel for the whole row: the offer across its top, the
-            white cards on the gold, the arrows under them. */}
-        <div className="rounded-3xl border border-amber-200/70 bg-gradient-to-br from-amber-50 via-amber-50/60 to-yellow-50/80 p-5 shadow-sm sm:p-6 lg:p-8 dark:border-amber-400/15 dark:from-amber-400/[0.08] dark:via-zinc-900/80 dark:to-zinc-900/80">
-          {/* The offer, in one line from `lg`: rate, band, what the points do.
-              Below that it wraps, the coin and the rate leading. */}
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 lg:flex-nowrap">
-            <Coin />
-            <h2 id={headingId} className="flex shrink-0 items-baseline gap-2">
-              <span className={`${FIGURE} ${GOLD} text-3xl md:text-4xl`}>{rate}</span>
-              <span className="text-xl font-extrabold tracking-tight text-amber-950 md:text-2xl dark:text-amber-100">
-                SultanPuan
-              </span>
-            </h2>
-            <span aria-hidden className={DIVIDER} />
-            <p className="basis-full text-sm font-semibold text-amber-800 tabular-nums sm:basis-auto md:text-base dark:text-amber-200/80">
-              {band} alışverişlerde
-            </p>
-            <span aria-hidden className={DIVIDER} />
-            <p className="basis-full text-sm font-light text-amber-900/75 sm:basis-auto md:text-base dark:text-amber-100/60">
-              Puanınız sonraki alışverişinizde indirim olur.
-            </p>
+            white cards on the gold, the arrows under them. A warm gold, from
+            amber to a yellow cream, so it reads as gold and not as grey. */}
+        <div className="rounded-3xl border border-amber-200 bg-gradient-to-r from-amber-100 via-amber-50 to-yellow-50 p-5 shadow-sm sm:p-6 lg:p-8 dark:border-amber-400/15 dark:from-amber-400/[0.12] dark:via-amber-400/[0.05] dark:to-zinc-900/80">
+          {/* The offer: the rate over its band on the left, the call and the
+              coin at the far right. On a phone the call drops under the rate. */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+            <div className="min-w-0">
+              <h2 id={headingId} className="flex items-baseline gap-2">
+                <span className={`${FIGURE} ${GOLD} text-3xl md:text-4xl`}>{rate}</span>
+                <span className="text-2xl font-extrabold tracking-tight text-amber-950 md:text-3xl dark:text-amber-100">
+                  SultanPuan
+                </span>
+              </h2>
+              <p className="mt-1 text-sm font-semibold text-amber-800 tabular-nums dark:text-amber-200/80">
+                {band} alışverişlerde
+              </p>
+            </div>
+            <div className="flex shrink-0 items-center gap-3">
+              <p className="text-base font-extrabold tracking-tight text-amber-800 md:text-lg dark:text-amber-200">
+                Kazanan Siz Olun!
+              </p>
+              <Coin />
+            </div>
           </div>
 
           {/* The top padding keeps the cards' shadow from being clipped: a
@@ -150,8 +150,8 @@ export function SultanPuanShowcase({ showcase, categories }: { showcase: Showcas
             })}
           </ul>
 
-          {/* Under the cards, at the right: how many, and the arrows. */}
-          <div className="mt-4 flex items-center justify-end gap-3">
+          {/* Under the cards, centred: how many, and the arrows. */}
+          <div className="mt-4 flex items-center justify-center gap-3">
             <span className="text-xs font-semibold text-amber-800/70 tabular-nums dark:text-amber-200/60">
               {products.length} ürün
             </span>
