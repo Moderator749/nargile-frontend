@@ -36,7 +36,8 @@ interface CatalogFilterBarProps {
 /**
  * The category column's switch, where the shopping happens: the same state as
  * the header's "KATEGORİLER" button (lib/sidebar), so hiding the column for a
- * wider grid is in reach from the grid itself. Desktop only — on a phone the
+ * wider grid is in reach from the grid itself. Red and worded like the panel's
+ * other actions ("PDF Oluştur"), so it is seen. Desktop only — on a phone the
  * column is a drawer, opened from the header.
  */
 function SidebarToggle() {
@@ -48,11 +49,10 @@ function SidebarToggle() {
       type="button"
       onClick={() => setSidebarCollapsed(!collapsed)}
       aria-expanded={!collapsed}
-      aria-label={collapsed ? "Kategori sütununu aç" : "Kategori sütununu kapat"}
-      title={collapsed ? "Kategorileri göster" : "Kategorileri gizle: daha geniş liste"}
-      className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-neutral-200 text-neutral-600 transition-colors hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent lg:inline-flex dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-white/5 dark:hover:text-white"
+      className="hidden h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl border border-red-600 bg-red-600 px-2.5 text-[11px] font-bold uppercase tracking-wide text-white shadow-sm transition-colors duration-200 hover:border-red-500 hover:bg-red-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent lg:inline-flex"
     >
-      <Icon className="h-4 w-4" aria-hidden />
+      <Icon className="h-3.5 w-3.5" aria-hidden />
+      {collapsed ? "Kategorileri Göster" : "Sayfayı Genişlet"}
     </button>
   );
 }
@@ -63,10 +63,9 @@ export function CatalogFilterBar({ value, onChange, bounds, trailing }: CatalogF
   const sortId = useId();
 
   return (
-    <div className="mb-8 flex w-full flex-wrap items-center justify-between gap-3 rounded-2xl xl:flex-nowrap border border-neutral-200/80 bg-white p-3 shadow-sm sm:p-4 dark:border-neutral-800 dark:bg-neutral-900">
+    <div className="mb-8 flex w-full flex-wrap items-center justify-between gap-2 rounded-2xl border border-neutral-200/80 bg-white p-3 shadow-sm sm:p-4 dark:border-neutral-800 dark:bg-neutral-900">
       <div className="flex shrink-0 items-center gap-2">
         <SidebarToggle />
-        <span aria-hidden className="mx-1 hidden h-6 w-px bg-neutral-200 lg:block dark:bg-neutral-700" />
         <span className={`${LABEL} whitespace-nowrap`} id={`${minId}-label`}>
           Fiyat Aralığı
         </span>
@@ -80,7 +79,7 @@ export function CatalogFilterBar({ value, onChange, bounds, trailing }: CatalogF
           value={value.min}
           onChange={(e) => onChange({ min: e.target.value })}
           placeholder={bounds ? String(bounds.min) : "0"}
-          className={`${FIELD} w-20 text-center`}
+          className={`${FIELD} w-16 text-center`}
         />
         <span aria-hidden className="text-xs font-bold text-neutral-400">
           –
@@ -95,7 +94,7 @@ export function CatalogFilterBar({ value, onChange, bounds, trailing }: CatalogF
           value={value.max}
           onChange={(e) => onChange({ max: e.target.value })}
           placeholder={bounds ? String(bounds.max) : "1000"}
-          className={`${FIELD} w-20 text-center`}
+          className={`${FIELD} w-16 text-center`}
         />
       </div>
 
@@ -133,7 +132,7 @@ export function CatalogFilterBar({ value, onChange, bounds, trailing }: CatalogF
           id={sortId}
           value={value.sort}
           onChange={(e) => onChange({ sort: e.target.value as SortKey })}
-          className={`${FIELD} w-40 cursor-pointer pr-8`}
+          className={`${FIELD} w-36 cursor-pointer pr-8`}
         >
           {SORT_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
