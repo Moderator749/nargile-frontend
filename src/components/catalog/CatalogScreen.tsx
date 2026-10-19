@@ -1,5 +1,6 @@
 import { CatalogHeading } from "@/components/catalog/CatalogHeading";
 import { AdvantagesSection } from "@/components/home/AdvantagesSection";
+import { SeoIntro } from "@/components/home/SeoIntro";
 import { CatalogView } from "@/components/catalog/CatalogView";
 import { CategorySidebar } from "@/components/layout/CategorySidebar";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -62,9 +63,15 @@ export async function CatalogScreen({
       {/* The same eight cards the homepage closes with, below the grid and
           clear of the category column: the terms are as worth reading at the
           end of a category as on the way in. */}
-      <div className="mb-12 mt-6 md:mb-16 md:mt-8">
+      <div className="mt-6 md:mt-8">
         <AdvantagesSection content={home.advantages} />
       </div>
+
+      {/* The shop in a few plain paragraphs, as the homepage closes, so every
+          listing page ends the same way above the footer. A category's own
+          description is not repeated here: it already opens the page, under
+          its heading. */}
+      <SeoIntro />
     </main>
   );
 }
