@@ -33,18 +33,24 @@ export const SIDEBAR_WIDTH_LG = "lg:w-64";
  * width of, and the content beside it widens into the space. The right margin
  * belongs to the column rather than to a gap on the row, so collapsing takes
  * the gap with it.
+ *
+ * `fit` (the catalog's): no hero to match, so the column is as tall as its list
+ * and no taller — its grey ends with the last row, and the page's white carries
+ * on below it instead of an empty grey column down beside the grid.
  */
-export function CategorySidebar({ items }: { items: ResolvedNav[] }) {
+export function CategorySidebar({ items, fit = false }: { items: ResolvedNav[]; fit?: boolean }) {
   return (
     <nav
       aria-label="Kategoriler"
-      className={`category-sidebar hidden shrink-0 ${SIDEBAR_WIDTH} lg:relative lg:mr-6 lg:block lg:self-stretch lg:overflow-hidden lg:rounded-xl lg:bg-background`}
+      className={`category-sidebar hidden shrink-0 ${SIDEBAR_WIDTH} lg:mr-6 lg:block lg:overflow-hidden lg:rounded-xl lg:bg-background ${
+        fit ? "lg:h-fit lg:self-start" : "lg:relative lg:self-stretch"
+      }`}
     >
       {/* No shell of its own: the list stands on the page's grey, held
           together by the hairlines between its rows. On a white page (the
           catalog's) that grey is the column's own, framing the page with the
           header. */}
-      <div className="scroll-sidebar lg:absolute lg:inset-0 lg:overflow-y-auto lg:overscroll-contain">
+      <div className={fit ? undefined : "scroll-sidebar lg:absolute lg:inset-0 lg:overflow-y-auto lg:overscroll-contain"}>
         {/* The list reads the current search to mark a brand row; on a static
             page that is known after hydration, so it waits for it. */}
         <Suspense fallback={<CategoryListSkeleton count={items.length} />}>

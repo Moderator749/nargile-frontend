@@ -57,7 +57,7 @@ export async function CatalogScreen({
         initialProducts={products}
         brand={brand ? { name: brand.name, searchTerm: brand.search_term } : undefined}
         heading={<CatalogHeading title={title} breadcrumbs={breadcrumbs} intro={intro} />}
-        sidebar={<CategorySidebar items={resolveNav(home.navigation.sidebar, categories, brands)} />}
+        sidebar={<CategorySidebar items={resolveNav(home.navigation.sidebar, categories, brands)} fit />}
       />
 
       {/* The same eight cards the homepage closes with, below the grid and
