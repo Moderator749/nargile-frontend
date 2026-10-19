@@ -250,17 +250,25 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
       </div>
 
       <div className={bodyClass}>
-        {/* Fixed height, one line: the colour count never shifts the card. */}
-        <p className="h-4 truncate text-[11px] uppercase leading-4 tracking-widest text-muted-foreground">
-          {product.brand ?? category?.name ?? ""}
-          {needsColorChoice && (
-            <>
-              {(product.brand ?? category?.name) && " · "}
-              {product.variants.length} renk
-            </>
-          )}
-        </p>
-        <h3 className="mt-2 line-clamp-2 min-h-10 text-[15px] font-medium leading-5 tracking-tight text-foreground">
+        {/* The metadata above the name, stacked (never side by side: a long brand
+            or code would crowd the other out on a phone): the brand, then the
+            product code B2B buyers order by. One fixed line each, so neither
+            ever shifts the card. */}
+        <div className="flex flex-col gap-0.5">
+          <p className="h-4 truncate text-xs uppercase leading-4 tracking-wider text-muted-foreground">
+            {product.brand ?? category?.name ?? ""}
+            {needsColorChoice && (
+              <>
+                {(product.brand ?? category?.name) && " · "}
+                {product.variants.length} renk
+              </>
+            )}
+          </p>
+          <p className="h-4 truncate font-mono text-xs leading-4 text-slate-500 dark:text-zinc-400" title={product.base_code}>
+            {product.base_code}
+          </p>
+        </div>
+        <h3 className="mt-2 line-clamp-2 min-h-10 text-[15px] font-semibold leading-5 tracking-tight text-foreground">
           {/* Stretched link: the whole card opens the product page; the "+" sits above it. */}
           <Link
             href={productHref(product)}
@@ -299,7 +307,10 @@ export function ProductCardSkeleton() {
     <div className={cardClass} aria-hidden>
       <div className={`${mediaClass} bg-[#f5f5f7] motion-safe:animate-pulse dark:bg-white/5`} />
       <div className={bodyClass}>
-        <div className={`h-4 w-1/4 ${bar}`} />
+        <div className="flex flex-col gap-0.5">
+          <div className={`h-4 w-1/4 ${bar}`} />
+          <div className={`h-4 w-1/5 ${bar}`} />
+        </div>
         {/* 2 × 14px bars + 6px gap + 4px padding = 38px, inside the title's 40px box. */}
         <div className="mt-2 h-10 space-y-1.5 py-0.5">
           <div className={`h-3.5 w-11/12 ${bar}`} />
