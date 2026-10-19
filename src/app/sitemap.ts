@@ -3,6 +3,7 @@ import type { MetadataRoute } from "next";
 import { BILGI_HREF } from "@/lib/bilgi";
 import { ARTICLES, BLOG_HREF, articleHref } from "@/lib/blog";
 import { FAQ_HREF } from "@/lib/faq";
+import { DEALS_HREF } from "@/lib/flashSale";
 import { INFO_LINKS } from "@/lib/footer";
 import { brandCanonical, brandHref, productHref } from "@/lib/seo";
 import { getBrands, getCategories, getPublicProducts } from "@/lib/server/catalog";
@@ -30,7 +31,7 @@ const latest = (dates: (string | null | undefined)[]): Date | undefined => {
 
 /**
  * The storefront's indexable pages, and nothing else: the homepage, the
- * catalog, every category and every published product, the brands that have
+ * catalog, the deals page, every category and every published product, the brands that have
  * a page of their own, and the information pages.
  *
  * `lastModified` is only given where it is known — a product's last edit, a
@@ -56,6 +57,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     { url: `${SITE_URL}/`, lastModified: newest, changeFrequency: "daily", priority: 1 },
     { url: `${SITE_URL}/catalog`, lastModified: newest, changeFrequency: "daily", priority: 0.9 },
+    // Undated: its list changes as deals open and close, which no date here records.
+    { url: `${SITE_URL}${DEALS_HREF}`, changeFrequency: "daily", priority: 0.8 },
     ...categoryPages.map((category) => ({
       url: `${SITE_URL}/catalog/${category.slug}`,
       lastModified: latest([category.updated_at]),

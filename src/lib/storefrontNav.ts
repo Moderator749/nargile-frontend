@@ -13,6 +13,7 @@
  * here.
  */
 
+import { DEALS_HREF } from "@/lib/flashSale";
 import { catalogSearchHref } from "@/lib/home";
 import { brandHref } from "@/lib/seo";
 import type { Brand, Category, HomeNavItem } from "@/types";
@@ -38,7 +39,8 @@ export interface ResolvedNav {
  * the sidebar (and the drawer's handle on a phone) — see `TopNav`.
  */
 export const TOP_NAV: NavEntry[] = [
-  { label: "KAMPANYALAR", href: "/#firsat-urunleri", accent: true },
+  // Every live deal, on a page of its own.
+  { label: "FIRSAT ÜRÜNLERİ", href: DEALS_HREF, accent: true },
   { label: "NARGİLE TAKIMLARI", slug: "nargile-takimlari" },
   { label: "LÜLELER", slug: "luleler" },
   { label: "MARPUÇLAR", slug: "marpuclar" },
