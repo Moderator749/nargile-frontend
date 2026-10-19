@@ -56,7 +56,8 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
   const hydrated = useAuthHydrated();
   const token = useAuthStore((s) => s.token);
   const user = useAuthStore((s) => s.user);
-  const [own, setOwn] = useState<{ token: string; product: CatalogProductDetail } | null>(null);
+  // Null `product`: the account's own copy could not be had (see the fetch below).
+  const [own, setOwn] = useState<{ token: string; product: CatalogProductDetail | null } | null>(null);
   // The stepper shows the cart's quantity until the visitor changes it (a draft).
   const [draft, setDraft] = useState<number | null>(null);
   const [added, setAdded] = useState(false);
@@ -72,7 +73,10 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
     fetchProduct(initialProduct.id, controller.signal)
       .then((product) => setOwn({ token, product }))
       .catch((err: unknown) => {
-        if (!axios.isCancel(err)) setOwn({ token, product: initialProduct });
+        // Never the guest's copy instead: its stock is the Perakende quota and
+        // its price retail, neither of them a B2B buyer's. Prices stay masked
+        // and "Sepete Ekle" off, as while it loads.
+        if (!axios.isCancel(err)) setOwn({ token, product: null });
       });
     return () => controller.abort();
   }, [hydrated, token, initialProduct]);
@@ -97,7 +101,9 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
       ? Math.round((1 - Number(price.price_incl_tax) / Number(was.price_incl_tax)) * 100)
       : 0;
   // This colour's stock, not the product's: another colour may well be in stock.
-  const soldOut = !!variant && !variantInStock(variant);
+  // Unknown for a signed-in buyer until their own copy is in — the page's copy
+  // carries the Perakende quota, which is never a B2B list's.
+  const soldOut = !pricesPending && !!variant && !variantInStock(variant);
   // An export cart is a request for a quote, not a claim on the warehouse: it
   // may ask for a colour that is out of stock, and for more of it than exists.
   // The server agrees — nothing is deducted for a request (`is_quote_account`).
@@ -230,7 +236,7 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
                 Fırsat Kaçtı <Hourglass className="h-3.5 w-3.5 shrink-0" aria-hidden />
               </span>
             )}
-            {soldOut ? (
+            {pricesPending ? null : soldOut ? (
               <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700 ring-1 ring-inset ring-zinc-200 dark:bg-white/10 dark:text-zinc-200 dark:ring-white/10">
                 Tükendi
               </span>
@@ -255,6 +261,7 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
           {hasColorChoice(product) && variant && (
             <ColorPicker
               variants={product.variants}
+              stockPending={pricesPending}
               selectedId={variant.id}
               onSelect={(id) => {
                 setColorId(id);

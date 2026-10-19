@@ -218,7 +218,9 @@ export function DealsFunnel({ initialProducts, categories, title, subtitle }: De
     fetchFlashSaleProducts(controller.signal)
       .then((products) => setOwn({ token, products }))
       .catch((err: unknown) => {
-        if (!axios.isCancel(err)) setOwn({ token, products: initialProducts });
+        // Not the guest's copies (retail stock and prices): an empty answer,
+        // which keeps the list masked as below.
+        if (!axios.isCancel(err)) setOwn({ token, products: [] });
       });
     return () => controller.abort();
   }, [hydrated, token, initialProducts]);

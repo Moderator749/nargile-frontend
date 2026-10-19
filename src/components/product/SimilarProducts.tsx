@@ -31,7 +31,7 @@ export function SimilarProducts({
 }) {
   const hydrated = useAuthHydrated();
   const token = useAuthStore((s) => s.token);
-  const [own, setOwn] = useState<{ token: string; products: CatalogProduct[] } | null>(null);
+  const [own, setOwn] = useState<{ token: string; products: CatalogProduct[] | null } | null>(null);
 
   useEffect(() => {
     if (!hydrated || !token || products.length === 0) return;
@@ -46,7 +46,9 @@ export function SimilarProducts({
         setOwn({ token, products: products.flatMap((p) => byId.get(p.id) ?? []) });
       })
       .catch((err: unknown) => {
-        if (!axios.isCancel(err)) setOwn({ token, products });
+        // Not the guest's copies: their stock is the Perakende quota. The shelf
+        // stays masked, its buttons off, as while it loads.
+        if (!axios.isCancel(err)) setOwn({ token, products: null });
       });
     return () => controller.abort();
   }, [hydrated, token, products]);

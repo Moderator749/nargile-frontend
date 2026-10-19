@@ -17,10 +17,13 @@ export function ColorPicker({
   variants,
   selectedId,
   onSelect,
+  stockPending = false,
 }: {
   variants: CatalogVariant[];
   selectedId: string | null;
   onSelect: (variantId: string) => void;
+  /** A signed-in buyer's own stock is not in yet: strike nothing through. */
+  stockPending?: boolean;
 }) {
   return (
     <div className="mt-6">
@@ -31,7 +34,7 @@ export function ColorPicker({
       <div role="radiogroup" aria-labelledby="color-picker-label" className="mt-2 flex flex-wrap gap-2">
         {variants.map((variant) => {
           const selected = variant.id === selectedId;
-          const available = variantInStock(variant);
+          const available = stockPending || variantInStock(variant);
           return (
             <button
               key={variant.id}

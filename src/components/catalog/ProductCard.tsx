@@ -67,7 +67,9 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
   const needsColorChoice = hasColorChoice(product);
   const regular = variant?.price ?? null;
   const listPrice = variant?.list_price ?? null;
-  const soldOut = allSoldOut(product);
+  // Not read off the guest's copy for a signed-in buyer: that is the Perakende
+  // quota, never a B2B list's. Unknown (not sold out) until their own arrives.
+  const soldOut = !pricesPending && allSoldOut(product);
   // Subscribed, not read once: the card re-renders when the account changes.
   const quoteOnly = isExportAccount(useAuthStore((s) => s.user));
   const isHeavy = product.tags?.includes("HEAVY_CARGO") ?? false;
