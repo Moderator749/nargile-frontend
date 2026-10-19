@@ -41,7 +41,7 @@ import {
 import { useProductListHref } from "@/components/admin/products/listReturn";
 import { refreshStorefront } from "@/lib/revalidate";
 import { getApiErrorMessage } from "@/lib/errors";
-import { slugify } from "@/lib/slug";
+import { nameWithCode, productSlug } from "@/lib/slug";
 import type { AdminCategory, Brand, CurrencyType, SavedProductSheet, SheetSegment } from "@/types";
 
 /** The crimson of the site's primary buttons (red-600), as a one-click preset. */
@@ -151,6 +151,8 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
     return () => controller.abort();
   }, [productId, validId, attempt]);
 
+  // The address a new product gets from its code and name (the API's own rule).
+  const generatedSlug = productSlug(draft.base_code, draft.name);
   const set = <K extends keyof SheetDraft>(key: K, value: SheetDraft[K]) =>
     setDraft((d) => ({ ...d, [key]: value }));
   const setCell = (currency: CurrencyType, segment: SheetSegment, cell: CellDraft) =>
@@ -349,7 +351,7 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
                   value={draft.metaTitle}
                   onChange={(e) => set("metaTitle", e.target.value)}
                   maxLength={META_TITLE_MAX}
-                  placeholder={draft.name || "Ürün adı"}
+                  placeholder={nameWithCode(draft.name, draft.base_code) || "Ürün adı"}
                   className={sheetInputClass}
                 />
                 <CharCount value={draft.metaTitle} max={META_TITLE_MAX} />
@@ -372,7 +374,7 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
               hint={
                 saved || draft.slug
                   ? "Değiştirirseniz eski adres otomatik olarak yeni adrese yönlendirilir; paylaşılmış bağlantılar çalışmaya devam eder."
-                  : "Boş bırakılırsa ürün adından üretilir. Küçük harf, rakam, tire ve nokta."
+                  : "Boş bırakılırsa ürün kodu ve adından üretilir (yukarıdaki gibi). Küçük harf, rakam, tire ve nokta."
               }
             >
               <div className="flex items-stretch">
@@ -384,12 +386,24 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
                   value={draft.slug}
                   onChange={(e) => set("slug", e.target.value)}
                   maxLength={255}
-                  placeholder={slugify(draft.name) || "urun-adi"}
+                  placeholder={generatedSlug}
                   spellCheck={false}
                   autoCapitalize="none"
                   className={`${sheetInputClass} rounded-l-none font-mono`}
                 />
               </div>
+              {/* A saved address stays put through renames (links keep working);
+                  this puts it in the code-and-name form on purpose, the old one
+                  redirecting here once saved. */}
+              {draft.slug && draft.slug !== generatedSlug && (
+                <button
+                  type="button"
+                  onClick={() => set("slug", generatedSlug)}
+                  className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-red-700 hover:underline dark:text-red-400"
+                >
+                  Koddan ve addan üret: <span className="font-mono">{generatedSlug}</span>
+                </button>
+              )}
             </SheetField>
           </div>
         </SheetSection>

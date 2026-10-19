@@ -12,6 +12,7 @@ import { PAGE_CONTAINER } from "@/lib/layout";
 import { pickSimilar, relatedCategories } from "@/lib/related";
 import { getBrands, getCategories, getCategoryProducts, getProduct } from "@/lib/server/catalog";
 import { getHomepage } from "@/lib/server/homepage";
+import { nameWithCode } from "@/lib/slug";
 import { displayVariant, soldOut } from "@/lib/variants";
 
 // Same freshness window as the catalog; admin edits refresh it immediately.
@@ -49,7 +50,8 @@ export async function generateMetadata(props: PageProps<"/product/[slug]">): Pro
   const lead = displayVariant(product);
   const price = lead?.flash_sale?.price ?? lead?.list_price;
   return pageMetadata({
-    title: metaTitle || `${product.name}${brandSuffix}`,
+    // The code too, unless the name already says it: shoppers and shops search by it.
+    title: metaTitle || `${nameWithCode(product.name, product.base_code)}${brandSuffix}`,
     absoluteTitle: !!metaTitle,
     description,
     href: productHref(product),
