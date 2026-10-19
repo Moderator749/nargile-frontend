@@ -8,8 +8,8 @@ import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { adminGetStoreParameters, adminUpdateStoreParameters } from "@/lib/adminApi";
 import { getApiErrorMessage } from "@/lib/errors";
-import { formatMoney, formatMoneyCompact, parseDecimalInput } from "@/lib/format";
-import { formatRate, transferDiscountHint } from "@/lib/storeParameters";
+import { parseDecimalInput } from "@/lib/format";
+import { transferDiscountHint } from "@/lib/storeParameters";
 import type { CoalRuleBasis, LoyaltyParameters, ParameterTier, StoreParameters } from "@/types";
 
 const fieldClass =
@@ -344,31 +344,29 @@ function BasisPicker({ value, onChange }: { value: CoalRuleBasis; onChange: (val
 }
 
 /** An on/off switch with its label and a line saying what each state means. */
-function Toggle({ label, checked, onChange, note }: {
+function Toggle({ label, checked, onChange, info }: {
   label: string;
   checked: boolean;
   onChange: (checked: boolean) => void;
-  note: string;
+  /** What on and off mean, in a tooltip beside the label. */
+  info?: string;
 }) {
   const id = useId();
   return (
-    <div className="flex items-start justify-between gap-4 rounded-xl border border-slate-200 p-4 dark:border-white/10">
-      <div>
+    <div className="flex items-center justify-between gap-4 rounded-xl border border-slate-200 px-4 py-3 dark:border-white/10">
+      <div className="flex items-center gap-1">
         <label htmlFor={id} className="text-sm font-medium text-slate-900 dark:text-zinc-100">
           {label}
         </label>
-        <p id={`${id}-note`} className="mt-0.5 text-xs leading-5 text-slate-500 dark:text-zinc-400">
-          {note}
-        </p>
+        {info && <InfoTip label={label} text={info} />}
       </div>
       <button
         id={id}
         type="button"
         role="switch"
         aria-checked={checked}
-        aria-describedby={`${id}-note`}
         onClick={() => onChange(!checked)}
-        className={`relative mt-0.5 inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 ${
+        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 ${
           checked ? "bg-emerald-500" : "bg-slate-300 dark:bg-white/20"
         }`}
       >
@@ -395,38 +393,52 @@ function LadderEditor({ name, tiers, errors, onChange, emptyText, addLabel }: {
   const patch = (key: number, change: Partial<TierDraft>) =>
     onChange(tiers.map((t) => (t.key === key ? { ...t, ...change } : t)));
 
+  // Each rung runs up to the next one's threshold (the cart takes the highest
+  // rung it reaches), so its upper limit is shown, not typed.
+  const thresholds = tiers.map((t) => Number(parseDecimalInput(t.threshold) ?? NaN));
+  const upperOf = (i: number): string => {
+    const own = thresholds[i];
+    if (Number.isNaN(own)) return "—";
+    const above = thresholds.filter((v) => !Number.isNaN(v) && v > own);
+    return above.length ? typed(Math.min(...above) - 0.01) : "Sınırsız";
+  };
+  const row = "grid grid-cols-[1.25rem_1fr_1fr_2.5rem] items-start gap-2 sm:grid-cols-[1.25rem_1fr_1fr_9rem_2.5rem] sm:gap-3";
+
   return (
     <div>
       {tiers.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-slate-300 px-4 py-5 text-center text-sm text-slate-500 dark:border-white/15 dark:text-zinc-400">
+        <p className="rounded-xl border border-dashed border-slate-300 px-4 py-3 text-center text-sm text-slate-500 dark:border-white/15 dark:text-zinc-400">
           {emptyText}
         </p>
       ) : (
-        <ol className="space-y-3">
-          <li aria-hidden className="hidden grid-cols-[2rem_1fr_1fr_2.75rem] gap-3 text-xs font-medium text-slate-500 sm:grid dark:text-zinc-400">
+        <ol className="space-y-2">
+          <li aria-hidden className={`${row} hidden text-xs font-medium text-slate-500 sm:grid dark:text-zinc-400`}>
             <span />
-            <span>Sepet tutarı (bu tutar ve üzeri)</span>
-            <span>Uygulanacak indirim</span>
+            <span>Alt Limit (₺)</span>
+            <span>Üst Limit (₺)</span>
+            <span>İndirim (%)</span>
             <span />
           </li>
           {tiers.map((tier, i) => (
-            <li
-              key={tier.key}
-              className="grid grid-cols-[2rem_1fr_2.75rem] items-start gap-3 sm:grid-cols-[2rem_1fr_1fr_2.75rem]"
-            >
+            <li key={tier.key} className={row}>
               <span className="flex h-11 items-center text-xs font-semibold tabular-nums text-slate-400 dark:text-zinc-500">
                 {i + 1}.
               </span>
-              <div className="col-start-2 row-start-1">
-                <Field
-                  srLabel={`${i + 1}. barem sepet tutarı`}
-                  unit="TL"
-                  value={tier.threshold}
-                  onChange={(threshold) => patch(tier.key, { threshold })}
-                  error={errors[`${name}.${tier.key}.threshold`]}
-                />
+              <Field
+                srLabel={`${i + 1}. barem alt limiti`}
+                unit="TL"
+                value={tier.threshold}
+                onChange={(threshold) => patch(tier.key, { threshold })}
+                error={errors[`${name}.${tier.key}.threshold`]}
+              />
+              <div
+                aria-label={`${i + 1}. barem üst limiti`}
+                className="flex h-11 items-center justify-between rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3.5 text-sm tabular-nums text-slate-500 dark:border-white/10 dark:bg-white/[0.03] dark:text-zinc-400"
+              >
+                <span>{upperOf(i)}</span>
+                {upperOf(i) !== "Sınırsız" && upperOf(i) !== "—" && <span className="text-xs">TL</span>}
               </div>
-              <div className="col-start-2 sm:col-start-3 sm:row-start-1">
+              <div className="col-span-2 col-start-2 sm:col-span-1 sm:col-start-4 sm:row-start-1">
                 <Field
                   srLabel={`${i + 1}. barem indirim yüzdesi`}
                   unit="%"
@@ -440,7 +452,7 @@ function LadderEditor({ name, tiers, errors, onChange, emptyText, addLabel }: {
                 onClick={() => onChange(tiers.filter((t) => t.key !== tier.key))}
                 aria-label={`${i + 1}. baremi sil`}
                 title="Baremi sil"
-                className="col-start-3 row-start-1 flex h-11 w-11 items-center justify-center rounded-xl text-slate-400 transition-colors duration-200 hover:bg-red-50 hover:text-red-600 focus-visible:outline-2 focus-visible:outline-red-600 sm:col-start-4 dark:text-zinc-500 dark:hover:bg-red-500/10 dark:hover:text-red-400"
+                className="col-start-4 row-start-1 flex h-11 w-10 items-center justify-center rounded-xl text-slate-400 transition-colors duration-200 hover:bg-red-50 hover:text-red-600 focus-visible:outline-2 focus-visible:outline-red-600 sm:col-start-5 dark:text-zinc-500 dark:hover:bg-red-500/10 dark:hover:text-red-400"
               >
                 <Trash2 className="h-4 w-4" aria-hidden />
               </button>
@@ -462,7 +474,7 @@ function LadderEditor({ name, tiers, errors, onChange, emptyText, addLabel }: {
           const top = Math.max(0, ...tiers.map((t) => Number(parseDecimalInput(t.threshold) ?? 0)));
           onChange([...tiers, { key: nextKey++, threshold: top ? typed(top + 10000) : "", rate: "" }]);
         }}
-        className="mt-4 inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-sm font-medium text-red-600 ring-1 ring-inset ring-red-200 transition-colors duration-200 hover:bg-red-50 focus-visible:outline-2 focus-visible:outline-red-600 disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-400 dark:ring-red-500/30 dark:hover:bg-red-500/10"
+        className="mt-3 inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-sm font-medium text-red-600 ring-1 ring-inset ring-red-200 transition-colors duration-200 hover:bg-red-50 focus-visible:outline-2 focus-visible:outline-red-600 disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-400 dark:ring-red-500/30 dark:hover:bg-red-500/10"
       >
         <Plus className="h-4 w-4" aria-hidden /> {addLabel}
       </button>
@@ -627,37 +639,31 @@ export function AdminStoreParametersView() {
           <Card
             Icon={CreditCard}
             title="Ödeme Yöntemi Kampanyaları"
-            description="Havale / EFT ile ödemede uygulanan nakit indirimi. Barem ara toplama göre belirlenir; indirim, varsa ciro indiriminden sonra kalan tutara uygulanır. Sepetin her tutarda indirim alması için ilk baremi 1 TL yapın."
+            info={`Havale / EFT ile ödemede uygulanan nakit indirimi. Barem ara toplama göre belirlenir; indirim, varsa ciro indiriminden sonra kalan tutara uygulanır. Sepetin her tutarda indirim alması için ilk baremi 1 TL yapın.${
+              body ? ` Sepette görünen: ${transferDiscountHint(body) ?? "Banka hesabımıza ödeme (indirim yok)"}.` : ""
+            }`}
           >
             <LadderEditor
               name="transfer"
               tiers={draft.transfer}
               errors={errors}
               onChange={(transfer) => update({ transfer })}
-              emptyText="Havale / EFT indirimi tanımlı değil. Barem ekleyene kadar havale ile ödemede indirim uygulanmaz."
+              emptyText="Barem yok: havale ile ödemede indirim uygulanmaz."
               addLabel="Havale baremi ekle"
             />
-            {body && (
-              <p className="mt-4 text-xs text-slate-500 dark:text-zinc-400">
-                Sepette görünen:{" "}
-                <span className="font-medium text-slate-700 dark:text-zinc-200">
-                  {transferDiscountHint(body) ?? "Banka hesabımıza ödeme (indirim yok)"}
-                </span>
-              </p>
-            )}
           </Card>
 
           <Card
             Icon={TrendingUp}
             title="Otomatik Ciro İndirimleri"
-            description="Ara toplam bir baremi geçtiğinde o baremin indirimi otomatik uygulanır; birden fazla baremi geçen sepete en yüksek tutarlı baremin oranı uygulanır. Sepet bir sonraki bareme yaklaştığında müşteriye ne kadar eklemesi gerektiği gösterilir."
+            info="Ara toplam bir baremi geçtiğinde o baremin indirimi otomatik uygulanır; birden fazla baremi geçen sepete en yüksek baremin oranı uygulanır. Sepet bir sonraki bareme yaklaştığında müşteriye ne kadar eklemesi gerektiği gösterilir."
           >
             <LadderEditor
               name="volume"
               tiers={draft.volume}
               errors={errors}
               onChange={(volume) => update({ volume })}
-              emptyText="Ciro indirimi tanımlı değil. Barem ekleyene kadar hiçbir sepete ciro indirimi uygulanmaz."
+              emptyText="Barem yok: hiçbir sepete ciro indirimi uygulanmaz."
               addLabel="Ciro baremi ekle"
             />
           </Card>
@@ -665,69 +671,65 @@ export function AdminStoreParametersView() {
           <Card
             Icon={Crown}
             title="Sultan Puan & Sadakat Sistemi"
-            description="Puanlar sipariş ödendi olarak onaylandığında tanımlanır, 1 yıl geçerlidir ve sepette kargo hariç tutara uygulanır. Kayıtlı bakiyeler sistem kapatıldığında silinmez; yeniden açıldığında kullanılabilir."
+            info="Puanlar sipariş ödendi olarak onaylandığında tanımlanır, 1 yıl geçerlidir ve sepette kargo hariç tutara uygulanır. Kayıtlı bakiyeler sistem kapatıldığında silinmez; yeniden açıldığında kullanılabilir."
           >
             <Toggle
               label="Sadakat sistemi aktif"
               checked={draft.loyalty.enabled}
               onChange={(enabled) => updateLoyalty({ enabled })}
-              note={
-                draft.loyalty.enabled
-                  ? "Açık: siparişler puan kazandırır, müşteriler sepette puan kullanabilir."
-                  : "Kapalı: puan kazanılmaz ve kullanılamaz; sepette ve hesap sayfasında puan alanları gizlenir."
-              }
+              info="Açık: siparişler puan kazandırır, müşteriler sepette puan kullanabilir. Kapalı: puan kazanılmaz ve kullanılamaz; sepette ve hesap sayfasında puan alanları gizlenir."
             />
 
-            <fieldset disabled={!draft.loyalty.enabled} className="mt-6 space-y-6 disabled:opacity-60">
+            <fieldset disabled={!draft.loyalty.enabled} className="mt-4 space-y-4 disabled:opacity-60">
               <div>
-                <h3 className="text-sm font-semibold text-slate-900 dark:text-zinc-100">Standart puan kazanımı</h3>
-                <div className="mt-3 grid gap-5 sm:grid-cols-3">
+                <h3 className="flex items-center gap-1 text-sm font-semibold text-slate-900 dark:text-zinc-100">
+                  Standart puan kazanımı
+                  <InfoTip
+                    label="Standart puan kazanımı"
+                    text="Alt ve üst sınır arasındaki tek bir siparişin ara toplamı üzerinden, kazanım oranı kadar Sultan Puan verilir; aralık dışındaki siparişler standart puan kazanmaz. Puanın parasal değeri: 1 Sultan Puan sepette bu kadar indirim sağlar."
+                  />
+                </h3>
+                <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                   <Field
                     label="Kazanım oranı"
                     unit="%"
                     value={draft.loyalty.baseRate}
                     onChange={(baseRate) => updateLoyalty({ baseRate })}
                     error={errors["loyalty.baseRate"]}
-                    note="Tek siparişin ara toplamı üzerinden."
                   />
                   <Field
-                    label="Sipariş tutarı alt sınırı"
+                    label="Sipariş alt sınırı"
                     unit="TL"
                     value={draft.loyalty.bandMin}
                     onChange={(bandMin) => updateLoyalty({ bandMin })}
                     error={errors["loyalty.bandMin"]}
                   />
                   <Field
-                    label="Sipariş tutarı üst sınırı"
+                    label="Sipariş üst sınırı"
                     unit="TL"
                     value={draft.loyalty.bandMax}
                     onChange={(bandMax) => updateLoyalty({ bandMax })}
                     error={errors["loyalty.bandMax"]}
                   />
+                  <Field
+                    label="Puanın parasal değeri"
+                    unit="TL"
+                    value={draft.loyalty.conversion}
+                    onChange={(conversion) => updateLoyalty({ conversion })}
+                    error={errors["loyalty.conversion"]}
+                  />
                 </div>
-                {body && (
-                  <p className="mt-3 text-xs text-slate-500 dark:text-zinc-400">
-                    {formatMoneyCompact(body.loyalty.band_min)} – {formatMoneyCompact(body.loyalty.band_max)} arası tek
-                    siparişte {formatRate(body.loyalty.base_rate)} Sultan Puan; aralık dışındaki siparişler standart puan
-                    kazanmaz.
-                  </p>
-                )}
               </div>
 
-              <div className="grid gap-5 sm:grid-cols-3">
-                <Field
-                  label="Puanın parasal değeri"
-                  unit="TL"
-                  value={draft.loyalty.conversion}
-                  onChange={(conversion) => updateLoyalty({ conversion })}
-                  error={errors["loyalty.conversion"]}
-                  note={body ? `1 Sultan Puan = ${formatMoney(body.loyalty.conversion_rate)} indirim.` : undefined}
-                />
-              </div>
-
-              <div>
-                <h3 className="text-sm font-semibold text-slate-900 dark:text-zinc-100">Yıllık sadakat eşiği</h3>
-                <div className="mt-3 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="border-t border-slate-200 pt-4 dark:border-white/10">
+                <h3 className="flex items-center gap-1 text-sm font-semibold text-slate-900 dark:text-zinc-100">
+                  Yıllık sadakat eşiği
+                  <InfoTip
+                    label="Yıllık sadakat eşiği"
+                    text="Ödenmiş siparişler hesaplama süresi içinde harcama hedefine ulaştığında bonus puan tanımlanır. Bonus bir kez verilir; sonraki bonus için sayım bonusun verildiği andan yeniden başlar."
+                  />
+                </h3>
+                <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                   <Field
                     label="Yıllık harcama hedefi"
                     unit="TL"
@@ -736,12 +738,12 @@ export function AdminStoreParametersView() {
                     error={errors["loyalty.annualTarget"]}
                   />
                   <Field
-                    label="Hedefe ulaşınca bonus"
+                    label="Bonus puan"
                     unit="puan"
                     value={draft.loyalty.annualBonus}
                     onChange={(annualBonus) => updateLoyalty({ annualBonus })}
                     error={errors["loyalty.annualBonus"]}
-                    note="0 girilirse bonus verilmez."
+                    info="0 girilirse bonus verilmez."
                   />
                   <Field
                     label="Hesaplama süresi"
@@ -751,24 +753,14 @@ export function AdminStoreParametersView() {
                     error={errors["loyalty.annualDays"]}
                   />
                   <Field
-                    label="Hedefe sayılan sipariş üst sınırı"
+                    label="Sayılan sipariş üst sınırı"
                     unit="TL"
                     value={draft.loyalty.annualCeiling}
                     onChange={(annualCeiling) => updateLoyalty({ annualCeiling })}
                     error={errors["loyalty.annualCeiling"]}
-                    note="0 girilirse tüm siparişler sayılır."
+                    info="Bu tutarın altındaki siparişler hedefe sayılır. 0 girilirse tüm siparişler sayılır."
                   />
                 </div>
-                {body && (
-                  <p className="mt-3 text-xs leading-5 text-slate-500 dark:text-zinc-400">
-                    {Number(body.loyalty.annual_order_ceiling) > 0
-                      ? `${formatMoneyCompact(body.loyalty.annual_order_ceiling)} altındaki ödenmiş siparişler`
-                      : "Ödenmiş tüm siparişler"}{" "}
-                    son {body.loyalty.annual_period_days} günde {formatMoneyCompact(body.loyalty.annual_spend_threshold)}{" "}
-                    tutarına ulaştığında {body.loyalty.annual_bonus_points.toLocaleString("tr-TR")} Sultan Puan bonus
-                    tanımlanır. Bonus bir kez verilir; sonraki bonus için sayım bonusun verildiği andan yeniden başlar.
-                  </p>
-                )}
               </div>
             </fieldset>
           </Card>
