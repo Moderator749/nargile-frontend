@@ -23,6 +23,7 @@ import {
 } from "@/lib/adminApi";
 import { fetchCategories } from "@/lib/catalogApi";
 import { getApiErrorMessage } from "@/lib/errors";
+import { refreshStorefront } from "@/lib/revalidate";
 import { formatMoney } from "@/lib/format";
 import type { AdminProduct, AdminVariant, Category, ProductSort, Segment } from "@/types";
 
@@ -223,6 +224,9 @@ export function AdminProductsView() {
     apply(next);
     try {
       apply(await adminSetProductPublished(product.id, next));
+      // Published or withdrawn: the storefront's cached lists (the homepage's
+      // "Yeni Gelenler" among them) must show it, or stop showing it, now.
+      void refreshStorefront();
     } catch (err) {
       apply(!next);
       setPublishError(getApiErrorMessage(err, "Yayın durumu değiştirilemedi."));
@@ -257,6 +261,9 @@ export function AdminProductsView() {
     setNotice(null);
     try {
       const { deleted, refused } = await adminDeleteProducts(selectedHere);
+      // Gone from the catalogue: drop the storefront's cached lists, or a deleted
+      // product lingers on the homepage ("Yeni Gelenler") until they expire.
+      if (deleted.length > 0) void refreshStorefront();
       const gone = new Set(deleted);
       setList((prev) =>
         prev

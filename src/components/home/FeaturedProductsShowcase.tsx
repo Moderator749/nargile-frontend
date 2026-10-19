@@ -2,9 +2,12 @@
 
 import { useState } from "react";
 
-import { ShowcaseProductCard, useOwnPrices } from "@/components/home/ShowcaseProductCard";
+import { ProductCard } from "@/components/catalog/ProductCard";
+import { useOwnPrices } from "@/hooks/useOwnPrices";
 import { PAGE_CONTAINER } from "@/lib/layout";
-import type { CatalogProduct } from "@/types";
+import { useAuthStore } from "@/store/useAuthStore";
+import { useAuthHydrated } from "@/store/useHasHydrated";
+import type { CatalogProduct, Category } from "@/types";
 
 const TABS = [
   { key: "bestsellers", label: "Çok Satanlar" },
@@ -20,21 +23,30 @@ const TAB_IDLE =
   "border border-gray-200 bg-white text-gray-700 hover:border-gray-900 dark:border-border dark:bg-transparent dark:text-neutral-300 dark:hover:border-white";
 
 /**
- * "Sizin İçin Seçtiklerimiz": two short lists behind a pair of tabs, as plain
- * photo-and-caption cards (`ShowcaseProductCard`) on a white band.
+ * "Sizin İçin Seçtiklerimiz": two short lists behind a pair of tabs, in the
+ * catalog's own cards (`ProductCard`: the frame, brand and code, add to cart).
  *
  * The lists arrive server-rendered at the public (retail) price; a signed-in
  * visitor gets both re-priced for their own segment in one request
  * (`useOwnPrices`).
  */
-export function FeaturedProductsShowcase({ lists }: { lists: Record<TabKey, CatalogProduct[]> }) {
+export function FeaturedProductsShowcase({
+  lists,
+  categories,
+}: {
+  lists: Record<TabKey, CatalogProduct[]>;
+  categories: Category[];
+}) {
   const [tab, setTab] = useState<TabKey>("newest");
   const mine = useOwnPrices(TABS.flatMap(({ key }) => lists[key]));
+  const hydrated = useAuthHydrated();
+  const token = useAuthStore((s) => s.token);
+  const loggedIn = hydrated && !!token;
+  const categoryById = new Map(categories.map((c) => [c.id, c]));
 
   const visible = TABS.filter(({ key }) => lists[key].length > 0);
   if (visible.length === 0) return null;
   const active = lists[tab].length > 0 ? tab : visible[0].key;
-  const publicPrices = !mine;
 
   return (
     // On a white band in the light theme, the same white the supplier photos are
@@ -75,12 +87,16 @@ export function FeaturedProductsShowcase({ lists }: { lists: Record<TabKey, Cata
             // A signed-in visitor's own copy, once it is in; its price is theirs.
             const product = mine?.get(listed.id) ?? listed;
             return (
-              <li key={product.id}>
-                <ShowcaseProductCard
-                  product={product}
-                  publicPrices={publicPrices}
-                  sizes="(min-width: 1024px) 20vw, (min-width: 768px) 33vw, 50vw"
-                />
+              <li key={product.id} className="flex">
+                <div className="flex w-full flex-col [&>article]:flex-1">
+                  <ProductCard
+                    product={product}
+                    category={product.category_id != null ? categoryById.get(product.category_id) : undefined}
+                    isLoggedIn={loggedIn}
+                    publicPrices={!mine}
+                    pricesPending={loggedIn && !mine}
+                  />
+                </div>
               </li>
             );
           })}

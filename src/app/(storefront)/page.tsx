@@ -274,7 +274,7 @@ export default async function HomePage() {
 
         {/* Module 9b: "Sizin İçin Seçtiklerimiz", two tabbed product lists, on
             the ticker's white. */}
-        <FeaturedProductsShowcase lists={picks} />
+        <FeaturedProductsShowcase lists={picks} categories={allCategories} />
 
         {/* Module 9c: "Fırsatları Kaçırma" — the deals, and the page's only
             deals section, its dark band straight after the white of the picks.
@@ -303,6 +303,7 @@ export default async function HomePage() {
             {BRAND_SHOWCASES.map(({ slug, brandName, logo, description }, i) => (
               <BrandShowcase
                 key={slug}
+                categories={allCategories}
                 brandName={brandName}
                 logoSrc={logo.src}
                 logoWidth={logo.width}

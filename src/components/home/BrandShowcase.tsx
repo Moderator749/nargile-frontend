@@ -5,9 +5,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
 
-import { ShowcaseProductCard, useOwnPrices } from "@/components/home/ShowcaseProductCard";
+import { ProductCard } from "@/components/catalog/ProductCard";
+import { useOwnPrices } from "@/hooks/useOwnPrices";
 import { PAGE_CONTAINER } from "@/lib/layout";
-import type { CatalogProduct } from "@/types";
+import { useAuthStore } from "@/store/useAuthStore";
+import { useAuthHydrated } from "@/store/useHasHydrated";
+import type { CatalogProduct, Category } from "@/types";
 
 /**
  * Four across from `lg` and three from `md`, each width short by its share of
@@ -54,6 +57,8 @@ interface BrandShowcaseProps {
   /** The brand's own page: every product carrying its name. */
   brandLink: string;
   products: CatalogProduct[];
+  /** For each card's category (its fallback line under the brand). */
+  categories: Category[];
   /** The brand on the right and the products on the left from `xl`, for a zig-zag down the page. */
   reverseLayout?: boolean;
 }
@@ -82,10 +87,15 @@ export function BrandShowcase({
   description,
   brandLink,
   products,
+  categories,
   reverseLayout = false,
 }: BrandShowcaseProps) {
   const headingId = useId();
   const mine = useOwnPrices(products);
+  const hydrated = useAuthHydrated();
+  const token = useAuthStore((s) => s.token);
+  const loggedIn = hydrated && !!token;
+  const categoryById = new Map(categories.map((c) => [c.id, c]));
   const track = useRef<HTMLUListElement>(null);
   // Which ends the track is at, so the arrow that cannot move it is disabled.
   const [ends, setEnds] = useState({ start: true, end: false });
@@ -196,16 +206,22 @@ export function BrandShowcase({
             onScroll={measure}
             className="flex w-full snap-x snap-mandatory flex-row flex-nowrap gap-6 overflow-x-auto scroll-smooth pt-2 pb-6 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           >
-            {products.map((listed) => (
-              <li key={listed.id} className={SLIDE}>
-                <ShowcaseProductCard
-                  product={mine?.get(listed.id) ?? listed}
-                  publicPrices={!mine}
-                  sizes="(min-width: 1024px) 18vw, (min-width: 768px) 30vw, 70vw"
-                  boxed
-                />
-              </li>
-            ))}
+            {products.map((listed) => {
+              const product = mine?.get(listed.id) ?? listed;
+              return (
+                <li key={listed.id} className={SLIDE}>
+                  <div className="flex w-full flex-1 flex-col [&>article]:flex-1">
+                    <ProductCard
+                      product={product}
+                      category={product.category_id != null ? categoryById.get(product.category_id) : undefined}
+                      isLoggedIn={loggedIn}
+                      publicPrices={!mine}
+                      pricesPending={loggedIn && !mine}
+                    />
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         </div>
       </div>
