@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import axios from "axios";
-import { PackageCheck } from "lucide-react";
+import { ExternalLink, PackageCheck } from "lucide-react";
 
 import { StatusBadge } from "@/components/orders/StatusBadge";
 import { Alert } from "@/components/ui/Alert";
@@ -11,6 +11,7 @@ import { getApiErrorMessage } from "@/lib/errors";
 import { formatDate, formatMoney } from "@/lib/format";
 import { shippingOption } from "@/lib/shipping";
 import { fetchMyOrders, orderNetTotal } from "@/lib/ordersApi";
+import { carrierName, trackingHref } from "@/lib/tracking";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useAuthHydrated } from "@/store/useHasHydrated";
 import type { Order } from "@/types";
@@ -112,10 +113,21 @@ export function OrdersView({ placedOrderNumber }: { placedOrderNumber: string | 
                     {order.items.reduce((n, i) => n + i.quantity, 0)} ürün ·{" "}
                     {order.payment_method === "BANK_TRANSFER" ? "Havale / EFT" : "Kredi Kartı"}
                     {order.shipping_method !== "YURTICI_DOOR" && <> · {shippingOption(order.shipping_method).title}</>}
-                    {order.tracking_code && <> · Kargo takip: {order.tracking_code}</>}
+                    {order.status === "SHIPPED" && carrierName(order) && <> · {carrierName(order)}</>}
+                    {order.tracking_code && <> · Takip no: <span className="font-mono">{order.tracking_code}</span></>}
                   </p>
                   <p className="text-base font-bold tabular-nums">{formatMoney(orderNetTotal(order))}</p>
                 </div>
+                {trackingHref(order) && (
+                  <a
+                    href={trackingHref(order) ?? undefined}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-red-700 hover:underline dark:text-red-400"
+                  >
+                    Kargonu takip et <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+                  </a>
+                )}
                 {order.status === "AWAITING_TRANSFER" && (
                   <Link
                     href={`/orders/${order.id}/confirmation`}

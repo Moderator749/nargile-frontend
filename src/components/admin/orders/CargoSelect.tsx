@@ -8,7 +8,7 @@ import type { AdminOrder } from "@/types";
 /**
  * The two cargo decisions an approved order is waiting for. A native select keeps
  * the whole menu inside its table cell at any width, and neither choice fires
- * blind: "onayla" asks for the tracking code and "iptal" for a reason first.
+ * blind: "Kargola" opens the shipping dialog and "iptal" asks for a reason first.
  */
 export function CargoSelect({ order, actions }: { order: AdminOrder; actions: OrderActions }) {
   const busy = actions.busy(order.id);
@@ -29,7 +29,7 @@ export function CargoSelect({ order, actions }: { order: AdminOrder; actions: Or
         <option value="" disabled>
           Kargo işlemi…
         </option>
-        <option value="ship">Kargoyu Onayla</option>
+        <option value="ship">Kargola…</option>
         <option value="cancel">Kargoyu İptal Et</option>
       </select>
       <ChevronDown

@@ -8,6 +8,7 @@
 
 import { excludeVat, formatMoney } from "@/lib/format";
 import { orderNetTotal } from "@/lib/ordersApi";
+import { carrierName } from "@/lib/tracking";
 import { whatsappNumber as cleanNumber } from "@/lib/whatsapp";
 import type { AdminOrder } from "@/types";
 
@@ -93,7 +94,11 @@ export function orderHistory(order: AdminOrder): HistoryRow[] {
   ];
   if (order.paid_at) rows.push({ at: order.paid_at, action: "SİPARİŞ ONAYLANDI", note: "Ödeme alındı, sipariş onaylandı" });
   if (order.status === "SHIPPED")
-    rows.push({ at: null, action: "KARGOYA VERİLDİ", note: order.tracking_code ? `Takip no: ${order.tracking_code}` : "" });
+    rows.push({
+      at: order.shipped_at ?? null,
+      action: "KARGOYA VERİLDİ",
+      note: [carrierName(order), order.tracking_code ? `Takip no: ${order.tracking_code}` : null].filter(Boolean).join(" · "),
+    });
   if (order.cancelled_at) rows.push({ at: order.cancelled_at, action: "SİPARİŞ İPTAL EDİLDİ", note: order.cancel_reason ?? "" });
   return rows;
 }

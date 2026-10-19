@@ -108,7 +108,9 @@ export function Navbar({
     ...(isB2B ? [{ href: "/b2b", label: "B2B Portal" }] : []),
     ...(isAdminRole(user?.role) ? [{ href: "/admin", label: "Yönetim" }] : []),
   ];
-  const trackHref = user ? "/orders" : "/login?next=/orders";
+  // Open to everyone: a tracking number works without an account, and a
+  // signed-in customer sees their own shipments there too.
+  const trackHref = "/kargo-takip";
 
   return (
     <header

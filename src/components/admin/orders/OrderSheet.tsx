@@ -5,6 +5,7 @@ import { useRef } from "react";
 import { OrderSheetActions } from "@/components/admin/orders/OrderSheetActions";
 import { OrderSheetHistory } from "@/components/admin/orders/OrderSheetHistory";
 import { OrderSheetLines } from "@/components/admin/orders/OrderSheetLines";
+import { OrderShipment } from "@/components/admin/orders/OrderShipment";
 import { SheetBlock, SheetField } from "@/components/admin/orders/SheetBlock";
 import { addressLines, customerCode, orderHistory, sheetTotals, shippingStatus } from "@/components/admin/orders/sheetData";
 import type { OrderNotice } from "@/components/admin/orders/useOrderActions";
@@ -47,6 +48,9 @@ export function OrderSheet({
   notice,
   onApprove,
   onCancel,
+  onShip,
+  onRefreshShipment,
+  onWithdrawShipment,
 }: {
   /** The row the panel has; the sheet re-reads the order itself. */
   order: AdminOrder;
@@ -54,6 +58,10 @@ export function OrderSheet({
   notice?: OrderNotice;
   onApprove: () => void;
   onCancel: () => void;
+  /** "Kargola" and the shipment's own actions; see OrderShipment. */
+  onShip?: () => void;
+  onRefreshShipment?: () => void;
+  onWithdrawShipment?: () => void;
 }) {
   // What the order says now, not what the listing said when it was fetched —
   // see `useFreshOrder`. Everything below reads this.
@@ -219,6 +227,14 @@ export function OrderSheet({
           <TotalRow label="Toplam" value={formatMoney(totals.total)} strong />
         </dl>
       </div>
+
+      <OrderShipment
+        order={order}
+        busy={busy}
+        onShip={onShip}
+        onRefresh={onRefreshShipment}
+        onWithdraw={onWithdrawShipment}
+      />
 
       <OrderSheetActions
         order={order}

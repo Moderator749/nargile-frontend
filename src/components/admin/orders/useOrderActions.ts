@@ -2,7 +2,14 @@
 
 import { useCallback, useState } from "react";
 
-import { adminApproveOrder, adminCancelOrder, adminShipOrder } from "@/lib/adminApi";
+import {
+  adminApproveOrder,
+  adminCancelOrder,
+  adminRefreshShipment,
+  adminShipOrder,
+  adminWithdrawShipment,
+  type ShipOrderBody,
+} from "@/lib/adminApi";
 import { getApiErrorMessage } from "@/lib/errors";
 import type { AdminOrder, OrderStatus } from "@/types";
 
@@ -34,12 +41,25 @@ export interface OrderNotice {
 /** Applies the server's answer to the row the admin acted on. */
 export type OrderPatch = (id: string, changes: Partial<AdminOrder>) => void;
 
+/** A web-service shipment registered with the carrier and not yet collected: it can be withdrawn. */
+export function canWithdrawShipment(order: AdminOrder): boolean {
+  return order.status === "SHIPPED" && !!order.cargo_key && order.carrier_status === "NOP";
+}
+
 export interface OrderActions {
   busy: (id: string) => boolean;
   notice: (id: string) => OrderNotice | undefined;
   approve: (order: AdminOrder) => Promise<void>;
   cancel: (order: AdminOrder) => Promise<void>;
-  ship: (order: AdminOrder) => Promise<void>;
+  /** "Kargola": opens the dialog for this order (see ShipDialog). */
+  ship: (order: AdminOrder) => void;
+  /** The order the "Kargola" dialog is open for, if any. */
+  shipping: AdminOrder | null;
+  closeShip: () => void;
+  /** Sends the dialog's answer; resolves to the shipped order, or rejects with the server's reason. */
+  confirmShip: (order: AdminOrder, body: ShipOrderBody) => Promise<AdminOrder>;
+  refreshShipment: (order: AdminOrder) => Promise<void>;
+  withdrawShipment: (order: AdminOrder) => Promise<void>;
 }
 
 /**
@@ -117,30 +137,63 @@ export function useOrderActions(patch: OrderPatch): OrderActions {
     [patch, pending, setBusy],
   );
 
-  const ship = useCallback(
-    async (order: AdminOrder) => {
-      if (pending.has(order.id)) return;
-      // Courier runs have no tracking code, so an empty answer is allowed.
-      const code = window.prompt(
-        `${order.order_number} kargoya veriliyor. Kargo takip numarası (yoksa boş bırakın):`,
-        order.tracking_code ?? "",
-      );
-      if (code === null) return;
+  const [shipping, setShipping] = useState<AdminOrder | null>(null);
+  const ship = useCallback((order: AdminOrder) => setShipping(order), []);
+  const closeShip = useCallback(() => setShipping(null), []);
+
+  const confirmShip = useCallback(
+    async (order: AdminOrder, body: ShipOrderBody) => {
       setBusy(order.id, true);
       try {
-        const updated = await adminShipOrder(order.id, code.trim() || null);
+        const updated = await adminShipOrder(order.id, body);
         patch(order.id, updated);
         setNotices((n) => ({
           ...n,
-          [order.id]: { kind: "success", text: "Kargoya verildi · müşteriye bilgilendirme e-postası gönderildi" },
+          [order.id]: {
+            kind: "success",
+            text: updated.cargo_key
+              ? `Yurtiçi gönderi kaydı açıldı (${updated.cargo_key}) · müşteriye bilgilendirme e-postası gönderildi`
+              : "Kargoya verildi · müşteriye bilgilendirme e-postası gönderildi",
+          },
         }));
+        return updated;
       } catch (err) {
-        setNotices((n) => ({ ...n, [order.id]: { kind: "error", text: getApiErrorMessage(err, "Kargoya verilemedi.") } }));
+        throw new Error(getApiErrorMessage(err, "Kargoya verilemedi."));
+      } finally {
+        setBusy(order.id, false);
+      }
+    },
+    [patch, setBusy],
+  );
+
+  /** Runs one shipment call for a row, with its busy flag and its result line. */
+  const shipmentCall = useCallback(
+    async (order: AdminOrder, call: (id: string) => Promise<AdminOrder>, done: string, failed: string) => {
+      if (pending.has(order.id)) return;
+      setBusy(order.id, true);
+      try {
+        patch(order.id, await call(order.id));
+        setNotices((n) => ({ ...n, [order.id]: { kind: "success", text: done } }));
+      } catch (err) {
+        setNotices((n) => ({ ...n, [order.id]: { kind: "error", text: getApiErrorMessage(err, failed) } }));
       } finally {
         setBusy(order.id, false);
       }
     },
     [patch, pending, setBusy],
+  );
+
+  const refreshShipment = useCallback(
+    (order: AdminOrder) => shipmentCall(order, adminRefreshShipment, "Kargo durumu güncellendi", "Kargo durumu alınamadı."),
+    [shipmentCall],
+  );
+
+  const withdrawShipment = useCallback(
+    async (order: AdminOrder) => {
+      if (!window.confirm(`${order.order_number}: Yurtiçi gönderi kaydı iptal edilip sipariş "Onaylandı" durumuna dönsün mü?`)) return;
+      await shipmentCall(order, adminWithdrawShipment, "Gönderi kaydı iptal edildi · sipariş yeniden kargolanabilir", "Gönderi kaydı iptal edilemedi.");
+    },
+    [shipmentCall],
   );
 
   return {
@@ -149,5 +202,10 @@ export function useOrderActions(patch: OrderPatch): OrderActions {
     approve,
     cancel,
     ship,
+    shipping,
+    closeShip,
+    confirmShip,
+    refreshShipment,
+    withdrawShipment,
   };
 }

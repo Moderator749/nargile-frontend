@@ -1,6 +1,7 @@
 import { api } from "@/lib/api";
 import type {
   AccountType,
+  Carrier,
   AdminCategory,
   AdminCustomer,
   AdminCustomerDetail,
@@ -396,9 +397,42 @@ export async function adminUpdateVariantWeight(
 
 // ── Orders: mark paid / cancel; customers & wallets; bank accounts ────────────
 
+/** "Kargola": who takes the parcel and how it is tracked; every field optional. */
+export interface ShipOrderBody {
+  carrier?: Carrier;
+  carrier_name?: string | null;
+  tracking_code?: string | null;
+  /** Register it with the carrier's web service instead of taking a code (Yurtiçi). */
+  use_api?: boolean;
+}
+
 /** Hands the order to the carrier and e-mails the customer the dispatch notice. */
-export async function adminShipOrder(orderId: string, trackingCode: string | null): Promise<AdminOrder> {
-  const { data } = await api.post<AdminOrder>(`/admin/orders/${orderId}/ship`, { tracking_code: trackingCode });
+export async function adminShipOrder(orderId: string, body: ShipOrderBody): Promise<AdminOrder> {
+  const { data } = await api.post<AdminOrder>(`/admin/orders/${orderId}/ship`, body);
+  return data;
+}
+
+/** What "Kargola" can offer: whether Yurtiçi's web service is connected, and in which mode. */
+export interface ShippingIntegrations {
+  yurtici_api: boolean;
+  yurtici_test_mode: boolean;
+  yurtici_customer_code: string | null;
+}
+
+export async function adminShippingIntegrations(signal?: AbortSignal): Promise<ShippingIntegrations> {
+  const { data } = await api.get<ShippingIntegrations>("/admin/shipping/integrations", { signal });
+  return data;
+}
+
+/** Asks the carrier about a web-service shipment now, rather than at the hourly sync. */
+export async function adminRefreshShipment(orderId: string): Promise<AdminOrder> {
+  const { data } = await api.post<AdminOrder>(`/admin/orders/${orderId}/shipment/refresh`);
+  return data;
+}
+
+/** Withdraws a web-service shipment not yet collected; the order is back to "Onaylandı". */
+export async function adminWithdrawShipment(orderId: string): Promise<AdminOrder> {
+  const { data } = await api.post<AdminOrder>(`/admin/orders/${orderId}/shipment/cancel`);
   return data;
 }
 

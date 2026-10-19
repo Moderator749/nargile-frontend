@@ -8,6 +8,8 @@ import { ArrowRight, ClipboardList, Euro, DollarSign, UserCheck, Users, Van } fr
 import { AdminPageHeader, panelClass } from "@/components/admin/AdminShell";
 import { Pagination } from "@/components/admin/Pagination";
 import { CargoSelect } from "@/components/admin/orders/CargoSelect";
+import { ShipDialog } from "@/components/admin/orders/ShipDialog";
+import { trackingHref } from "@/lib/tracking";
 import { ExpandToggle, sheetId } from "@/components/admin/orders/ExpandToggle";
 import { OrderSheet } from "@/components/admin/orders/OrderSheet";
 import { canShipOrder, useOrderActions, type OrderActions, type OrderPatch } from "@/components/admin/orders/useOrderActions";
@@ -57,12 +59,26 @@ function ShippedMark({ o }: { o: AdminOrder }) {
         <Van className="h-3.5 w-3.5 shrink-0" aria-hidden /> İstanbul içi
       </span>
     );
-  if (o.tracking_code)
-    return (
+  if (o.tracking_code) {
+    const href = trackingHref(o);
+    return href ? (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block truncate font-mono text-xs text-red-700 hover:underline dark:text-red-400"
+        title={`${o.tracking_code} · kargo takip sayfası`}
+      >
+        {o.tracking_code}
+      </a>
+    ) : (
       <span className="block truncate font-mono text-xs" title={o.tracking_code}>
         {o.tracking_code}
       </span>
     );
+  }
+  if (o.cargo_key)
+    return <span className="whitespace-nowrap text-slate-500 dark:text-zinc-400" title={`Kargo anahtarı ${o.cargo_key}`}>Şubeye teslim bekleniyor</span>;
   return <span className="whitespace-nowrap text-slate-500 dark:text-zinc-400">Kargoya verildi</span>;
 }
 
@@ -428,6 +444,9 @@ export function AdminDashboard() {
                               notice={actions.notice(o.id)}
                               onApprove={() => actions.approve(o)}
                               onCancel={() => actions.cancel(o)}
+                            onShip={() => actions.ship(o)}
+                            onRefreshShipment={() => actions.refreshShipment(o)}
+                            onWithdrawShipment={() => actions.withdrawShipment(o)}
                             />
                           </td>
                         </tr>
@@ -449,6 +468,7 @@ export function AdminDashboard() {
           </div>
         )}
       </section>
+      <ShipDialog actions={actions} />
     </>
   );
 }

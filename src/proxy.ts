@@ -31,7 +31,7 @@ const FILE = /\.(?:txt|xml|svg|ico|png|jpe?g|webp|gif|js|css|json|map|webmanifes
 /** The storefront's own top-level pages (src/app). */
 const ROUTES = new Set([
   "account", "admin", "api", "bilgi", "blog", "cart", "catalog", "firsat-urunleri", "fiyat-katalogu", "images",
-  "login", "marka", "orders", "product", "register", "sifre-yenile", "sifremi-unuttum", "sss", "opengraph-image",
+  "kargo-takip", "login", "marka", "orders", "product", "register", "sifre-yenile", "sifremi-unuttum", "sss", "opengraph-image",
 ]);
 
 /** The slug of the published product this id or old address names; null when there is none. */

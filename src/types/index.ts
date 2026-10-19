@@ -65,6 +65,9 @@ export type OrderStatus =
  * registered there.
  * INTERNATIONAL_FREIGHT: export; freight and customs are quoted after the order.
  */
+/** Who took the parcel ("Kargola"): Yurtiçi, another carrier or ambar by name, or the shop's own van. */
+export type Carrier = "YURTICI" | "OTHER" | "OWN";
+
 export type ShippingMethod =
   | "YURTICI_DOOR"
   | "YURTICI_BRANCH"
@@ -620,6 +623,17 @@ export interface Order {
   payment_method: PaymentMethod;
   status: OrderStatus;
   tracking_code: string | null;
+  /** The shipment, once it has left ("Kargola"). Null on orders shipped before these were kept. */
+  carrier?: Carrier | null;
+  carrier_name?: string | null;
+  /** The carrier's own page for the tracking code. */
+  tracking_url?: string | null;
+  shipped_at?: ISODateTime | null;
+  /** Yurtiçi web service: our reference (the label's barcode) and its last word on the parcel. */
+  cargo_key?: string | null;
+  carrier_status?: string | null;
+  carrier_status_text?: string | null;
+  carrier_synced_at?: ISODateTime | null;
   shipping_method: ShippingMethod;
   /** Who pays the carriage. `shipping_cost` is always "0.00": it is never charged. */
   shipping_payer: ShippingPayer;

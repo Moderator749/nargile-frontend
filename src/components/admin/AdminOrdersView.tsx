@@ -6,6 +6,7 @@ import { CircleCheck, CreditCard, Landmark, RefreshCw, Van, XCircle } from "luci
 
 import { AdminPageHeader, panelClass } from "@/components/admin/AdminShell";
 import { CargoSelect } from "@/components/admin/orders/CargoSelect";
+import { ShipDialog } from "@/components/admin/orders/ShipDialog";
 import { ExpandToggle, sheetId } from "@/components/admin/orders/ExpandToggle";
 import { OrderSheet } from "@/components/admin/orders/OrderSheet";
 import { canApproveOrder, canShipOrder, useOrderActions, type OrderPatch } from "@/components/admin/orders/useOrderActions";
@@ -198,6 +199,9 @@ export function AdminOrdersView() {
       notice={actions.notice(order.id)}
       onApprove={() => actions.approve(order)}
       onCancel={() => actions.cancel(order)}
+    onShip={() => actions.ship(order)}
+    onRefreshShipment={() => actions.refreshShipment(order)}
+    onWithdrawShipment={() => actions.withdrawShipment(order)}
     />
   );
 
@@ -405,6 +409,7 @@ export function AdminOrdersView() {
           </>
         )}
       </div>
+      <ShipDialog actions={actions} />
     </>
   );
 }
