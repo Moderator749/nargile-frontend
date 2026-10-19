@@ -4,7 +4,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { ProductCard } from "@/components/catalog/ProductCard";
-import { Coin, FIGURE, GOLD, LABEL, SURFACE } from "@/components/home/AdvantagesSection";
+import { Coin, FIGURE, GOLD } from "@/components/home/AdvantagesSection";
 import { useOwnPrices } from "@/hooks/useOwnPrices";
 import { PAGE_CONTAINER } from "@/lib/layout";
 import { retailPerks } from "@/lib/perks";
@@ -14,7 +14,7 @@ import { useAuthHydrated } from "@/store/useHasHydrated";
 import type { Category, SultanPuanShowcase as Showcase } from "@/types";
 
 /**
- * Five across from `xl`, beside the promo card; four from `lg`, three from
+ * Five across from `xl`; four from `lg`, three from
  * `md`, two from `sm`, and 70% of a phone's width so the next card peeks in.
  * Each width is short by its share of the 1rem gaps (four gaps between five).
  * A fixed width, not a minimum, so a long name cannot push a card wider.
@@ -24,6 +24,13 @@ const SLIDE =
 
 const ARROW =
   "flex h-10 w-10 items-center justify-center rounded-full border border-amber-200 bg-white text-amber-900 transition-colors duration-200 hover:border-amber-500 disabled:pointer-events-none disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600 dark:border-amber-400/20 dark:bg-transparent dark:text-amber-200 dark:hover:border-amber-300";
+
+/** The thin rule between the offer's parts, where they sit in one line. */
+const DIVIDER = "hidden h-6 w-px shrink-0 bg-amber-300/70 sm:block dark:bg-amber-400/20";
+
+/** The small minted coin on each card: the advantages section's, card-sized. */
+const CARD_COIN =
+  "pointer-events-none absolute left-3 top-3 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-amber-200 via-amber-400 to-amber-600 text-[9px] font-bold tracking-tight text-amber-950/80 shadow-[0_6px_14px_-6px_rgba(217,119,6,0.6)] ring-1 ring-inset ring-white/50";
 
 const whole = new Intl.NumberFormat("tr-TR", { maximumFractionDigits: 0 });
 
@@ -38,10 +45,10 @@ export function rateText(percent: string): string {
 }
 
 /**
- * "%10 SultanPuan": the loyalty programme's own row on the homepage — the gold
- * card of the advantages section on the left (the rate, and the band it is
- * earned in, both live from "Parametreler"), and beside it, sliding sideways,
- * every product whose price alone lands an order in that band.
+ * "%10 SultanPuan": the loyalty programme's own row on the homepage — one gold
+ * panel, the offer across its top (the rate and the band it is earned in, both
+ * live from "Parametreler"), and under it, sliding sideways, every product
+ * whose price alone lands an order in that band, each marked with the coin.
  *
  * Sultan Puan is a retail perk: a signed-in B2B account (which cannot earn it)
  * does not see the row; a visitor, a retail customer and the panel's staff do.
@@ -89,67 +96,44 @@ export function SultanPuanShowcase({ showcase, categories }: { showcase: Showcas
 
   return (
     <section aria-labelledby={headingId} className="w-full py-10">
-      <div className={`${PAGE_CONTAINER} grid grid-cols-1 gap-6 lg:grid-cols-[15rem_minmax(0,1fr)] lg:items-stretch`}>
-        {/* The promo card: the advantages section's gold, as tall as the cards
-            beside it, its arrows at the foot. The same insets as the track
-            (room for the cards' shadow), so the two start and end level. */}
-        <div className="lg:pt-2 lg:pb-6">
-          <div className={`group relative isolate flex h-full flex-col overflow-hidden rounded-2xl border p-5 shadow-sm ${SURFACE.gold}`}>
-            <div className="flex items-start justify-between gap-3">
-              <p className={`${LABEL} text-amber-700 dark:text-amber-400`}>Sadakat Programı</p>
-              <Coin />
-            </div>
-            <h2 id={headingId} className="mt-3">
-              <span className={`${FIGURE} ${GOLD} block text-4xl md:text-5xl`}>{rate}</span>
-              <span className="mt-1 block text-xl font-extrabold tracking-tight text-amber-950 dark:text-amber-100">
+      <div className={PAGE_CONTAINER}>
+        {/* One gold panel for the whole row: the offer across its top, the
+            white cards on the gold, the arrows under them. */}
+        <div className="rounded-3xl border border-amber-200/70 bg-gradient-to-br from-amber-50 via-amber-50/60 to-yellow-50/80 p-5 shadow-sm sm:p-6 lg:p-8 dark:border-amber-400/15 dark:from-amber-400/[0.08] dark:via-zinc-900/80 dark:to-zinc-900/80">
+          {/* The offer, in one line from `lg`: rate, band, what the points do.
+              Below that it wraps, the coin and the rate leading. */}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 lg:flex-nowrap">
+            <Coin />
+            <h2 id={headingId} className="flex shrink-0 items-baseline gap-2">
+              <span className={`${FIGURE} ${GOLD} text-3xl md:text-4xl`}>{rate}</span>
+              <span className="text-xl font-extrabold tracking-tight text-amber-950 md:text-2xl dark:text-amber-100">
                 SultanPuan
               </span>
             </h2>
-            <p className="mt-2 text-[13px] font-semibold text-amber-800 tabular-nums dark:text-amber-200/80">
+            <span aria-hidden className={DIVIDER} />
+            <p className="basis-full text-sm font-semibold text-amber-800 tabular-nums sm:basis-auto md:text-base dark:text-amber-200/80">
               {band} alışverişlerde
             </p>
-            <p className="mt-2 text-xs leading-snug text-amber-900/70 dark:text-amber-100/60">
+            <span aria-hidden className={DIVIDER} />
+            <p className="basis-full text-sm font-light text-amber-900/75 sm:basis-auto md:text-base dark:text-amber-100/60">
               Puanınız sonraki alışverişinizde indirim olur.
             </p>
-            <div className="mt-auto flex items-center gap-3 pt-4">
-              <button
-                type="button"
-                onClick={() => slide(-1)}
-                disabled={ends.start}
-                aria-label="Önceki ürünler"
-                className={ARROW}
-              >
-                <ChevronLeft className="h-5 w-5" aria-hidden />
-              </button>
-              <button
-                type="button"
-                onClick={() => slide(1)}
-                disabled={ends.end}
-                aria-label="Sonraki ürünler"
-                className={ARROW}
-              >
-                <ChevronRight className="h-5 w-5" aria-hidden />
-              </button>
-              <span className="ml-auto text-[11px] font-semibold text-amber-800/70 tabular-nums dark:text-amber-200/60">
-                {products.length} ürün
-              </span>
-            </div>
           </div>
-        </div>
 
-        <div className="min-w-0 overflow-hidden">
           {/* The top padding keeps the cards' shadow from being clipped: a
               sideways scroller clips vertically too. */}
           <ul
             ref={track}
             onScroll={measure}
-            className="flex w-full snap-x snap-mandatory flex-row flex-nowrap gap-4 overflow-x-auto scroll-smooth pt-2 pb-6 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            className="mt-4 flex w-full snap-x snap-mandatory flex-row flex-nowrap gap-4 overflow-x-auto scroll-smooth pt-2 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           >
             {products.map((listed) => {
               const product = mine?.get(listed.id) ?? listed;
               return (
                 <li key={listed.id} className={SLIDE}>
-                  <div className="flex w-full flex-1 flex-col [&>article]:flex-1">
+                  {/* The coin on the card's top-left: this row's mark, laid
+                      over the shared card rather than built into it. */}
+                  <div className="relative flex w-full flex-1 flex-col [&>article]:flex-1">
                     <ProductCard
                       product={product}
                       category={product.category_id != null ? categoryById.get(product.category_id) : undefined}
@@ -157,11 +141,27 @@ export function SultanPuanShowcase({ showcase, categories }: { showcase: Showcas
                       publicPrices={!mine}
                       pricesPending={loggedIn && !mine}
                     />
+                    <span aria-hidden className={CARD_COIN}>
+                      SP
+                    </span>
                   </div>
                 </li>
               );
             })}
           </ul>
+
+          {/* Under the cards, at the right: how many, and the arrows. */}
+          <div className="mt-4 flex items-center justify-end gap-3">
+            <span className="text-xs font-semibold text-amber-800/70 tabular-nums dark:text-amber-200/60">
+              {products.length} ürün
+            </span>
+            <button type="button" onClick={() => slide(-1)} disabled={ends.start} aria-label="Önceki ürünler" className={ARROW}>
+              <ChevronLeft className="h-5 w-5" aria-hidden />
+            </button>
+            <button type="button" onClick={() => slide(1)} disabled={ends.end} aria-label="Sonraki ürünler" className={ARROW}>
+              <ChevronRight className="h-5 w-5" aria-hidden />
+            </button>
+          </div>
         </div>
       </div>
     </section>
