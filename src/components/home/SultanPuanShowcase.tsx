@@ -128,10 +128,11 @@ export function SultanPuanShowcase({ showcase, categories }: { showcase: Showcas
 
   return (
     // The whole band is gold, edge to edge, from the picks above to the dark
-    // deals band below: a warm gold at the top fading to pure white at the foot.
+    // deals band below: a warm gold behind the header only, fading as the
+    // cards begin and pure white from a third of the way down to the foot.
     <section
       aria-labelledby={headingId}
-      className="w-full bg-gradient-to-b from-amber-100 to-white py-10 md:py-12 dark:from-amber-400/[0.12] dark:to-transparent"
+      className="w-full bg-gradient-to-b from-amber-100 from-0% to-white to-35% py-10 md:py-12 dark:from-amber-400/[0.12] dark:to-transparent"
     >
       <div className={PAGE_CONTAINER}>
         {/* The offer in three parts: the rate over its band, what the
