@@ -9,7 +9,7 @@ import { ProductImage } from "@/components/catalog/ProductImage";
 import { useDisplayMoney } from "@/hooks/useDisplayMoney";
 import { useNow } from "@/hooks/useNow";
 import { fetchFlashSaleProducts } from "@/lib/catalogApi";
-import { saleState } from "@/lib/flashSale";
+import { DEALS_HREF, saleState } from "@/lib/flashSale";
 import { productHref, productImageAlt } from "@/lib/seo";
 import { displayVariant, soldOut as allSoldOut } from "@/lib/variants";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -453,8 +453,9 @@ export function DealsFunnel({ initialProducts, categories, title, subtitle }: De
                         <p className="truncate text-[10px] font-bold uppercase tracking-wider text-neutral-500">
                           {category?.name ?? "Fırsat ürünü"}
                         </p>
+                        {/* Ink of its own: the card is white in either theme. */}
                         <h3
-                          className="mt-1 line-clamp-2 min-h-10 text-[15px] font-medium leading-5 tracking-tight text-foreground transition-colors duration-200 group-hover:text-red-600"
+                          className="mt-1 line-clamp-2 min-h-10 text-[15px] font-medium leading-5 tracking-tight text-neutral-900 transition-colors duration-200 group-hover:text-red-600"
                           title={product.name}
                         >
                           {product.name}
@@ -496,6 +497,23 @@ export function DealsFunnel({ initialProducts, categories, title, subtitle }: De
               );
             })}
           </ul>
+        </div>
+
+        {/* The way on to every deal, as a grid of its own: centred under the
+            flow, in the ruby of the cards' own buttons; the whole width of a
+            phone, its own width from `sm`. */}
+        <div className="mt-8 flex justify-center px-6 sm:mt-10 sm:px-0">
+          <Link
+            href={DEALS_HREF}
+            className="group/cta inline-flex w-full max-w-xs items-center justify-center gap-2 rounded-full bg-red-600 px-8 py-3.5 text-sm font-semibold tracking-wide text-white shadow-lg shadow-red-600/30 ring-1 ring-inset ring-white/15 transition-all duration-200 hover:bg-red-700 hover:shadow-[0_12px_32px_rgba(216,16,40,0.45)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:w-auto sm:max-w-none"
+          >
+            Fırsatları Gör
+            <ArrowRight
+              className="h-4 w-4 transition-transform duration-300 motion-safe:group-hover/cta:translate-x-1"
+              strokeWidth={2.5}
+              aria-hidden
+            />
+          </Link>
         </div>
       </div>
     </section>

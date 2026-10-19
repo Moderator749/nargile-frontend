@@ -2,6 +2,9 @@
 
 import type { CatalogPrice, CatalogProduct, CatalogVariant } from "@/types";
 
+/** The page listing every live deal; the homepage funnel's "Fırsatları Gör" leads there. */
+export const DEALS_HREF = "/firsat-urunleri";
+
 export type SaleState =
   /** Claimable. `endsAt` is null for an offer with no deadline: no countdown. */
   | { kind: "live"; price: CatalogPrice; endsAt: number | null }
