@@ -108,6 +108,8 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
   // may ask for a colour that is out of stock, and for more of it than exists.
   // The server agrees — nothing is deducted for a request (`is_quote_account`).
   const quoteOnly = isExportAccount(user);
+  // Every signed-in segment but Perakende sees the price before VAT as well.
+  const vatSplit = loggedIn && !pricesPending && !!user && (user.segment_code ?? "RETAIL") !== "RETAIL";
   const canAdd = !!variant && !!price && !pricesPending && (!soldOut || quoteOnly);
   // The most this buyer may order of this colour: their list's own quota.
   // Sent to a signed-in buyer only; a request has none.
@@ -186,10 +188,22 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
           <p className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground">
             {product.brand ?? category?.name ?? "Nargile Malzemesi"}
           </p>
-          <h1 className="mt-3 text-balance text-3xl font-semibold tracking-tighter text-foreground sm:text-4xl">
+          <h1 className="mt-3 text-balance text-2xl font-bold leading-snug tracking-tight text-foreground sm:text-[26px]">
             {product.name}
           </h1>
           {variant && <p className="mt-2 font-mono text-xs text-muted-foreground">Ürün kodu: {variant.sku}</p>}
+          {/* A business account reads its price before VAT first, as it books it.
+              Its own price only: nothing until that has arrived. The split is the
+              API's own, by the product's VAT rate; with no VAT (export) there is
+              no "+ KDV" to state. */}
+          {vatSplit && price && Number(price.vat_rate) > 0 && (
+            <div className="mt-3 font-mono text-sm tabular-nums">
+              <p className="font-semibold text-foreground">
+                {money.format({ ...price, price_incl_tax: price.price_excl_tax })} + KDV
+              </p>
+              <p className="text-muted-foreground">{money.format(price)} KDV Dahil</p>
+            </div>
+          )}
 
           <div className={`mt-6 ${pricesPending ? "public-price" : ""}`}>
             {price ? (
