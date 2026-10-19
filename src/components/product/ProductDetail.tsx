@@ -192,17 +192,15 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
             {product.name}
           </h1>
           {variant && <p className="mt-2 font-mono text-xs text-muted-foreground">Ürün kodu: {variant.sku}</p>}
-          {/* A business account reads its price before VAT first, as it books it.
+          {/* A business account also reads its price before VAT, as it books it —
+              muted, beside the gross price below rather than competing with it.
               Its own price only: nothing until that has arrived. The split is the
               API's own, by the product's VAT rate; with no VAT (export) there is
               no "+ KDV" to state. */}
           {vatSplit && price && Number(price.vat_rate) > 0 && (
-            <div className="mt-3 font-mono text-sm tabular-nums">
-              <p className="font-semibold text-foreground">
-                {money.format({ ...price, price_incl_tax: price.price_excl_tax })} + KDV
-              </p>
-              <p className="text-muted-foreground">{money.format(price)} KDV Dahil</p>
-            </div>
+            <p className="mt-3 font-mono text-sm font-medium tabular-nums text-zinc-500 dark:text-zinc-400">
+              {money.format({ ...price, price_incl_tax: price.price_excl_tax })} + KDV
+            </p>
           )}
 
           <div className={`mt-6 ${pricesPending ? "public-price" : ""}`}>
