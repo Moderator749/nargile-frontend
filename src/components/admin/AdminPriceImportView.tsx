@@ -74,7 +74,7 @@ function PriceCell({ row, group }: { row: PriceImportMatched; group: SegmentType
 }
 
 /**
- * Admin: "Toplu Fiyat (Excel)". The supplier's pricing workbook is dropped in,
+ * Admin: "Excel Dosya Aktarımı". The supplier's pricing workbook is dropped in,
  * read on the server without writing anything (a preview: every product it
  * found with its old and new prices, every row it could only guess at, and
  * every row it could not place), and only on "Onayla ve Güncelle" sent again
@@ -201,7 +201,7 @@ export function AdminPriceImportView() {
   return (
     <div>
       <AdminPageHeader
-        title="Toplu Fiyat (Excel)"
+        title="Excel Dosya Aktarımı"
         description="Fiyat Excel'ini yükleyin: önce hangi ürünlerin hangi fiyatlarla güncelleneceğini görün, sonra onaylayın. Bayi, toptan, kafe ve perakende fiyatları birlikte yazılır."
         actions={
           file && !busy ? (

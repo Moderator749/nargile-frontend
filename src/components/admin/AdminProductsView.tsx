@@ -2,11 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import axios from "axios";
 import { Copy, ImageOff, Loader2, PackageX, Pencil, Plus, Trash2 } from "lucide-react";
 
 import { AdminPageHeader, panelClass } from "@/components/admin/AdminShell";
 import { Pagination } from "@/components/admin/Pagination";
+import { PRODUCTS_PATH, rememberProductList } from "@/components/admin/products/listReturn";
 import { SortableHeader, type SortState } from "@/components/admin/SortableHeader";
 import { CatalogSearch } from "@/components/catalog/CatalogSearch";
 import { Alert } from "@/components/ui/Alert";
@@ -91,17 +93,49 @@ function Thumbnail({ product }: { product: AdminProduct }) {
  * Everything else about a product (prices per segment, quotas, rules, fırsat,
  * weight) is edited in the sheet.
  */
+const SORTS: readonly ProductSort[] = ["code", "name", "stock", "price"];
+
+/** The list's state as its URL keeps it: ?kategori=&q=&sira=&yon=&sayfa= (sayfa from 1). */
+function stateFromUrl(params: URLSearchParams) {
+  const by = params.get("sira") as ProductSort | null;
+  const sort: SortState<ProductSort> = {
+    by: by && SORTS.includes(by) ? by : null,
+    dir: params.get("yon") === "desc" ? "desc" : "asc",
+  };
+  const page = Math.max(0, (Number.parseInt(params.get("sayfa") ?? "", 10) || 1) - 1);
+  return { category: params.get("kategori") ?? "", query: params.get("q") ?? "", sort, page };
+}
+
+function urlFromState(category: string, query: string, sort: SortState<ProductSort>, page: number): string {
+  const params = new URLSearchParams();
+  if (category) params.set("kategori", category);
+  if (query) params.set("q", query);
+  if (sort.by) {
+    params.set("sira", sort.by);
+    params.set("yon", sort.dir);
+  }
+  if (page > 0) params.set("sayfa", String(page + 1));
+  return params.toString();
+}
+
 export function AdminProductsView() {
-  const [query, setQuery] = useState("");
-  const [category, setCategory] = useState<string>("");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  // Read once: from here on the list owns its state and writes it back into the URL.
+  const [initial] = useState(() => stateFromUrl(new URLSearchParams(searchParams.toString())));
+  const [query, setQuery] = useState(initial.query);
+  const [category, setCategory] = useState<string>(initial.category);
   const [categories, setCategories] = useState<Category[]>([]);
   const [segments, setSegments] = useState<Segment[] | null>(null);
   const [list, setList] = useState<ListState | null>(null);
   // The page belongs to one search/category: a new filter starts again at page 1.
-  const [paging, setPaging] = useState<{ filter: string; page: number }>({ filter: "|", page: 0 });
+  const [paging, setPaging] = useState<{ filter: string; page: number }>(() => ({
+    filter: `${initial.category}|${initial.query}|${initial.sort.by ?? ""}|${initial.sort.dir}`,
+    page: initial.page,
+  }));
   const [publishing, setPublishing] = useState<ReadonlySet<string>>(new Set());
   const [publishError, setPublishError] = useState<string | null>(null);
-  const [sort, setSort] = useState<SortState<ProductSort>>({ by: null, dir: "asc" });
+  const [sort, setSort] = useState<SortState<ProductSort>>(initial.sort);
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState<"delete" | "duplicate" | null>(null);
   const [notice, setNotice] = useState<{ kind: "success" | "error"; text: string } | null>(null);
@@ -133,6 +167,22 @@ export function AdminProductsView() {
       });
     return () => controller.abort();
   }, [key, query, category, page, sort.by, sort.dir]);
+
+  // Category, search, sort and page live in the URL: Back (or the sheet's
+  // "Geri Dön") brings the list back exactly as it was left.
+  useEffect(() => {
+    const qs = urlFromState(category, query, sort, page);
+    rememberProductList(qs);
+    if (qs !== window.location.search.replace(/^\?/, "")) {
+      router.replace(qs ? `${PRODUCTS_PATH}?${qs}` : PRODUCTS_PATH, { scroll: false });
+    }
+  }, [router, category, query, sort, page]);
+
+  /** A category is browsed in code order: the codes of one family sit together. */
+  function chooseCategory(slug: string) {
+    setCategory(slug);
+    if (slug) setSort({ by: "code", dir: "asc" });
+  }
 
   function goTo(next: number) {
     setPaging({ filter, page: next });
@@ -265,14 +315,19 @@ export function AdminProductsView() {
       {/* One control bar over the table: search and category on the left, then the
           actions on the right — new, duplicate, and delete at the far edge. */}
       <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center">
-        <CatalogSearch onSearch={setQuery} busy={!current && !!list} placeholder="Ürün adı, marka veya kod" />
+        <CatalogSearch
+          onSearch={setQuery}
+          busy={!current && !!list}
+          placeholder="Ürün adı, marka veya kod"
+          initial={initial.query}
+        />
         <label className="sr-only" htmlFor="admin-category">
           Kategori
         </label>
         <select
           id="admin-category"
           value={category}
-          onChange={(e) => setCategory(e.target.value)}
+          onChange={(e) => chooseCategory(e.target.value)}
           className="h-10 shrink-0 rounded-full border border-slate-200 bg-white px-4 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-4 focus:ring-red-500/15 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-100"
         >
           <option value="">Tüm kategoriler</option>

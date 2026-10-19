@@ -123,17 +123,32 @@ export function PricingRecords({
               </div>
             </div>
             <dl className="mt-3 flex flex-wrap gap-2 text-xs">
-              {[{ label: "Maliyet", price: s.cost, accent: false }, ...s.columns.map((col) => ({ label: col.label, price: col.price, accent: false })), { label: "Perakende", price: s.retail.price, accent: true }].map(
-                (cell, i) => (
-                  <div
-                    key={i}
-                    className={`rounded-lg px-2.5 py-1.5 ${cell.accent ? "bg-red-50 text-red-900 dark:bg-red-500/10 dark:text-red-100" : "bg-slate-100 text-slate-700 dark:bg-white/5 dark:text-zinc-300"}`}
+              {/* The two ends of the sheet in red, cost and retail, the classes
+                  between them plain; the cost's own figure muted, being the
+                  input rather than a price anyone pays. */}
+              {[
+                { label: "Maliyet", price: s.cost, kind: "cost" as const },
+                ...s.columns.map((col) => ({ label: col.label, price: col.price, kind: "plain" as const })),
+                { label: "Perakende", price: s.retail.price, kind: "retail" as const },
+              ].map((cell, i) => (
+                <div
+                  key={i}
+                  className={`rounded-lg px-2.5 py-1.5 ${
+                    cell.kind === "plain"
+                      ? "bg-slate-100 text-slate-700 dark:bg-white/5 dark:text-zinc-300"
+                      : "bg-red-50 text-red-900 dark:bg-red-500/10 dark:text-red-100"
+                  }`}
+                >
+                  <dt className="text-[10px] font-semibold uppercase tracking-wider opacity-70">{cell.label}</dt>
+                  <dd
+                    className={`font-mono tabular-nums ${
+                      cell.kind === "cost" ? "font-medium text-slate-500 dark:text-zinc-400" : "font-semibold"
+                    }`}
                   >
-                    <dt className="text-[10px] font-semibold uppercase tracking-wider opacity-70">{cell.label}</dt>
-                    <dd className="font-mono font-semibold tabular-nums">{money(cell.price, c)}</dd>
-                  </div>
-                ),
-              )}
+                    {money(cell.price, c)}
+                  </dd>
+                </div>
+              ))}
               {s.final_try && (
                 <div className="rounded-lg bg-red-600 px-2.5 py-1.5 text-white">
                   <dt className="text-[10px] font-semibold uppercase tracking-wider opacity-80">Son karar</dt>

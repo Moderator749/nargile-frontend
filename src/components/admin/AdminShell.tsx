@@ -47,9 +47,9 @@ const NAV = [
   { href: "/admin/bank-accounts", label: "Banka Hesapları", icon: Landmark },
   { href: "/admin/settings/legal", label: "Sözleşmeler", icon: FileText },
   { href: "/admin/pricing-calculator", label: "Fiyat Hesaplama Cetveli", icon: Calculator },
-  { href: "/admin/pricing", label: "Toplu Fiyat (Excel)", icon: FileSpreadsheet },
   // Personal: each admin sees only their own notes.
   { href: "/admin/notes", label: "Not Defteri", icon: NotebookPen },
+  { href: "/admin/pricing", label: "Excel Dosya Aktarımı", icon: FileSpreadsheet },
 ];
 
 function Gate({ title, body, action }: { title: string; body: string; action?: ReactNode }) {

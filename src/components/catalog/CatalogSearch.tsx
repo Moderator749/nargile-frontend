@@ -13,6 +13,13 @@ interface CatalogSearchProps {
   /** What is being searched, for the screen reader and the field's id. */
   label?: string;
   id?: string;
+  /**
+   * The search to start with, when the caller keeps it itself (the admin
+   * product list restores it from its own URL). Without it, ?q= is read and a
+   * new ?q= remounts the field — fine for a search that navigates, not for one
+   * whose every keystroke rewrites the URL.
+   */
+  initial?: string;
 }
 
 function CatalogSearchField({
@@ -83,6 +90,7 @@ function CatalogSearchFromUrl(props: CatalogSearchProps) {
  * search params, so the statically rendered product grid is unaffected.
  */
 export function CatalogSearch(props: CatalogSearchProps) {
+  if (props.initial !== undefined) return <CatalogSearchField {...props} initial={props.initial} />;
   return (
     <Suspense fallback={<CatalogSearchField {...props} initial="" />}>
       <CatalogSearchFromUrl {...props} />

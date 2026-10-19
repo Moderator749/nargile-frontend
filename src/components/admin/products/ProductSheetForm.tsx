@@ -38,6 +38,7 @@ import {
   adminListCategories,
   adminUpdateProductSheet,
 } from "@/lib/adminApi";
+import { useProductListHref } from "@/components/admin/products/listReturn";
 import { refreshStorefront } from "@/lib/revalidate";
 import { getApiErrorMessage } from "@/lib/errors";
 import { slugify } from "@/lib/slug";
@@ -94,6 +95,8 @@ const VOLUME_DISCOUNT_HINT =
  */
 export function ProductSheetForm({ productId }: { productId?: string }) {
   const router = useRouter();
+  // "Geri Dön": the list as it was left (category, search, sort, page).
+  const listHref = useProductListHref();
   const editing = !!productId;
   // An address that cannot name a product is not looked up at all.
   const validId = !!productId && PRODUCT_ID.test(productId);
@@ -220,7 +223,7 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
               : unavailable.message}
           </Alert>
           <div className="flex flex-wrap gap-2">
-            <Link href="/admin/products" className={linkButtonClass}>
+            <Link href={listHref} className={linkButtonClass}>
               <ArrowLeft className="h-4 w-4" aria-hidden /> Ürün listesine dön
             </Link>
             {unavailable.missing ? (
@@ -649,7 +652,7 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
           </p>
           <div className="flex items-center gap-2">
             <Package className="h-4 w-4 shrink-0 text-slate-400 dark:text-zinc-500" aria-hidden />
-            <Link href="/admin/products" className={linkButtonClass}>
+            <Link href={listHref} className={linkButtonClass}>
               <ArrowLeft className="h-4 w-4" aria-hidden /> Geri Dön
             </Link>
             <Button type="button" onClick={save} loading={saving} disabled={!!problem} className="h-10! w-auto!">
