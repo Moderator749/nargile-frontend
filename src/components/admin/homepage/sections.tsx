@@ -422,55 +422,6 @@ export function SeoIntroTab({ value, set }: { value: Homepage["seo_intro"]; set:
   );
 }
 
-// ── Hakkımızda ───────────────────────────────────────────────────────────────
-
-export function AboutTab({ value, set }: { value: Homepage["about"]; set: Set<"about"> }) {
-  return (
-    <div className="space-y-6">
-      <Panel title="Rakamlar" hint="Sol taraftaki kutular, ör. “17+ · Yıllık Tecrübe”. En fazla 6.">
-        <ListEditor
-          items={value.stats}
-          onChange={(stats) => set({ ...value, stats })}
-          blank={() => ({ value: "", label: "" })}
-          max={6}
-          addLabel="Rakam ekle"
-          itemLabel={(s) => [s.value, s.label].filter(Boolean).join(" · ") || "(boş)"}
-          render={(stat, update) => (
-            <div className="grid gap-3 sm:grid-cols-[8rem_1fr]">
-              <TextField
-                label="Değer"
-                value={stat.value}
-                max={12}
-                onChange={(v) => update({ value: v })}
-                placeholder="17+"
-              />
-              <TextField
-                label="Açıklama"
-                value={stat.label}
-                max={40}
-                onChange={(label) => update({ label })}
-                placeholder="Yıllık Tecrübe"
-              />
-            </div>
-          )}
-        />
-      </Panel>
-      <Panel title="Kurumsal metin" hint="Tırnak işaretiyle açılan paragraf.">
-        <TextArea label="Metin" value={value.text} max={1500} rows={6} onChange={(text) => set({ ...value, text })} />
-      </Panel>
-      <Panel title="Güvence rozetleri" hint="Alt satırdaki onay işaretli ifadeler. En fazla 6.">
-        <StringList
-          items={value.badges}
-          onChange={(badges) => set({ ...value, badges })}
-          max={6}
-          maxLength={40}
-          addLabel="Rozet ekle"
-        />
-      </Panel>
-    </div>
-  );
-}
-
 // ── Footer ───────────────────────────────────────────────────────────────────
 
 const SOCIAL_KINDS: { value: HomeSocialKind; label: string }[] = [

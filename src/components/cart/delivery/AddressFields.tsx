@@ -1,7 +1,7 @@
 "use client";
 
 import { COUNTRIES } from "@/lib/countries";
-import { ISTANBUL, TR_PROVINCES } from "@/lib/provinces";
+import { TR_PROVINCES } from "@/lib/provinces";
 import { TURKEY, type AddressDraft } from "@/components/cart/delivery/addressDraft";
 
 const inputClass =
@@ -195,4 +195,3 @@ export function AddressFields({
   );
 }
 
-export { ISTANBUL };

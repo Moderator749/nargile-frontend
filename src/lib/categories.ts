@@ -85,8 +85,3 @@ export function categoryTree(categories: Category[]): CategoryNode[] {
     .sort(bySortThenName)
     .map((c) => ({ ...c, children: (children.get(c.id) ?? []).sort(bySortThenName) }));
 }
-
-/** The category's top-level group (itself when top-level). */
-export function topLevelOf(category: Category, categories: Category[]): Category {
-  return category.parent_id === null ? category : (categories.find((c) => c.id === category.parent_id) ?? category);
-}

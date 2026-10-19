@@ -10,7 +10,6 @@ import type {
   AdminFlashSaleWrite,
   AdminOrder,
   AdminProduct,
-  AdminVariantPrice,
   AdvantageContent,
   AdvantageWrite,
   Announcement,
@@ -34,9 +33,7 @@ import type {
   Brand,
   BrandWrite,
   CategoryWrite,
-  CurrencyType,
   CustomerSort,
-  DecimalString,
   HeroSlideContent,
   HeroSlideWrite,
   LegalDocument,
@@ -166,22 +163,6 @@ export async function adminUpdateProductSheet(productId: string, body: ProductSh
 
 export async function adminListSegments(signal?: AbortSignal): Promise<Segment[]> {
   const { data } = await api.get<Segment[]>("/admin/segments", { signal });
-  return data;
-}
-
-export interface PriceInput {
-  segment_id: number;
-  price_excl_tax: DecimalString;
-  price_incl_tax: DecimalString;
-  vat_rate: DecimalString;
-}
-
-export async function adminUpdatePricing(
-  variantId: string,
-  prices: PriceInput[],
-  currency: CurrencyType = "TRY",
-): Promise<{ variant_id: string; currency: CurrencyType; prices: (AdminVariantPrice & { id: number })[] }> {
-  const { data } = await api.put(`/admin/variants/${variantId}/pricing`, { currency, prices });
   return data;
 }
 
@@ -385,15 +366,6 @@ export const adminPromoBoxes = {
   ...imageApi<PromoBoxContent>("/admin/promo-boxes"),
 };
 export const adminAdvantages = contentApi<AdvantageContent, AdvantageWrite>("/admin/advantages");
-
-/** Unit weight in kg; null clears it. */
-export async function adminUpdateVariantWeight(
-  variantId: string,
-  weightKg: string | null,
-): Promise<{ id: string; sku: string; weight_kg: DecimalString | null }> {
-  const { data } = await api.patch(`/admin/variants/${variantId}`, { weight_kg: weightKg });
-  return data;
-}
 
 // ── Orders: mark paid / cancel; customers & wallets; bank accounts ────────────
 

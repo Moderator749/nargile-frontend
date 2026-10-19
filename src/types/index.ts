@@ -382,31 +382,6 @@ export interface CatalogProductDetail extends CatalogProduct {
   category_ids?: number[];
 }
 
-export interface ProductVariant {
-  id: UUID;
-  product_id: UUID;
-  sku: string;
-  barcode: string | null;
-  attributes: Record<string, unknown> | null;
-}
-
-export interface VariantPrice {
-  id: number;
-  variant_id: UUID;
-  segment_id: number;
-  currency: CurrencyType;
-  price_excl_tax: DecimalString;
-  price_incl_tax: DecimalString;
-  vat_rate: DecimalString;
-}
-
-export interface Inventory {
-  id: number;
-  variant_id: UUID;
-  warehouse_type: WarehouseType;
-  quantity: number;
-}
-
 // ---- Cart ----
 
 export interface CartItem {
@@ -1526,7 +1501,6 @@ export interface Homepage {
   brands: { items: string[] };
   showcase: { title: string; subtitle: string; tiles: HomeShowcaseTile[] };
   advantages: { eyebrow: string; title: string; subtitle: string; cards: HomeAdvantageCard[] };
-  about: { stats: { value: string; label: string }[]; text: string; badges: string[] };
   /** "Alt SEO Metni": the passage closing the homepage and catalog pages; an empty field means the default's. */
   seo_intro: HomeSeoIntro;
   footer: HomeFooter;

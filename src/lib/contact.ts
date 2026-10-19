@@ -20,7 +20,5 @@ export function telHref(phone: string): string {
   return `tel:+90${digits.replace(/^0/, "")}`;
 }
 
-export const PHONE_HREF = telHref(PHONE);
-export const EMAIL_HREF = `mailto:${EMAIL}`;
 /** The switchboard on wa.me. Swap in a mobile if WhatsApp lives elsewhere. */
 export const WHATSAPP_HREF = `https://wa.me/90${PHONE.replace(/\D/g, "").replace(/^0/, "")}`;

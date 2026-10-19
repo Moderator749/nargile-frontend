@@ -1,4 +1,4 @@
-import type { CatalogPrice, CurrencyType, DecimalString } from "@/types";
+import type { CurrencyType, DecimalString } from "@/types";
 
 const formatters = new Map<string, Intl.NumberFormat>();
 
@@ -29,10 +29,6 @@ export function formatMoneyCompact(
     currency,
     maximumFractionDigits: 0,
   }).format(value);
-}
-
-export function formatPrice(price: CatalogPrice): string {
-  return formatMoney(price.price_incl_tax, price.currency);
 }
 
 const dateFormatter = new Intl.DateTimeFormat("tr-TR", { dateStyle: "medium", timeStyle: "short" });

@@ -162,14 +162,6 @@ html[data-auth] .guest-only {
   }
 }
 
-/* Mega-menu panel entrance. */
-@keyframes menu-in {
-  from {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
-}
-
 @keyframes scrim-in {
   from {
     opacity: 0;
@@ -224,29 +216,6 @@ html[data-auth] .guest-only {
   html[data-auth] .public-price {
     animation: none;
   }
-}
-
-/*
- * Always-visible horizontal scrollbar for wide admin tables. macOS hides overlay
- * scrollbars until you scroll, so users didn't know more columns existed.
- */
-.scrollbar-visible {
-  scrollbar-width: thin;
-  scrollbar-color: rgb(148 163 184 / 0.7) transparent;
-}
-.scrollbar-visible::-webkit-scrollbar {
-  height: 10px;
-}
-.scrollbar-visible::-webkit-scrollbar-track {
-  background: rgb(148 163 184 / 0.12);
-  border-radius: 9999px;
-}
-.scrollbar-visible::-webkit-scrollbar-thumb {
-  background: rgb(148 163 184 / 0.7);
-  border-radius: 9999px;
-}
-.scrollbar-visible::-webkit-scrollbar-thumb:hover {
-  background: rgb(100 116 139 / 0.9);
 }
 
 /*
@@ -352,33 +321,6 @@ html[data-sidebar="collapsed"] .category-sidebar {
   .category-sidebar {
     transition: none;
   }
-}
-
-/*
- * A scrollbar that stays out of the way: a hairline thumb that only shows
- * against the content it scrolls, and no track at all. For the small panes
- * that scroll inside a card (see the advantages tiles), where the admin
- * tables' always-visible bar would be louder than the text it sits beside.
- */
-.scroll-slim {
-  scrollbar-width: thin;
-  scrollbar-color: rgb(0 0 0 / 0.15) transparent;
-}
-.scroll-slim::-webkit-scrollbar {
-  width: 4px;
-}
-.scroll-slim::-webkit-scrollbar-track {
-  background: transparent;
-}
-.scroll-slim::-webkit-scrollbar-thumb {
-  background: rgb(0 0 0 / 0.15);
-  border-radius: 9999px;
-}
-.dark .scroll-slim {
-  scrollbar-color: rgb(255 255 255 / 0.2) transparent;
-}
-.dark .scroll-slim::-webkit-scrollbar-thumb {
-  background: rgb(255 255 255 / 0.2);
 }
 
 /*

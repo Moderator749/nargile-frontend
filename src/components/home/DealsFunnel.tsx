@@ -30,8 +30,8 @@ import type { CatalogPrice, CatalogProduct, Category } from "@/types";
  *
  * It renders only while there is something to show. A dark panel announcing
  * deals with nothing in it is worse than no panel, so with no claimable deal
- * the section is not there at all — and `#firsat-urunleri`, which the menu
- * points at, lands on whatever follows.
+ * the section is not there at all — and `#firsat-urunleri`, which a hero
+ * slide or promo box may still point at, lands on whatever follows.
  *
  * "Claimable" is read off what the server sent (a sale attached to a colour),
  * never off the clock, so the row cannot change length under the visitor. A

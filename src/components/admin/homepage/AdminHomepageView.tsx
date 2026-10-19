@@ -9,7 +9,6 @@ import { AdminCategoriesView } from "@/components/admin/AdminCategoriesView";
 import { AdminPageHeader } from "@/components/admin/AdminShell";
 import { isSiteOrHttpsLink } from "@/components/admin/ContentEditor";
 import {
-  AboutTab,
   AdvantagesTab,
   SeoIntroTab,
   BrandsTab,
@@ -38,7 +37,6 @@ type TabKey =
   | "brands"
   | "showcase"
   | "advantages"
-  | "about"
   | "seo"
   | "footer";
 
@@ -55,8 +53,7 @@ const TABS: { key: TabKey; label: string; doc?: keyof Homepage; section?: keyof 
   { key: "brands", label: "Markalar Şeridi", doc: "brands", section: "brands" },
   { key: "showcase", label: "Premium Yelpaze", doc: "showcase", section: "showcase" },
   { key: "advantages", label: "Avantajlar", doc: "advantages", section: "advantages" },
-  { key: "about", label: "Hakkımızda", doc: "about" },
-  // The "about" switch is the one that shows this passage on the homepage.
+  // The homepage switch for this passage is the one still called "about".
   { key: "seo", label: "Alt SEO Metni", doc: "seo_intro", section: "about" },
   { key: "footer", label: "Footer", doc: "footer", section: "footer" },
 ];
@@ -82,7 +79,6 @@ const SECTION_NAMES: Record<string, string> = {
   brands: "Markalar Şeridi",
   showcase: "Premium Yelpaze",
   advantages: "Avantajlar",
-  about: "Hakkımızda",
   seo_intro: "Alt SEO Metni",
   footer: "Footer",
 };
@@ -303,7 +299,6 @@ export function AdminHomepageView() {
             {tab === "brands" && <BrandsTab value={doc.brands} set={set("brands")} />}
             {tab === "showcase" && <ShowcaseTab value={doc.showcase} set={set("showcase")} categories={categories} brands={brands} />}
             {tab === "advantages" && <AdvantagesTab value={doc.advantages} set={set("advantages")} />}
-            {tab === "about" && <AboutTab value={doc.about} set={set("about")} />}
             {tab === "seo" && <SeoIntroTab value={doc.seo_intro} set={set("seo_intro")} />}
             {tab === "footer" && <FooterTab value={doc.footer} set={set("footer")} />}
           </div>

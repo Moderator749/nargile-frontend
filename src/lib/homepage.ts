@@ -22,7 +22,7 @@ import type { Homepage, HomeSections, HomeSeoIntro } from "@/types";
 
 export const SECTION_LABELS: Record<keyof HomeSections, { title: string; hint: string }> = {
   hero: { title: "Hero Slider & Sol Kategori Menüsü", hint: "Sayfanın üstündeki kayan bant ve yanındaki kategori sütunu." },
-  promos: { title: "Kategori Kutuları (slider altı)", hint: "Slider'ın altındaki iki sıra kampanya / kategori kutusu." },
+  promos: { title: "Sektörde Referans Noktası (slider altı)", hint: "Slider'ın altındaki kısa marka tanıtımı ve kataloğa bağlantı." },
   deals: { title: "Fırsatları Kaçırma", hint: "Kırmızı fırsat vitrini; aktif fırsat olsa bile gizlenir." },
   brands: { title: "Markalar Şeridi", hint: "Kayan marka adlarının olduğu kapsül." },
   showcase: { title: "Premium Ürün Yelpazesi", hint: "Başlık ve altındaki büyük kategori kutuları." },
@@ -78,21 +78,6 @@ export const DEFAULT_HOMEPAGE: Homepage = {
     title: "Hacim büyür. Maliyet küçülür.",
     subtitle: "Sultan Nargile ile alışverişlerinizde toptan ve perakende ayrıcalıklarından yararlanın.",
     cards: ADVANTAGES,
-  },
-  about: {
-    stats: [
-      { value: "17+", label: "Yıllık Tecrübe" },
-      { value: "2", label: "Şube & Kurye Merkezi" },
-      { value: "2.500+", label: "Ürün Çeşidi" },
-      { value: "60+", label: "Global Marka" },
-    ],
-    text:
-      "Dünyadaki tüm sektörel gelişmeleri ve yenilikleri yakından takip ediyoruz. " +
-      "Küresel ölçekte kabul görmüş, kalitesi kanıtlanmış dünya markalarını da zengin " +
-      "stoklarımıza katarak, nargile severlere geniş ve premium bir ürün yelpazesi " +
-      "sunuyoruz. Toptan ve perakende nargile malzemesi tedariğinde Türkiye'nin öncü " +
-      "adresiyiz.",
-    badges: ["Orijinal Ürün Garantisi", "Aynı Gün Sevkiyat", "Toptan & Perakende"],
   },
   seo_intro: DEFAULT_SEO_INTRO,
   footer: {

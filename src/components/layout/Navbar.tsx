@@ -16,7 +16,6 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { selectCartCount, useCartStore } from "@/store/useCartStore";
 import { SIDEBAR_WIDTH_LG } from "@/components/layout/CategorySidebar";
 import type { ResolvedNav } from "@/lib/storefrontNav";
-import { B2B_SEGMENTS } from "@/types";
 import { PAGE_CONTAINER } from "@/lib/layout";
 
 const iconButton =
@@ -102,10 +101,8 @@ export function Navbar({
     return () => observer.disconnect();
   }, []);
 
-  const isB2B = !!user?.segment_code && B2B_SEGMENTS.includes(user.segment_code);
   // Doors only some accounts have; the menu below is the same for everyone.
   const accountLinks = [
-    ...(isB2B ? [{ href: "/b2b", label: "B2B Portal" }] : []),
     ...(isAdminRole(user?.role) ? [{ href: "/admin", label: "Yönetim" }] : []),
   ];
   // Open to everyone: a tracking number works without an account, and a
@@ -123,7 +120,7 @@ export function Navbar({
       <div className={`${PAGE_CONTAINER} flex h-16 items-center gap-1.5 sm:gap-2`}>
         {/* The logo sits in the category column's width, so what follows it
             starts exactly on that column's line — which is where
-            "KAMPANYALAR" starts in the bar below. */}
+            the first entry of the bar below starts. */}
         <div className={`mr-2 shrink-0 lg:mr-0 ${SIDEBAR_WIDTH_LG}`}>
           <Link
             href="/"

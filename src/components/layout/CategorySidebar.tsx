@@ -6,7 +6,7 @@ import type { ResolvedNav } from "@/lib/storefrontNav";
 /**
  * The category column's width — shared with the "KATEGORİLER" cell above it and
  * with the header's logo block, so the column line runs straight down through
- * all three and the search bar starts exactly where "KAMPANYALAR" does.
+ * all three and the search bar starts exactly where the top bar's first entry does.
  *
  * Written out rather than composed (`lg:${SIDEBAR_WIDTH}`) because Tailwind
  * finds its classes by reading the source: a class assembled at runtime is a

@@ -49,7 +49,6 @@ function PaymentLabel({ method }: { method: AdminOrder["payment_method"] }) {
   );
 }
 
-/** Courier orders must leave the warehouse the same day: make them impossible to miss. */
 /** The shop's own İstanbul run: loaded on the van, not handed to a carrier. */
 function IstanbulFlag() {
   return (
