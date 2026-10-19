@@ -42,8 +42,8 @@ export function rateText(percent: string): string {
 }
 
 /**
- * "%10 SultanPuan": the loyalty programme's own row on the homepage — one gold
- * panel, the offer across its top (the rate and the band it is earned in, both
+ * "%10 SultanPuan": the loyalty programme's own row on the homepage — a gold
+ * band, edge to edge, the offer across its top (the rate and the band it is earned in, both
  * live from "Parametreler", and "Kazanan Siz Olun!" by the coin), and under it, sliding sideways, every product
  * whose price alone lands an order in that band, each marked with the coin.
  *
@@ -92,76 +92,81 @@ export function SultanPuanShowcase({ showcase, categories }: { showcase: Showcas
   const band = bandText(showcase.band_min, showcase.band_max);
 
   return (
-    <section aria-labelledby={headingId} className="w-full py-10">
+    // The whole band is gold, edge to edge, from the picks above to the dark
+    // deals band below: amber through cream, so it reads as gold and not as grey.
+    <section
+      aria-labelledby={headingId}
+      className="w-full bg-gradient-to-r from-amber-100 via-amber-50 to-yellow-50 py-10 md:py-12 dark:from-amber-400/[0.12] dark:via-amber-400/[0.05] dark:to-zinc-950"
+    >
       <div className={PAGE_CONTAINER}>
-        {/* One gold panel for the whole row: the offer across its top, the
-            white cards on the gold, the arrows under them. A warm gold, from
-            amber to a yellow cream, so it reads as gold and not as grey. */}
-        <div className="rounded-3xl border border-amber-200 bg-gradient-to-r from-amber-100 via-amber-50 to-yellow-50 p-5 shadow-sm sm:p-6 lg:p-8 dark:border-amber-400/15 dark:from-amber-400/[0.12] dark:via-amber-400/[0.05] dark:to-zinc-900/80">
-          {/* The offer: the rate over its band on the left, the call and the
-              coin at the far right. On a phone the call drops under the rate. */}
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
-            <div className="min-w-0">
-              <h2 id={headingId} className="flex items-baseline gap-2">
-                <span className={`${FIGURE} ${GOLD} text-3xl md:text-4xl`}>{rate}</span>
-                <span className="text-2xl font-extrabold tracking-tight text-amber-950 md:text-3xl dark:text-amber-100">
-                  SultanPuan
-                </span>
-              </h2>
-              <p className="mt-1 text-sm font-semibold text-amber-800 tabular-nums dark:text-amber-200/80">
-                {band} alışverişlerde
-              </p>
-            </div>
-            <div className="flex shrink-0 items-center gap-3">
-              <p className="text-base font-extrabold tracking-tight text-amber-800 md:text-lg dark:text-amber-200">
-                Kazanan Siz Olun!
-              </p>
-              <Coin />
-            </div>
+        {/* The offer in three parts: the rate over its band, what the
+            points do, the call and the coin. From `lg` one row, the note
+            truly centred between the two ends; from `sm` the two ends share
+            a row with the note under them; on a phone all three stack. */}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-x-6 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
+          <div className="min-w-0">
+            <h2 id={headingId} className="flex items-baseline gap-2">
+              <span className={`${FIGURE} ${GOLD} text-3xl md:text-4xl`}>{rate}</span>
+              <span className="text-2xl font-extrabold tracking-tight text-amber-950 md:text-3xl dark:text-amber-100">
+                SultanPuan
+              </span>
+            </h2>
+            <p className="mt-1 text-sm font-semibold text-amber-800 tabular-nums dark:text-amber-200/80">
+              {band} alışverişlerde
+            </p>
           </div>
-
-          {/* The top padding keeps the cards' shadow from being clipped: a
-              sideways scroller clips vertically too. */}
-          <ul
-            ref={track}
-            onScroll={measure}
-            className="mt-4 flex w-full snap-x snap-mandatory flex-row flex-nowrap gap-4 overflow-x-auto scroll-smooth pt-2 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-          >
-            {products.map((listed) => {
-              const product = mine?.get(listed.id) ?? listed;
-              return (
-                <li key={listed.id} className={SLIDE}>
-                  {/* The coin on the card's top-left: this row's mark, laid
-                      over the shared card rather than built into it. */}
-                  <div className="relative flex w-full flex-1 flex-col [&>article]:flex-1">
-                    <ProductCard
-                      product={product}
-                      category={product.category_id != null ? categoryById.get(product.category_id) : undefined}
-                      isLoggedIn={loggedIn}
-                      publicPrices={!mine}
-                      pricesPending={loggedIn && !mine}
-                    />
-                    <span aria-hidden className={CARD_COIN}>
-                      SP
-                    </span>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-
-          {/* Under the cards, centred: how many, and the arrows. */}
-          <div className="mt-4 flex items-center justify-center gap-3">
-            <span className="text-xs font-semibold text-amber-800/70 tabular-nums dark:text-amber-200/60">
-              {products.length} ürün
-            </span>
-            <button type="button" onClick={() => slide(-1)} disabled={ends.start} aria-label="Önceki ürünler" className={ARROW}>
-              <ChevronLeft className="h-5 w-5" aria-hidden />
-            </button>
-            <button type="button" onClick={() => slide(1)} disabled={ends.end} aria-label="Sonraki ürünler" className={ARROW}>
-              <ChevronRight className="h-5 w-5" aria-hidden />
-            </button>
+          <p className="text-sm font-medium text-amber-900/80 sm:col-span-2 sm:row-start-2 lg:col-span-1 lg:col-start-2 lg:row-start-1 lg:text-center md:text-base dark:text-amber-100/70">
+            Puanınız sonraki alışverişinizde indirim olur.
+          </p>
+          <div className="flex shrink-0 items-center gap-3 sm:col-start-2 sm:row-start-1 sm:justify-self-end lg:col-start-3">
+            <p className="text-base font-extrabold tracking-tight text-black md:text-lg dark:text-white">
+              Kazanan Siz Olun!
+            </p>
+            <Coin />
           </div>
+        </div>
+
+        {/* The top padding keeps the cards' shadow from being clipped: a
+            sideways scroller clips vertically too. */}
+        <ul
+          ref={track}
+          onScroll={measure}
+          className="mt-4 flex w-full snap-x snap-mandatory flex-row flex-nowrap gap-4 overflow-x-auto scroll-smooth pt-2 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {products.map((listed) => {
+            const product = mine?.get(listed.id) ?? listed;
+            return (
+              <li key={listed.id} className={SLIDE}>
+                {/* The coin on the card's top-left: this row's mark, laid
+                    over the shared card rather than built into it. */}
+                <div className="relative flex w-full flex-1 flex-col [&>article]:flex-1">
+                  <ProductCard
+                    product={product}
+                    category={product.category_id != null ? categoryById.get(product.category_id) : undefined}
+                    isLoggedIn={loggedIn}
+                    publicPrices={!mine}
+                    pricesPending={loggedIn && !mine}
+                  />
+                  <span aria-hidden className={CARD_COIN}>
+                    SP
+                  </span>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+
+        {/* Under the cards, centred: how many, and the arrows. */}
+        <div className="mt-4 flex items-center justify-center gap-3">
+          <span className="text-xs font-semibold text-amber-800/70 tabular-nums dark:text-amber-200/60">
+            {products.length} ürün
+          </span>
+          <button type="button" onClick={() => slide(-1)} disabled={ends.start} aria-label="Önceki ürünler" className={ARROW}>
+            <ChevronLeft className="h-5 w-5" aria-hidden />
+          </button>
+          <button type="button" onClick={() => slide(1)} disabled={ends.end} aria-label="Sonraki ürünler" className={ARROW}>
+            <ChevronRight className="h-5 w-5" aria-hidden />
+          </button>
         </div>
       </div>
     </section>
