@@ -22,6 +22,9 @@ import type { Category, SultanPuanShowcase as Showcase } from "@/types";
 const SLIDE =
   "flex shrink-0 snap-start flex-col w-[70vw] sm:w-[calc(50%-0.5rem)] md:w-[calc(33.333%-0.667rem)] lg:w-[calc(25%-0.75rem)] xl:w-[calc(20%-0.8rem)]";
 
+/** How long each page of cards is shown before the row moves on by itself. */
+const AUTOPLAY_MS = 3000;
+
 const ARROW =
   "flex h-10 w-10 items-center justify-center rounded-full border border-amber-200 bg-white text-amber-900 transition-colors duration-200 hover:border-amber-500 disabled:pointer-events-none disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600 dark:border-amber-400/20 dark:bg-transparent dark:text-amber-200 dark:hover:border-amber-300";
 
@@ -76,6 +79,38 @@ export function SultanPuanShowcase({ showcase, categories }: { showcase: Showcas
     return () => window.removeEventListener("resize", measure);
   }, [products.length]);
 
+  // The row turns its pages by itself — a whole page every AUTOPLAY_MS, back to
+  // the first after the last — but not while the visitor is at it: a pointer
+  // over the cards or the arrows, a finger on them, or the keyboard in them
+  // holds it, and the count starts over when they let go. Never for a visitor
+  // who asks for reduced motion.
+  const [hovered, setHovered] = useState(false);
+  const [touching, setTouching] = useState(false);
+  const [keyboard, setKeyboard] = useState(false);
+  const held = hovered || touching || keyboard;
+
+  useEffect(() => {
+    if (held || !track.current || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const id = window.setInterval(() => {
+      const el = track.current;
+      const card = el?.firstElementChild as HTMLElement | undefined;
+      if (!el || !card) return;
+      if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 1) {
+        el.scrollTo({ left: 0, behavior: "smooth" });
+        return;
+      }
+      // A page is as many whole cards as are in view (five on a desktop, one
+      // on a phone), so the snap lands it on a card's edge, not between two.
+      // The cards' widths are fractional: five fill the view to within a
+      // pixel, so the count is floored with that pixel's grace.
+      const gap = Number.parseFloat(getComputedStyle(el).columnGap) || 0;
+      const step = card.getBoundingClientRect().width + gap;
+      const perPage = Math.max(1, Math.floor((el.clientWidth + gap + 1) / step));
+      el.scrollBy({ left: perPage * step, behavior: "smooth" });
+    }, AUTOPLAY_MS);
+    return () => window.clearInterval(id);
+  }, [held, products.length]);
+
   /** One card and one gap, measured off the track rather than assumed. */
   function slide(direction: 1 | -1) {
     const el = track.current;
@@ -93,10 +128,10 @@ export function SultanPuanShowcase({ showcase, categories }: { showcase: Showcas
 
   return (
     // The whole band is gold, edge to edge, from the picks above to the dark
-    // deals band below: amber through cream, so it reads as gold and not as grey.
+    // deals band below: a warm gold at the top fading to pure white at the foot.
     <section
       aria-labelledby={headingId}
-      className="w-full bg-gradient-to-r from-amber-100 via-amber-50 to-yellow-50 py-10 md:py-12 dark:from-amber-400/[0.12] dark:via-amber-400/[0.05] dark:to-zinc-950"
+      className="w-full bg-gradient-to-b from-amber-100 to-white py-10 md:py-12 dark:from-amber-400/[0.12] dark:to-transparent"
     >
       <div className={PAGE_CONTAINER}>
         {/* The offer in three parts: the rate over its band, what the
@@ -126,47 +161,60 @@ export function SultanPuanShowcase({ showcase, categories }: { showcase: Showcas
           </div>
         </div>
 
-        {/* The top padding keeps the cards' shadow from being clipped: a
-            sideways scroller clips vertically too. */}
-        <ul
-          ref={track}
-          onScroll={measure}
-          className="mt-4 flex w-full snap-x snap-mandatory flex-row flex-nowrap gap-4 overflow-x-auto scroll-smooth pt-2 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        {/* The cards and their arrows: what holds the row still while in use. */}
+        <div
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
+          onTouchStart={() => setTouching(true)}
+          onTouchEnd={() => setTouching(false)}
+          onTouchCancel={() => setTouching(false)}
+          onFocus={(e) => setKeyboard(e.target.matches(":focus-visible"))}
+          onBlur={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setKeyboard(false);
+          }}
         >
-          {products.map((listed) => {
-            const product = mine?.get(listed.id) ?? listed;
-            return (
-              <li key={listed.id} className={SLIDE}>
-                {/* The coin on the card's top-left: this row's mark, laid
-                    over the shared card rather than built into it. */}
-                <div className="relative flex w-full flex-1 flex-col [&>article]:flex-1">
-                  <ProductCard
-                    product={product}
-                    category={product.category_id != null ? categoryById.get(product.category_id) : undefined}
-                    isLoggedIn={loggedIn}
-                    publicPrices={!mine}
-                    pricesPending={loggedIn && !mine}
-                  />
-                  <span aria-hidden className={CARD_COIN}>
-                    SP
-                  </span>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+          {/* The top padding keeps the cards' shadow from being clipped: a
+              sideways scroller clips vertically too. */}
+          <ul
+            ref={track}
+            onScroll={measure}
+            className="mt-4 flex w-full snap-x snap-mandatory flex-row flex-nowrap gap-4 overflow-x-auto scroll-smooth pt-2 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
+            {products.map((listed) => {
+              const product = mine?.get(listed.id) ?? listed;
+              return (
+                <li key={listed.id} className={SLIDE}>
+                  {/* The coin on the card's top-left: this row's mark, laid
+                      over the shared card rather than built into it. */}
+                  <div className="relative flex w-full flex-1 flex-col [&>article]:flex-1">
+                    <ProductCard
+                      product={product}
+                      category={product.category_id != null ? categoryById.get(product.category_id) : undefined}
+                      isLoggedIn={loggedIn}
+                      publicPrices={!mine}
+                      pricesPending={loggedIn && !mine}
+                    />
+                    <span aria-hidden className={CARD_COIN}>
+                      SP
+                    </span>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
 
-        {/* Under the cards, centred: how many, and the arrows. */}
-        <div className="mt-4 flex items-center justify-center gap-3">
-          <span className="text-xs font-semibold text-amber-800/70 tabular-nums dark:text-amber-200/60">
-            {products.length} ürün
-          </span>
-          <button type="button" onClick={() => slide(-1)} disabled={ends.start} aria-label="Önceki ürünler" className={ARROW}>
-            <ChevronLeft className="h-5 w-5" aria-hidden />
-          </button>
-          <button type="button" onClick={() => slide(1)} disabled={ends.end} aria-label="Sonraki ürünler" className={ARROW}>
-            <ChevronRight className="h-5 w-5" aria-hidden />
-          </button>
+          {/* Under the cards, centred: how many, and the arrows. */}
+          <div className="mt-4 flex items-center justify-center gap-3">
+            <span className="text-xs font-semibold text-amber-800/70 tabular-nums dark:text-amber-200/60">
+              {products.length} ürün
+            </span>
+            <button type="button" onClick={() => slide(-1)} disabled={ends.start} aria-label="Önceki ürünler" className={ARROW}>
+              <ChevronLeft className="h-5 w-5" aria-hidden />
+            </button>
+            <button type="button" onClick={() => slide(1)} disabled={ends.end} aria-label="Sonraki ürünler" className={ARROW}>
+              <ChevronRight className="h-5 w-5" aria-hidden />
+            </button>
+          </div>
         </div>
       </div>
     </section>
