@@ -20,6 +20,8 @@ import {
   getCategories,
   getFlashSaleProducts,
   getHomeContent,
+  getBestsellers,
+  getNewestProducts,
   getPublicProducts,
   getTileArtwork,
 } from "@/lib/server/catalog";
@@ -41,20 +43,15 @@ export const revalidate = 0;
 const FEATURED_CATEGORY_SLUG = "celik-takimlar";
 
 /**
- * "Sizin İçin Seçtiklerimiz": the category each tab is drawn from, and how many
- * it shows (two rows of five on a desktop).
- *
- * TEMPORARY: there is nothing yet to rank by. No order has been placed and the
- * migrated catalog carries one creation time for every product, so neither
- * "best selling" nor "newest" means anything. Until it does, each tab is a
- * fixed category's first products (or, where the catalog has no such category,
- * the house brands' — see `fillPicks`); swap these for a real sort once the
- * API offers one.
+ * "Sizin İçin Seçtiklerimiz": "Çok Satanlar" is the products sold most
+ * (approved and shipped orders), "Yeni Gelenler" the latest added; each shows
+ * two rows of five on a desktop. A tab short of that is topped up — see
+ * `fillPicks`.
  */
-const PICKS = { bestsellers: FEATURED_CATEGORY_SLUG, newest: "oduman" } as const;
+const PICK_KEYS = ["bestsellers", "newest"] as const;
 const PICKS_COUNT = 10;
 
-type Picks = Record<keyof typeof PICKS, CatalogProduct[]>;
+type Picks = Record<(typeof PICK_KEYS)[number], CatalogProduct[]>;
 
 /** A product worth showing: one with a photo and a price to put under it. */
 const showable = (products: CatalogProduct[] | null, count = PICKS_COUNT) =>
@@ -70,17 +67,22 @@ function interleave<T>(rows: readonly T[][]): T[] {
 }
 
 /**
- * A tab whose category has nothing to show — a catalog whose taxonomy has no
- * such category, as an import's may not — takes its products from `spare`
- * instead, skipping any the other tab already shows. So the section stays on
- * the page while the catalog has products to put in it.
+ * Tops each tab up to `PICKS_COUNT` from `spare`, in its order, skipping any
+ * product either tab already shows. So "Çok Satanlar" keeps its two rows while
+ * few products have sold yet, and neither tab leaves a gap on a small catalog.
  */
 function fillPicks(lists: Picks, spare: CatalogProduct[]): Picks {
   const taken = new Set(Object.values(lists).flat().map((p) => p.id));
-  const rest = spare.filter((p) => !taken.has(p.id));
   const filled = { ...lists };
-  for (const key of Object.keys(PICKS) as (keyof Picks)[]) {
-    if (filled[key].length === 0) filled[key] = rest.splice(0, PICKS_COUNT);
+  for (const key of PICK_KEYS) {
+    const list = [...filled[key]];
+    for (const p of spare) {
+      if (list.length >= PICKS_COUNT) break;
+      if (taken.has(p.id)) continue;
+      taken.add(p.id);
+      list.push(p);
+    }
+    filled[key] = list;
   }
   return filled;
 }
@@ -176,8 +178,8 @@ export default async function HomePage() {
         )
       : [],
     // Asked for with room to spare: some products have no photo or no price.
-    getPublicProducts(PICKS.bestsellers, PICKS_COUNT * 2),
-    getPublicProducts(PICKS.newest, PICKS_COUNT * 2),
+    getBestsellers(PICKS_COUNT * 2),
+    getNewestProducts(PICKS_COUNT * 2),
     Promise.all(BRAND_SHOWCASES.map(({ brand }) => getBrandShowcase(brand))),
   ]);
   const allCategories = categories ?? [];
@@ -205,15 +207,16 @@ export default async function HomePage() {
     .flat()
     .find((box) => box.variant === "social");
 
-  // A tab short of its category falls back on the brand rows (the house
-  // brands, dearest first: the hookah sets), taken a brand at a time; with
-  // none of those either, on the catalog's first page.
+  // A short tab is topped up from the featured category, then the brand rows
+  // (the house brands, dearest first: the hookah sets), taken a brand at a
+  // time; with neither, from the catalog's first page.
   const lists: Picks = { bestsellers: showable(bestsellers), newest: showable(newest) };
-  const short = Object.values(lists).some((list) => list.length === 0);
+  const short = Object.values(lists).some((list) => list.length < PICKS_COUNT);
+  const ready = [...showable(featured, Infinity), ...interleave(brandRows)];
   const spare = !short
     ? []
-    : brandRows.some((row) => row.length > 0)
-      ? interleave(brandRows)
+    : ready.length > 0
+      ? ready
       : showable(await getPublicProducts(undefined, PICKS_COUNT * 4), PICKS_COUNT * 4);
   const picks = fillPicks(lists, spare);
 

@@ -45,6 +45,23 @@ export function getPublicProducts(
 }
 
 /**
+ * "Yeni Gelenler": the latest products added, newest first. A product saved in
+ * the admin drops the catalog cache (`refreshStorefront`), so it shows at once.
+ */
+export function getNewestProducts(limit: number): Promise<CatalogProduct[] | null> {
+  return getJson<CatalogProduct[]>(`/products?sort=newest&limit=${limit}`);
+}
+
+/**
+ * "Çok Satanlar": the products sold most (approved and shipped orders), the
+ * most first — only those that have sold, so it may be short. An approval does
+ * not drop the cache: a sale moves the list within the cache window.
+ */
+export function getBestsellers(limit: number): Promise<CatalogProduct[] | null> {
+  return getJson<CatalogProduct[]>(`/products/bestsellers?limit=${limit}`);
+}
+
+/**
  * A category's whole public list (subcategories included), page by page —
  * the product page picks its "Benzer Ürünler" from it. Cached like any
  * catalog read, so every product of a category shares the same requests.
