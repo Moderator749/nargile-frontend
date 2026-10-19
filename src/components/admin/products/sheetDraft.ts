@@ -4,7 +4,7 @@
  * decimal when the form is submitted.
  */
 
-import { parseDecimalInput } from "@/lib/format";
+import { convertVat, kurusToInput, parseDecimalInput } from "@/lib/format";
 import { PRODUCT_SLUG } from "@/lib/slug";
 import type {
   CrossSellCard,
@@ -36,22 +36,18 @@ export type VatRate = (typeof VAT_RATES)[number];
 
 /** KDV dahil from KDV hariç, as the form fills the other box. */
 export function withVat(excl: string, rate: VatRate): string {
-  const net = parseDecimalInput(excl);
-  if (net === null) return "";
-  return (Number(net) * (1 + rate / 100)).toFixed(2).replace(".", ",");
+  return convertVat(excl, rate);
 }
 
 /** KDV hariç from KDV dahil, rounded to kuruş — the reverse of `withVat`. */
 export function withoutVat(incl: string, rate: VatRate): string {
-  const gross = parseDecimalInput(incl);
-  if (gross === null) return "";
-  return (Number(gross) / (1 + rate / 100)).toFixed(2).replace(".", ",");
+  return convertVat(incl, rate, true);
 }
 
 /**
  * A cell after the admin typed `raw` into one of its boxes: the other box follows
- * at `rate`. While the entry is half-typed ("12,") the other box keeps its value
- * rather than blinking empty; clearing one box clears both.
+ * at `rate`. "12," already counts as 12; an entry that is not a price (yet) leaves
+ * the other box as it was rather than blanking it; clearing one box clears both.
  */
 export function typedCell(cell: CellDraft, side: "excl" | "incl", raw: string, rate: VatRate): CellDraft {
   const other = side === "excl" ? cell.incl : cell.excl;
@@ -250,7 +246,7 @@ export function toLocalInput(iso: string | null | undefined): string {
 
 export function draftFromSheet(sheet: SavedProductSheet): SheetDraft {
   const draft = emptyDraft();
-  const money = (v: string | null | undefined) => (v == null ? "" : String(Number(v)).replace(".", ","));
+  const money = (v: string | null | undefined) => (v == null ? "" : kurusToInput(Math.round(Number(v) * 100)));
   for (const row of sheet.prices) {
     for (const { segment } of SHEET_COLUMNS) {
       const cell = row.cells[segment];
@@ -341,6 +337,13 @@ export function draftProblem(draft: SheetDraft): string | null {
     SHEET_COLUMNS.some(({ segment }) => cellFilled(draft.prices[c][segment])),
   );
   if (!anyPrice) return "En az bir fiyat girin.";
+  // A box that is not a price would otherwise be dropped on save without a word.
+  for (const currency of SHEET_CURRENCIES)
+    for (const { segment, label } of SHEET_COLUMNS) {
+      const cell = draft.prices[currency][segment];
+      if ([cell.excl, cell.incl].some((v) => v.trim() && parseDecimalInput(v) === null))
+        return `Fiyat tablosu: ${label} ${CURRENCY_LABEL[currency]} fiyatı geçerli değil (en fazla 2 ondalık, ör. 183,33).`;
+    }
   if (draft.opportunity.is_opportunity) {
     if (!parseDecimalInput(draft.opportunity.price)) return "Fırsat fiyatı girin.";
     // No deadline is fine: the offer then runs until its stock runs out.
