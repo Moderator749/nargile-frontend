@@ -5,6 +5,7 @@ import { BrandStatement } from "@/components/home/BrandStatement";
 import { CatalogShowcase } from "@/components/home/CatalogShowcase";
 import { BrandShowcase } from "@/components/home/BrandShowcase";
 import { BrandTicker } from "@/components/home/BrandTicker";
+import { CampaignBanners } from "@/components/home/CampaignBanners";
 import { DealsFunnel } from "@/components/home/DealsFunnel";
 import { FeaturedProductsShowcase } from "@/components/home/FeaturedProductsShowcase";
 import { HeroAside } from "@/components/home/HeroAside";
@@ -59,7 +60,7 @@ const PICKS_COUNT = 15;
 const LULE_CATEGORY_SLUG = "luleler";
 const LULE_COUNT = 15;
 
-/** "Kumbara 20.000 TL": this category's products, in the band under the deals. */
+/** "Kumbara 20.000 TL": this category's products, in the band above the deals. */
 const KUMBARA_CATEGORY_SLUG = "marpuclar";
 const KUMBARA_COUNT = 15;
 
@@ -312,6 +313,11 @@ export default async function HomePage() {
             priced in its band. */}
         {sultanPuan && <SultanPuanShowcase showcase={sultanPuan} categories={allCategories} />}
 
+        {/* Module 9b¾: "Kumbara 20.000 TL" — the annual bonus as the SultanPuan
+            band's twin, over the Marpuçlar, between it and the deals. Nothing
+            while the bonus is off or the category is empty. */}
+        <KumbaraShowcase products={showable(marpuclar, KUMBARA_COUNT)} categories={allCategories} />
+
         {/* Module 9c: "Fırsatları Kaçırma" — the deals, and the page's only
             deals section, its dark band straight after the white of the picks.
             It renders nothing when none are running. */}
@@ -324,10 +330,9 @@ export default async function HomePage() {
           />
         )}
 
-        {/* Module 9c½: "Kumbara 20.000 TL" — the annual bonus as the SultanPuan
-            band's twin, over the Marpuçlar, straight under the deals. Nothing
-            while the bonus is off or the category is empty. */}
-        <KumbaraShowcase products={showable(marpuclar, KUMBARA_COUNT)} categories={allCategories} />
+        {/* Module 9c½: two campaign boxes under the deals (placeholder art
+            until the shop's photos). */}
+        <CampaignBanners />
 
         {/* Module 9d: "Markalarımız", one heading over a band per brand,
             alternating sides, just above the gallery. */}
