@@ -37,7 +37,9 @@ interface ProductRowProps {
   headingId: string;
   title: string;
   subtitle: string;
-  /** Beside the heading, at the right from `md` (the picks' tabs). */
+  /** Right after the heading, on its line (the picks' tabs). */
+  besideTitle?: ReactNode;
+  /** At the header's right (a delivery perk: the van, the moto courier). */
   actions?: ReactNode;
   /** As listed; `mine` holds a signed-in visitor's own copies, by id. */
   products: CatalogProduct[];
@@ -63,6 +65,7 @@ export function ProductRow({
   headingId,
   title,
   subtitle,
+  besideTitle,
   actions,
   products,
   mine,
@@ -109,12 +112,23 @@ export function ProductRow({
       {/* The page's gutters on the wrapper, so the header and the row inside it
           line up with every other row. */}
       <div className={PAGE_CONTAINER}>
-        <div className="mb-6 flex w-full flex-col gap-6 md:flex-row md:items-end md:justify-between">
-          <div>
-            <h2 id={headingId} className="text-3xl font-extrabold tracking-tight text-gray-900 md:text-4xl dark:text-white">
-              {title}
-            </h2>
-            <p className="mt-2 text-gray-500 dark:text-neutral-400">{subtitle}</p>
+        {/* Heading (and what follows it on its line) at the left, `actions`
+            at the right — one line from `md`, or from `xl` when something
+            follows the heading too: title, tabs and van need that width.
+            Narrower, each wraps under the one before. */}
+        <div
+          className={`mb-6 flex w-full flex-col gap-6 ${
+            besideTitle ? "xl:flex-row xl:items-end xl:justify-between" : "md:flex-row md:items-end md:justify-between"
+          }`}
+        >
+          <div className={besideTitle ? "flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end sm:gap-x-8" : undefined}>
+            <div>
+              <h2 id={headingId} className="text-3xl font-extrabold tracking-tight text-gray-900 md:text-4xl dark:text-white">
+                {title}
+              </h2>
+              <p className="mt-2 text-gray-500 dark:text-neutral-400">{subtitle}</p>
+            </div>
+            {besideTitle}
           </div>
           {actions}
         </div>

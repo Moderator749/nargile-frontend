@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { FreeShippingPerk } from "@/components/home/FreeShippingPerk";
 import { ProductRow } from "@/components/home/ProductRow";
 import { useOwnPrices } from "@/hooks/useOwnPrices";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -24,7 +25,8 @@ const TAB_IDLE =
 /**
  * "Sizin İçin Seçtiklerimiz": two lists behind a pair of tabs, each one row of
  * the catalog's own cards that slides sideways (`ProductRow`), "Lüle Alırken
- * Kararsız Kalacaksınız" (`LuleShowcase`) the same row under it.
+ * Kararsız Kalacaksınız" (`LuleShowcase`) the same row under it. The tabs
+ * follow the title; the free-shipping van (`FreeShippingPerk`) is at the right.
  *
  * The lists arrive server-rendered at the public (retail) price; a signed-in
  * visitor gets both re-priced for their own segment in one request
@@ -60,7 +62,9 @@ export function FeaturedProductsShowcase({
       mine={mine}
       loggedIn={loggedIn}
       categories={categories}
-      actions={
+      // Title, then the tabs on its line, then the van at the right.
+      actions={<FreeShippingPerk className="self-start xl:self-end" />}
+      besideTitle={
         visible.length > 1 && (
           <div className="flex flex-wrap gap-2" role="group" aria-label="Ürün listesi">
             {visible.map(({ key, label }) => (

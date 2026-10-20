@@ -35,7 +35,7 @@
   --animate-perks-in: perks-in 250ms ease-out 150ms both;
   --animate-glow-drift: glow-drift 14s ease-in-out infinite alternate;
   --animate-wheel-spin: wheel-spin 0.55s linear infinite;
-  --animate-moto-idle: moto-idle 0.36s ease-in-out infinite alternate;
+  --animate-vehicle-idle: vehicle-idle 0.36s ease-in-out infinite alternate;
   --animate-road-flow: road-flow 0.55s linear infinite;
   --animate-speed-line: speed-line 0.9s ease-out infinite;
   --animate-beam-pulse: beam-pulse 2.4s ease-in-out infinite;
@@ -178,7 +178,7 @@ html[data-auth] .guest-only {
   }
 }
 
-/* The lüle row's courier: wheels turning, the bike idling a hair up and down,
+/* The delivery vehicles (DeliveryPerk): wheels turning, the body idling a hair up and down,
    the road's dashes flowing back under it, speed lines streaming off its tail
    and the headlamp's beam breathing. It drives in place: nothing beside it
    moves. All of it stops for prefers-reduced-motion (motion-safe:). */
@@ -188,7 +188,7 @@ html[data-auth] .guest-only {
   }
 }
 
-@keyframes moto-idle {
+@keyframes vehicle-idle {
   to {
     transform: translateY(-0.6px);
   }
