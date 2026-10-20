@@ -32,6 +32,7 @@
   --animate-chevron-bob: chevron-bob 0.9s ease-in-out infinite;
   --animate-kategori-glow: kategori-glow 2.4s ease-in-out infinite;
   --animate-chevron-float: chevron-float 2.4s ease-in-out infinite;
+  --animate-perks-in: perks-in 250ms ease-out 150ms both;
 
   /* Semantic colour tokens ("industrial luxury"): bg-background, text-muted-foreground, border-border… */
   --color-background: var(--background);
@@ -159,6 +160,15 @@ html[data-auth] .guest-only {
   }
   50% {
     translate: 0 1.5px;
+  }
+}
+
+/* Product page: the advantages beside the price, back once the category
+   column has folded away (the delay lets it go first). */
+@keyframes perks-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
   }
 }
 

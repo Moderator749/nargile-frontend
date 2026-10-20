@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import axios from "axios";
 import { Check, ChevronRight, Hourglass, ShoppingBag, Truck } from "lucide-react";
@@ -23,6 +23,7 @@ import { categoryCopy } from "@/lib/categories";
 import { normalizeHex, readableInk } from "@/lib/color";
 import { saleState } from "@/lib/flashSale";
 import { productImageAlt, type Breadcrumb } from "@/lib/seo";
+import { PAGE_CONTAINER } from "@/lib/layout";
 import { hasColorChoice, initialVariantId, resolveVariant, variantInStock } from "@/lib/variants";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useCartStore } from "@/store/useCartStore";
@@ -36,6 +37,8 @@ interface ProductDetailProps {
   /** Every category, so a cross-sell card can label and illustrate its own. */
   categories: Category[];
   breadcrumbs: Breadcrumb[];
+  /** Kategoriler, beside the product; closed until "KATEGORİLER" opens it. */
+  sidebar?: ReactNode;
 }
 
 function countdown(ms: number) {
@@ -51,8 +54,15 @@ function countdown(ms: number) {
  * A product's colours are its variants, each with its own stock, so the colour
  * pills are the choice of *what* is being bought: everything below them — the
  * stock badge, the cart quantity, the button — reads the selected variant.
+ *
+ * The category column sits down the left, closed on arrival (see
+ * `lib/sidebar`). Opened, it takes the advantages' place rather than squeezing
+ * the gallery and the price into thirds: the dock steps out, the title and
+ * price have the right column to themselves, and the dock fades back in once
+ * the column is closed again. Below `lg` the column is the bar's drawer and
+ * nothing here changes.
  */
-export function ProductDetail({ initialProduct, category, categories, breadcrumbs }: ProductDetailProps) {
+export function ProductDetail({ initialProduct, category, categories, breadcrumbs, sidebar }: ProductDetailProps) {
   const hydrated = useAuthHydrated();
   const token = useAuthStore((s) => s.token);
   const user = useAuthStore((s) => s.user);
@@ -149,7 +159,10 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
   const dealColor = normalizeHex(product.opportunity_color);
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
+    <div className={`${PAGE_CONTAINER} py-8 sm:py-12 lg:flex lg:items-start`}>
+      {sidebar}
+
+      <div className="min-w-0 flex-1">
       <nav aria-label="Sayfa konumu">
         <ol className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
           {breadcrumbs.slice(0, -1).map((c) => (
@@ -182,8 +195,13 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
         <div className="flex flex-col">
           {/* Title, price and stock on the left; the retail terms in the space
               beside them, which was empty. Without the dock there is nothing to
-              share the row with, so the block keeps the full width. */}
-          <div className={perksShown ? "grid grid-cols-1 items-start gap-6 md:grid-cols-2" : ""}>
+              share the row with, so the block keeps the full width — as it
+              does while the category column is open and the dock is out. */}
+          <div
+            className={
+              perksShown ? "grid grid-cols-1 items-start gap-6 md:grid-cols-2 lg:grid-cols-1 lg:sidebar-closed:grid-cols-2" : ""
+            }
+          >
           <div className="min-w-0">
           <p className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground">
             {product.brand ?? category?.name ?? "Nargile Malzemesi"}
@@ -265,7 +283,13 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
           </div>
           </div>
 
-          {perksShown && <RetailPerks params={params} />}
+          {/* Out while the category column is open; back, after the column
+              has mostly folded away, once it is closed. */}
+          {perksShown && (
+            <div className="lg:hidden lg:sidebar-closed:block lg:sidebar-closed:motion-safe:animate-perks-in">
+              <RetailPerks params={params} />
+            </div>
+          )}
           </div>
 
           {/* One pill per colour, each its own stock. A single-colour product has
@@ -351,6 +375,7 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
         pricesPending={pricesPending}
         main={{ product, variant, price, saleLive: sale.kind === "live", purchasable: canAdd }}
       />
+      </div>
     </div>
   );
 }

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 
 import { AdvantagesSection } from "@/components/home/AdvantagesSection";
+import { CategorySidebar } from "@/components/layout/CategorySidebar";
 import { ProductDetail } from "@/components/product/ProductDetail";
 import { RelatedCategories } from "@/components/product/RelatedCategories";
 import { SimilarProducts } from "@/components/product/SimilarProducts";
@@ -13,6 +14,7 @@ import { pickSimilar, relatedCategories } from "@/lib/related";
 import { getBrands, getCategories, getCategoryProducts, getProduct } from "@/lib/server/catalog";
 import { getHomepage } from "@/lib/server/homepage";
 import { nameWithCode } from "@/lib/slug";
+import { resolveNav } from "@/lib/storefrontNav";
 import { displayVariant, soldOut } from "@/lib/variants";
 
 // Same freshness window as the catalog; admin edits refresh it immediately.
@@ -97,7 +99,13 @@ export default async function ProductPage(props: PageProps<"/product/[slug]">) {
     <main className="flex flex-1 flex-col bg-white dark:bg-background">
       <JsonLd data={productJsonLd(product, category)} />
       <JsonLd data={breadcrumbJsonLd(crumbs)} />
-      <ProductDetail initialProduct={product} category={category} categories={categories} breadcrumbs={crumbs} />
+      <ProductDetail
+        initialProduct={product}
+        category={category}
+        categories={categories}
+        breadcrumbs={crumbs}
+        sidebar={<CategorySidebar items={resolveNav(home.navigation.sidebar, categories, brands ?? [])} fit />}
+      />
       {(similar.length > 0 || related.length > 0) && (
         <div className={`${PAGE_CONTAINER} -mt-6 pb-10 sm:-mt-8`}>
           {category && <SimilarProducts products={similar} categories={categories} category={category} />}

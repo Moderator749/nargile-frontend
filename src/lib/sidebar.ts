@@ -5,8 +5,11 @@
  *
  * The catalog's own pages are the exception (`opensByDefault`): there the
  * column is the way around, so every arrival on one opens it, whatever was
- * chosen before. Closing it there holds for that page and is not remembered —
- * the homepage keeps the visitor's own choice.
+ * chosen before. Product pages are the opposite exception (`closesByDefault`):
+ * the product is what the visitor came for, so every arrival closes it, and
+ * opening it there gives the column the room of the advantages beside the
+ * price (see `ProductDetail`). On either, the choice holds for that page and
+ * is not remembered — the homepage keeps the visitor's own choice.
  *
  * Kept in localStorage and mirrored onto `<html data-sidebar>` by a script that
  * runs before first paint — the same trick this app uses for the theme and the
@@ -23,10 +26,14 @@ const COLLAPSED = "collapsed";
 /** The catalog, its categories and the brand pages: they open with the column showing. */
 const OPEN_BY_DEFAULT = /^\/(?:catalog|marka)(?:\/|$)/;
 
+/** A product's page: it opens with the column closed. */
+const CLOSED_BY_DEFAULT = /^\/product(?:\/|$)/;
+
 export const opensByDefault = (pathname: string) => OPEN_BY_DEFAULT.test(pathname);
+export const closesByDefault = (pathname: string) => CLOSED_BY_DEFAULT.test(pathname);
 
 /** Runs in <head>: sets the attribute before anything is painted. */
-export const SIDEBAR_SCRIPT = `try{if(!${OPEN_BY_DEFAULT}.test(location.pathname)&&localStorage.getItem(${JSON.stringify(KEY)})!=="0"){document.documentElement.setAttribute(${JSON.stringify(ATTRIBUTE)},${JSON.stringify(COLLAPSED)})}}catch(_){}`;
+export const SIDEBAR_SCRIPT = `try{var p=location.pathname;if(!${OPEN_BY_DEFAULT}.test(p)&&(${CLOSED_BY_DEFAULT}.test(p)||localStorage.getItem(${JSON.stringify(KEY)})!=="0")){document.documentElement.setAttribute(${JSON.stringify(ATTRIBUTE)},${JSON.stringify(COLLAPSED)})}}catch(_){}`;
 
 /** The visitor's remembered choice: collapsed unless they opened it. */
 function rememberedCollapsed(): boolean {
@@ -50,8 +57,9 @@ export function isSidebarCollapsed(): boolean {
 
 export function setSidebarCollapsed(collapsed: boolean) {
   apply(collapsed);
-  // On a catalog page the next arrival opens it anyway: nothing to remember.
-  if (opensByDefault(window.location.pathname)) return;
+  // On a catalog or product page the next arrival sets it anyway: nothing to remember.
+  const { pathname } = window.location;
+  if (opensByDefault(pathname) || closesByDefault(pathname)) return;
   try {
     window.localStorage.setItem(KEY, collapsed ? "1" : "0");
   } catch {
@@ -61,11 +69,11 @@ export function setSidebarCollapsed(collapsed: boolean) {
 
 /**
  * The column as a page should open with, for a client-side navigation (the
- * pre-paint script covers a full load): open on the catalog's pages, else the
- * visitor's remembered choice.
+ * pre-paint script covers a full load): open on the catalog's pages, closed on
+ * a product's, else the visitor's remembered choice.
  */
 export function applySidebarFor(pathname: string) {
-  const collapsed = !opensByDefault(pathname) && rememberedCollapsed();
+  const collapsed = !opensByDefault(pathname) && (closesByDefault(pathname) || rememberedCollapsed());
   if (collapsed !== isSidebarCollapsed()) apply(collapsed);
 }
 
