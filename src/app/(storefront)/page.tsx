@@ -9,6 +9,7 @@ import { DealsFunnel } from "@/components/home/DealsFunnel";
 import { FeaturedProductsShowcase } from "@/components/home/FeaturedProductsShowcase";
 import { HeroAside } from "@/components/home/HeroAside";
 import { HeroSlider } from "@/components/home/HeroSlider";
+import { LuleShowcase } from "@/components/home/LuleShowcase";
 import { SeoIntro } from "@/components/home/SeoIntro";
 import { SultanPuanShowcase } from "@/components/home/SultanPuanShowcase";
 import { CategorySidebar } from "@/components/layout/CategorySidebar";
@@ -46,12 +47,16 @@ const FEATURED_CATEGORY_SLUG = "celik-takimlar";
 
 /**
  * "Sizin İçin Seçtiklerimiz": "Çok Satanlar" is the products sold most
- * (approved and shipped orders), "Yeni Gelenler" the latest added; each shows
- * two rows of five on a desktop. A tab short of that is topped up — see
- * `fillPicks`.
+ * (approved and shipped orders), "Yeni Gelenler" the latest added; each is one
+ * sliding row, five in view on a desktop. A tab short of its count is topped
+ * up — see `fillPicks`.
  */
 const PICK_KEYS = ["bestsellers", "newest"] as const;
-const PICKS_COUNT = 10;
+const PICKS_COUNT = 15;
+
+/** "Rengarenk Lüleler": this category's products, as the row under the picks. */
+const LULE_CATEGORY_SLUG = "luleler";
+const LULE_COUNT = 15;
 
 type Picks = Record<(typeof PICK_KEYS)[number], CatalogProduct[]>;
 
@@ -161,7 +166,7 @@ export default async function HomePage() {
   // What to show and what it says: "Ana Sayfa Düzenleme" (/admin/homepage).
   const home = await getHomepage();
   const { sections } = home;
-  const [categories, featured, flashSales, brands, content, artwork, bestsellers, newest, brandRows, sultanPuan] =
+  const [categories, featured, flashSales, brands, content, artwork, bestsellers, newest, brandRows, sultanPuan, lules] =
     await Promise.all([
       getCategories(),
       getPublicProducts(FEATURED_CATEGORY_SLUG, FEATURED_PRODUCTS_COUNT),
@@ -185,6 +190,8 @@ export default async function HomePage() {
       getNewestProducts(PICKS_COUNT * 2),
       Promise.all(BRAND_SHOWCASES.map(({ brand }) => getBrandShowcase(brand))),
       getSultanPuanShowcase(),
+      // With room to spare, as the picks: some have no photo or no price.
+      getPublicProducts(LULE_CATEGORY_SLUG, LULE_COUNT * 2),
     ]);
   const allCategories = categories ?? [];
   const sidebar = resolveNav(home.navigation.sidebar, allCategories, brands ?? []);
@@ -277,8 +284,10 @@ export default async function HomePage() {
         {sections.brands && <BrandTicker brands={home.brands.items} />}
 
         {/* Module 9b: "Sizin İçin Seçtiklerimiz", two tabbed product lists, on
-            the ticker's white. */}
+            the ticker's white, then "Rengarenk Lüleler" on the same white:
+            each one row that slides sideways. */}
         <FeaturedProductsShowcase lists={picks} categories={allCategories} />
+        <LuleShowcase products={showable(lules, LULE_COUNT)} categories={allCategories} />
 
         {/* Module 9b½: "%10 SultanPuan" — the loyalty card and the products
             whose price alone earns it, on the same white, before the dark
