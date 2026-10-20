@@ -5,8 +5,9 @@ import { getBrands, getCategories, getPublicProducts } from "@/lib/server/catalo
 import { pageMetadata } from "@/lib/seo";
 import { DEFAULT_DESCRIPTION } from "@/lib/site";
 
-// Re-render the public catalog at most every 5 minutes (matches CATALOG_REVALIDATE).
-export const revalidate = 300;
+// Re-render the public catalog at most once a day (matches CATALOG_REVALIDATE;
+// admin edits refresh it immediately). A literal: segment config must be static.
+export const revalidate = 86400;
 
 const TITLE = "Endüstriyel Nargile & Toptan Çözümler";
 

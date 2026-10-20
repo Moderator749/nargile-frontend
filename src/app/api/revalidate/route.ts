@@ -8,7 +8,7 @@ import type { User } from "@/types";
 /**
  * POST /api/revalidate — called by the admin panel after a catalog/menu/brand
  * edit, so the storefront shows it on the next request instead of after the
- * 5-minute cache window. Only admins (verified with the backend) may trigger it.
+ * day-long cache window. Only admins (verified with the backend) may trigger it.
  */
 export async function POST(request: NextRequest) {
   const auth = request.headers.get("authorization");

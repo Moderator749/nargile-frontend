@@ -17,8 +17,9 @@ import { nameWithCode } from "@/lib/slug";
 import { resolveNav } from "@/lib/storefrontNav";
 import { displayVariant, soldOut } from "@/lib/variants";
 
-// Same freshness window as the catalog; admin edits refresh it immediately.
-export const revalidate = 300;
+// Same freshness window as the catalog (a day; CATALOG_REVALIDATE); admin
+// edits refresh it immediately.
+export const revalidate = 86400;
 
 async function load(slug: string) {
   const [product, categories] = await Promise.all([getProduct(slug), getCategories()]);

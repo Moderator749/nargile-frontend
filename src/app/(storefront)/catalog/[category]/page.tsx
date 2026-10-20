@@ -6,7 +6,8 @@ import { hasCategoryCopy, categoryCopy } from "@/lib/categories";
 import { getBrands, getCategories, getCategoryBySlug, getPublicProducts } from "@/lib/server/catalog";
 import { categoryDescription, metaDescription, pageMetadata } from "@/lib/seo";
 
-export const revalidate = 300;
+// A day, as the catalog (CATALOG_REVALIDATE); admin edits refresh it immediately.
+export const revalidate = 86400;
 
 /** Prerender known categories; new ones render on first request (dynamicParams). */
 export async function generateStaticParams() {

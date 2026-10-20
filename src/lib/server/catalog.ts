@@ -4,8 +4,18 @@
 import { API_URL, CATALOG_PAGE_SIZE } from "@/lib/config";
 import type { Brand, CatalogProduct, CatalogProductDetail, Category, HomeContent, SultanPuanShowcase } from "@/types";
 
-/** Seconds a cached catalog response is served before revalidating. */
-export const CATALOG_REVALIDATE = 300;
+/**
+ * Seconds a cached catalog response is served before revalidating: a day.
+ *
+ * Every admin edit drops the "catalog" tag (`refreshStorefront`), so edits show
+ * on the next request whatever this says; the timer only catches what changes
+ * without one (stock sold, bestsellers). It is also the floor for every page
+ * that reads the catalog — a route regenerates on its shortest fetch window,
+ * not its own `revalidate` — and each regeneration is an ISR write on Vercel,
+ * where the free tier allows 200,000. At five minutes, crawlers walking the
+ * product pages used them all up (October 2026).
+ */
+export const CATALOG_REVALIDATE = 86400;
 
 async function getJson<T>(path: string): Promise<T | null> {
   try {
@@ -114,7 +124,7 @@ export function getHomeContent(): Promise<HomeContent | null> {
  * artwork. Null when that corner is empty — a category the shop has not stocked
  * yet — and the tile then falls back to its icon.
  *
- * Cached like every other catalog read (five minutes, `catalog` tag), so the
+ * Cached like every other catalog read (a day, `catalog` tag), so the
  * twelve tiles cost twelve requests per window rather than per visitor.
  */
 export async function getTileArtwork(tile: { slug?: string | null; search?: string | null }): Promise<string | null> {

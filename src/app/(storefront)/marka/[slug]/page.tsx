@@ -5,7 +5,8 @@ import { CatalogScreen } from "@/components/catalog/CatalogScreen";
 import { brandCanonical, brandDescription, brandHref, pageMetadata } from "@/lib/seo";
 import { getBrands, getCategories, getPublicProducts } from "@/lib/server/catalog";
 
-export const revalidate = 300;
+// A day, as the catalog (CATALOG_REVALIDATE); admin edits refresh it immediately.
+export const revalidate = 86400;
 
 /** Prerender the brand list; a brand added later renders on first request. */
 export async function generateStaticParams() {
