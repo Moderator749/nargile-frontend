@@ -23,8 +23,8 @@ const TAB_IDLE =
 
 /**
  * "Sizin İçin Seçtiklerimiz": two lists behind a pair of tabs, each one row of
- * the catalog's own cards that slides sideways (`ProductRow`), "Rengarenk
- * Lüleler" (`LuleShowcase`) the same row under it.
+ * the catalog's own cards that slides sideways (`ProductRow`), "Lüle Alırken
+ * Kararsız Kalacaksınız" (`LuleShowcase`) the same row under it.
  *
  * The lists arrive server-rendered at the public (retail) price; a signed-in
  * visitor gets both re-priced for their own segment in one request

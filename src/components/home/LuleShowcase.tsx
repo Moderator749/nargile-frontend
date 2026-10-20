@@ -7,7 +7,7 @@ import { useAuthHydrated } from "@/store/useHasHydrated";
 import type { CatalogProduct, Category } from "@/types";
 
 /**
- * "Rengarenk Lüleler": the Lüleler category as one sliding row, the same row
+ * "Lüle Alırken Kararsız Kalacaksınız": the Lüleler category as one sliding row, the same row
  * as "Sizin İçin Seçtiklerimiz" above it and on the same white band.
  * Server-rendered at the public price, re-priced for a signed-in visitor.
  */
@@ -18,8 +18,8 @@ export function LuleShowcase({ products, categories }: { products: CatalogProduc
 
   return (
     <ProductRow
-      headingId="rengarenk-luleler-baslik"
-      title="Rengarenk Lüleler"
+      headingId="luleler-baslik"
+      title="Lüle Alırken Kararsız Kalacaksınız"
       subtitle="Müşterilerimizin favorisi, en şık ve göz alıcı tasarımlar"
       className="bg-white pt-8 pb-12 sm:pt-10 sm:pb-16 dark:bg-transparent"
       products={products}

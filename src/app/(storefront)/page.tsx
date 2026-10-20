@@ -54,7 +54,7 @@ const FEATURED_CATEGORY_SLUG = "celik-takimlar";
 const PICK_KEYS = ["bestsellers", "newest"] as const;
 const PICKS_COUNT = 15;
 
-/** "Rengarenk Lüleler": this category's products, as the row under the picks. */
+/** "Lüle Alırken Kararsız Kalacaksınız": this category's products, as the row under the picks. */
 const LULE_CATEGORY_SLUG = "luleler";
 const LULE_COUNT = 15;
 
@@ -284,7 +284,7 @@ export default async function HomePage() {
         {sections.brands && <BrandTicker brands={home.brands.items} />}
 
         {/* Module 9b: "Sizin İçin Seçtiklerimiz", two tabbed product lists, on
-            the ticker's white, then "Rengarenk Lüleler" on the same white:
+            the ticker's white, then "Lüle Alırken Kararsız Kalacaksınız" on the same white:
             each one row that slides sideways. */}
         <FeaturedProductsShowcase lists={picks} categories={allCategories} />
         <LuleShowcase products={showable(lules, LULE_COUNT)} categories={allCategories} />

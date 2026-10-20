@@ -39,7 +39,7 @@ interface ProductRowProps {
  * over a single line of catalog cards (`ProductCard`), swiped on a phone,
  * scrolled with a trackpad, or moved a card at a time with the arrows under
  * it. The row snaps to a card's edge and hides its scrollbar. "Sizin İçin
- * Seçtiklerimiz" and "Rengarenk Lüleler" are both this, so they read as a pair.
+ * Seçtiklerimiz" and "Lüle Alırken Kararsız Kalacaksınız" are both this, so they read as a pair.
  *
  * A new list (another tab) starts the row from its first card.
  */
