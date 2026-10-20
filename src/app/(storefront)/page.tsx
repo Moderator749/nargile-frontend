@@ -249,11 +249,11 @@ export default async function HomePage() {
         {!sections.hero && <h1 className="sr-only">{TITLE}</h1>}
 
         {/* Module 4: the category column (closed until "KATEGORİLER" opens
-            it), with the hero beside it, on a white band edge to edge (as much
-            room under the slider as over it); the column keeps its own grey
-            (CategorySidebar), and the page's grey resumes below. */}
+            it), with the hero beside it, on a white band edge to edge that
+            runs on under the statement to the brand ticker; the column keeps
+            its own grey (CategorySidebar). */}
         {sections.hero && (
-          <div className="bg-white pb-3 sm:pb-4 dark:bg-transparent">
+          <div className="bg-white dark:bg-transparent">
           <div className={`${PAGE_CONTAINER} pt-3 sm:pt-4 lg:flex lg:items-stretch`}>
             <CategorySidebar items={sidebar} />
             <div className="min-w-0 flex-1">
@@ -278,8 +278,11 @@ export default async function HomePage() {
             clear of the hero's rounded corners (the category column, open or
             closed, ends where the hero does). */}
         {sections.promos && (
-          <div className={`${PAGE_CONTAINER} mt-10 mb-12`}>
-            <BrandStatement />
+          // On the hero's white, carried on: the band's own padding, not a margin on the grey.
+          <div className="bg-white dark:bg-transparent">
+            <div className={`${PAGE_CONTAINER} pt-10 pb-12`}>
+              <BrandStatement />
+            </div>
           </div>
         )}
 
@@ -291,7 +294,11 @@ export default async function HomePage() {
             the ticker's white, then "Lüle Alırken Kararsız Kalacaksınız" on the
             same white: each one row that slides sideways. */}
         <FeaturedProductsShowcase lists={picks} categories={allCategories} />
-        <LuleShowcase products={showable(lules, LULE_COUNT)} categories={allCategories} />
+        <LuleShowcase
+          products={showable(lules, LULE_COUNT)}
+          categories={allCategories}
+          categoryHref={`/catalog/${LULE_CATEGORY_SLUG}`}
+        />
 
         {/* Module 9b½: "%10 SultanPuan" — the loyalty card and the products
             whose price alone earns it, on the same white, before the dark

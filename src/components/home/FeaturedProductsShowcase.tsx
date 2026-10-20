@@ -16,11 +16,13 @@ const TABS = [
 
 type TabKey = (typeof TABS)[number]["key"];
 
+/** The two tabs share one slim track; the chosen one is filled. */
+const TABS_TRACK =
+  "inline-flex items-center gap-0.5 rounded-full bg-gray-100 p-1 ring-1 ring-inset ring-gray-200/80 dark:bg-white/[0.06] dark:ring-white/10";
 const TAB =
-  "rounded-full px-6 py-2.5 text-sm font-medium transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-900 dark:focus-visible:outline-white";
-const TAB_ACTIVE = "bg-gray-900 text-white dark:bg-white dark:text-gray-900";
-const TAB_IDLE =
-  "border border-gray-200 bg-white text-gray-700 hover:border-gray-900 dark:border-border dark:bg-transparent dark:text-neutral-300 dark:hover:border-white";
+  "rounded-full px-3.5 py-1 text-[13px] font-medium leading-5 transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-900 dark:focus-visible:outline-white";
+const TAB_ACTIVE = "bg-gray-900 text-white shadow-sm dark:bg-white dark:text-gray-900";
+const TAB_IDLE = "text-gray-600 hover:text-gray-900 dark:text-neutral-400 dark:hover:text-white";
 
 /**
  * "Sizin İçin Seçtiklerimiz": two lists behind a pair of tabs, each one row of
@@ -63,10 +65,10 @@ export function FeaturedProductsShowcase({
       loggedIn={loggedIn}
       categories={categories}
       // Title, then the tabs on its line, then the van at the right.
-      actions={<FreeShippingPerk className="self-start xl:self-center" />}
+      actions={<FreeShippingPerk className="self-start xl:shrink-0 xl:self-center" />}
       besideTitle={
         visible.length > 1 && (
-          <div className="flex flex-wrap gap-2" role="group" aria-label="Ürün listesi">
+          <div className={TABS_TRACK} role="group" aria-label="Ürün listesi">
             {visible.map(({ key, label }) => (
               <button
                 key={key}

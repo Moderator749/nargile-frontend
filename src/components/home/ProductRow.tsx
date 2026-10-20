@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 
 import { ProductCard } from "@/components/catalog/ProductCard";
 import { PAGE_CONTAINER } from "@/lib/layout";
@@ -30,6 +31,9 @@ const ELEVATED_CARD = [
   "dark:hover:[&>article]:border-red-400/50",
 ].join(" ");
 
+const HEADING = "text-3xl font-extrabold tracking-tight text-gray-900 md:text-4xl dark:text-white";
+const SUBTITLE = "mt-2 text-gray-500 dark:text-neutral-400";
+
 const ARROW =
   "flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 transition-colors duration-200 hover:border-gray-900 hover:text-gray-900 disabled:pointer-events-none disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-900 dark:border-border dark:bg-transparent dark:text-neutral-300 dark:hover:border-white dark:hover:text-white dark:focus-visible:outline-white";
 
@@ -37,7 +41,10 @@ interface ProductRowProps {
   headingId: string;
   title: string;
   subtitle: string;
-  /** Right after the heading, on its line (the picks' tabs). */
+  /**
+   * On the heading's own line, right after the title and centred on it (the
+   * picks' tabs); the subtitle goes under both. On a phone, after the subtitle.
+   */
   besideTitle?: ReactNode;
   /** At the header's right (a delivery perk: the van, the moto courier). */
   actions?: ReactNode;
@@ -50,6 +57,8 @@ interface ProductRowProps {
   className?: string;
   /** The livelier card treatment (`ELEVATED_CARD`). */
   elevated?: boolean;
+  /** "See all": the collection the row is taken from, beside the arrows. */
+  more?: { href: string; label: string };
 }
 
 /**
@@ -73,6 +82,7 @@ export function ProductRow({
   categories,
   className = "",
   elevated = false,
+  more,
 }: ProductRowProps) {
   const categoryById = new Map(categories.map((c) => [c.id, c]));
   const track = useRef<HTMLUListElement>(null);
@@ -122,15 +132,22 @@ export function ProductRow({
             besideTitle ? "xl:flex-row xl:items-center xl:justify-between" : "md:flex-row md:items-end md:justify-between"
           }`}
         >
-          <div className={besideTitle ? "flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-8" : undefined}>
-            <div>
-              <h2 id={headingId} className="text-3xl font-extrabold tracking-tight text-gray-900 md:text-4xl dark:text-white">
+          {besideTitle ? (
+            <div className="flex flex-wrap items-center gap-x-5">
+              <h2 id={headingId} className={`basis-full sm:basis-auto ${HEADING}`}>
                 {title}
               </h2>
-              <p className="mt-2 text-gray-500 dark:text-neutral-400">{subtitle}</p>
+              <div className="order-last mt-4 sm:order-none sm:mt-0">{besideTitle}</div>
+              <p className={`basis-full ${SUBTITLE}`}>{subtitle}</p>
             </div>
-            {besideTitle}
-          </div>
+          ) : (
+            <div>
+              <h2 id={headingId} className={HEADING}>
+                {title}
+              </h2>
+              <p className={SUBTITLE}>{subtitle}</p>
+            </div>
+          )}
           {actions}
         </div>
 
@@ -166,14 +183,32 @@ export function ProductRow({
           })}
         </ul>
 
-        {!(ends.start && ends.end) && (
+        {/* Under the row, centred: the arrows (while there is more than is
+            in view) and, after a hairline, the way to the whole collection. */}
+        {(more || !(ends.start && ends.end)) && (
           <div className="mt-4 flex items-center justify-center gap-3">
-            <button type="button" onClick={() => slide(-1)} disabled={ends.start} aria-label="Önceki ürünler" className={ARROW}>
-              <ChevronLeft className="h-5 w-5" aria-hidden />
-            </button>
-            <button type="button" onClick={() => slide(1)} disabled={ends.end} aria-label="Sonraki ürünler" className={ARROW}>
-              <ChevronRight className="h-5 w-5" aria-hidden />
-            </button>
+            {!(ends.start && ends.end) && (
+              <>
+                <button type="button" onClick={() => slide(-1)} disabled={ends.start} aria-label="Önceki ürünler" className={ARROW}>
+                  <ChevronLeft className="h-5 w-5" aria-hidden />
+                </button>
+                <button type="button" onClick={() => slide(1)} disabled={ends.end} aria-label="Sonraki ürünler" className={ARROW}>
+                  <ChevronRight className="h-5 w-5" aria-hidden />
+                </button>
+              </>
+            )}
+            {more && (
+              <>
+                {!(ends.start && ends.end) && <span aria-hidden className="mx-1 h-6 w-px bg-gray-200 dark:bg-white/15" />}
+                <Link
+                  href={more.href}
+                  className="group/more inline-flex h-10 items-center gap-2 rounded-full border border-gray-900 px-5 text-sm font-semibold text-gray-900 transition-colors duration-200 hover:bg-gray-900 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-900 dark:border-white dark:text-white dark:hover:bg-white dark:hover:text-gray-900 dark:focus-visible:outline-white"
+                >
+                  {more.label}
+                  <ArrowRight className="h-4 w-4 transition-transform duration-200 motion-safe:group-hover/more:translate-x-0.5" aria-hidden />
+                </Link>
+              </>
+            )}
           </div>
         )}
       </div>

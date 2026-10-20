@@ -18,9 +18,12 @@ import type { CatalogProduct, Category } from "@/types";
 export function LuleShowcase({
   products,
   categories,
+  categoryHref,
 }: {
   products: CatalogProduct[];
   categories: Category[];
+  /** The Lüleler category's page, for "Tüm Lüleleri Gör". */
+  categoryHref: string;
 }) {
   const mine = useOwnPrices(products);
   const hydrated = useAuthHydrated();
@@ -39,6 +42,7 @@ export function LuleShowcase({
       loggedIn={hydrated && !!token}
       categories={categories}
       elevated
+      more={{ href: categoryHref, label: "Tüm Lüleleri Gör" }}
     />
   );
 }

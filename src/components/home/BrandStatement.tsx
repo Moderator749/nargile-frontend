@@ -1,8 +1,6 @@
 "use client";
 
 import { useId, useState } from "react";
-import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
 
 const PARAGRAPH = "text-sm leading-relaxed text-gray-600 md:text-base dark:text-neutral-400";
 
@@ -10,9 +8,6 @@ const PARAGRAPH = "text-sm leading-relaxed text-gray-600 md:text-base dark:text-
 const LEAD = "Nargile kültürünü modern mühendislik ve birinci sınıf materyallerle yeniden tanımlıyoruz.";
 const REST =
   "Sadece bir donanım değil; estetik, performans ve uzun ömürlülüğü bir araya getiren premium bir deneyim sunuyoruz.";
-
-/** Where the statement leads: the whole catalog. */
-const COLLECTION_HREF = "/catalog";
 
 /**
  * "Sektörde Referans Noktası": the brand in a sentence under the hero row, on
@@ -46,13 +41,6 @@ export function BrandStatement() {
         >
           <div className="overflow-hidden">
             <p className={`mt-2 ${PARAGRAPH}`}>{REST}</p>
-            <Link
-              href={COLLECTION_HREF}
-              className="mt-4 inline-flex w-fit items-center whitespace-nowrap font-semibold text-gray-900 transition-colors hover:text-red-700 dark:text-white dark:hover:text-red-400"
-            >
-              Koleksiyonu Keşfet
-              <ArrowUpRight className="ml-1.5 h-4 w-4" aria-hidden />
-            </Link>
           </div>
         </div>
         <button
