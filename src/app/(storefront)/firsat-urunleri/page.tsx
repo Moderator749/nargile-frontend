@@ -40,8 +40,8 @@ export default async function DealsPage() {
     <main className="flex flex-1 flex-col bg-white text-foreground dark:bg-background">
       <JsonLd data={breadcrumbJsonLd(BREADCRUMBS)} />
       {products.length > 0 && <JsonLd data={productListJsonLd(products, DEALS_HREF, categoryById)} />}
-      {/* Kategoriler beside the grid, closed until "KATEGORİLER" opens it
-          (see lib/sidebar): the deals have the full width on arrival. */}
+      {/* Laid out as a catalog page: Kategoriler open beside the grid on
+          arrival (see lib/sidebar), the catalog's toolbar above it. */}
       <div className={`${PAGE_CONTAINER} py-8 md:py-10 lg:flex lg:items-start`}>
         <CategorySidebar items={resolveNav(home.navigation.sidebar, categories ?? [], brands ?? [])} fit />
         <div className="min-w-0 flex-1">

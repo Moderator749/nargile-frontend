@@ -29,8 +29,8 @@ const LINK =
  * "KATEGORİLER" is the cell above that column, the same width as it so the two
  * read as one shape — and the handle for it: on a desktop it collapses the
  * column and gives its width to the page, and the choice is remembered for the
- * next visit (the catalog's pages open with it whatever was chosen, and a
- * product's page and the deals close it; see `lib/sidebar`). Its chevron points the way the column will go and turns over
+ * next visit (the catalog's pages and the deals open with it whatever was
+ * chosen, and a product's page closes it; see `lib/sidebar`). Its chevron points the way the column will go and turns over
  * as it does; on hover it nudges that way, on a lighter disc. While the column
  * is closed the button breathes a soft red glow and the chevron sinks a hair
  * with it — one slow rhythm, so it reads as something to open. Below `lg` the

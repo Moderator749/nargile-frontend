@@ -22,7 +22,7 @@ import {
 } from "@/lib/catalogFilters";
 import { useAuthStore } from "@/store/useAuthStore";
 import type { CatalogProduct, Category, SegmentType } from "@/types";
-import { PAGE_CONTAINER } from "@/lib/layout";
+import { CATALOG_GRID, PAGE_CONTAINER } from "@/lib/layout";
 
 const SEGMENT_LABELS: Record<SegmentType, string> = {
   RETAIL: "Perakende",
@@ -34,9 +34,7 @@ const SEGMENT_LABELS: Record<SegmentType, string> = {
 /** Cards whose photos load eagerly: the first row at the widest grid. */
 const EAGER_CARDS = 4;
 
-// Three to a row beside the open category column, four once it is closed and
-// the grid has the width (the column's state is on <html>, see lib/sidebar).
-const gridClass = "grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 lg:sidebar-closed:grid-cols-4";
+const gridClass = CATALOG_GRID;
 
 interface CatalogViewProps {
   categories: Category[];

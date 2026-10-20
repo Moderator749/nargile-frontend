@@ -9,3 +9,11 @@
  * Give a row its own padding or width and it will drift off the others.
  */
 export const PAGE_CONTAINER = "mx-auto w-full max-w-7xl px-4 sm:px-6";
+
+/**
+ * The product grid of a catalog page (catalog, category, brand, "Fırsat
+ * Ürünleri"): three to a row beside the open category column, four once it is
+ * closed and the grid has the width (the column's state is on <html>, see
+ * lib/sidebar).
+ */
+export const CATALOG_GRID = "grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 lg:sidebar-closed:grid-cols-4";
