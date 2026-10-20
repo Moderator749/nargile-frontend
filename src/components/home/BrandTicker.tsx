@@ -1,12 +1,12 @@
 const SECONDS_PER_BRAND = 3;
 
 /**
- * The brand ticker: a single line of names (from "Ana Sayfa Düzenleme") sliding between the deals and the
- * gallery, on a flat track with square ends and no surface of its own, so it
- * sits in the page rather than on it; a hairline above and below frames it.
- * The band behind it is white in the light theme, running on into the white
- * of "Sizin İçin Seçtiklerimiz" below — spaced by padding, not margin, so no
- * strip of the page's grey shows between them.
+ * The brand ticker: a single line of names (from "Ana Sayfa Düzenleme") sliding
+ * under "Sektörde Referans Noktası", over "Markalarımız", on a flat track with
+ * square ends and no surface of its own, so it sits in the page rather than
+ * on it; a hairline above and below frames it. The band behind it is white in
+ * the light theme, carrying on the statement's white — spaced by padding, not
+ * margin, so no strip of the page's grey shows between them.
  *
  * The names are small, wide-tracked and muted — a credits line, not a
  * headline — and answer one at a time under the pointer. The track's ends are

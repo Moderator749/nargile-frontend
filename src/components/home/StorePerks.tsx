@@ -29,8 +29,8 @@ interface Perk {
 }
 
 /**
- * The store's three payment advantages as a quiet bar between the campaign
- * boxes and "Markalarımız": no cards, no borders, no fills — an icon in the
+ * The store's three payment advantages as a quiet bar under the hero row,
+ * over "Sizin İçin Seçtiklerimiz": no cards, no borders, no fills — an icon in the
  * shop's red, a small label, the figure in bold and a line under it, three
  * across from `md` with hairlines between them (the icon over the words on a
  * tablet, beside them from `lg`), one under another below.
@@ -81,7 +81,7 @@ export function StorePerks() {
   ];
 
   return (
-    <section aria-labelledby="magaza-avantajlari-baslik" className="bg-white py-10 md:py-14 dark:bg-transparent">
+    <section aria-labelledby="magaza-avantajlari-baslik" className="bg-white pt-8 pb-4 md:pt-10 dark:bg-transparent">
       <h2 id="magaza-avantajlari-baslik" className="sr-only">
         Mağaza avantajları
       </h2>

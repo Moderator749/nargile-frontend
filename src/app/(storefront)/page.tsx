@@ -258,8 +258,8 @@ export default async function HomePage() {
 
         {/* Module 4: the category column (closed until "KATEGORİLER" opens
             it), with the hero beside it, on a white band edge to edge that
-            runs on under the statement to the brand ticker; the column keeps
-            its own grey (CategorySidebar). */}
+            runs on under the perks bar to the picks; the column keeps its own
+            grey (CategorySidebar). */}
         {sections.hero && (
           <div className="bg-white dark:bg-transparent">
           <div className={`${PAGE_CONTAINER} pt-3 sm:pt-4 lg:flex lg:items-stretch`}>
@@ -282,24 +282,12 @@ export default async function HomePage() {
           </div>
         )}
 
-        {/* Modules 6 & 7: "Sektörde Referans Noktası", under the hero row,
-            clear of the hero's rounded corners (the category column, open or
-            closed, ends where the hero does). */}
-        {sections.promos && (
-          // On the hero's white, carried on: the band's own padding, not a margin on the grey.
-          <div className="bg-white dark:bg-transparent">
-            <div className={`${PAGE_CONTAINER} pt-8 pb-6`}>
-              <BrandStatement />
-            </div>
-          </div>
-        )}
-
-        {/* Module 9: the brand ticker, where the white bands begin below the
-            statement. No heading — the names are the content. */}
-        {sections.brands && <BrandTicker brands={home.brands.items} />}
+        {/* Module 6: the payment advantages as a quiet bar, no boxes, straight
+            under the hero row and over the picks. */}
+        <StorePerks />
 
         {/* Module 9b: "Sizin İçin Seçtiklerimiz", two tabbed product lists, on
-            the ticker's white, then "Lüle Alırken Kararsız Kalacaksınız" on the
+            the perks bar's white, then "Lüle Alırken Kararsız Kalacaksınız" on the
             same white: each one row that slides sideways. */}
         <FeaturedProductsShowcase lists={picks} categories={allCategories} />
         <LuleShowcase
@@ -335,9 +323,21 @@ export default async function HomePage() {
             until the shop's photos). */}
         <CampaignBanners />
 
-        {/* Module 9c¾: the payment advantages as a quiet bar, no boxes, between
-            the campaign boxes and the brands. */}
-        <StorePerks />
+        {/* Module 9c¾: "Sektörde Referans Noktası", under the campaign boxes,
+            with the brand ticker under it, over "Markalarımız". */}
+        {sections.promos && (
+          // On the campaign boxes' white, carried on: the band's own padding, not
+          // a margin on the grey; the boxes already end with room under them.
+          <div className="bg-white dark:bg-transparent">
+            <div className={`${PAGE_CONTAINER} pt-2 pb-6`}>
+              <BrandStatement />
+            </div>
+          </div>
+        )}
+
+        {/* Module 9c⅞: the brand ticker under the statement. No heading — the
+            names are the content. */}
+        {sections.brands && <BrandTicker brands={home.brands.items} />}
 
         {/* Module 9d: "Markalarımız", one heading over a band per brand,
             alternating sides, just above the gallery. */}
