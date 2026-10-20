@@ -23,6 +23,18 @@ export interface BilgiDocument {
 
 export const bilgiHref = (doc: Pick<BilgiDocument, "slug">) => `${BILGI_HREF}/${doc.slug}`;
 
+/**
+ * "Ayrıcalıklar ve Avantajlar": listed with the Bilgi Sayfaları (the footer's
+ * column, /bilgi, the sitemap) but not one of the Word documents below — its
+ * own page, stating the shop's live rules (see its route).
+ */
+export const PERKS_PAGE = {
+  title: "Ayrıcalıklar ve Avantajlar",
+  href: `${BILGI_HREF}/ayricaliklar-ve-avantajlar`,
+  description:
+    "Ücretsiz kargo, İstanbul içi aynı gün kurye, taksit, sepet ve havale indirimleri, SultanPuan ve KumbaraPuan: bireysel alışverişlerinizdeki tüm ayrıcalıklar.",
+};
+
 export const BILGI_DOCUMENTS: BilgiDocument[] = [
   {
     slug: "uyelik-ve-kullanim-sartlari",

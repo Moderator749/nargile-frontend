@@ -7,7 +7,7 @@
  * an anchor there.
  */
 
-import { BILGI_DOCUMENTS, bilgiHref } from "@/lib/bilgi";
+import { BILGI_DOCUMENTS, PERKS_PAGE, bilgiHref } from "@/lib/bilgi";
 import { BLOG_HREF, LULE_GUIDE_HREF } from "@/lib/blog";
 import { FAQ, FAQ_HREF } from "@/lib/faq";
 
@@ -40,7 +40,10 @@ export const BLOG_LINKS = [
 export { BLOG_HREF };
 
 /** The three documents the shop supplied, in the order it listed them. */
-export const INFO_LINKS = BILGI_DOCUMENTS.map((doc) => ({ label: doc.title, href: bilgiHref(doc) }));
+export const INFO_LINKS = [
+  ...BILGI_DOCUMENTS.map((doc) => ({ label: doc.title, href: bilgiHref(doc) })),
+  { label: PERKS_PAGE.title, href: PERKS_PAGE.href },
+];
 
 export const FAQ_LINKS = FAQ.map((item) => ({ label: item.question, href: `${FAQ_HREF}#${item.id}` }));
 export { FAQ_HREF };

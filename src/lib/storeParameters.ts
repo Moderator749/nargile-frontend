@@ -1,6 +1,38 @@
 import { formatMoneyCompact } from "@/lib/format";
 import type { DecimalString, ParameterTier, StoreParameters } from "@/types";
 
+/**
+ * The defaults the server falls back to (`app/services/store_parameters.py`),
+ * so the storefront can state the rules before the read lands.
+ */
+export const DEFAULT_STORE_PARAMETERS: StoreParameters = {
+  free_shipping_threshold: "3000.00",
+  coal_min_kg: "20",
+  coal_max_ratio: "0.50",
+  coal_rule_basis: "kg",
+  coal_min_quantity: 20,
+  bank_transfer_tiers: [
+    { threshold: "1.00", rate: "0.05" },
+    { threshold: "30000.00", rate: "0.07" },
+  ],
+  volume_tiers: [
+    { threshold: "30000.00", rate: "0.05" },
+    { threshold: "50000.00", rate: "0.08" },
+  ],
+  loyalty: {
+    enabled: true,
+    base_rate: "0.10",
+    band_min: "20000.00",
+    band_max: "29999.99",
+    conversion_rate: "1.00",
+    annual_spend_threshold: "20000.00",
+    annual_bonus_points: 1000,
+    annual_period_days: 365,
+    annual_order_ceiling: "20000.00",
+  },
+  istanbul_free_min_subtotal: "20000.00",
+};
+
 /** A rate as the shop writes it: "0.05" → "%5", "0.0525" → "%5,25". */
 export function formatRate(rate: DecimalString | number): string {
   return `%${(Number(rate) * 100).toLocaleString("tr-TR", { maximumFractionDigits: 2 })}`;

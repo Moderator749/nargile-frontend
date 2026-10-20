@@ -11,7 +11,7 @@
  */
 
 import { ADVANTAGES } from "@/lib/advantages";
-import { BILGI_DOCUMENTS, bilgiHref } from "@/lib/bilgi";
+import { BILGI_DOCUMENTS, PERKS_PAGE, bilgiHref } from "@/lib/bilgi";
 import { BLOG_HREF } from "@/lib/blog";
 import { EMAIL, PHONE, WHATSAPP_HREF } from "@/lib/contact";
 import { FAQ_HREF } from "@/lib/faq";
@@ -92,7 +92,10 @@ export const DEFAULT_HOMEPAGE: Homepage = {
     blog: { title: "Blog", links: BLOG_LINKS, cta_label: "Tüm yazıları gör", cta_href: BLOG_HREF },
     info: {
       title: "Bilgi Sayfaları",
-      links: BILGI_DOCUMENTS.map((doc) => ({ label: doc.title, href: bilgiHref(doc) })),
+      links: [
+        ...BILGI_DOCUMENTS.map((doc) => ({ label: doc.title, href: bilgiHref(doc) })),
+        { label: PERKS_PAGE.title, href: PERKS_PAGE.href },
+      ],
       cta_label: "",
       cta_href: null,
     },

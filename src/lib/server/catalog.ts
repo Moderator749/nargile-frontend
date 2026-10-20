@@ -2,7 +2,16 @@
 // participate in Next.js caching. Always anonymous: public RETAIL prices only.
 
 import { API_URL, CATALOG_PAGE_SIZE } from "@/lib/config";
-import type { Brand, CatalogProduct, CatalogProductDetail, Category, HomeContent, SultanPuanShowcase } from "@/types";
+import { DEFAULT_STORE_PARAMETERS } from "@/lib/storeParameters";
+import type {
+  Brand,
+  CatalogProduct,
+  CatalogProductDetail,
+  Category,
+  HomeContent,
+  StoreParameters,
+  SultanPuanShowcase,
+} from "@/types";
 
 /**
  * Seconds a cached catalog response is served before revalidating: a day.
@@ -145,4 +154,14 @@ export function getProduct(ref: string): Promise<CatalogProductDetail | null> {
   // Nothing that could not be a slug or an id goes to the API.
   if (ref.length > 255 || !PRODUCT_REF.test(ref)) return Promise.resolve(null);
   return getJson<CatalogProductDetail>(`/products/${encodeURIComponent(ref)}`);
+}
+
+/**
+ * "Parametreler" — free shipping, the coal rule, the discount ladders, Sultan
+ * Puan — as checkout applies them, for pages that state the rules. Cached with
+ * the catalog: saving the parameters in the panel drops the "catalog" tag, so
+ * the pages follow it. If the API cannot be reached, the server's own defaults.
+ */
+export async function getStoreParameters(): Promise<StoreParameters> {
+  return (await getJson<StoreParameters>("/settings/parameters")) ?? DEFAULT_STORE_PARAMETERS;
 }
