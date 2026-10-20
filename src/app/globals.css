@@ -220,7 +220,7 @@ html[data-auth] .guest-only {
   }
 }
 
-/* Campaign card and lüle band: their mesh drifting, too slowly to be watched. */
+/* Campaign card (CampaignSpotlightCard): its mesh drifting, too slowly to be watched. */
 @keyframes glow-drift {
   to {
     transform: translate3d(6%, -4%, 0) scale(1.08);

@@ -46,12 +46,6 @@ interface ProductRowProps {
   categories: Category[];
   /** The section's own band and spacing. */
   className?: string;
-  /**
-   * Behind everything, inside the section: a band's own background layers
-   * (the lüle row's mesh). The section's `className` makes it the frame
-   * (`relative isolate overflow-hidden`).
-   */
-  decoration?: ReactNode;
   /** The livelier card treatment (`ELEVATED_CARD`). */
   elevated?: boolean;
 }
@@ -75,7 +69,6 @@ export function ProductRow({
   loggedIn,
   categories,
   className = "",
-  decoration,
   elevated = false,
 }: ProductRowProps) {
   const categoryById = new Map(categories.map((c) => [c.id, c]));
@@ -113,7 +106,6 @@ export function ProductRow({
 
   return (
     <section aria-labelledby={headingId} className={className}>
-      {decoration}
       {/* The page's gutters on the wrapper, so the header and the row inside it
           line up with every other row. */}
       <div className={PAGE_CONTAINER}>

@@ -284,8 +284,8 @@ export default async function HomePage() {
         {sections.brands && <BrandTicker brands={home.brands.items} />}
 
         {/* Module 9b: "Sizin İçin Seçtiklerimiz", two tabbed product lists, on
-            the ticker's white, then "Lüle Alırken Kararsız Kalacaksınız" on its
-            own warm band: each one row that slides sideways. */}
+            the ticker's white, then "Lüle Alırken Kararsız Kalacaksınız" on the
+            same white: each one row that slides sideways. */}
         <FeaturedProductsShowcase lists={picks} categories={allCategories} />
         <LuleShowcase products={showable(lules, LULE_COUNT)} categories={allCategories} />
 

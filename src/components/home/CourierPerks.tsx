@@ -25,22 +25,23 @@ function Wheel({ cx }: { cx: number }) {
 }
 
 /**
- * The shipping perks in the lüle row's header, beside its title: a glass
- * plate with İstanbul's moto kurye on it — line drawn, its box in the shop's
- * red — driving in place: the wheels turn, the bike idles a hair up and down,
- * the road's dashes flow back beneath it, speed lines stream off its tail and
- * the headlamp breathes. Nothing around it moves, and all of it stands still
- * for a visitor who asks for reduced motion (motion-safe:).
+ * The courier perk in the lüle row's header, beside its title: İstanbul's
+ * moto kurye standing straight on the page, no frame around it — line drawn,
+ * its box in the shop's red — driving in place: the wheels turn, the bike
+ * idles a hair up and down, the road's dashes flow back beneath it, speed
+ * lines stream off its tail and the headlamp breathes. Nothing around it
+ * moves, and all of it stands still for a visitor who asks for reduced motion
+ * (motion-safe:). Beside it, one line: same-day delivery in İstanbul.
  *
- * The figures are the live ones (`useShippingPerks`); the whole plate is left
- * out for a signed-in B2B account, which does not get these perks.
+ * Same-day delivery is offered as a retail perk (as on the product page), so
+ * it is left out for a signed-in B2B account (`useShippingPerks`).
  */
 export function CourierPerks() {
-  const { show, threshold } = useShippingPerks();
+  const { show } = useShippingPerks();
   if (!show) return null;
 
   return (
-    <div className="flex items-center gap-3 self-start rounded-2xl border border-white/80 bg-white/60 py-3 pr-5 pl-3 shadow-[0_14px_34px_-20px_rgb(190_18_60/0.45)] ring-1 ring-rose-200/50 backdrop-blur-md sm:gap-4 md:self-end dark:border-white/10 dark:bg-white/[0.05] dark:ring-white/5">
+    <div className="flex items-center gap-3 self-start sm:gap-4 md:self-end">
       <div aria-hidden className="w-[104px] shrink-0 text-neutral-900 sm:w-[132px] dark:text-white">
         <svg viewBox="0 0 132 76" className="block h-auto w-full overflow-visible">
           <defs>
@@ -117,13 +118,8 @@ export function CourierPerks() {
       </div>
 
       <div className="min-w-0">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-red-600 dark:text-red-400">Kargo Ayrıcalığı</p>
-        <p className="mt-1.5 text-sm leading-snug text-neutral-700 dark:text-neutral-300">
-          <span className="font-bold text-neutral-950 dark:text-white">{threshold} üzeri</span> ücretsiz kargo
-        </p>
-        <p className="mt-0.5 text-sm leading-snug text-neutral-700 dark:text-neutral-300">
-          İstanbul içi <span className="font-bold text-neutral-950 dark:text-white">VIP aynı gün</span> teslimat
-        </p>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-red-600 dark:text-red-400">Kurye Ayrıcalığı</p>
+        <p className="mt-1.5 text-sm font-semibold leading-snug text-neutral-900 dark:text-white">İstanbul içi aynı gün teslimat</p>
       </div>
     </div>
   );

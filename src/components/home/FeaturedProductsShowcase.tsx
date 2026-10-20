@@ -49,12 +49,13 @@ export function FeaturedProductsShowcase({
 
   return (
     // On a white band in the light theme, the same white the supplier photos are
-    // shot on, so each product stands on the page with no tile around it.
+    // shot on, so each product stands on the page with no tile around it. The
+    // lüle row continues the white below, so this one keeps less at its foot.
     <ProductRow
       headingId="sectiklerimiz-baslik"
       title="Sizin İçin Seçtiklerimiz"
       subtitle="En çok tercih edilen ve yeni gelen ürünler"
-      className="bg-white py-12 sm:py-16 dark:bg-transparent"
+      className="bg-white pt-12 pb-8 sm:pt-16 sm:pb-10 dark:bg-transparent"
       products={lists[active]}
       mine={mine}
       loggedIn={loggedIn}
