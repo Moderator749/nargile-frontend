@@ -35,7 +35,8 @@ const ARROW =
 interface ProductRowProps {
   headingId: string;
   title: string;
-  subtitle: string;
+  /** A line of text, or text with its own markup (the lüle row's pairs). */
+  subtitle: ReactNode;
   /**
    * Beside the title and subtitle, centred on them (the picks' tabs); on a
    * phone, under them.
