@@ -9,6 +9,7 @@ import { DealsFunnel } from "@/components/home/DealsFunnel";
 import { FeaturedProductsShowcase } from "@/components/home/FeaturedProductsShowcase";
 import { HeroAside } from "@/components/home/HeroAside";
 import { HeroSlider } from "@/components/home/HeroSlider";
+import { KumbaraShowcase } from "@/components/home/KumbaraShowcase";
 import { LuleShowcase } from "@/components/home/LuleShowcase";
 import { SeoIntro } from "@/components/home/SeoIntro";
 import { SultanPuanShowcase } from "@/components/home/SultanPuanShowcase";
@@ -57,6 +58,10 @@ const PICKS_COUNT = 15;
 /** "Lüle Alırken Kararsız Kalacaksınız": this category's products, as the row under the picks. */
 const LULE_CATEGORY_SLUG = "luleler";
 const LULE_COUNT = 15;
+
+/** "Kumbara 20.000 TL": this category's products, in the band under the deals. */
+const KUMBARA_CATEGORY_SLUG = "marpuclar";
+const KUMBARA_COUNT = 15;
 
 type Picks = Record<(typeof PICK_KEYS)[number], CatalogProduct[]>;
 
@@ -166,7 +171,7 @@ export default async function HomePage() {
   // What to show and what it says: "Ana Sayfa Düzenleme" (/admin/homepage).
   const home = await getHomepage();
   const { sections } = home;
-  const [categories, featured, flashSales, brands, content, artwork, bestsellers, newest, brandRows, sultanPuan, lules] =
+  const [categories, featured, flashSales, brands, content, artwork, bestsellers, newest, brandRows, sultanPuan, lules, marpuclar] =
     await Promise.all([
       getCategories(),
       getPublicProducts(FEATURED_CATEGORY_SLUG, FEATURED_PRODUCTS_COUNT),
@@ -192,6 +197,7 @@ export default async function HomePage() {
       getSultanPuanShowcase(),
       // With room to spare, as the picks: some have no photo or no price.
       getPublicProducts(LULE_CATEGORY_SLUG, LULE_COUNT * 2),
+      getPublicProducts(KUMBARA_CATEGORY_SLUG, KUMBARA_COUNT * 2),
     ]);
   const allCategories = categories ?? [];
   const sidebar = resolveNav(home.navigation.sidebar, allCategories, brands ?? []);
@@ -317,6 +323,11 @@ export default async function HomePage() {
             subtitle={home.deals.subtitle}
           />
         )}
+
+        {/* Module 9c½: "Kumbara 20.000 TL" — the annual bonus as the SultanPuan
+            band's twin, over the Marpuçlar, straight under the deals. Nothing
+            while the bonus is off or the category is empty. */}
+        <KumbaraShowcase products={showable(marpuclar, KUMBARA_COUNT)} categories={allCategories} />
 
         {/* Module 9d: "Markalarımız", one heading over a band per brand,
             alternating sides, just above the gallery. */}
