@@ -17,8 +17,22 @@ const SECONDS_PER_BRAND = 3;
  * lands on an identical frame, so the loop has no seam; the pause hangs off the
  * track's own hover rather than an ancestor `group`, which is what would
  * otherwise light every name at once.
+ *
+ * The homepage runs it twice — under the perks bar near the top, and under
+ * the statement near the foot. The top one is `decorative`: hidden from
+ * screen readers, so the list is announced once, as its own region.
  */
-export function BrandTicker({ brands }: { brands: string[] }) {
+export function BrandTicker({
+  brands,
+  decorative = false,
+  className = "pb-2 pt-4 sm:pt-5",
+}: {
+  brands: string[];
+  /** A second copy on the page: no landmark, nothing for a screen reader. */
+  decorative?: boolean;
+  /** The band's vertical padding. */
+  className?: string;
+}) {
   if (brands.length === 0) return null;
   const half = [...brands, ...brands];
   const duration = `${half.length * SECONDS_PER_BRAND}s`;
@@ -55,7 +69,11 @@ export function BrandTicker({ brands }: { brands: string[] }) {
   );
 
   return (
-    <section aria-label="Dünya markaları" className="bg-white pb-2 pt-4 sm:pt-5 dark:bg-transparent">
+    <section
+      aria-label={decorative ? undefined : "Dünya markaları"}
+      aria-hidden={decorative || undefined}
+      className={`bg-white dark:bg-transparent ${className}`}
+    >
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6">
         {/* Framed by hairlines above and below, open at the ends. The lines are
             on this wrapper and the mask on the track inside, so only the names

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CreditCard, Landmark, ShoppingCart, type LucideIcon } from "lucide-react";
+import { BadgePercent, CreditCard, ShoppingCart, type LucideIcon } from "lucide-react";
 
 import { useShippingPerks } from "@/hooks/useShippingPerks";
 import { useStoreParameters } from "@/hooks/useStoreParameters";
@@ -36,8 +36,9 @@ interface Perk {
  * tablet, beside them from `lg`), one under another below.
  * Each is a link to its section on "Ayrıcalıklar ve Avantajlar".
  *
- * The discount ranges are the live ladders from "Parametreler" (what checkout
- * applies); a ladder the panel empties drops its item. They are retail
+ * The havale range is the live ladder from "Parametreler" (what checkout
+ * applies); the basket discount names no figure, but is still there only
+ * while its ladder has a rung — a ladder the panel empties drops its item. They are retail
  * promises, so the bar is left out for a signed-in B2B account
  * (`useShippingPerks`), as the SultanPuan and Kumbara bands are.
  */
@@ -53,8 +54,8 @@ export function StorePerks() {
       anchor: "taksit",
       Icon: CreditCard,
       label: "Taksit Avantajı",
-      value: "3 Eşit Taksit",
-      note: "Peşin fiyatına, anlaşmalı kredi kartlarında.",
+      value: "Peşin fiyatına 3 taksit",
+      note: "Anlaşmalı kredi kartlarına 3 eşit taksit.",
     },
     ...(volume
       ? [
@@ -62,7 +63,7 @@ export function StorePerks() {
             anchor: "sepet-indirimi",
             Icon: ShoppingCart,
             label: "Otomatik İndirim",
-            value: volume,
+            value: "Sepette indirim",
             note: "Sepet tutarınıza göre anında otomatik indirim.",
           },
         ]
@@ -71,7 +72,7 @@ export function StorePerks() {
       ? [
           {
             anchor: "havale-indirimi",
-            Icon: Landmark,
+            Icon: BadgePercent,
             label: "Havale & EFT",
             value: transfer,
             note: "Havale ve EFT ödemelerinde ekstra nakit indirimi.",
@@ -107,7 +108,10 @@ export function StorePerks() {
                 <span className="block whitespace-nowrap text-[11px] font-semibold uppercase tracking-[0.22em] text-neutral-500 dark:text-neutral-400">
                   {label}
                 </span>
-                <span className="mt-1 block text-2xl font-extrabold tracking-tight text-neutral-900 tabular-nums transition-colors duration-200 group-hover:text-red-700 dark:text-white dark:group-hover:text-red-400">
+                {/* Two lines kept for the figure from md to xl, where "Peşin fiyatına
+                    3 taksit" needs them, so the three lines under the figures
+                    start level; one from xl, where every figure fits. */}
+                <span className="mt-1 block text-balance text-2xl font-extrabold tracking-tight text-neutral-900 tabular-nums transition-colors duration-200 group-hover:text-red-700 md:min-h-[2lh] xl:min-h-0 dark:text-white dark:group-hover:text-red-400">
                   {value}
                 </span>
                 <span className="mt-1 block text-sm leading-relaxed text-neutral-500 dark:text-neutral-400">{note}</span>

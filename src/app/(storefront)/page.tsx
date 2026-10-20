@@ -286,6 +286,11 @@ export default async function HomePage() {
             under the hero row and over the picks. */}
         <StorePerks />
 
+        {/* Module 6½: the brand ticker again, on its own under the perks bar
+            (the statement keeps its own copy near the foot). Decorative: a
+            screen reader hears the list once, there. */}
+        {sections.brands && <BrandTicker brands={home.brands.items} decorative className="pb-2 pt-4 sm:pt-5" />}
+
         {/* Module 9b: "Sizin İçin Seçtiklerimiz", two tabbed product lists, on
             the perks bar's white, then "Lüle Alırken Kararsız Kalacaksınız" on the
             same white: each one row that slides sideways. */}
