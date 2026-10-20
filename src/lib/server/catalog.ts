@@ -158,10 +158,16 @@ export function getProduct(ref: string): Promise<CatalogProductDetail | null> {
 
 /**
  * "Parametreler" — free shipping, the coal rule, the discount ladders, Sultan
- * Puan — as checkout applies them, for pages that state the rules. Cached with
- * the catalog: saving the parameters in the panel drops the "catalog" tag, so
- * the pages follow it. If the API cannot be reached, the server's own defaults.
+ * Puan — as checkout applies them, for pages that state the rules. Read fresh
+ * every time (no-store), not from the catalog's day-long cache: a page quoting
+ * the rules must never quote yesterday's, whether or not the change was made
+ * through the panel. If the API cannot be reached, the server's own defaults.
  */
 export async function getStoreParameters(): Promise<StoreParameters> {
-  return (await getJson<StoreParameters>("/settings/parameters")) ?? DEFAULT_STORE_PARAMETERS;
+  try {
+    const res = await fetch(`${API_URL}/settings/parameters`, { cache: "no-store" });
+    return res.ok ? ((await res.json()) as StoreParameters) : DEFAULT_STORE_PARAMETERS;
+  } catch {
+    return DEFAULT_STORE_PARAMETERS;
+  }
 }

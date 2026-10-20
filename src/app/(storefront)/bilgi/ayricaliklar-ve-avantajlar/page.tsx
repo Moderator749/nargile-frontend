@@ -9,8 +9,11 @@ import { getStoreParameters } from "@/lib/server/catalog";
 import { formatRate } from "@/lib/storeParameters";
 import type { ParameterTier, StoreParameters } from "@/types";
 
-// A day, as the catalog; saving "Parametreler" in the panel refreshes it at once.
-export const revalidate = 86400;
+// Rendered per request, from parameters read fresh each time
+// (getStoreParameters): a change in "Parametreler" — saved in the panel or
+// not — shows on the next visit. Neither the render nor the read is cached,
+// so the page makes no ISR writes.
+export const revalidate = 0;
 
 /** "3000.00" → "3.000 TL", "29999.99" → "29.999,99 TL". */
 const tl = (amount: string | number) =>
@@ -216,10 +219,6 @@ export default async function PerksPage() {
       <p className="max-w-2xl text-base leading-relaxed text-neutral-600 dark:text-neutral-400">
         Bireysel (perakende) alışverişlerinizde geçerli kargo, teslimat, ödeme ve puan ayrıcalıklarının tamamı. Tutarlar ve
         oranlar, ödeme adımında uygulananlarla aynıdır.
-      </p>
-      <p className="mt-2 max-w-2xl text-sm leading-relaxed text-neutral-500 dark:text-neutral-500">
-        Bayi, Toptan ve Kafe hesapları kendi fiyat listeleriyle alışveriş yapar; bu sayfadaki indirim ve puanlar bu
-        hesaplara uygulanmaz.
       </p>
 
       {/* The perks at a glance: each a link to its card. */}
