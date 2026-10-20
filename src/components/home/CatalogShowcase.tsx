@@ -9,102 +9,70 @@ import type { ResolvedTile } from "@/lib/showcase";
 import { SITE_NAME } from "@/lib/site";
 
 /**
- * A tile's place in the bento. On a desktop (`lg`, four columns, 180px rows)
- * every tile has an explicit area, so the composition holds whatever order
- * the list arrives in; on a tablet (two columns) and a phone (one) the tiles
- * flow in list order and only their width and height change.
+ * The layout. On a desktop (`lg`) the grid has 60 narrow columns — 60 is
+ * what 2/5, 1/5, 1/4, 1/3 and 1/2 all divide — and each tile spans its share.
+ * The gutters are the tiles' own padding (the list pulls itself out by half a
+ * gutter on each side), since a `gap` would be paid 59 times across 60 tracks.
  *
- * - `feature`: 2×2 on a desktop, the full row on a tablet, tall on a phone.
- * - `wide`: 2×1 on a desktop, the full row on a tablet.
- * - `square`: 1×1 on a desktop, half a row on a tablet.
+ * - The first row: one featured tile, 2/5 of the width, and three narrow
+ *   ones, 1/5 each. The featured one is the first of the first four that the
+ *   editor marked "geniş" (else the first), set at the front of the row.
+ * - The rest: rows of at most four, as even as they come (5 → 3 + 2,
+ *   7 → 4 + 3, 9 → 3 + 3 + 3), each row's tiles sharing its width equally,
+ *   so there is never a hole, however many tiles the editor holds.
+ *
+ * On a tablet the first four make a 2×2 block and the rest follow in pairs,
+ * an odd last one taking the row; on a phone they stack. Every row is the
+ * same compact height.
  */
-type Slot = "feature" | "wide" | "square";
-
 interface Placed {
   tile: ResolvedTile;
-  /** Its place in the admin's list, for the index number and the key. */
+  /** Its place in the editor's list, for the index number and the key. */
   index: number;
-  slot: Slot;
-  /** grid-column / grid-row on a desktop. */
-  col: string;
-  row: string;
+  featured: boolean;
+  /** Columns of the desktop's 60. */
+  span: number;
+  /** The whole row on a tablet (an odd tile left at the end). */
+  fullOnTablet: boolean;
 }
 
-/**
- * The tiles as bento blocks of four: each block fills a 4×2 area exactly — a
- * feature (2×2), two squares and a wide tile (2×1) — and every other block is
- * mirrored, so the features zig-zag down the page. A tile the admin marked
- * "geniş" takes the block's feature, then its wide slot; otherwise the order
- * is the admin's. One to three tiles left over close the grid as one full
- * row (a single tile across it, two halves, or a wide and two squares). So
- * there is never a hole, however many tiles the editor holds.
- */
-function bento(tiles: ResolvedTile[]): Placed[] {
-  const placed: Placed[] = [];
+/** Rows of at most four, as even as they come: 5 → [3, 2], 7 → [4, 3], 10 → [4, 3, 3]. */
+function rowSizes(count: number): number[] {
+  if (count === 0) return [];
+  const rows = Math.ceil(count / 4);
+  const base = Math.floor(count / rows);
+  return Array.from({ length: rows }, (_, i) => base + (i < count % rows ? 1 : 0));
+}
+
+function layout(tiles: ResolvedTile[]): Placed[] {
   const indexed = tiles.map((tile, index) => ({ tile, index }));
-  const full = Math.floor(indexed.length / 4);
+  const top = indexed.slice(0, 4);
+  const featuredAt = Math.max(0, top.findIndex((t) => t.tile.wide));
+  const row = [top[featuredAt], ...top.filter((_, i) => i !== featuredAt)];
+  // Fewer than four in all: the featured tile still leads, the others share what is left.
+  const topSpans = [[60], [36, 24], [30, 15, 15], [24, 12, 12, 12]][row.length - 1] ?? [];
+  const placed: Placed[] = row.map((t, i) => ({
+    ...t,
+    featured: i === 0,
+    span: topSpans[i],
+    fullOnTablet: row.length % 2 === 1 && i === row.length - 1,
+  }));
 
-  for (let g = 0; g < full; g++) {
-    const group = indexed.slice(g * 4, g * 4 + 4);
-    const featureAt = Math.max(0, group.findIndex((t) => t.tile.wide));
-    const feature = group[featureAt];
-    const rest = group.filter((_, i) => i !== featureAt);
-    const wideAt = rest.findIndex((t) => t.tile.wide);
-    const wide = rest[wideAt >= 0 ? wideAt : rest.length - 1];
-    const [a, b] = rest.filter((t) => t !== wide);
-    const row = g * 2 + 1;
-    const mirrored = g % 2 === 1;
-    placed.push(
-      { ...feature, slot: "feature", col: mirrored ? "3 / span 2" : "1 / span 2", row: `${row} / span 2` },
-      { ...a, slot: "square", col: mirrored ? "1" : "3", row: `${row}` },
-      { ...b, slot: "square", col: mirrored ? "2" : "4", row: `${row}` },
-      { ...wide, slot: "wide", col: mirrored ? "1 / span 2" : "3 / span 2", row: `${row + 1}` },
-    );
+  const rest = indexed.slice(4);
+  let at = 0;
+  for (const size of rowSizes(rest.length)) {
+    for (const t of rest.slice(at, at + size)) {
+      placed.push({ ...t, featured: false, span: 60 / size, fullOnTablet: false });
+    }
+    at += size;
   }
-
-  const left = indexed.slice(full * 4);
-  const row = `${full * 2 + 1}`;
-  if (left.length === 1) {
-    placed.push({ ...left[0], slot: "wide", col: "1 / span 4", row });
-  } else if (left.length === 2) {
-    placed.push(
-      { ...left[0], slot: "wide", col: "1 / span 2", row },
-      { ...left[1], slot: "wide", col: "3 / span 2", row },
-    );
-  } else if (left.length === 3) {
-    const wideAt = Math.max(0, left.findIndex((t) => t.tile.wide));
-    const [a, b] = left.filter((_, i) => i !== wideAt);
-    placed.push(
-      { ...left[wideAt], slot: "wide", col: "1 / span 2", row },
-      { ...a, slot: "square", col: "3", row },
-      { ...b, slot: "square", col: "4", row },
-    );
-  }
+  if (rest.length % 2 === 1) placed[placed.length - 1].fullOnTablet = true;
   return placed;
 }
 
-/** Each slot's span on a tablet and height below a desktop (where the grid's rows set it). */
-const SLOT_CLASS: Record<Slot, string> = {
-  feature: "h-[280px] md:col-span-2 md:h-[300px]",
-  wide: "h-[190px] md:col-span-2 md:h-[200px]",
-  square: "h-[190px] md:h-[200px]",
-};
-
-const TITLE_CLASS: Record<Slot, string> = {
-  feature: "text-[1.75rem] md:text-4xl",
-  wide: "text-xl md:text-2xl",
-  square: "text-xl",
-};
-
-/** The image's share of the viewport at each size, for the browser's choice of file. */
-const SIZES: Record<Slot, string> = {
-  feature: "(min-width: 1024px) 50vw, 100vw",
-  wide: "(min-width: 1024px) 50vw, 100vw",
-  square: "(min-width: 1024px) 25vw, (min-width: 768px) 50vw, 100vw",
-};
-
 /**
- * "Premium Ürün Yelpazesi": the catalog as an editorial bento (`bento`).
+ * "Premium Ürün Yelpazesi": the catalog as an editorial grid (`layout`): a
+ * featured tile and three narrow ones across the top, the rest in even rows.
  *
  * Each tile is one link — a full-bleed photograph (or, with none yet, the
  * category's icon on the dark floor) under a scrim that is dark where the
@@ -138,14 +106,16 @@ export function CatalogShowcase({ title, subtitle, tiles }: { title: string; sub
         )}
         <span aria-hidden className="mx-auto mb-10 mt-4 block h-1.5 w-14 rounded-full bg-red-600" />
 
-        <ul className="grid w-full grid-cols-1 gap-4 md:grid-cols-2 md:gap-5 lg:auto-rows-[180px] lg:grid-cols-4">
-          {bento(tiles).map(({ tile, index, slot, col, row }) => {
+        <ul className="grid w-full grid-cols-1 gap-4 md:grid-cols-2 md:gap-5 lg:-mx-2.5 lg:w-[calc(100%+1.25rem)] lg:grid-cols-[repeat(60,minmax(0,1fr))] lg:gap-x-0">
+          {layout(tiles).map(({ tile, index, featured, span, fullOnTablet }) => {
             const Icon = homeIcon(tile.icon);
             return (
               <li
                 key={`${tile.label}-${index}`}
-                style={{ "--bento-col": col, "--bento-row": row } as CSSProperties}
-                className={`min-w-0 ${SLOT_CLASS[slot]} lg:h-auto lg:[grid-column:var(--bento-col)] lg:[grid-row:var(--bento-row)]`}
+                style={{ "--span": span } as CSSProperties}
+                className={`min-w-0 ${featured ? "h-[240px]" : "h-[190px]"} md:h-[220px] lg:px-2.5 lg:[grid-column:span_var(--span)] ${
+                  fullOnTablet ? "md:col-span-2" : ""
+                }`}
               >
                 <Link
                   href={tile.href}
@@ -158,7 +128,7 @@ export function CatalogShowcase({ title, subtitle, tiles }: { title: string; sub
                       src={tile.image}
                       alt={`${tile.label} | ${SITE_NAME}`}
                       fill
-                      sizes={SIZES[slot]}
+                      sizes={`(min-width: 1024px) ${Math.round((span / 60) * 100)}vw, ${fullOnTablet ? "100vw" : "(min-width: 768px) 50vw, 100vw"}`}
                       unoptimized={!canOptimiseImage(tile.image)}
                       className="-z-20 object-cover object-center transition-transform duration-700 ease-out motion-safe:group-hover:scale-105"
                     />
@@ -196,7 +166,9 @@ export function CatalogShowcase({ title, subtitle, tiles }: { title: string; sub
                         {tile.eyebrow}
                       </span>
                       <h3
-                        className={`text-balance font-semibold leading-[1.1] tracking-tighter text-white drop-shadow-md ${TITLE_CLASS[slot]}`}
+                        className={`text-balance font-semibold leading-[1.1] tracking-tighter text-white drop-shadow-md ${
+                          featured ? "text-2xl md:text-3xl" : span <= 12 ? "text-lg md:text-xl lg:text-lg" : "text-xl"
+                        }`}
                       >
                         {tile.label}
                       </h3>
