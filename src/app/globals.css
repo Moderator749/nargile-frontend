@@ -33,7 +33,6 @@
   --animate-kategori-glow: kategori-glow 2.4s ease-in-out infinite;
   --animate-chevron-float: chevron-float 2.4s ease-in-out infinite;
   --animate-perks-in: perks-in 250ms ease-out 150ms both;
-  --animate-courier-run: courier-run 3.2s cubic-bezier(0.65, 0, 0.35, 1) infinite;
   --animate-glow-drift: glow-drift 14s ease-in-out infinite alternate;
 
   /* Semantic colour tokens ("industrial luxury"): bg-background, text-muted-foreground, border-border… */
@@ -174,23 +173,7 @@ html[data-auth] .guest-only {
   }
 }
 
-/* Shipping band: the courier's dot running its route, pausing at the door. */
-@keyframes courier-run {
-  0% {
-    offset-distance: 0%;
-    opacity: 0;
-  }
-  12% {
-    opacity: 1;
-  }
-  78%,
-  100% {
-    offset-distance: 100%;
-    opacity: 1;
-  }
-}
-
-/* Shipping band: the red mesh drifting, too slowly to be watched. */
+/* Lüle spotlight card: its red and gold mesh drifting, too slowly to be watched. */
 @keyframes glow-drift {
   to {
     transform: translate3d(6%, -4%, 0) scale(1.08);

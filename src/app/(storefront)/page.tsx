@@ -10,7 +10,6 @@ import { FeaturedProductsShowcase } from "@/components/home/FeaturedProductsShow
 import { HeroAside } from "@/components/home/HeroAside";
 import { HeroSlider } from "@/components/home/HeroSlider";
 import { LuleShowcase } from "@/components/home/LuleShowcase";
-import { PremiumShippingBanner } from "@/components/home/PremiumShippingBanner";
 import { SeoIntro } from "@/components/home/SeoIntro";
 import { SultanPuanShowcase } from "@/components/home/SultanPuanShowcase";
 import { CategorySidebar } from "@/components/layout/CategorySidebar";
@@ -288,9 +287,11 @@ export default async function HomePage() {
             the ticker's white, then "Lüle Alırken Kararsız Kalacaksınız" on the same white:
             each one row that slides sideways. */}
         <FeaturedProductsShowcase lists={picks} categories={allCategories} />
-        {/* Between the two rows, a break: the shipping privileges on a dark band. */}
-        <PremiumShippingBanner />
-        <LuleShowcase products={showable(lules, LULE_COUNT)} categories={allCategories} />
+        <LuleShowcase
+          products={showable(lules, LULE_COUNT)}
+          categories={allCategories}
+          categoryHref={`/catalog/${LULE_CATEGORY_SLUG}`}
+        />
 
         {/* Module 9b½: "%10 SultanPuan" — the loyalty card and the products
             whose price alone earns it, on the same white, before the dark

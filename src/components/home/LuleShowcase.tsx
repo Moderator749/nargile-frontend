@@ -1,5 +1,6 @@
 "use client";
 
+import { LuleSpotlight } from "@/components/home/LuleSpotlight";
 import { ProductRow } from "@/components/home/ProductRow";
 import { useOwnPrices } from "@/hooks/useOwnPrices";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -7,11 +8,22 @@ import { useAuthHydrated } from "@/store/useHasHydrated";
 import type { CatalogProduct, Category } from "@/types";
 
 /**
- * "Lüle Alırken Kararsız Kalacaksınız": the Lüleler category as one sliding row, the same row
- * as "Sizin İçin Seçtiklerimiz" above it and on the same white band.
+ * "Lüle Alırken Kararsız Kalacaksınız": the Lüleler category as one sliding
+ * row, the same row as "Sizin İçin Seçtiklerimiz" above it and on the same
+ * white band — opened by the collection's spotlight card (`LuleSpotlight`),
+ * with the livelier cards (`elevated`).
  * Server-rendered at the public price, re-priced for a signed-in visitor.
  */
-export function LuleShowcase({ products, categories }: { products: CatalogProduct[]; categories: Category[] }) {
+export function LuleShowcase({
+  products,
+  categories,
+  categoryHref,
+}: {
+  products: CatalogProduct[];
+  categories: Category[];
+  /** The Lüleler category's page, for "Tümünü Keşfet". */
+  categoryHref: string;
+}) {
   const mine = useOwnPrices(products);
   const hydrated = useAuthHydrated();
   const token = useAuthStore((s) => s.token);
@@ -26,6 +38,8 @@ export function LuleShowcase({ products, categories }: { products: CatalogProduc
       mine={mine}
       loggedIn={hydrated && !!token}
       categories={categories}
+      lead={<LuleSpotlight href={categoryHref} />}
+      elevated
     />
   );
 }
