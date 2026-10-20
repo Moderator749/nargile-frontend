@@ -9,7 +9,7 @@ import type { ResolvedTile } from "@/lib/showcase";
 import { SITE_NAME } from "@/lib/site";
 
 /**
- * A tile's place in the bento. On a desktop (`lg`, four columns, 240px rows)
+ * A tile's place in the bento. On a desktop (`lg`, four columns, 180px rows)
  * every tile has an explicit area, so the composition holds whatever order
  * the list arrives in; on a tablet (two columns) and a phone (one) the tiles
  * flow in list order and only their width and height change.
@@ -85,15 +85,15 @@ function bento(tiles: ResolvedTile[]): Placed[] {
 
 /** Each slot's span on a tablet and height below a desktop (where the grid's rows set it). */
 const SLOT_CLASS: Record<Slot, string> = {
-  feature: "h-[340px] md:col-span-2 md:h-[400px]",
-  wide: "h-[240px] md:col-span-2 md:h-[280px]",
-  square: "h-[240px] md:h-[280px]",
+  feature: "h-[280px] md:col-span-2 md:h-[300px]",
+  wide: "h-[190px] md:col-span-2 md:h-[200px]",
+  square: "h-[190px] md:h-[200px]",
 };
 
 const TITLE_CLASS: Record<Slot, string> = {
-  feature: "text-3xl md:text-4xl",
-  wide: "text-2xl md:text-[1.75rem]",
-  square: "text-xl md:text-2xl",
+  feature: "text-[1.75rem] md:text-4xl",
+  wide: "text-xl md:text-2xl",
+  square: "text-xl",
 };
 
 /** The image's share of the viewport at each size, for the browser's choice of file. */
@@ -138,7 +138,7 @@ export function CatalogShowcase({ title, subtitle, tiles }: { title: string; sub
         )}
         <span aria-hidden className="mx-auto mb-10 mt-4 block h-1.5 w-14 rounded-full bg-red-600" />
 
-        <ul className="grid w-full grid-cols-1 gap-4 md:grid-cols-2 md:gap-5 lg:auto-rows-[240px] lg:grid-cols-4">
+        <ul className="grid w-full grid-cols-1 gap-4 md:grid-cols-2 md:gap-5 lg:auto-rows-[180px] lg:grid-cols-4">
           {bento(tiles).map(({ tile, index, slot, col, row }) => {
             const Icon = homeIcon(tile.icon);
             return (
@@ -164,7 +164,7 @@ export function CatalogShowcase({ title, subtitle, tiles }: { title: string; sub
                     />
                   ) : (
                     <Icon
-                      className="absolute inset-0 -z-20 m-auto h-28 w-28 text-white/10 transition-transform duration-700 ease-out motion-safe:group-hover:scale-105"
+                      className="absolute inset-0 -z-20 m-auto h-20 w-20 text-white/10 transition-transform duration-700 ease-out motion-safe:group-hover:scale-105"
                       strokeWidth={0.75}
                       aria-hidden
                     />
@@ -185,14 +185,14 @@ export function CatalogShowcase({ title, subtitle, tiles }: { title: string; sub
                   {/* On a small glass pill, so it reads on a photo shot on white too. */}
                   <span
                     aria-hidden
-                    className="absolute left-5 top-5 rounded-full bg-black/30 px-2.5 py-1 font-mono text-[11px] font-medium tracking-[0.2em] text-white/80 tabular-nums ring-1 ring-inset ring-white/15 backdrop-blur-md md:left-6 md:top-6"
+                    className="absolute left-4 top-4 rounded-full bg-black/30 px-2.5 py-1 font-mono text-[11px] font-medium tracking-[0.2em] text-white/80 tabular-nums ring-1 ring-inset ring-white/15 backdrop-blur-md md:left-5 md:top-5"
                   >
                     {String(index + 1).padStart(2, "0")}
                   </span>
 
-                  <div className="flex w-full items-end justify-between gap-4 p-6 transition-transform duration-500 ease-out motion-safe:group-hover:-translate-y-1 md:p-7">
+                  <div className="flex w-full items-end justify-between gap-4 p-5 transition-transform duration-500 ease-out motion-safe:group-hover:-translate-y-1 md:p-6">
                     <div className="min-w-0">
-                      <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.22em] text-red-300">
+                      <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.22em] text-red-300">
                         {tile.eyebrow}
                       </span>
                       <h3
