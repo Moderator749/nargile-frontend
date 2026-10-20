@@ -117,27 +117,31 @@ export function ProductRow({
       {/* The page's gutters on the wrapper, so the header and the row inside it
           line up with every other row. */}
       <div className={PAGE_CONTAINER}>
-        {/* Heading (and what follows it on its line) at the left, `actions`
-            at the right — one line from `md`, or from `xl` when something
-            follows the heading too: title, tabs and van need that width, and
-            then all three share one centre line. Narrower, each wraps under
-            the one before. */}
+        {/* Heading at the left, `actions` at the right, one line from `md`.
+            With something beside the heading (the picks' tabs), from `xl` the
+            header is three columns — 1fr, auto, 1fr — so the middle one, the
+            tabs, sits on the row's exact centre, over the middle card of the
+            five in view, and all three are centred on one line. Narrower, the
+            tabs follow the title and the van goes under them. */}
         <div
           className={`mb-6 flex w-full flex-col gap-6 ${
-            besideTitle ? "xl:flex-row xl:items-center xl:justify-between" : "md:flex-row md:items-end md:justify-between"
+            besideTitle
+              ? "xl:grid xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] xl:items-center xl:gap-x-6"
+              : "md:flex-row md:items-end md:justify-between"
           }`}
         >
           {besideTitle ? (
             // Title and subtitle as one column, the tabs beside it, centred on
-            // it; on a phone the tabs go under it.
-            <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:gap-6">
+            // it; on a phone the tabs go under it. From `xl` this wrapper
+            // steps aside (`contents`): both are cells of the header's grid.
+            <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:gap-6 xl:contents">
               <div className="flex flex-col">
                 <h2 id={headingId} className={HEADING}>
                   {title}
                 </h2>
                 <p className={SUBTITLE}>{subtitle}</p>
               </div>
-              {besideTitle}
+              <div className="xl:justify-self-center">{besideTitle}</div>
             </div>
           ) : (
             <div>

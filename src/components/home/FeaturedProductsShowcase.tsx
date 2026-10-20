@@ -64,8 +64,8 @@ export function FeaturedProductsShowcase({
       mine={mine}
       loggedIn={loggedIn}
       categories={categories}
-      // Title, then the tabs on its line, then the van at the right.
-      actions={<FreeShippingPerk className="self-start xl:shrink-0 xl:self-center" />}
+      // Title at the left, the tabs dead centre, the van at the right.
+      actions={<FreeShippingPerk className="self-start xl:justify-self-end" />}
       besideTitle={
         visible.length > 1 && (
           <div className={TABS_TRACK} role="group" aria-label="Ürün listesi">
