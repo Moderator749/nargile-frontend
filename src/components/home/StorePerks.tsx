@@ -31,7 +31,7 @@ interface Perk {
 /**
  * The store's three payment advantages as a quiet bar under the hero row,
  * over "Sizin İçin Seçtiklerimiz": no cards, no borders, no fills — an icon in the
- * shop's red, a small label, the figure in bold and a line under it, three
+ * shop's red, a small label in the same red, the figure in bold and a line under it, three
  * across from `md` with hairlines between them (the icon over the words on a
  * tablet, beside them from `lg`), one under another below.
  * Each is a link to its section on "Ayrıcalıklar ve Avantajlar".
@@ -104,7 +104,7 @@ export function StorePerks() {
                 aria-hidden
               />
               <span className="min-w-0">
-                <span className="block whitespace-nowrap text-[11px] font-semibold uppercase tracking-[0.22em] text-neutral-500 dark:text-neutral-400">
+                <span className="block whitespace-nowrap text-[11px] font-semibold uppercase tracking-[0.22em] text-red-600 dark:text-red-400">
                   {label}
                 </span>
                 {/* Two lines kept for the figure from md to xl, where "Peşin fiyatına
