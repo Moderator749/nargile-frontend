@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 
 /**
  * A delivery perk in a product row's header: a line-drawn vehicle driving in
@@ -11,6 +12,9 @@ import type { ReactNode } from "react";
  * headlamp breathes; the vehicle itself never travels, so nothing beside it
  * moves. Everything stands still for a visitor who asks for reduced motion
  * (motion-safe:). The keyframes are in globals.css.
+ *
+ * The whole block — vehicle and words — is a link to its section of
+ * "Ayrıcalıklar ve Avantajlar", fading a touch under the pointer.
  *
  * Drawn facing right; `facing="left"` mirrors the drawing and its road
  * together, so everything follows: the wheels turn the other way, the beam
@@ -88,6 +92,7 @@ export function DeliveryPerk({
   eyebrow,
   children,
   facing = "right",
+  href,
   className = "",
 }: {
   /** The vehicle's drawing, inside an <svg> of `viewBox`. */
@@ -100,13 +105,20 @@ export function DeliveryPerk({
   children: ReactNode;
   /** Which way it drives: as drawn, or mirrored. */
   facing?: "right" | "left";
+  /** Where the whole block leads (its section of the perks page). */
+  href: string;
   /** Its place in the header (alignment). */
   className?: string;
 }) {
   return (
     // Facing left, the speed lines trail toward the words (up to 14px past
     // the drawing as they fade), so the gap is wider that way round.
-    <div className={`flex items-center ${facing === "left" ? "gap-6 sm:gap-7" : "gap-3 sm:gap-4"} ${className}`}>
+    <Link
+      href={href}
+      className={`flex items-center rounded-xl transition-opacity duration-200 hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent ${
+        facing === "left" ? "gap-6 sm:gap-7" : "gap-3 sm:gap-4"
+      } ${className}`}
+    >
       <div aria-hidden className={`shrink-0 text-neutral-900 dark:text-white ${width} ${facing === "left" ? "-scale-x-100" : ""}`}>
         <svg viewBox={viewBox} className="block h-auto w-full overflow-visible">
           {vehicle}
@@ -119,6 +131,6 @@ export function DeliveryPerk({
         <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-red-600 dark:text-red-400">{eyebrow}</p>
         {children}
       </div>
-    </div>
+    </Link>
   );
 }

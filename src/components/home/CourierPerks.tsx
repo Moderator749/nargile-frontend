@@ -2,6 +2,7 @@
 
 import { AMBER, BEAM, BeamGradient, DeliveryPerk, IDLE, RED, SpeedLines, Wheel } from "@/components/home/DeliveryPerk";
 import { useShippingPerks } from "@/hooks/useShippingPerks";
+import { PERKS_PAGE } from "@/lib/bilgi";
 
 /**
  * The courier perk in the lüle row's header, beside its title: İstanbul's
@@ -20,6 +21,7 @@ export function CourierPerks() {
     <DeliveryPerk
       viewBox="0 0 132 76"
       width="w-[104px] sm:w-[132px]"
+      href={`${PERKS_PAGE.href}#istanbul-kurye`}
       eyebrow="Kurye Ayrıcalığı"
       facing="left"
       className="self-start md:self-end"

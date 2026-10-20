@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 
-import { AdvantagesSection } from "@/components/home/AdvantagesSection";
 import { BrandStatement } from "@/components/home/BrandStatement";
 import { CatalogShowcase } from "@/components/home/CatalogShowcase";
 import { BrandShowcase } from "@/components/home/BrandShowcase";
@@ -381,8 +380,6 @@ export default async function HomePage() {
           <CatalogShowcase title={home.showcase.title} subtitle={home.showcase.subtitle} tiles={showcase} />
         )}
 
-        {/* Module 11: the advantages. */}
-        {sections.advantages && <AdvantagesSection content={home.advantages} />}
 
         {/* Module 12: the close before the footer — the shop in a few plain
             paragraphs (still switched by "Hakkımızda" in Ana Sayfa Düzenleme). */}

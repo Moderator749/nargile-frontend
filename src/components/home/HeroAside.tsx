@@ -4,6 +4,7 @@ import { ArrowUpRight } from "lucide-react";
 
 import { InstagramIcon, YouTubeIcon } from "@/components/icons/SocialIcons";
 import { SmoothAnchor } from "@/components/home/SmoothAnchor";
+import { PERKS_PAGE } from "@/lib/bilgi";
 import type { PromoBox } from "@/lib/home";
 
 /**
@@ -101,6 +102,16 @@ function Backdrop({ src, flip, zoom }: { src: string; flip?: boolean; zoom?: boo
  * the row none of its own — folded to no width, its text would otherwise stand
  * a letter wide and stretch the slider down the page.
  */
+/**
+ * Where the advantages box leads: its own link, unless that is empty or the
+ * homepage's old "#avantajlar" section (the advantages grid, since removed) —
+ * then "Ayrıcalıklar ve Avantajlar", which says it all.
+ */
+function advantagesHref(href: string | null | undefined): string {
+  const link = href?.trim();
+  return !link || /^\/?#avantajlar$/.test(link) ? PERKS_PAGE.href : link;
+}
+
 export function HeroAside({ box }: { box?: PromoBox }) {
   const widget = box?.widget;
   // The admin types the dots into the eyebrow; the overline has none.
@@ -144,7 +155,7 @@ export function HeroAside({ box }: { box?: PromoBox }) {
       </div>
 
       <SmoothAnchor
-        href={box?.href || "/#avantajlar"}
+        href={advantagesHref(box?.href)}
         className={`group ${CARD} transition-shadow duration-300 hover:shadow-xl hover:shadow-black/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent`}
       >
         <Backdrop {...BACKDROPS.advantages} zoom />

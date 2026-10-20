@@ -2,6 +2,7 @@
 
 import { AMBER, BEAM, BeamGradient, DeliveryPerk, IDLE, RED, SpeedLines, Wheel } from "@/components/home/DeliveryPerk";
 import { useShippingPerks } from "@/hooks/useShippingPerks";
+import { PERKS_PAGE } from "@/lib/bilgi";
 
 /** The van's windows: a pale sky, light against its dark body in either theme. */
 const GLASS = "rgb(186 230 253)";
@@ -24,6 +25,7 @@ export function FreeShippingPerk({ className = "" }: { className?: string }) {
     <DeliveryPerk
       viewBox="0 0 150 76"
       width="w-[118px] sm:w-[140px]"
+      href={`${PERKS_PAGE.href}#ucretsiz-kargo`}
       eyebrow="Ücretsiz Kargo & Hızlı Sevk"
       className={className}
       vehicle={

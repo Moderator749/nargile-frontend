@@ -35,8 +35,8 @@ export function SocialFields({
             value={v.href}
             maxLength={300}
             onChange={(e) => set({ href: e.target.value })}
-            placeholder="/#avantajlar"
-            hint="/#avantajlar: sayfada yumuşakça kayar."
+            placeholder="/bilgi/ayricaliklar-ve-avantajlar"
+            hint="Boş bırakılırsa Ayrıcalıklar ve Avantajlar sayfası açılır."
           />
         </div>
       </fieldset>

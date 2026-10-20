@@ -18,7 +18,7 @@ const blank = (): PromoBoxWrite => ({
   eyebrow: "Ayrıcalıklar & Avantajlar",
   title: "",
   text: null,
-  href: "/#avantajlar",
+  href: "/bilgi/ayricaliklar-ve-avantajlar",
   requires: null,
   widget: DEFAULT_WIDGET,
   is_active: true,
