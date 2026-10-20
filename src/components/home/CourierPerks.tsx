@@ -5,8 +5,9 @@ import { useShippingPerks } from "@/hooks/useShippingPerks";
 
 /**
  * The courier perk in the lüle row's header, beside its title: İstanbul's
- * moto kurye (`DeliveryPerk`), line drawn with its box in the shop's red, and
- * one line beside it: same-day delivery in İstanbul.
+ * moto kurye (`DeliveryPerk`), line drawn with its box in the shop's red,
+ * heading left toward the title (the picks row's van heads right), and one
+ * line beside it: same-day delivery in İstanbul.
  *
  * Same-day delivery is offered as a retail perk (as on the product page), so
  * it is left out for a signed-in B2B account (`useShippingPerks`).
@@ -20,6 +21,7 @@ export function CourierPerks() {
       viewBox="0 0 132 76"
       width="w-[104px] sm:w-[132px]"
       eyebrow="Kurye Ayrıcalığı"
+      facing="left"
       className="self-start md:self-end"
       vehicle={
         <>

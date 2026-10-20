@@ -11,6 +11,12 @@ import type { ReactNode } from "react";
  * headlamp breathes; the vehicle itself never travels, so nothing beside it
  * moves. Everything stands still for a visitor who asks for reduced motion
  * (motion-safe:). The keyframes are in globals.css.
+ *
+ * Drawn facing right; `facing="left"` mirrors the drawing and its road
+ * together, so everything follows: the wheels turn the other way, the beam
+ * leads to the left, the speed lines stream off the right and the road flows
+ * back to the right. The courier faces left, toward its row's title, while
+ * the van above faces right.
  */
 
 /** Turns about its own centre: a wheel's spokes, inside its still tyre. */
@@ -81,6 +87,7 @@ export function DeliveryPerk({
   width,
   eyebrow,
   children,
+  facing = "right",
   className = "",
 }: {
   /** The vehicle's drawing, inside an <svg> of `viewBox`. */
@@ -91,12 +98,16 @@ export function DeliveryPerk({
   /** The small red label over the words. */
   eyebrow: string;
   children: ReactNode;
+  /** Which way it drives: as drawn, or mirrored. */
+  facing?: "right" | "left";
   /** Its place in the header (alignment). */
   className?: string;
 }) {
   return (
-    <div className={`flex items-center gap-3 sm:gap-4 ${className}`}>
-      <div aria-hidden className={`shrink-0 text-neutral-900 dark:text-white ${width}`}>
+    // Facing left, the speed lines trail toward the words (up to 14px past
+    // the drawing as they fade), so the gap is wider that way round.
+    <div className={`flex items-center ${facing === "left" ? "gap-6 sm:gap-7" : "gap-3 sm:gap-4"} ${className}`}>
+      <div aria-hidden className={`shrink-0 text-neutral-900 dark:text-white ${width} ${facing === "left" ? "-scale-x-100" : ""}`}>
         <svg viewBox={viewBox} className="block h-auto w-full overflow-visible">
           {vehicle}
         </svg>
