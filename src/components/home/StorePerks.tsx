@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BadgePercent, CreditCard, ShoppingCart, type LucideIcon } from "lucide-react";
+import { CreditCard, ShoppingCart, TrendingDown, type LucideIcon } from "lucide-react";
 
 import { useShippingPerks } from "@/hooks/useShippingPerks";
 import { useStoreParameters } from "@/hooks/useStoreParameters";
@@ -36,9 +36,8 @@ interface Perk {
  * tablet, beside them from `lg`), one under another below.
  * Each is a link to its section on "Ayrıcalıklar ve Avantajlar".
  *
- * The havale range is the live ladder from "Parametreler" (what checkout
- * applies); the basket discount names no figure, but is still there only
- * while its ladder has a rung — a ladder the panel empties drops its item. They are retail
+ * The discount ranges are the live ladders from "Parametreler" (what checkout
+ * applies); a ladder the panel empties drops its item. They are retail
  * promises, so the bar is left out for a signed-in B2B account
  * (`useShippingPerks`), as the SultanPuan and Kumbara bands are.
  */
@@ -62,8 +61,8 @@ export function StorePerks() {
           {
             anchor: "sepet-indirimi",
             Icon: ShoppingCart,
-            label: "Otomatik İndirim",
-            value: "Sepette indirim",
+            label: "Sepette İndirim",
+            value: volume,
             note: "Sepet tutarınıza göre anında otomatik indirim.",
           },
         ]
@@ -72,7 +71,7 @@ export function StorePerks() {
       ? [
           {
             anchor: "havale-indirimi",
-            Icon: BadgePercent,
+            Icon: TrendingDown,
             label: "Havale & EFT",
             value: transfer,
             note: "Havale ve EFT ödemelerinde ekstra nakit indirimi.",
