@@ -13,6 +13,7 @@ import { HeroSlider } from "@/components/home/HeroSlider";
 import { KumbaraShowcase } from "@/components/home/KumbaraShowcase";
 import { LuleShowcase } from "@/components/home/LuleShowcase";
 import { SeoIntro } from "@/components/home/SeoIntro";
+import { StorePerks } from "@/components/home/StorePerks";
 import { SultanPuanShowcase } from "@/components/home/SultanPuanShowcase";
 import { CategorySidebar } from "@/components/layout/CategorySidebar";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -333,6 +334,10 @@ export default async function HomePage() {
         {/* Module 9c½: two campaign boxes under the deals (placeholder art
             until the shop's photos). */}
         <CampaignBanners />
+
+        {/* Module 9c¾: the payment advantages as a quiet bar, no boxes, between
+            the campaign boxes and the brands. */}
+        <StorePerks />
 
         {/* Module 9d: "Markalarımız", one heading over a band per brand,
             alternating sides, just above the gallery. */}
