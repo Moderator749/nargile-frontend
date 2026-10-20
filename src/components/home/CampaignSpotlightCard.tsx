@@ -3,33 +3,21 @@
 import Link from "next/link";
 import { ArrowRight, Crown, Truck } from "lucide-react";
 
-import { useStoreParameters } from "@/hooks/useStoreParameters";
-import { formatMoneyCompact } from "@/lib/format";
-import { retailPerks } from "@/lib/perks";
-import { isAdminRole } from "@/lib/roles";
-import { useAuthStore } from "@/store/useAuthStore";
-import { useAuthHydrated } from "@/store/useHasHydrated";
+import { useShippingPerks } from "@/hooks/useShippingPerks";
 
 /**
- * The lüle row's first card: not a product but the collection's own page in
- * the row — an obsidian card at a product card's size (it is in the same
- * slot and stretches to the same height), a slow red and gold mesh behind
- * gold rings like a bowl seen from above, the collection's name, the shipping
- * perks, and "Tümünü Keşfet" into the category.
+ * A collection's campaign card, at a product card's size: obsidian, a slow red
+ * and gold mesh behind gold rings like a bowl seen from above, the
+ * collection's name, the shipping perks, and "Tümünü Keşfet" into it. Made as
+ * the lüle row's first slot; not used anywhere now — kept for a later
+ * campaign (put it in a `flex` slot of a product card's width: it stretches
+ * to the height of the cards beside it).
  *
- * The perks quote the live free-shipping threshold ("Parametreler"). They are
- * retail promises — free shipping over it is a retail perk at checkout, and
- * İstanbul's same-day courier one on the product page — so a signed-in B2B
- * account sees the card without them, rather than be promised what checkout
- * will not honour. The card keeps its size either way: it is as tall as the
- * product cards beside it.
+ * The perks (`useShippingPerks`) quote the live free-shipping threshold and
+ * are left out for a signed-in B2B account; the card keeps its size either way.
  */
-export function LuleSpotlight({ href }: { href: string }) {
-  const params = useStoreParameters();
-  const hydrated = useAuthHydrated();
-  const user = useAuthStore((s) => s.user);
-  const perks = !(hydrated && user && !retailPerks(user) && !isAdminRole(user.role));
-  const threshold = formatMoneyCompact(params.free_shipping_threshold);
+export function CampaignSpotlightCard({ href }: { href: string }) {
+  const { show: perks, threshold } = useShippingPerks();
 
   return (
     <article className="group relative isolate flex flex-1 flex-col overflow-hidden rounded-2xl bg-neutral-950 p-6 text-white ring-1 ring-white/10 shadow-[0_18px_36px_-20px_rgb(0_0_0/0.5)] transition-[transform,box-shadow] duration-300 ease-out hover:shadow-[0_18px_36px_-18px_rgb(220_38_38/0.45)] motion-safe:hover:-translate-y-1">

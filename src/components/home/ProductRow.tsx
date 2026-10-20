@@ -47,10 +47,11 @@ interface ProductRowProps {
   /** The section's own band and spacing. */
   className?: string;
   /**
-   * The row's first slot, before the products and a card's width: the lüle
-   * row's spotlight card. It stretches to the cards' height.
+   * Behind everything, inside the section: a band's own background layers
+   * (the lüle row's mesh). The section's `className` makes it the frame
+   * (`relative isolate overflow-hidden`).
    */
-  lead?: ReactNode;
+  decoration?: ReactNode;
   /** The livelier card treatment (`ELEVATED_CARD`). */
   elevated?: boolean;
 }
@@ -74,7 +75,7 @@ export function ProductRow({
   loggedIn,
   categories,
   className = "",
-  lead,
+  decoration,
   elevated = false,
 }: ProductRowProps) {
   const categoryById = new Map(categories.map((c) => [c.id, c]));
@@ -112,6 +113,7 @@ export function ProductRow({
 
   return (
     <section aria-labelledby={headingId} className={className}>
+      {decoration}
       {/* The page's gutters on the wrapper, so the header and the row inside it
           line up with every other row. */}
       <div className={PAGE_CONTAINER}>
@@ -138,7 +140,6 @@ export function ProductRow({
             elevated ? "-mx-4 -mb-8 w-[calc(100%+2rem)] scroll-px-4 px-4 pt-3 pb-10" : "w-full pt-2 pb-2"
           }`}
         >
-          {lead && <li className={SLIDE}>{lead}</li>}
           {products.map((listed) => {
             // A signed-in visitor's own copy, once it is in; its price is theirs.
             const product = mine?.get(listed.id) ?? listed;

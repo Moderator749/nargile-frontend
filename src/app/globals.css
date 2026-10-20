@@ -34,6 +34,11 @@
   --animate-chevron-float: chevron-float 2.4s ease-in-out infinite;
   --animate-perks-in: perks-in 250ms ease-out 150ms both;
   --animate-glow-drift: glow-drift 14s ease-in-out infinite alternate;
+  --animate-wheel-spin: wheel-spin 0.55s linear infinite;
+  --animate-moto-idle: moto-idle 0.36s ease-in-out infinite alternate;
+  --animate-road-flow: road-flow 0.55s linear infinite;
+  --animate-speed-line: speed-line 0.9s ease-out infinite;
+  --animate-beam-pulse: beam-pulse 2.4s ease-in-out infinite;
 
   /* Semantic colour tokens ("industrial luxury"): bg-background, text-muted-foreground, border-border… */
   --color-background: var(--background);
@@ -173,7 +178,49 @@ html[data-auth] .guest-only {
   }
 }
 
-/* Lüle spotlight card: its red and gold mesh drifting, too slowly to be watched. */
+/* The lüle row's courier: wheels turning, the bike idling a hair up and down,
+   the road's dashes flowing back under it, speed lines streaming off its tail
+   and the headlamp's beam breathing. It drives in place: nothing beside it
+   moves. All of it stops for prefers-reduced-motion (motion-safe:). */
+@keyframes wheel-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes moto-idle {
+  to {
+    transform: translateY(-0.6px);
+  }
+}
+
+@keyframes road-flow {
+  to {
+    background-position-x: -18px;
+  }
+}
+
+@keyframes speed-line {
+  0% {
+    opacity: 0;
+    transform: translateX(6px);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-14px);
+  }
+}
+
+@keyframes beam-pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+/* Campaign card and lüle band: their mesh drifting, too slowly to be watched. */
 @keyframes glow-drift {
   to {
     transform: translate3d(6%, -4%, 0) scale(1.08);
