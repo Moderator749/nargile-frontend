@@ -11,8 +11,8 @@ import type { CatalogProduct, Category } from "@/types";
  * "Lüle Alırken Kararsız Kalacaksınız": the Lüleler category as one sliding
  * row of products, the same row as "Sizin İçin Seçtiklerimiz" above it and
  * on the same white. The courier perk sits in its header, beside the title,
- * with the courier driving (`CourierPerks`); the cards are the livelier ones
- * (`elevated`).
+ * with the courier driving (`CourierPerks`); the cards are flat, their edge
+ * turning red on hover (`accent`).
  * Server-rendered at the public price, re-priced for a signed-in visitor.
  */
 export function LuleShowcase({
@@ -41,7 +41,7 @@ export function LuleShowcase({
       mine={mine}
       loggedIn={hydrated && !!token}
       categories={categories}
-      elevated
+      accent
       more={{ href: categoryHref, label: "Tüm Lüleleri Gör" }}
     />
   );

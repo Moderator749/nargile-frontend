@@ -55,7 +55,7 @@ export function BrandTicker({ brands }: { brands: string[] }) {
   );
 
   return (
-    <section aria-label="Dünya markaları" className="bg-white pb-2 pt-7 sm:pt-8 dark:bg-transparent">
+    <section aria-label="Dünya markaları" className="bg-white pb-2 pt-4 sm:pt-5 dark:bg-transparent">
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6">
         {/* Framed by hairlines above and below, open at the ends. The lines are
             on this wrapper and the mask on the track inside, so only the names

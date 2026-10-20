@@ -59,7 +59,7 @@ export function FeaturedProductsShowcase({
       headingId="sectiklerimiz-baslik"
       title="Sizin İçin Seçtiklerimiz"
       subtitle="En çok tercih edilen ve yeni gelen ürünler"
-      className="bg-white pt-12 pb-8 sm:pt-16 sm:pb-10 dark:bg-transparent"
+      className="bg-white pt-8 pb-8 sm:pt-10 sm:pb-10 dark:bg-transparent"
       products={lists[active]}
       mine={mine}
       loggedIn={loggedIn}

@@ -280,7 +280,7 @@ export default async function HomePage() {
         {sections.promos && (
           // On the hero's white, carried on: the band's own padding, not a margin on the grey.
           <div className="bg-white dark:bg-transparent">
-            <div className={`${PAGE_CONTAINER} pt-10 pb-12`}>
+            <div className={`${PAGE_CONTAINER} pt-8 pb-6`}>
               <BrandStatement />
             </div>
           </div>
