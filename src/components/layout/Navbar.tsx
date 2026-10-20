@@ -45,7 +45,7 @@ function SearchForm({ id, className = "", q }: SearchProps & { q: string }) {
         defaultValue={q}
         maxLength={100}
         placeholder="Ürün, marka veya kod ara"
-        className="h-10 w-full rounded-md border border-gray-200 bg-gray-50 pl-10 pr-4 text-sm text-foreground transition-colors placeholder:text-muted-foreground focus:border-red-700 focus:bg-white focus:outline-none focus:ring-1 focus:ring-red-700 dark:border-white/10 dark:bg-white/[0.04] dark:focus:border-red-400 dark:focus:bg-background dark:focus:ring-red-400 [&::-webkit-search-cancel-button]:hidden"
+        className="h-10 w-full rounded-md border border-gray-300 bg-white pl-10 pr-4 text-sm text-foreground shadow-[0_1px_2px_rgb(0_0_0/0.04)] transition-colors placeholder:text-muted-foreground focus:border-red-700 focus:outline-none focus:ring-1 focus:ring-red-700 dark:border-white/10 dark:bg-white/[0.04] dark:focus:border-red-400 dark:focus:bg-background dark:focus:ring-red-400 [&::-webkit-search-cancel-button]:hidden"
       />
     </Form>
   );

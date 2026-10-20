@@ -63,7 +63,7 @@ export function FeaturedProductsShowcase({
       loggedIn={loggedIn}
       categories={categories}
       // Title, then the tabs on its line, then the van at the right.
-      actions={<FreeShippingPerk className="self-start xl:self-end" />}
+      actions={<FreeShippingPerk className="self-start xl:self-center" />}
       besideTitle={
         visible.length > 1 && (
           <div className="flex flex-wrap gap-2" role="group" aria-label="Ürün listesi">

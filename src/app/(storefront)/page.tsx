@@ -249,8 +249,11 @@ export default async function HomePage() {
         {!sections.hero && <h1 className="sr-only">{TITLE}</h1>}
 
         {/* Module 4: the category column (closed until "KATEGORİLER" opens
-            it), with the hero beside it. */}
+            it), with the hero beside it, on a white band edge to edge (as much
+            room under the slider as over it); the column keeps its own grey
+            (CategorySidebar), and the page's grey resumes below. */}
         {sections.hero && (
+          <div className="bg-white pb-3 sm:pb-4 dark:bg-transparent">
           <div className={`${PAGE_CONTAINER} pt-3 sm:pt-4 lg:flex lg:items-stretch`}>
             <CategorySidebar items={sidebar} />
             <div className="min-w-0 flex-1">
@@ -267,6 +270,7 @@ export default async function HomePage() {
                 <HeroAside box={spotlight} />
               </div>
             </div>
+          </div>
           </div>
         )}
 

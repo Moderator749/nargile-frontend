@@ -114,14 +114,15 @@ export function ProductRow({
       <div className={PAGE_CONTAINER}>
         {/* Heading (and what follows it on its line) at the left, `actions`
             at the right — one line from `md`, or from `xl` when something
-            follows the heading too: title, tabs and van need that width.
-            Narrower, each wraps under the one before. */}
+            follows the heading too: title, tabs and van need that width, and
+            then all three share one centre line. Narrower, each wraps under
+            the one before. */}
         <div
           className={`mb-6 flex w-full flex-col gap-6 ${
-            besideTitle ? "xl:flex-row xl:items-end xl:justify-between" : "md:flex-row md:items-end md:justify-between"
+            besideTitle ? "xl:flex-row xl:items-center xl:justify-between" : "md:flex-row md:items-end md:justify-between"
           }`}
         >
-          <div className={besideTitle ? "flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end sm:gap-x-8" : undefined}>
+          <div className={besideTitle ? "flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-8" : undefined}>
             <div>
               <h2 id={headingId} className="text-3xl font-extrabold tracking-tight text-gray-900 md:text-4xl dark:text-white">
                 {title}
