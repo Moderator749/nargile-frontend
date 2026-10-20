@@ -5,11 +5,13 @@
  *
  * The catalog's own pages are the exception (`opensByDefault`): there the
  * column is the way around, so every arrival on one opens it, whatever was
- * chosen before. Product pages are the opposite exception (`closesByDefault`):
- * the product is what the visitor came for, so every arrival closes it, and
- * opening it there gives the column the room of the advantages beside the
- * price (see `ProductDetail`). On either, the choice holds for that page and
- * is not remembered — the homepage keeps the visitor's own choice.
+ * chosen before. Product pages and "Fırsat Ürünleri" are the opposite
+ * exception (`closesByDefault`): the product, or the deals' grid, is what the
+ * visitor came for, so every arrival closes it. Opening it there gives the
+ * column the room of the advantages beside the price (see `ProductDetail`),
+ * or of the grid's fourth column (see `DealsGrid`). On either kind, the choice
+ * holds for that page and is not remembered — the homepage keeps the
+ * visitor's own choice.
  *
  * Kept in localStorage and mirrored onto `<html data-sidebar>` by a script that
  * runs before first paint — the same trick this app uses for the theme and the
@@ -26,8 +28,8 @@ const COLLAPSED = "collapsed";
 /** The catalog, its categories and the brand pages: they open with the column showing. */
 const OPEN_BY_DEFAULT = /^\/(?:catalog|marka)(?:\/|$)/;
 
-/** A product's page: it opens with the column closed. */
-const CLOSED_BY_DEFAULT = /^\/product(?:\/|$)/;
+/** A product's page and the deals: they open with the column closed. */
+const CLOSED_BY_DEFAULT = /^\/(?:product|firsat-urunleri)(?:\/|$)/;
 
 export const opensByDefault = (pathname: string) => OPEN_BY_DEFAULT.test(pathname);
 export const closesByDefault = (pathname: string) => CLOSED_BY_DEFAULT.test(pathname);
@@ -57,7 +59,7 @@ export function isSidebarCollapsed(): boolean {
 
 export function setSidebarCollapsed(collapsed: boolean) {
   apply(collapsed);
-  // On a catalog or product page the next arrival sets it anyway: nothing to remember.
+  // On a catalog, product or deals page the next arrival sets it anyway: nothing to remember.
   const { pathname } = window.location;
   if (opensByDefault(pathname) || closesByDefault(pathname)) return;
   try {
@@ -70,7 +72,7 @@ export function setSidebarCollapsed(collapsed: boolean) {
 /**
  * The column as a page should open with, for a client-side navigation (the
  * pre-paint script covers a full load): open on the catalog's pages, closed on
- * a product's, else the visitor's remembered choice.
+ * a product's and the deals', else the visitor's remembered choice.
  */
 export function applySidebarFor(pathname: string) {
   const collapsed = !opensByDefault(pathname) && (closesByDefault(pathname) || rememberedCollapsed());

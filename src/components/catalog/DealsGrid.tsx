@@ -10,7 +10,11 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { useAuthHydrated } from "@/store/useHasHydrated";
 import type { CatalogProduct, Category } from "@/types";
 
-const GRID = "grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 xl:grid-cols-4";
+// Four across on a wide screen while the category column is closed; three
+// while it is open beside the grid, as the catalog's grid has it (the
+// column's state is on <html>, see lib/sidebar). Below `lg` the column is the
+// bar's drawer and the grid never changes.
+const GRID = "grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 xl:sidebar-closed:grid-cols-4";
 /** The first row on a wide screen loads at once; the rest lazily. */
 const EAGER_CARDS = 4;
 
