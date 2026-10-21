@@ -90,15 +90,29 @@ export function Navbar({
   const user = useAuthStore((s) => s.user);
   const cartCount = useCartStore(selectCartCount);
   const headerRef = useRef<HTMLElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
-  // Sticky toolbars (catalog filters) sit right under the header: publish its live height.
+  // What stays on screen as the page scrolls — the logo row, and the menu
+  // rows only where they are sticky too (from md) — published as
+  // --header-height, for the anchors and sticky columns that sit under it.
   useEffect(() => {
-    const el = headerRef.current;
-    if (!el) return;
+    const header = headerRef.current;
+    const menu = menuRef.current;
+    if (!header || !menu) return;
     const root = document.documentElement;
-    const observer = new ResizeObserver(() => root.style.setProperty("--header-height", `${el.offsetHeight}px`));
-    observer.observe(el);
-    return () => observer.disconnect();
+    const update = () => {
+      const pinned = getComputedStyle(menu).position === "sticky" ? menu.offsetHeight : 0;
+      root.style.setProperty("--header-height", `${header.offsetHeight + pinned}px`);
+    };
+    const observer = new ResizeObserver(update);
+    observer.observe(header);
+    observer.observe(menu);
+    const wide = window.matchMedia("(min-width: 48rem)");
+    wide.addEventListener("change", update);
+    return () => {
+      observer.disconnect();
+      wide.removeEventListener("change", update);
+    };
   }, []);
 
   // Doors only some accounts have; the menu below is the same for everyone.
@@ -109,83 +123,95 @@ export function Navbar({
   // signed-in customer sees their own shipments there too.
   const trackHref = "/kargo-takip";
 
+  // Two blocks, pinned differently. From md both stay on screen, the menu
+  // rows held right under the 64px logo row, and read as one header. On a
+  // phone only the logo row stays: the search row and the menu bar scroll away
+  // with the page, and the bottom tab bar (MobileTabBar) keeps the categories
+  // a tap away — so a phone keeps 65px of header, not a third of its screen.
   return (
-    <header
-      ref={headerRef}
-      // White behind the logo row; the menu row under it (TopNav) has the
-      // category column's grey, framing the page with the column.
-      className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white text-foreground dark:border-border dark:bg-background"
-    >
-      {/* Module 2: logo · search · currency · order tracking · account · cart */}
-      <div className={`${PAGE_CONTAINER} flex h-16 items-center gap-1.5 sm:gap-2`}>
-        {/* The logo sits in the category column's width, so what follows it
-            starts exactly on that column's line — which is where
-            the first entry of the bar below starts. */}
-        <div className={`mr-2 shrink-0 lg:mr-0 ${SIDEBAR_WIDTH_LG}`}>
+    <>
+      <header
+        ref={headerRef}
+        // White behind the logo row; the menu row under it (TopNav) has the
+        // category column's grey, framing the page with the column.
+        className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white text-foreground md:border-b-0 dark:border-border dark:bg-background"
+      >
+        {/* Module 2: logo · search · currency · order tracking · account · cart */}
+        <div className={`${PAGE_CONTAINER} flex h-16 items-center gap-1.5 sm:gap-2`}>
+          {/* The logo sits in the category column's width, so what follows it
+              starts exactly on that column's line — which is where
+              the first entry of the bar below starts. */}
+          <div className={`mr-2 shrink-0 lg:mr-0 ${SIDEBAR_WIDTH_LG}`}>
+            <Link
+              href="/"
+              aria-label="Nargile Malzemesi ana sayfa"
+              className="inline-block rounded-sm text-foreground focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+            >
+              <Logo />
+            </Link>
+          </div>
+
+          <HeaderSearch id="header-search" className="hidden max-w-2xl flex-1 md:block lg:mr-4" />
+          <div className="flex-1 md:hidden" />
+
+          <CurrencySelect />
+
+          <Link href={trackHref} className={`${iconButton} lg:w-auto lg:gap-1.5 lg:px-3`} title="Kargo takip">
+            <PackageSearch className="h-[18px] w-[18px]" strokeWidth={1.5} aria-hidden />
+            <span className="sr-only lg:not-sr-only lg:text-[13px]">Kargo Takip</span>
+          </Link>
+
+          {accountLinks.map(({ href, label }) => (
+            <Link
+              key={href}
+              href={href}
+              className="hidden whitespace-nowrap rounded-full px-2 py-1 text-[13px] text-muted-foreground transition-colors duration-200 hover:text-foreground focus-visible:outline-2 focus-visible:outline-accent lg:block"
+            >
+              {label}
+            </Link>
+          ))}
+
+          <ThemeToggle />
+
+          {user ? (
+            <UserMenu user={user} />
+          ) : (
+            <Link
+              href="/login"
+              className="flex h-9 shrink-0 items-center whitespace-nowrap rounded-full bg-foreground px-4 text-[13px] font-medium text-background transition-opacity duration-200 hover:opacity-85 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            >
+              Giriş Yap
+            </Link>
+          )}
+
           <Link
-            href="/"
-            aria-label="Nargile Malzemesi ana sayfa"
-            className="inline-block rounded-sm text-foreground focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+            href="/cart"
+            aria-label={`Sepet (${cartCount} ürün)`}
+            className={`${iconButton} text-accent hover:bg-accent/10 hover:text-accent`}
           >
-            <Logo />
+            <ShoppingCart className="h-[21px] w-[21px]" strokeWidth={2} aria-hidden />
+            {cartCount > 0 && (
+              <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-accent px-1 font-mono text-[10px] font-bold leading-none text-white ring-2 ring-background tabular-nums">
+                {cartCount > 99 ? "99+" : cartCount}
+              </span>
+            )}
           </Link>
         </div>
+      </header>
 
-        <HeaderSearch id="header-search" className="hidden max-w-2xl flex-1 md:block lg:mr-4" />
-        <div className="flex-1 md:hidden" />
+      <div
+        ref={menuRef}
+        className="z-40 w-full border-b border-gray-200 bg-white text-foreground md:sticky md:top-16 dark:border-border dark:bg-background"
+      >
+        {/* Mobile: search gets its own row. */}
+        <div className="px-4 py-3 md:hidden">
+          <HeaderSearch id="header-search-mobile" />
+        </div>
 
-        <CurrencySelect />
-
-        <Link href={trackHref} className={`${iconButton} lg:w-auto lg:gap-1.5 lg:px-3`} title="Kargo takip">
-          <PackageSearch className="h-[18px] w-[18px]" strokeWidth={1.5} aria-hidden />
-          <span className="sr-only lg:not-sr-only lg:text-[13px]">Kargo Takip</span>
-        </Link>
-
-        {accountLinks.map(({ href, label }) => (
-          <Link
-            key={href}
-            href={href}
-            className="hidden whitespace-nowrap rounded-full px-2 py-1 text-[13px] text-muted-foreground transition-colors duration-200 hover:text-foreground focus-visible:outline-2 focus-visible:outline-accent lg:block"
-          >
-            {label}
-          </Link>
-        ))}
-
-        <ThemeToggle />
-
-        {user ? (
-          <UserMenu user={user} />
-        ) : (
-          <Link
-            href="/login"
-            className="flex h-9 shrink-0 items-center whitespace-nowrap rounded-full bg-foreground px-4 text-[13px] font-medium text-background transition-opacity duration-200 hover:opacity-85 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-          >
-            Giriş Yap
-          </Link>
-        )}
-
-        <Link
-          href="/cart"
-          aria-label={`Sepet (${cartCount} ürün)`}
-          className={`${iconButton} text-accent hover:bg-accent/10 hover:text-accent`}
-        >
-          <ShoppingCart className="h-[21px] w-[21px]" strokeWidth={2} aria-hidden />
-          {cartCount > 0 && (
-            <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-accent px-1 font-mono text-[10px] font-bold leading-none text-white ring-2 ring-background tabular-nums">
-              {cartCount > 99 ? "99+" : cartCount}
-            </span>
-          )}
-        </Link>
+        {/* Module 3: the horizontal menu. Links only — no dropdowns. Not in the
+            admin panel. */}
+        {showMenu && <TopNav categories={categories} links={links} />}
       </div>
-
-      {/* Mobile: search gets its own row. */}
-      <div className="px-4 pb-3 md:hidden">
-        <HeaderSearch id="header-search-mobile" />
-      </div>
-
-      {/* Module 3: the horizontal menu. Links only — no dropdowns. Not in the
-          admin panel. */}
-      {showMenu && <TopNav categories={categories} links={links} />}
-    </header>
+    </>
   );
 }

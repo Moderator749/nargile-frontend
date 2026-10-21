@@ -52,8 +52,9 @@
 
 :root {
   /* Sticky header height; Navbar measures and updates it live. These are pre-JS
-     estimates: mobile has an extra search row. Sticky toolbars sit below it. */
-  --header-height: 162px;
+     estimates: on a phone only the logo row stays pinned (the search row and
+     the menu scroll away); from md the menu bar is pinned under it. */
+  --header-height: 65px;
 }
 
 /* Light theme, or a "studio light" section: titanium-gray canvas, charcoal type. */

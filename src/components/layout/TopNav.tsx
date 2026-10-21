@@ -164,7 +164,8 @@ export function TopNav({ categories, links }: { categories: ResolvedNav[]; links
           onClick={() => setDrawer(true)}
           aria-expanded={drawer}
           aria-controls="category-drawer"
-          className="flex shrink-0 items-center gap-2.5 rounded-md bg-red-700 px-6 py-2 text-sm font-bold uppercase tracking-wider text-white shadow-sm transition-colors hover:bg-red-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-safe:animate-kategori-glow lg:hidden"
+          // A tablet's way to the drawer; a phone has the bottom bar's "Kategoriler".
+          className="hidden shrink-0 items-center gap-2.5 rounded-md bg-red-700 px-6 py-2 text-sm font-bold uppercase tracking-wider text-white shadow-sm transition-colors hover:bg-red-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-safe:animate-kategori-glow md:flex lg:hidden"
         >
           <LayoutGrid className="h-4 w-4 shrink-0 text-white" aria-hidden />
           Kategoriler
