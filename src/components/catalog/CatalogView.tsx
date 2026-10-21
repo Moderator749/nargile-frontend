@@ -64,8 +64,9 @@ export function CatalogView(props: CatalogViewProps) {
   // The page's frame, heading (its one <h1>) and category column stay outside
   // the boundary: a streamed boundary sends its fallback and its content both,
   // and either copy of the heading would otherwise be a second <h1>.
-  // The bottom space belongs to whatever follows the grid — the advantages
-  // section does — so this row keeps only enough to clear its own cards.
+  // The bottom space belongs to whatever follows the grid — the closing
+  // paragraphs' own padding (SeoIntro) — so this row keeps only enough to
+  // clear its own cards.
   return (
     <section className={`${PAGE_CONTAINER} flex-1 pb-2 pt-4 sm:pt-6`}>
       <div className="lg:flex lg:items-start">

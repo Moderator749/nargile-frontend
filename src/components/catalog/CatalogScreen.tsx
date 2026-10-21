@@ -1,5 +1,4 @@
 import { CatalogHeading } from "@/components/catalog/CatalogHeading";
-import { AdvantagesSection } from "@/components/home/AdvantagesSection";
 import { SeoIntro } from "@/components/home/SeoIntro";
 import { CatalogView } from "@/components/catalog/CatalogView";
 import { CategorySidebar } from "@/components/layout/CategorySidebar";
@@ -26,7 +25,7 @@ interface CatalogScreenProps {
 
 /**
  * Server-rendered catalog shell: heading and JSON-LD, around the interactive
- * grid. The category column and the advantage cards are the ones edited in
+ * grid. The category column and the closing paragraphs are the ones edited in
  * "Ana Sayfa Düzenleme"; the homepage's on/off switches do not apply here.
  */
 export async function CatalogScreen({
@@ -60,15 +59,9 @@ export async function CatalogScreen({
         sidebar={<CategorySidebar items={resolveNav(home.navigation.sidebar, categories, brands)} fit />}
       />
 
-      {/* The same eight cards the homepage closes with, below the grid and
-          clear of the category column: the terms are as worth reading at the
-          end of a category as on the way in. */}
-      <div className="mt-6 md:mt-8">
-        <AdvantagesSection content={home.advantages} />
-      </div>
-
-      {/* The shop in a few plain paragraphs, as the homepage closes, so every
-          listing page ends the same way above the footer. A category's own
+      {/* The shop in a few plain paragraphs, straight under the grid (its own
+          top padding is the gap), so every listing page ends the same way
+          above the footer. A category's own
           description is not repeated here: it already opens the page, under
           its heading. */}
       <SeoIntro copy={home.seo_intro} />

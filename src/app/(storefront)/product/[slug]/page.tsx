@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 
-import { AdvantagesSection } from "@/components/home/AdvantagesSection";
 import { CategorySidebar } from "@/components/layout/CategorySidebar";
 import { ProductDetail } from "@/components/product/ProductDetail";
 import { RelatedCategories } from "@/components/product/RelatedCategories";
@@ -113,13 +112,6 @@ export default async function ProductPage(props: PageProps<"/product/[slug]">) {
           <RelatedCategories links={related} />
         </div>
       )}
-      {/* "Ayrıcalıklar & Avantajlar", the homepage's cards as set in "Ana Sayfa
-          Düzenleme > Avantajlar". The product's own block ends with "Birlikte
-          İyi Gider", so this lands directly under it — or in its place when the
-          product has none. */}
-      <div className="pb-10 sm:pb-14">
-        <AdvantagesSection content={home.advantages} />
-      </div>
     </main>
   );
 }
