@@ -5,6 +5,7 @@ import { ARTICLES, BLOG_HREF, articleHref } from "@/lib/blog";
 import { FAQ_HREF } from "@/lib/faq";
 import { DEALS_HREF } from "@/lib/flashSale";
 import { INFO_LINKS } from "@/lib/footer";
+import { DEFAULT_LOCALE, LOCALES, localePath, type Locale } from "@/lib/i18n/config";
 import { brandCanonical, brandHref, productHref } from "@/lib/seo";
 import { getBrands, getCategories, getPublicProducts } from "@/lib/server/catalog";
 import { SITE_URL } from "@/lib/site";
@@ -22,6 +23,28 @@ async function allProducts(): Promise<CatalogProduct[]> {
     if (page.length < 100) break;
   }
   return products;
+}
+
+type Entry = MetadataRoute.Sitemap[number];
+
+/**
+ * One page in every language it is really in: an entry per language, each
+ * listing all of them (x-default the Turkish) — the sitemap form of the
+ * pages' own hreflang tags (lib/seo pageMetadata), which it agrees with.
+ * `languages` "all" for the shop's own pages; else an item's `locales`.
+ */
+function inLanguages(href: string, languages: "all" | readonly string[] | undefined, entry: Omit<Entry, "url">): Entry[] {
+  const set: Locale[] = LOCALES.filter((l) => l === DEFAULT_LOCALE || languages === "all" || languages?.includes(l));
+  const alternates =
+    set.length > 1
+      ? {
+          languages: {
+            ...Object.fromEntries(set.map((l) => [l, `${SITE_URL}${localePath(l, href)}`])),
+            "x-default": `${SITE_URL}${href}`,
+          },
+        }
+      : undefined;
+  return set.map((l) => ({ url: `${SITE_URL}${localePath(l, href)}`, ...entry, ...(alternates ? { alternates } : {}) }));
 }
 
 const latest = (dates: (string | null | undefined)[]): Date | undefined => {
@@ -55,31 +78,31 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   );
 
   return [
-    { url: `${SITE_URL}/`, lastModified: newest, changeFrequency: "daily", priority: 1 },
-    { url: `${SITE_URL}/catalog`, lastModified: newest, changeFrequency: "daily", priority: 0.9 },
+    ...inLanguages("/", "all", { lastModified: newest, changeFrequency: "daily", priority: 1 }),
+    ...inLanguages("/catalog", "all", { lastModified: newest, changeFrequency: "daily", priority: 0.9 }),
     // Undated: its list changes as deals open and close, which no date here records.
-    { url: `${SITE_URL}${DEALS_HREF}`, changeFrequency: "daily", priority: 0.8 },
-    ...categoryPages.map((category) => ({
-      url: `${SITE_URL}/catalog/${category.slug}`,
-      lastModified: latest([category.updated_at]),
-      changeFrequency: "daily" as const,
-      priority: category.parent_id === null ? 0.8 : 0.7,
-    })),
+    ...inLanguages(DEALS_HREF, "all", { changeFrequency: "daily", priority: 0.8 }),
+    ...categoryPages.flatMap((category) =>
+      inLanguages(`/catalog/${category.slug}`, category.locales, {
+        lastModified: latest([category.updated_at]),
+        changeFrequency: "daily",
+        priority: category.parent_id === null ? 0.8 : 0.7,
+      }),
+    ),
     ...brandPages
       .filter(({ products }) => products.length > 0)
-      .map(({ brand, products }) => ({
-        url: `${SITE_URL}${brandHref(brand.slug)}`,
-        lastModified: latest(products.map((p) => p.updated_at)),
-        changeFrequency: "weekly" as const,
-        priority: 0.7,
-      })),
-    ...products.map((p) => ({
-      url: `${SITE_URL}${productHref(p)}`,
-      lastModified: latest([p.updated_at]),
-      changeFrequency: "weekly" as const,
-      priority: 0.6,
-    })),
-    // The Bilgi Sayfaları, the FAQ and the blog.
+      .flatMap(({ brand, products }) =>
+        // In a language when its products are (as the page itself says).
+        inLanguages(brandHref(brand.slug), LOCALES.filter((l) => products.some((p) => p.locales?.includes(l))), {
+          lastModified: latest(products.map((p) => p.updated_at)),
+          changeFrequency: "weekly",
+          priority: 0.7,
+        }),
+      ),
+    ...products.flatMap((p) =>
+      inLanguages(productHref(p), p.locales, { lastModified: latest([p.updated_at]), changeFrequency: "weekly", priority: 0.6 }),
+    ),
+    // The Bilgi Sayfaları, the FAQ and the blog: Turkish only, for now.
     ...[BILGI_HREF, ...INFO_LINKS.map((l) => l.href), FAQ_HREF, BLOG_HREF, ...ARTICLES.map(articleHref)].map((href) => ({
       url: `${SITE_URL}${href}`,
       changeFrequency: "monthly" as const,

@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 
+import { DEFAULT_LOCALE, LOCALES, OG_LOCALE, localePath, type Locale } from "@/lib/i18n/config";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 import { htmlToText } from "@/lib/richText";
-import { DEFAULT_OG_IMAGE, INDEXING_ALLOWED, SEARCH_URL_TEMPLATE, SITE_NAME, SITE_URL } from "@/lib/site";
+import { DEFAULT_OG_IMAGE, INDEXING_ALLOWED, SITE_NAME, SITE_URL } from "@/lib/site";
 import { displayVariant, soldOut } from "@/lib/variants";
 import type { Brand, CatalogProduct, Category, HomeFooter } from "@/types";
 
@@ -10,7 +12,11 @@ export interface Breadcrumb {
   href: string;
 }
 
-const absolute = (href: string) => `${SITE_URL}${href}`;
+/** A site path as a full URL, in a language: ("/catalog", "en") → "https://…/en/catalog". */
+const absolute = (href: string, locale: Locale = DEFAULT_LOCALE) => `${SITE_URL}${localePath(locale, href)}`;
+
+/** schema.org's `inLanguage` for each language (BCP 47). */
+const IN_LANGUAGE: Record<Locale, string> = { tr: "tr-TR", en: "en", ar: "ar" };
 
 /**
  * The product detail page, by slug. A caller that only has the id (an old
@@ -58,10 +64,34 @@ export interface PageSeo {
   /** Extra <meta> tags (e.g. product:price:amount). */
   other?: Record<string, string>;
   noindex?: boolean;
+  /** The language this copy of the page is in; Turkish when not given. */
+  locale?: Locale;
+  /**
+   * The languages the page has real content in, Turkish always among them:
+   * the hreflang set. "all" for a page whose words are the shop's own
+   * (the homepage, the catalog); a product or category passes its
+   * `locales` from the API. Not given: Turkish only.
+   */
+  locales?: "all" | readonly string[];
+}
+
+/** The languages a page is really in, Turkish first. */
+function pageLanguages(locales: PageSeo["locales"]): Locale[] {
+  if (locales === "all") return [...LOCALES];
+  return LOCALES.filter((l) => l === DEFAULT_LOCALE || locales?.includes(l));
 }
 
 /**
  * The full set of tags for an indexable page, in one place.
+ *
+ * Languages: each copy of a page is its own canonical (/catalog/x,
+ * /en/catalog/x, /ar/catalog/x), and every copy lists the others as hreflang
+ * alternates, Turkish as x-default — but only the languages the page has
+ * real content in. An English or Arabic copy of a page that has no
+ * translation (a product not yet translated, the Turkish-only info pages)
+ * would be the Turkish text under another address: it is left out of the
+ * set and kept out of the index (noindex, follow), so it never competes
+ * with the Turkish page or reads as thin duplicate content.
  *
  * Metadata from the layout and the page is merged shallowly: a page that sets
  * `openGraph` at all replaces the layout's whole object, `siteName` and
@@ -70,20 +100,37 @@ export interface PageSeo {
  * pasted into WhatsApp, Instagram or X shows the same title, text and photo.
  */
 export function pageMetadata(page: PageSeo): Metadata {
+  const locale = page.locale ?? DEFAULT_LOCALE;
+  const languages = pageLanguages(page.locales);
+  const translated = languages.includes(locale);
+  const href = localePath(locale, page.href);
   const fullTitle = page.absoluteTitle ? page.title : `${page.title} | ${SITE_NAME}`;
   const photos = (page.images ?? []).filter((src): src is string => !!src).slice(0, 4);
   const images = photos.length > 0 ? photos.map((url) => ({ url, alt: page.imageAlt ?? page.title })) : [DEFAULT_OG_IMAGE];
   return {
     title: page.absoluteTitle ? { absolute: page.title } : page.title,
     description: page.description,
-    alternates: { canonical: page.href },
+    alternates: {
+      canonical: href,
+      ...(translated && languages.length > 1
+        ? {
+            languages: {
+              ...Object.fromEntries(languages.map((l) => [l, localePath(l, page.href)])),
+              "x-default": page.href,
+            },
+          }
+        : {}),
+    },
     openGraph: {
       type: page.type ?? "website",
-      locale: "tr_TR",
+      locale: OG_LOCALE[locale],
+      ...(translated && languages.length > 1
+        ? { alternateLocale: languages.filter((l) => l !== locale).map((l) => OG_LOCALE[l]) }
+        : {}),
       siteName: SITE_NAME,
       title: fullTitle,
       description: page.description,
-      url: page.href,
+      url: href,
       images,
     },
     twitter: {
@@ -95,7 +142,7 @@ export function pageMetadata(page: PageSeo): Metadata {
     ...(page.other ? { other: page.other } : {}),
     ...(!INDEXING_ALLOWED
       ? { robots: { index: false, follow: false } }
-      : page.noindex
+      : page.noindex || !translated
         ? { robots: { index: false, follow: true } }
         : {}),
   };
@@ -148,37 +195,37 @@ export function leadingBrands(products: CatalogProduct[] | null | undefined, lim
   return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, limit).map(([name]) => name);
 }
 
-const SHOP_PROMISE = "Kafe, toptancı ve bayilere özel fiyatlar, 3.000 TL üzeri ücretsiz kargo.";
-
 /** A category's description when it has no copy of its own: its name, its brands, the shop's offer. */
-export function categoryDescription(category: Category, products: CatalogProduct[] | null | undefined): string {
-  const brands = leadingBrands(products);
-  const lead = brands.length > 0 ? `${category.name}: ${brands.join(", ")} ve daha fazlası.` : `${category.name} modelleri ve fiyatları.`;
-  return metaDescription(`${lead} Orijinal ürünler, güvenli ödeme. ${SHOP_PROMISE}`);
+export function categoryDescription(
+  category: Category,
+  products: CatalogProduct[] | null | undefined,
+  locale: Locale = DEFAULT_LOCALE,
+): string {
+  const { meta } = getDictionary(locale);
+  return metaDescription(`${meta.categoryLead(category.name, leadingBrands(products))} ${meta.genuine} ${meta.shopPromise}`);
 }
 
-export function brandDescription(brand: Brand, products: CatalogProduct[] | null | undefined): string {
-  const count = products?.length ?? 0;
+export function brandDescription(brand: Brand, products: CatalogProduct[] | null | undefined, locale: Locale = DEFAULT_LOCALE): string {
+  const { meta } = getDictionary(locale);
   const sample = (products ?? []).slice(0, 2).map((p) => p.name);
-  const lead = count > 0
-    ? `${brand.name} nargile ürünleri${sample.length ? `: ${sample.join(", ")}` : ""} ve tüm ${brand.name} modelleri.`
-    : `${brand.name} ürünleri.`;
-  return metaDescription(`${lead} Orijinal ${brand.name}, güvenli ödeme. ${SHOP_PROMISE}`);
+  const lead = meta.brandLead(brand.name, sample, products?.length ?? 0);
+  return metaDescription(`${lead} ${meta.brandGenuine(brand.name)} ${meta.shopPromise}`);
 }
 
 // ── Site-wide structured data ─────────────────────────────────────────────────
 
 /** The shop as an OnlineStore, with what the footer says about reaching it. */
-export function organizationJsonLd(footer: HomeFooter | undefined) {
+export function organizationJsonLd(footer: HomeFooter | undefined, locale: Locale = DEFAULT_LOCALE) {
   const phone = footer?.phone?.trim();
   const email = footer?.email?.trim();
   const sameAs = (footer?.social ?? []).map((s) => s.href).filter((href) => /^https?:\/\//.test(href));
   return {
     "@context": "https://schema.org",
-    "@type": "OnlineStore",
+    // An online shop that also sells wholesale, to cafés and dealers.
+    "@type": ["OnlineStore", "WholesaleStore"],
     "@id": `${SITE_URL}/#organization`,
     name: SITE_NAME,
-    url: SITE_URL,
+    url: absolute("/", locale),
     logo: `${SITE_URL}/logo.png`,
     image: `${SITE_URL}/opengraph-image`,
     ...(phone ? { telephone: phone } : {}),
@@ -189,7 +236,7 @@ export function organizationJsonLd(footer: HomeFooter | undefined) {
             "@type": "ContactPoint",
             contactType: "customer service",
             areaServed: "TR",
-            availableLanguage: ["Turkish"],
+            availableLanguage: ["Turkish", "English", "Arabic"],
             ...(phone ? { telephone: phone } : {}),
             ...(email ? { email } : {}),
           },
@@ -209,19 +256,23 @@ export function organizationJsonLd(footer: HomeFooter | undefined) {
   };
 }
 
-/** The site, and its search box: Google may show it under the result as a sitelinks search box. */
-export function websiteJsonLd() {
+/**
+ * The site, and its search box: Google may show it under the result as a
+ * sitelinks search box. Each language's homepage describes its own copy of
+ * the site, searched in its own language.
+ */
+export function websiteJsonLd(locale: Locale = DEFAULT_LOCALE) {
   return {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    "@id": `${SITE_URL}/#website`,
+    "@id": `${absolute("/", locale)}#website`,
     name: SITE_NAME,
-    url: SITE_URL,
-    inLanguage: "tr-TR",
+    url: absolute("/", locale),
+    inLanguage: IN_LANGUAGE[locale],
     publisher: { "@id": `${SITE_URL}/#organization` },
     potentialAction: {
       "@type": "SearchAction",
-      target: { "@type": "EntryPoint", urlTemplate: SEARCH_URL_TEMPLATE },
+      target: { "@type": "EntryPoint", urlTemplate: `${absolute("/catalog", locale)}?q={search_term_string}` },
       "query-input": "required name=search_term_string",
     },
   };
@@ -234,7 +285,8 @@ function productImages(product: { image_url: string | null; image_urls?: string[
   return product.image_url ? [product.image_url] : [];
 }
 
-export function breadcrumbJsonLd(crumbs: Breadcrumb[]) {
+/** Breadcrumbs by their site paths (unprefixed), put in the page's language. */
+export function breadcrumbJsonLd(crumbs: Breadcrumb[], locale: Locale = DEFAULT_LOCALE) {
   return {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -242,7 +294,7 @@ export function breadcrumbJsonLd(crumbs: Breadcrumb[]) {
       "@type": "ListItem",
       position: i + 1,
       name: c.name,
-      item: absolute(c.href),
+      item: absolute(c.href, locale),
     })),
   };
 }
@@ -255,11 +307,12 @@ export function productListJsonLd(
   products: CatalogProduct[],
   pageHref: string,
   categoryById: Map<number, Category>,
+  locale: Locale = DEFAULT_LOCALE,
 ) {
   return {
     "@context": "https://schema.org",
     "@type": "ItemList",
-    url: absolute(pageHref),
+    url: absolute(pageHref, locale),
     numberOfItems: products.length,
     itemListElement: products.flatMap((product, i) => {
       // The colour the card itself shows, so the markup and the page agree.
@@ -280,12 +333,12 @@ export function productListJsonLd(
             ...(product.description ? { description: htmlToText(product.description) } : {}),
             ...(product.brand ? { brand: { "@type": "Brand", name: product.brand } } : {}),
             ...(category ? { category: category.name } : {}),
-            url: absolute(productHref(product)),
+            url: absolute(productHref(product), locale),
             offers: {
               "@type": "Offer",
               price: price.price_incl_tax,
               priceCurrency: price.currency,
-              url: absolute(productHref(product)),
+              url: absolute(productHref(product), locale),
             },
           },
         },
@@ -304,7 +357,7 @@ export function productListJsonLd(
  * so a sold-out colour is not advertised as in stock. Google penalises markup
  * that disagrees with the page, and the page says exactly this.
  */
-export function productJsonLd(product: CatalogProduct, category: Category | undefined) {
+export function productJsonLd(product: CatalogProduct, category: Category | undefined, locale: Locale = DEFAULT_LOCALE) {
   const lead = displayVariant(product);
   const sale = lead?.flash_sale;
   // Every colour carries the sheet's one price matrix, so the lead colour's
@@ -317,7 +370,7 @@ export function productJsonLd(product: CatalogProduct, category: Category | unde
     "@type": "Offer",
     price: price!.price_incl_tax,
     priceCurrency: price!.currency,
-    url: absolute(productHref(product)),
+    url: absolute(productHref(product), locale),
     sku: variant.sku,
     availability: availability(variant.in_stock !== false),
     itemCondition: "https://schema.org/NewCondition",
@@ -330,7 +383,7 @@ export function productJsonLd(product: CatalogProduct, category: Category | unde
     "@context": "https://schema.org",
     "@type": "Product",
     name: product.name,
-    url: absolute(productHref(product)),
+    url: absolute(productHref(product), locale),
     mpn: product.base_code,
     ...(lead ? { sku: lead.sku } : {}),
     ...(productImages(product).length > 0 ? { image: productImages(product) } : {}),

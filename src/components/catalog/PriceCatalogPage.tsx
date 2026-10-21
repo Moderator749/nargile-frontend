@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import { ArrowLeft, FileDown } from "lucide-react";
 
+import Link from "@/components/i18n/Link";
 import { Lookbook, PrintableLookbook, printLookbook, type LookbookItem, type LookbookLine } from "@/components/lookbook/Lookbook";
 import { Alert } from "@/components/ui/Alert";
 import { getApiErrorMessage } from "@/lib/errors";

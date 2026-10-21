@@ -1,9 +1,10 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 
+import { usePagePath } from "@/components/i18n/navigation";
+import Link from "@/components/i18n/Link";
 import type { ResolvedNav } from "@/lib/storefrontNav";
 
 /**
@@ -34,7 +35,8 @@ export function CategoryList({
   /** Close the drawer on a tap; the sidebar has nothing to close. */
   onNavigate?: () => void;
 }) {
-  const pathname = usePathname();
+  // Without its language (/en/cart is /cart), as every check below expects.
+  const pathname = usePagePath();
   const query = useSearchParams().get("q");
 
   const isCurrent = ({ href }: ResolvedNav) => {

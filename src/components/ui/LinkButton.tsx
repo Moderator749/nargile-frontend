@@ -1,5 +1,6 @@
-import Link from "next/link";
 import type { ComponentProps } from "react";
+
+import Link from "@/components/i18n/Link";
 
 const variants = {
   // Crimson is reserved for the primary action.

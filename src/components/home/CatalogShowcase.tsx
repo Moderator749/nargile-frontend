@@ -1,8 +1,8 @@
 import type { CSSProperties } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 
+import Link from "@/components/i18n/Link";
 import { canOptimiseImage } from "@/lib/home";
 import { homeIcon } from "@/lib/homeIcons";
 import type { ResolvedTile } from "@/lib/showcase";

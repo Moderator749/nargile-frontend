@@ -1,5 +1,5 @@
-import Link from "next/link";
 
+import Link from "@/components/i18n/Link";
 import type { RelatedLink } from "@/lib/related";
 
 /** "İlgili Kategoriler": plain links as tags, under the product's own shelves. */

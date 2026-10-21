@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type MouseEvent } from "react";
-import Link from "next/link";
 import axios from "axios";
 import { ArrowRight, ChevronLeft, ChevronRight, Package } from "lucide-react";
 
+import Link from "@/components/i18n/Link";
 import { ProductImage } from "@/components/catalog/ProductImage";
 import { useDisplayMoney } from "@/hooks/useDisplayMoney";
 import { useNow } from "@/hooks/useNow";

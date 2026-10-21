@@ -2,12 +2,15 @@
 
 import { Suspense, useEffect, useRef } from "react";
 import Form from "next/form";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Menu, PackageSearch, Search, ShoppingCart } from "lucide-react";
 
+import Link from "@/components/i18n/Link";
 import { Logo } from "@/components/brand/Logo";
+import { useLocalePath } from "@/components/i18n/navigation";
+import { useT } from "@/components/i18n/LocaleProvider";
 import { CurrencySelect } from "@/components/layout/CurrencySelect";
+import { LanguageSelect } from "@/components/layout/LanguageSelect";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { TopNav } from "@/components/layout/TopNav";
 import { UserMenu } from "@/components/layout/UserMenu";
@@ -29,13 +32,15 @@ interface SearchProps {
 
 /** Header search: a GET form to /catalog?q=…, with client-side navigation (next/form). */
 function SearchForm({ id, className = "", q }: SearchProps & { q: string }) {
+  const t = useT();
+  const to = useLocalePath();
   return (
-    <Form action="/catalog" role="search" className={`relative ${className}`}>
+    <Form action={to("/catalog")} role="search" className={`relative ${className}`}>
       <label htmlFor={id} className="sr-only">
-        Ürün ara
+        {t.nav.searchLabel}
       </label>
       <Search
-        className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+        className="pointer-events-none absolute start-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
         strokeWidth={1.75}
         aria-hidden
       />
@@ -45,8 +50,8 @@ function SearchForm({ id, className = "", q }: SearchProps & { q: string }) {
         type="search"
         defaultValue={q}
         maxLength={100}
-        placeholder="Ürün, marka veya kod ara"
-        className="h-10 w-full rounded-md border border-gray-300 bg-white pl-10 pr-4 text-sm text-foreground shadow-[0_1px_2px_rgb(0_0_0/0.04)] transition-colors placeholder:text-muted-foreground focus:border-red-700 focus:outline-none focus:ring-1 focus:ring-red-700 dark:border-white/10 dark:bg-white/[0.04] dark:focus:border-red-400 dark:focus:bg-background dark:focus:ring-red-400 [&::-webkit-search-cancel-button]:hidden"
+        placeholder={t.nav.searchPlaceholder}
+        className="h-10 w-full rounded-md border border-gray-300 bg-white ps-10 pe-4 text-sm text-foreground shadow-[0_1px_2px_rgb(0_0_0/0.04)] transition-colors placeholder:text-muted-foreground focus:border-red-700 focus:outline-none focus:ring-1 focus:ring-red-700 dark:border-white/10 dark:bg-white/[0.04] dark:focus:border-red-400 dark:focus:bg-background dark:focus:ring-red-400 [&::-webkit-search-cancel-button]:hidden"
       />
     </Form>
   );
@@ -88,6 +93,7 @@ export function Navbar({
   /** The horizontal menu under the header; the admin panel's layout turns it off. */
   showMenu?: boolean;
 }) {
+  const t = useT();
   const user = useAuthStore((s) => s.user);
   const cartCount = useCartStore(selectCartCount);
   const openDrawer = useCategoryDrawer((s) => s.setOpen);
@@ -151,9 +157,9 @@ export function Navbar({
             <button
               type="button"
               onClick={() => openDrawer(true)}
-              aria-label="Kategoriler"
+              aria-label={t.nav.categories}
               aria-controls="category-drawer"
-              className={`${iconButton} -ml-2 text-foreground md:hidden`}
+              className={`${iconButton} -ms-2 text-foreground md:hidden`}
             >
               <Menu className="h-[22px] w-[22px]" strokeWidth={1.75} aria-hidden />
             </button>
@@ -161,24 +167,27 @@ export function Navbar({
           {/* The logo sits in the category column's width, so what follows it
               starts exactly on that column's line — which is where
               the first entry of the bar below starts. */}
-          <div className={`mr-2 shrink-0 lg:mr-0 ${SIDEBAR_WIDTH_LG}`}>
+          <div className={`me-2 shrink-0 lg:me-0 ${SIDEBAR_WIDTH_LG}`}>
             <Link
               href="/"
-              aria-label="Nargile Malzemesi ana sayfa"
+              aria-label={t.nav.homeAria}
               className="inline-block rounded-sm text-foreground focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
             >
               <Logo />
             </Link>
           </div>
 
-          <HeaderSearch id="header-search" className="hidden max-w-2xl flex-1 md:block lg:mr-4" />
+          <HeaderSearch id="header-search" className="hidden max-w-2xl flex-1 md:block lg:me-4" />
           <div className="flex-1 md:hidden" />
 
+          {/* The storefront's language; on a phone it is in the menu drawer.
+              The admin panel is Turkish only. */}
+          {showMenu && <LanguageSelect className="max-md:hidden" />}
           <CurrencySelect />
 
-          <Link href={trackHref} className={`${iconButton} lg:w-auto lg:gap-1.5 lg:px-3`} title="Kargo takip">
+          <Link href={trackHref} className={`${iconButton} lg:w-auto lg:gap-1.5 lg:px-3`} title={t.nav.tracking}>
             <PackageSearch className="h-[18px] w-[18px]" strokeWidth={1.5} aria-hidden />
-            <span className="sr-only lg:not-sr-only lg:text-[13px]">Kargo Takip</span>
+            <span className="sr-only lg:not-sr-only lg:text-[13px]">{t.nav.tracking}</span>
           </Link>
 
           {accountLinks.map(({ href, label }) => (
@@ -202,18 +211,18 @@ export function Navbar({
               href="/login"
               className={`flex ${desktopOnly} h-9 shrink-0 items-center whitespace-nowrap rounded-full bg-foreground px-4 text-[13px] font-medium text-background transition-opacity duration-200 hover:opacity-85 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent`}
             >
-              Giriş Yap
+              {t.nav.signIn}
             </Link>
           )}
 
           <Link
             href="/cart"
-            aria-label={`Sepet (${cartCount} ürün)`}
+            aria-label={t.nav.cartWithCount(cartCount)}
             className={`${iconButton} ${desktopOnly} text-accent hover:bg-accent/10 hover:text-accent`}
           >
             <ShoppingCart className="h-[21px] w-[21px]" strokeWidth={2} aria-hidden />
             {cartCount > 0 && (
-              <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-accent px-1 font-mono text-[10px] font-bold leading-none text-white ring-2 ring-background tabular-nums">
+              <span className="absolute -end-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-accent px-1 font-mono text-[10px] font-bold leading-none text-white ring-2 ring-background tabular-nums">
                 {cartCount > 99 ? "99+" : cartCount}
               </span>
             )}

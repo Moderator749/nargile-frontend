@@ -3,6 +3,7 @@ import { SeoIntro } from "@/components/home/SeoIntro";
 import { CatalogView } from "@/components/catalog/CatalogView";
 import { CategorySidebar } from "@/components/layout/CategorySidebar";
 import { JsonLd } from "@/components/seo/JsonLd";
+import { getLocale } from "@/lib/i18n/server";
 import { breadcrumbJsonLd, productListJsonLd, type Breadcrumb } from "@/lib/seo";
 import { getHomepage } from "@/lib/server/homepage";
 import { resolveNav } from "@/lib/storefrontNav";
@@ -38,16 +39,16 @@ export async function CatalogScreen({
   brand,
   intro,
 }: CatalogScreenProps) {
-  const home = await getHomepage();
+  const [home, locale] = await Promise.all([getHomepage(), getLocale()]);
   const pageHref = breadcrumbs[breadcrumbs.length - 1].href;
   const categoryById = new Map(categories.map((c) => [c.id, c]));
 
   return (
     // White under the grid; the grey header and category column frame it.
     <main className="flex flex-1 flex-col bg-white text-foreground dark:bg-background">
-      <JsonLd data={breadcrumbJsonLd(breadcrumbs)} />
+      <JsonLd data={breadcrumbJsonLd(breadcrumbs, locale)} />
       {products && products.length > 0 && (
-        <JsonLd data={productListJsonLd(products, pageHref, categoryById)} />
+        <JsonLd data={productListJsonLd(products, pageHref, categoryById, locale)} />
       )}
 
       <CatalogView

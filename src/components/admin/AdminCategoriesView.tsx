@@ -21,7 +21,7 @@ import {
 import { categoryTree } from "@/lib/categories";
 import { getApiErrorMessage } from "@/lib/errors";
 import { refreshStorefront } from "@/lib/revalidate";
-import type { AdminCategory, AdminProduct } from "@/types";
+import type { AdminCategory, AdminProduct, TranslatedLocale } from "@/types";
 
 const selectClass =
   "block h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20 dark:border-white/15 dark:bg-zinc-900 dark:text-zinc-100";
@@ -36,7 +36,14 @@ interface FormState {
   isActive: boolean;
   imageUrl: string | null;
   description: string;
+  /** "Çeviriler": English and Arabic name and description; no name = not saved. */
+  translations: Record<TranslatedLocale, { name: string; description: string }>;
 }
+
+const NO_TRANSLATIONS = { en: { name: "", description: "" }, ar: { name: "", description: "" } };
+const TRANSLATION_LABEL: Record<TranslatedLocale, string> = { en: "İngilizce (EN)", ar: "Arapça (AR)" };
+/** Rich text with no words in it is blank. */
+const blankHtml = (html: string) => !html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim();
 
 const EMPTY: FormState = {
   name: "",
@@ -46,6 +53,7 @@ const EMPTY: FormState = {
   isActive: true,
   imageUrl: null,
   description: "",
+  translations: NO_TRANSLATIONS,
 };
 
 /**
@@ -102,6 +110,10 @@ export function AdminCategoriesView({ onChange }: { onChange?: () => void } = {}
       isActive: c.is_active,
       imageUrl: c.image_url ?? null,
       description: c.description ?? "",
+      translations: {
+        en: { name: c.translations?.en?.name ?? "", description: c.translations?.en?.description ?? "" },
+        ar: { name: c.translations?.ar?.name ?? "", description: c.translations?.ar?.description ?? "" },
+      },
     });
     setResult(null);
   }
@@ -124,6 +136,18 @@ export function AdminCategoriesView({ onChange }: { onChange?: () => void } = {}
       is_active: form.isActive,
       image_url: form.imageUrl?.trim() || null,
       description: form.description.trim() || null,
+      // Only the languages with a name; one emptied here is removed.
+      translations: Object.fromEntries(
+        (["en", "ar"] as const)
+          .filter((l) => form.translations[l].name.trim())
+          .map((l) => [
+            l,
+            {
+              name: form.translations[l].name.trim(),
+              description: blankHtml(form.translations[l].description) ? null : form.translations[l].description.trim(),
+            },
+          ]),
+      ),
     };
     try {
       const saved = editing ? await adminUpdateCategory(editing.id, body) : await adminCreateCategory(body);
@@ -256,6 +280,42 @@ export function AdminCategoriesView({ onChange }: { onChange?: () => void } = {}
               İlk cümleler arama sonuçlarındaki açıklama olarak da kullanılır. Boş bırakılırsa hazır metin gösterilir.
             </p>
           </div>
+          {/* The category in English and Arabic: its /en and /ar pages and
+              the menu there. No name = the Turkish is shown (not indexed). */}
+          <details className="rounded-lg border border-slate-200 p-3 dark:border-white/10" open={!!(form.translations.en.name || form.translations.ar.name)}>
+            <summary className="cursor-pointer text-sm font-medium text-slate-700 dark:text-zinc-300">
+              Çeviriler (EN / AR)
+              {(["en", "ar"] as const).map((l) =>
+                form.translations[l].name.trim() ? (
+                  <span key={l} className="ms-2 rounded bg-emerald-50 px-1.5 py-0.5 font-mono text-[10px] text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
+                    {l.toUpperCase()}
+                  </span>
+                ) : null,
+              )}
+            </summary>
+            <div className="mt-3 space-y-4">
+              {(["en", "ar"] as const).map((l) => (
+                <div key={l} className="space-y-2" dir={l === "ar" ? "rtl" : "ltr"} lang={l}>
+                  <Input
+                    label={`${TRANSLATION_LABEL[l]} — ad`}
+                    value={form.translations[l].name}
+                    onChange={(e) => set("translations", { ...form.translations, [l]: { ...form.translations[l], name: e.target.value } })}
+                    maxLength={150}
+                  />
+                  <p id={`cat-${l}-description-label`} className="block text-sm font-medium text-slate-700 dark:text-zinc-300">
+                    {TRANSLATION_LABEL[l]} — açıklama
+                  </p>
+                  <RichTextEditor
+                    id={`cat-${l}-description`}
+                    labelledBy={`cat-${l}-description-label`}
+                    value={form.translations[l].description}
+                    onChange={(html) => set("translations", { ...form.translations, [l]: { ...form.translations[l], description: html } })}
+                    minHeight="5rem"
+                  />
+                </div>
+              ))}
+            </div>
+          </details>
           <div className="space-y-1.5">
             <label htmlFor="cat-parent" className="block text-sm font-medium text-slate-700 dark:text-zinc-300">
               Üst grup

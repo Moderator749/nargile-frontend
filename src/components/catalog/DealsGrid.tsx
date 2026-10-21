@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import axios from "axios";
 import { SearchX } from "lucide-react";
 
+import Link from "@/components/i18n/Link";
 import { AdminCatalogPdf, useIsAdmin } from "@/components/catalog/AdminCatalogPdf";
 import { CatalogFilterBar } from "@/components/catalog/CatalogFilterBar";
 import { PriceCatalogExport } from "@/components/catalog/PriceCatalogExport";

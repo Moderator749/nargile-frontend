@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
-import Link from "next/link";
 import { CircleCheck, CircleX, Landmark, Loader2, UserCheck } from "lucide-react";
 
+import Link from "@/components/i18n/Link";
 import { BankAccountList, CopyButton } from "@/components/payment/BankAccounts";
 import { Alert } from "@/components/ui/Alert";
 import { countryName } from "@/lib/countries";

@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { CreditCard, ShoppingCart, TrendingDown, type LucideIcon } from "lucide-react";
 
+import Link from "@/components/i18n/Link";
 import { useShippingPerks } from "@/hooks/useShippingPerks";
 import { useStoreParameters } from "@/hooks/useStoreParameters";
 import { PERKS_PAGE } from "@/lib/bilgi";

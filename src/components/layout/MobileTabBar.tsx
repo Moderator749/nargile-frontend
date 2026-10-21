@@ -1,9 +1,10 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { House, ShoppingCart, UserRound, type LucideIcon } from "lucide-react";
 
+import { usePagePath } from "@/components/i18n/navigation";
+import { useT } from "@/components/i18n/LocaleProvider";
+import Link from "@/components/i18n/Link";
 import { useAuthStore } from "@/store/useAuthStore";
 import { selectCartCount, useCartStore } from "@/store/useCartStore";
 
@@ -51,7 +52,9 @@ function TabLink({ href, label, Icon, active, badge }: { href: string; label: st
  * iPhone's home indicator gets its own room under the tabs.
  */
 export function MobileTabBar() {
-  const pathname = usePathname();
+  // Without its language (/en/cart is /cart), as every check below expects.
+  const pathname = usePagePath();
+  const t = useT();
   const user = useAuthStore((s) => s.user);
   const cartCount = useCartStore(selectCartCount);
 
@@ -60,18 +63,18 @@ export function MobileTabBar() {
 
   return (
     <nav
-      aria-label="Mobil menü"
+      aria-label={t.nav.mobileMenu}
       className="fixed inset-x-0 bottom-0 z-50 border-t border-gray-200 bg-white/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden dark:border-border dark:bg-background/90"
     >
       <ul className="grid grid-cols-3">
         <li>
-          <TabLink href="/" label="Ana Sayfa" Icon={House} active={pathname === "/"} />
+          <TabLink href="/" label={t.nav.home} Icon={House} active={pathname === "/"} />
         </li>
         <li>
-          <TabLink href="/cart" label="Sepetim" Icon={ShoppingCart} active={pathname === "/cart"} badge={cartCount} />
+          <TabLink href="/cart" label={t.nav.cart} Icon={ShoppingCart} active={pathname === "/cart"} badge={cartCount} />
         </li>
         <li>
-          <TabLink href={account} label="Hesabım" Icon={UserRound} active={onAccount} />
+          <TabLink href={account} label={t.nav.account} Icon={UserRound} active={onAccount} />
         </li>
       </ul>
     </nav>

@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 
+import Link from "@/components/i18n/Link";
 import { B2BApplicationPanel } from "@/components/account/B2BApplicationPanel";
 import { CommunicationPreferencesPanel } from "@/components/account/CommunicationPreferencesPanel";
 import { WalletPanel } from "@/components/account/WalletPanel";

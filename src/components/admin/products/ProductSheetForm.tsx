@@ -17,6 +17,7 @@ import { QuantityCondition } from "@/components/admin/products/QuantityCondition
 import { RuleSwitch } from "@/components/admin/products/RuleSwitch";
 import { SheetField, SheetSection, sheetInputClass } from "@/components/admin/products/SheetParts";
 import { StockGrid } from "@/components/admin/products/StockGrid";
+import { TranslationFields } from "@/components/admin/products/TranslationFields";
 import {
   VAT_RATES,
   draftFromSheet,
@@ -407,6 +408,16 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
               )}
             </SheetField>
           </div>
+        </SheetSection>
+
+        <SheetSection
+          title="Çeviriler"
+          hint="İngilizce (/en) ve Arapça (/ar) sayfalar için. Marka adları ve ürün kodları aynen kalır."
+        >
+          <TranslationFields
+            value={draft.translations}
+            onChange={(locale, next) => set("translations", { ...draft.translations, [locale]: next })}
+          />
         </SheetSection>
 
         <SheetSection

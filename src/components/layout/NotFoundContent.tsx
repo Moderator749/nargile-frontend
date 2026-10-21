@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { ArrowRight, SearchX } from "lucide-react";
 
+import Link from "@/components/i18n/Link";
 import { PrePaintFallback } from "@/components/layout/PrePaintFallback";
 import { getCategories } from "@/lib/server/catalog";
 

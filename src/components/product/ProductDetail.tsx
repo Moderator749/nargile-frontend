@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import Link from "next/link";
 import axios from "axios";
 import { Check, ChevronRight, Hourglass, ShoppingBag, Truck } from "lucide-react";
 
+import Link from "@/components/i18n/Link";
 import { QuantityStepper } from "@/components/cart/QuantityStepper";
 import { ColorPicker } from "@/components/product/ColorPicker";
 import { CrossSells } from "@/components/product/CrossSells";

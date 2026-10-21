@@ -2,9 +2,9 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
 
+import Link from "@/components/i18n/Link";
 import { ProductCard } from "@/components/catalog/ProductCard";
 import { useOwnPrices } from "@/hooks/useOwnPrices";
 import { PAGE_CONTAINER } from "@/lib/layout";

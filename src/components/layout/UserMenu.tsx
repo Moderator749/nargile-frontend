@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { ChevronDown, LogOut, PackageSearch, UserRound } from "lucide-react";
 
+import Link from "@/components/i18n/Link";
 import { useAuthStore } from "@/store/useAuthStore";
 import type { User } from "@/types";
 

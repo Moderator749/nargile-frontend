@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import axios from "axios";
 import { ChevronRight } from "lucide-react";
 
+import Link from "@/components/i18n/Link";
 import { ProductShelf } from "@/components/product/ProductShelf";
 import { fetchProductsByIds } from "@/lib/catalogApi";
 import { useAuthStore } from "@/store/useAuthStore";

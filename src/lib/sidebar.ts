@@ -25,10 +25,10 @@ const ATTRIBUTE = "data-sidebar";
 const COLLAPSED = "collapsed";
 
 /** The catalog, its categories, the brand pages and the deals: they open with the column showing. */
-const OPEN_BY_DEFAULT = /^\/(?:catalog|marka|firsat-urunleri)(?:\/|$)/;
+const OPEN_BY_DEFAULT = /^\/(?:(?:en|ar)\/)?(?:catalog|marka|firsat-urunleri)(?:\/|$)/;
 
 /** A product's page: it opens with the column closed. */
-const CLOSED_BY_DEFAULT = /^\/product(?:\/|$)/;
+const CLOSED_BY_DEFAULT = /^\/(?:(?:en|ar)\/)?product(?:\/|$)/;
 
 export const opensByDefault = (pathname: string) => OPEN_BY_DEFAULT.test(pathname);
 export const closesByDefault = (pathname: string) => CLOSED_BY_DEFAULT.test(pathname);

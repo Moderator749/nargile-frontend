@@ -4,6 +4,7 @@ import { useId, useState, type SubmitEvent } from "react";
 import { useRouter } from "next/navigation";
 import { FileText } from "lucide-react";
 
+import { useLocalePath } from "@/components/i18n/navigation";
 import { AccountTypePicker } from "@/components/auth/AccountTypePicker";
 import { AddressFields } from "@/components/auth/AddressFields";
 import { CompanyFields } from "@/components/auth/CompanyFields";
@@ -125,6 +126,7 @@ function MarketingConsent({
 
 export function RegisterForm() {
   const router = useRouter();
+  const to = useLocalePath();
   const [draft, setDraft] = useState<RegistrationDraft>(() => emptyDraft());
   // The form is a long one, so it waits to be asked for: picking a card selects
   // it, pressing the card's own button is what opens this.
@@ -157,7 +159,7 @@ export function RegisterForm() {
       // An account exists at once; a firm's prices wait for a person, and an
       // international customer waits to hear from the sales team.
       const next = international ? "export" : business ? "review" : "1";
-      router.replace(`/login?registered=${next}`);
+      router.replace(to(`/login?registered=${next}`));
     } catch (err) {
       setError(getApiErrorMessage(err, "Kayıt tamamlanamadı. Lütfen tekrar deneyin."));
       setSubmitting(false);

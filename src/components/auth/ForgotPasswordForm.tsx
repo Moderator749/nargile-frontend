@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, type SubmitEvent } from "react";
-import Link from "next/link";
 import { Mail, MessageSquare } from "lucide-react";
 
+import Link from "@/components/i18n/Link";
 import { MIN_PASSWORD_LENGTH } from "@/components/auth/registrationDraft";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";

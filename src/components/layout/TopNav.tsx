@@ -1,10 +1,12 @@
 "use client";
 
 import { Suspense, useEffect, useLayoutEffect, useRef, useSyncExternalStore } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { ArrowLeft, ChevronDown, LayoutGrid, X } from "lucide-react";
 
+import { usePagePath } from "@/components/i18n/navigation";
+import { useT } from "@/components/i18n/LocaleProvider";
+import { LanguageSelect } from "@/components/layout/LanguageSelect";
+import Link from "@/components/i18n/Link";
 import { CategoryList } from "@/components/layout/CategoryList";
 import { SIDEBAR_WIDTH } from "@/components/layout/CategorySidebar";
 
@@ -20,6 +22,7 @@ import { useCategoryDrawer } from "@/store/useCategoryDrawer";
  * /cart too, where the menu bar itself steps aside.
  */
 function CategoryDrawer({ categories }: { categories: ResolvedNav[] }) {
+  const t = useT();
   const open = useCategoryDrawer((s) => s.open);
   const setOpen = useCategoryDrawer((s) => s.setOpen);
   const dialog = useRef<HTMLDialogElement>(null);
@@ -36,7 +39,7 @@ function CategoryDrawer({ categories }: { categories: ResolvedNav[] }) {
     <dialog
       ref={dialog}
       id="category-drawer"
-      aria-label="Kategoriler"
+      aria-label={t.nav.categories}
       onCancel={(event) => {
         event.preventDefault();
         setOpen(false);
@@ -48,11 +51,11 @@ function CategoryDrawer({ categories }: { categories: ResolvedNav[] }) {
       className="m-0 h-full max-h-none w-[18rem] max-w-[85vw] bg-background text-foreground backdrop:bg-black/50 lg:hidden"
     >
       <div className="flex items-center justify-between border-b border-border px-3 py-2.5">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.12em]">Kategoriler</p>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.12em]">{t.nav.categories}</p>
         <button
           type="button"
           onClick={() => setOpen(false)}
-          aria-label="Kapat"
+          aria-label={t.nav.close}
           className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           <X className="h-4 w-4" aria-hidden />
@@ -61,6 +64,11 @@ function CategoryDrawer({ categories }: { categories: ResolvedNav[] }) {
       <Suspense fallback={null}>
         <CategoryList items={categories} onNavigate={() => setOpen(false)} />
       </Suspense>
+      {/* A phone's language picker: the header has no room for it there. */}
+      <div className="flex items-center justify-between gap-3 border-t border-border px-3 py-2.5 md:hidden">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{t.nav.language}</p>
+        <LanguageSelect id="drawer-language" />
+      </div>
     </dialog>
   );
 }
@@ -90,7 +98,9 @@ const LINK =
  * column lives in a drawer, and the same cell opens it.
  */
 export function TopNav({ categories, links }: { categories: ResolvedNav[]; links: ResolvedNav[] }) {
-  const pathname = usePathname();
+  // Without its language (/en/cart is /cart), as every check below expects.
+  const pathname = usePagePath();
+  const t = useT();
   const drawer = useCategoryDrawer((s) => s.open);
   const setDrawer = useCategoryDrawer((s) => s.setOpen);
   // The column's own state lives on <html>, set before first paint; this only
@@ -107,14 +117,14 @@ export function TopNav({ categories, links }: { categories: ResolvedNav[]; links
   // back out. Every other page keeps the bar exactly as it is.
   if (pathname === "/cart") {
     return (
-      <nav aria-label="Alışverişe dön" className="border-t border-gray-200 bg-background dark:border-border">
+      <nav aria-label={t.nav.backToShop} className="border-t border-gray-200 bg-background dark:border-border">
         <div className={`${PAGE_CONTAINER} flex items-center py-2`}>
           <Link
             href="/"
             className="flex shrink-0 items-center gap-2 rounded-md bg-red-700 px-6 py-2 text-[11px] font-bold uppercase tracking-wider text-white shadow-sm transition-colors hover:bg-red-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
-            <ArrowLeft className="h-4 w-4 shrink-0" strokeWidth={2.25} aria-hidden />
-            Alışverişe Devam Et
+            <ArrowLeft className="h-4 w-4 shrink-0 rtl:rotate-180" strokeWidth={2.25} aria-hidden />
+            {t.nav.continueShopping}
           </Link>
         </div>
         <CategoryDrawer categories={categories} />
@@ -136,13 +146,13 @@ export function TopNav({ categories, links }: { categories: ResolvedNav[]; links
           type="button"
           onClick={() => setSidebarCollapsed(!collapsed)}
           aria-expanded={!collapsed}
-          aria-label={collapsed ? "Kategori sütununu aç" : "Kategori sütununu kapat"}
+          aria-label={collapsed ? t.nav.openColumn : t.nav.closeColumn}
           className={`group hidden shrink-0 items-center gap-2.5 rounded-md bg-red-700 px-6 py-2 text-sm font-bold uppercase tracking-wider text-white shadow-sm transition-colors hover:bg-red-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent lg:flex ${SIDEBAR_WIDTH} ${
             collapsed ? "motion-safe:animate-kategori-glow" : ""
           }`}
         >
           <LayoutGrid className="h-4 w-4 shrink-0 text-white" aria-hidden />
-          Kategoriler
+          {t.nav.categories}
           <span
             aria-hidden
             className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/15 ring-1 ring-white/25 transition-[background-color,box-shadow] duration-300 group-hover:bg-white/30 group-hover:ring-white/60 group-focus-visible:bg-white/30"
@@ -168,7 +178,7 @@ export function TopNav({ categories, links }: { categories: ResolvedNav[]; links
           className="hidden shrink-0 items-center gap-2.5 rounded-md bg-red-700 px-6 py-2 text-sm font-bold uppercase tracking-wider text-white shadow-sm transition-colors hover:bg-red-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-safe:animate-kategori-glow md:flex lg:hidden"
         >
           <LayoutGrid className="h-4 w-4 shrink-0 text-white" aria-hidden />
-          Kategoriler
+          {t.nav.categories}
           <ChevronDown className="h-4 w-4 shrink-0 text-white/75 motion-safe:animate-chevron-float" aria-hidden />
         </button>
 

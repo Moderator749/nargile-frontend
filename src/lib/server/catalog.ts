@@ -2,6 +2,8 @@
 // participate in Next.js caching. Always anonymous: public RETAIL prices only.
 
 import { API_URL, CATALOG_PAGE_SIZE } from "@/lib/config";
+import { DEFAULT_LOCALE } from "@/lib/i18n/config";
+import { getLocale } from "@/lib/i18n/server";
 import { DEFAULT_STORE_PARAMETERS } from "@/lib/storeParameters";
 import type {
   Brand,
@@ -26,9 +28,20 @@ import type {
  */
 export const CATALOG_REVALIDATE = 86400;
 
+/**
+ * A product or category read in the page's language: the API answers with the
+ * translated text (?lang=, backend app/services/localize.py) and caches it per
+ * language. Turkish, and every other read, as it is.
+ */
+async function inLanguage(path: string): Promise<string> {
+  if (!/^\/(?:products|categories)(?:[/?]|$)/.test(path)) return path;
+  const locale = await getLocale();
+  return locale === DEFAULT_LOCALE ? path : `${path}${path.includes("?") ? "&" : "?"}lang=${locale}`;
+}
+
 async function getJson<T>(path: string): Promise<T | null> {
   try {
-    const res = await fetch(`${API_URL}${path}`, {
+    const res = await fetch(`${API_URL}${await inLanguage(path)}`, {
       next: { revalidate: CATALOG_REVALIDATE, tags: ["catalog"] },
     });
     return res.ok ? ((await res.json()) as T) : null;
@@ -59,7 +72,7 @@ export class BackendUnavailableError extends Error {
 async function getJsonOrNotFound<T>(path: string): Promise<T | null> {
   let res: Response;
   try {
-    res = await fetch(`${API_URL}${path}`, {
+    res = await fetch(`${API_URL}${await inLanguage(path)}`, {
       next: { revalidate: CATALOG_REVALIDATE, tags: ["catalog"] },
     });
   } catch (cause) {
@@ -153,7 +166,7 @@ export const FLASH_SALE_LIMIT = 50;
 export async function getFlashSaleProducts(): Promise<CatalogProduct[] | null> {
   try {
     // The section is a grid now: ask for every live deal, not a rail's worth.
-    const res = await fetch(`${API_URL}/products/flash-sales?limit=${FLASH_SALE_LIMIT}`, { cache: "no-store" });
+    const res = await fetch(`${API_URL}${await inLanguage(`/products/flash-sales?limit=${FLASH_SALE_LIMIT}`)}`, { cache: "no-store" });
     return res.ok ? ((await res.json()) as CatalogProduct[]) : null;
   } catch {
     return null;

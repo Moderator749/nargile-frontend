@@ -7,6 +7,7 @@
 import { convertVat, kurusToInput, parseDecimalInput } from "@/lib/format";
 import { PRODUCT_SLUG } from "@/lib/slug";
 import type {
+  TranslatedLocale,
   CrossSellCard,
   CurrencyType,
   ProductSheet,
@@ -125,6 +126,27 @@ export interface CellDraft {
   basis?: "incl";
 }
 
+/** "Çeviriler": one language's fields as typed; blank = Turkish shows there. */
+export interface TranslationDraft {
+  name: string;
+  description: string;
+  metaTitle: string;
+  metaDescription: string;
+}
+
+export const TRANSLATED_LOCALES: TranslatedLocale[] = ["en", "ar"];
+export const LOCALE_LABEL: Record<TranslatedLocale, string> = { en: "İngilizce (EN)", ar: "Arapça (AR)" };
+
+const emptyTranslation = (): TranslationDraft => ({ name: "", description: "", metaTitle: "", metaDescription: "" });
+
+/** Rich text with no words in it ("<p></p>", a lone <br>) is blank. */
+const blankHtml = (html: string) => !html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim();
+
+/** Whether a language has anything typed in it at all. */
+export function translationStarted(t: TranslationDraft): boolean {
+  return !!(t.name.trim() || !blankHtml(t.description) || t.metaTitle.trim() || t.metaDescription.trim());
+}
+
 export interface SheetDraft {
   base_code: string;
   name: string;
@@ -140,6 +162,8 @@ export interface SheetDraft {
   description: string;
   metaTitle: string;
   metaDescription: string;
+  /** "Çeviriler": English and Arabic. A language with no name is not saved. */
+  translations: Record<TranslatedLocale, TranslationDraft>;
   /** The page's address, /product/<slug>; blank = keep it (or derive it, on a new product). */
   slug: string;
   /** "KDV Oranı" for the whole sheet; KDV dahil is computed from it. */
@@ -191,6 +215,7 @@ export function emptyDraft(): SheetDraft {
     description: "",
     metaTitle: "",
     metaDescription: "",
+    translations: { en: emptyTranslation(), ar: emptyTranslation() },
     slug: "",
     vatRate: 20,
     crossSells: [],
@@ -272,6 +297,17 @@ export function draftFromSheet(sheet: SavedProductSheet): SheetDraft {
     description: sheet.description ?? "",
     metaTitle: sheet.meta_title ?? "",
     metaDescription: sheet.meta_description ?? "",
+    translations: Object.fromEntries(
+      TRANSLATED_LOCALES.map((l) => {
+        const t = sheet.translations?.[l];
+        return [
+          l,
+          t
+            ? { name: t.name, description: t.description ?? "", metaTitle: t.meta_title ?? "", metaDescription: t.meta_description ?? "" }
+            : emptyTranslation(),
+        ];
+      }),
+    ) as Record<TranslatedLocale, TranslationDraft>,
     slug: sheet.slug ?? "",
     vatRate: savedVatRate(sheet),
     crossSells: sheet.related_products,
@@ -330,6 +366,12 @@ export function draftProblem(draft: SheetDraft): string | null {
   if (draft.colors.some((c) => !c.label.trim())) return "Renk adı boş olamaz.";
   if (draft.metaTitle.length > 70) return "SEO başlığı en fazla 70 karakter olabilir.";
   if (draft.metaDescription.length > 160) return "SEO açıklaması en fazla 160 karakter olabilir.";
+  for (const l of TRANSLATED_LOCALES) {
+    const t = draft.translations[l];
+    if (translationStarted(t) && !t.name.trim()) return `${LOCALE_LABEL[l]} çeviri için ürün adını girin (ya da alanları boşaltın).`;
+    if (t.metaTitle.length > 70) return `${LOCALE_LABEL[l]} SEO başlığı en fazla 70 karakter olabilir.`;
+    if (t.metaDescription.length > 160) return `${LOCALE_LABEL[l]} SEO açıklaması en fazla 160 karakter olabilir.`;
+  }
   const slug = draft.slug.trim().toLowerCase();
   if (slug && !PRODUCT_SLUG.test(slug))
     return "Sayfa adresi yalnızca küçük harf, rakam, tire ve nokta içerebilir (ör. sultan-nargile-takimi).";
@@ -393,6 +435,21 @@ export function toPayload(draft: SheetDraft): ProductSheet {
     description: draft.description.trim() || null,
     meta_title: draft.metaTitle.trim() || null,
     meta_description: draft.metaDescription.trim() || null,
+    // Only the languages with a name: one emptied here is removed.
+    translations: Object.fromEntries(
+      TRANSLATED_LOCALES.filter((l) => draft.translations[l].name.trim()).map((l) => {
+        const t = draft.translations[l];
+        return [
+          l,
+          {
+            name: t.name.trim(),
+            description: blankHtml(t.description) ? null : t.description.trim(),
+            meta_title: t.metaTitle.trim() || null,
+            meta_description: t.metaDescription.trim() || null,
+          },
+        ];
+      }),
+    ),
     slug: draft.slug.trim().toLowerCase() || null,
     stock: toStock(draft.stock),
     variants,

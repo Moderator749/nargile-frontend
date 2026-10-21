@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { ArrowRight, Crown, Truck } from "lucide-react";
 
+import Link from "@/components/i18n/Link";
 import { useShippingPerks } from "@/hooks/useShippingPerks";
 
 /**

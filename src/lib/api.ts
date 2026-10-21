@@ -18,6 +18,13 @@ api.interceptors.request.use((config) => {
   if (token && !config.headers.Authorization) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  // The catalog in the page's language: product and category reads take
+  // ?lang= (the backend's app/services/localize.py), read off <html lang>,
+  // which the root layout sets from the address. Turkish needs none.
+  const lang = typeof document !== "undefined" ? document.documentElement.lang : "";
+  if ((lang === "en" || lang === "ar") && /^\/(?:products|categories)(?:[/?]|$)/.test(config.url ?? "")) {
+    config.params = { ...config.params, lang };
+  }
   return config;
 });
 

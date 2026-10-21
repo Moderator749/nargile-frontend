@@ -222,8 +222,11 @@ export interface Token {
 
 export interface Category {
   id: number;
+  /** In the page's language (the API answers with ?lang=); Turkish where it has none. */
   name: string;
   slug: string;
+  /** The languages it is translated into, Turkish first. */
+  locales?: string[];
   /** Two-level menu: null = top-level group. */
   parent_id: number | null;
   /** Order among siblings (ascending). */
@@ -255,7 +258,25 @@ export interface Brand {
   sort_order: number;
 }
 
+/** The languages a product or category is translated into besides Turkish. */
+export type TranslatedLocale = "en" | "ar";
+
+/** A product in one more language, as reviewed; blank fields fall back to Turkish. */
+export interface ProductTranslation {
+  name: string;
+  description?: string | null;
+  meta_title?: string | null;
+  meta_description?: string | null;
+}
+
+export interface CategoryTranslation {
+  name: string;
+  description?: string | null;
+}
+
 export interface AdminCategory extends Category {
+  /** English and Arabic, where translated. */
+  translations?: Partial<Record<TranslatedLocale, CategoryTranslation>> | null;
   sort_order: number;
   /** Off = hidden from the storefront (with its subcategories); products stay. */
   is_active: boolean;
@@ -271,6 +292,8 @@ export interface CategoryWrite {
   sort_order: number;
   is_active: boolean;
   image_url: string | null;
+  /** Sent: replaces the category's translations (a language left out is dropped). Omitted: kept. */
+  translations?: Partial<Record<TranslatedLocale, CategoryTranslation>> | null;
 }
 
 export interface BrandWrite {
@@ -381,6 +404,12 @@ export interface SultanPuanShowcase {
 
 export interface CatalogProduct extends Product {
   variants: CatalogVariant[];
+  /**
+   * The languages it is translated into, Turkish first: an English or Arabic
+   * page is indexed and linked only where one exists. Its text fields are
+   * already in the page's language (the API answers with ?lang=).
+   */
+  locales?: string[];
 }
 
 /** `GET /products/{id}`: the product plus its "birlikte satılanlar". */
@@ -971,6 +1000,11 @@ export interface ProductSheet {
   meta_title?: string | null;
   /** Overrides its meta description; blank falls back to `description`. */
   meta_description?: string | null;
+  /**
+   * "Çeviriler": the product in English and Arabic (/en/…, /ar/…). Sent, it
+   * replaces what is stored — a language left out is removed; omitted, kept.
+   */
+  translations?: Partial<Record<TranslatedLocale, ProductTranslation>> | null;
   /** The page's address, /product/<slug>; blank keeps the current one (a new product's comes from its name). */
   slug?: string | null;
   /** Gallery in order; the server mirrors the first one into `image_url`. */

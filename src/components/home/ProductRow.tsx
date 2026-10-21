@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import Link from "next/link";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 
+import Link from "@/components/i18n/Link";
 import { ProductCard } from "@/components/catalog/ProductCard";
 import { PAGE_CONTAINER } from "@/lib/layout";
 import type { CatalogProduct, Category } from "@/types";

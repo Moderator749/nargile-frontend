@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { ArrowRight, ArrowUpRight } from "lucide-react";
 
+import Link from "@/components/i18n/Link";
 import { PAGE_CONTAINER } from "@/lib/layout";
 
 /** Decorative light over a gradient: silver, a warm gold, or a deep rose. */

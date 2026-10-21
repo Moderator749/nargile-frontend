@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import Link from "next/link";
+
+import Link from "@/components/i18n/Link";
 
 /**
  * A delivery perk in a product row's header: a line-drawn vehicle driving in

@@ -1,9 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { Package, Trash2 } from "lucide-react";
 
+import Link from "@/components/i18n/Link";
 import { QuantityStepper } from "@/components/cart/QuantityStepper";
 import { formatMoney } from "@/lib/format";
 import { canOptimiseImage } from "@/lib/home";

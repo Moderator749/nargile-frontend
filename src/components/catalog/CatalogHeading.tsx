@@ -1,5 +1,5 @@
-import Link from "next/link";
 
+import Link from "@/components/i18n/Link";
 import { ReadMore } from "@/components/ui/ReadMore";
 import type { Breadcrumb } from "@/lib/seo";
 

@@ -1,7 +1,7 @@
 import type { ComponentType } from "react";
-import Link from "next/link";
 import { ArrowRight, Clock, Link2, MapPin } from "lucide-react";
 
+import Link from "@/components/i18n/Link";
 import { LogoEmblem, LogoWordmark } from "@/components/brand/Logo";
 import { InstagramIcon, YouTubeIcon } from "@/components/icons/SocialIcons";
 import { ContactBar } from "@/components/layout/ContactBar";

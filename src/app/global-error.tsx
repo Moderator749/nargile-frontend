@@ -2,8 +2,7 @@
 
 import "./globals.css";
 
-import Link from "next/link";
-
+import Link from "@/components/i18n/Link";
 import { Logo } from "@/components/brand/Logo";
 import { ErrorContent } from "@/components/layout/ErrorContent";
 import { geistMono, geistSans } from "@/lib/fonts";

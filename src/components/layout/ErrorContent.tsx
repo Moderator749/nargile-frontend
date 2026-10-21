@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
-import Link from "next/link";
 import { CloudOff, RotateCw } from "lucide-react";
 
+import Link from "@/components/i18n/Link";
 import { PrePaintFallback } from "@/components/layout/PrePaintFallback";
 
 /**

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { useLocalePath } from "@/components/i18n/navigation";
 import { CartLineRow } from "@/components/cart/CartLineRow";
 import { NO_AGREEMENTS, type Agreements } from "@/components/cart/LegalConsent";
 import { DeliveryStep } from "@/components/cart/delivery/DeliveryStep";
@@ -89,6 +90,7 @@ function refreshProfile() {
 
 export function CartView() {
   const router = useRouter();
+  const to = useLocalePath();
   const cartHydrated = useCartHydrated();
   const authHydrated = useAuthHydrated();
 
@@ -434,7 +436,7 @@ export function CartView() {
 
   async function handleCheckout() {
     if (!isLoggedIn) {
-      router.push("/login?next=/cart");
+      router.push(to("/login?next=/cart"));
       return;
     }
     if (submitting || checkoutBlocker) return;
@@ -474,7 +476,7 @@ export function CartView() {
         return;
       }
       // Confirmation: bank details for havale/EFT, how it travels, where to.
-      router.push(`/orders/${order.id}/confirmation`);
+      router.push(to(`/orders/${order.id}/confirmation`));
       useCartStore.getState().clearCart();
       refreshProfile(); // Sultan Puan balance changed
       // Keep `submitting` so the page doesn't flash the empty-cart state while navigating.

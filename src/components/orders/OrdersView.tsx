@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import axios from "axios";
 import { ExternalLink, PackageCheck } from "lucide-react";
 
+import Link from "@/components/i18n/Link";
 import { StatusBadge } from "@/components/orders/StatusBadge";
 import { Alert } from "@/components/ui/Alert";
 import { getApiErrorMessage } from "@/lib/errors";

@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, type SubmitEvent } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+import { useLocalePath } from "@/components/i18n/navigation";
+import Link from "@/components/i18n/Link";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -31,6 +32,7 @@ interface LoginFormProps {
 
 export function LoginForm({ notice, redirectTo }: LoginFormProps) {
   const router = useRouter();
+  const to = useLocalePath();
   const setAuth = useAuthStore((s) => s.setAuth);
 
   const [email, setEmail] = useState("");
@@ -48,7 +50,7 @@ export function LoginForm({ notice, redirectTo }: LoginFormProps) {
       const { access_token } = await login({ email: email.trim(), password });
       const user = await fetchMe(access_token);
       setAuth(access_token, user);
-      router.replace(redirectTo);
+      router.replace(to(redirectTo));
       // Stay in the submitting state while navigating away.
     } catch (err) {
       setError(getApiErrorMessage(err, "Giriş yapılamadı. Lütfen tekrar deneyin."));

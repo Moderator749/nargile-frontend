@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import Link from "next/link";
 import axios from "axios";
 import { ExternalLink, PackageSearch, Truck } from "lucide-react";
 
+import Link from "@/components/i18n/Link";
 import { StatusBadge } from "@/components/orders/StatusBadge";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";

@@ -34,7 +34,12 @@ export default function robots(): MetadataRoute.Robots {
   // Staging and previews: nothing to crawl at all.
   if (!INDEXING_ALLOWED) return { rules: { userAgent: "*", disallow: "/" } };
   return {
-    rules: { userAgent: "*", allow: "/", disallow: PRIVATE_PATHS },
+    // In every language: /en/cart is as private as /cart.
+    rules: {
+      userAgent: "*",
+      allow: "/",
+      disallow: [...PRIVATE_PATHS, ...["/en", "/ar"].flatMap((prefix) => PRIVATE_PATHS.filter((p) => p !== "/admin" && p !== "/api").map((p) => `${prefix}${p}`))],
+    },
     sitemap: `${SITE_URL}/sitemap.xml`,
     host: SITE_URL,
   };

@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
-import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
+import Link from "@/components/i18n/Link";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { breadcrumbJsonLd, type Breadcrumb } from "@/lib/seo";
 

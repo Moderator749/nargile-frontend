@@ -33,7 +33,7 @@ const SLUG = /^[a-z0-9]+(?:[.-][a-z0-9]+)*$/;
 const FILE = /\.(?:txt|xml|svg|ico|png|jpe?g|webp|gif|js|css|json|map|webmanifest)$/i;
 /** The storefront's own top-level pages (src/app). */
 const ROUTES = new Set([
-  "account", "admin", "api", "bilgi", "blog", "cart", "catalog", "firsat-urunleri", "fiyat-katalogu", "images",
+  "en", "ar", "tr", "account", "admin", "api", "bilgi", "blog", "cart", "catalog", "firsat-urunleri", "fiyat-katalogu", "images",
   "kargo-takip", "login", "marka", "orders", "product", "register", "sifre-yenile", "sifremi-unuttum", "sss", "opengraph-image",
 ]);
 
@@ -85,17 +85,23 @@ function moved(request: NextRequest, pathname: string) {
   return NextResponse.redirect(url, 301);
 }
 
-export async function proxy(request: NextRequest) {
-  const segments = request.nextUrl.pathname.split("/").filter(Boolean);
+/**
+ * Legacy addresses that point at a product, answered with a 301 to its page:
+ * /product/<uuid>, /product/<CAPITALS>, and — at the root only, the old store
+ * being Turkish — /<slug> and /<category>/<slug>. `prefix` is the language the
+ * address was in ("" for Turkish), kept on the way.
+ */
+async function productRedirect(request: NextRequest, path: string, prefix: string) {
+  const segments = path.split("/").filter(Boolean);
 
   if (segments.length === 2 && segments[0] === "product" && UUID.test(segments[1])) {
     const slug = await productSlug(segments[1]);
     if (slug === UNAVAILABLE) return unavailable();
-    if (slug) return moved(request, `/product/${slug}`);
+    if (slug) return moved(request, `${prefix}/product/${slug}`);
   } else if (segments.length === 2 && segments[0] === "product" && segments[1] !== segments[1].toLowerCase()) {
     // Slugs are lowercase: a link typed in capitals has one address too.
-    return moved(request, `/product/${segments[1].toLowerCase()}`);
-  } else if (segments.length === 1 || segments.length === 2) {
+    return moved(request, `${prefix}/product/${segments[1].toLowerCase()}`);
+  } else if (!prefix && (segments.length === 1 || segments.length === 2)) {
     // /<slug> or /<category>/<slug>; the shop's own sections (/catalog/…,
     // /bilgi/…) and Next's files (/_next/…) are never the old store's.
     const legacy = segments.map((segment) => segment.toLowerCase());
@@ -111,11 +117,42 @@ export async function proxy(request: NextRequest) {
       if (current) return moved(request, `/product/${current}`);
     }
   }
-  return NextResponse.next();
+  return null;
+}
+
+/**
+ * Every page request, in three steps.
+ *
+ * 1. Languages (src/lib/i18n/config): Turkish keeps the root, so /tr/… is sent
+ *    back to it (one address per page); /en/… and /ar/… are their own segment
+ *    of app/[locale]; the admin panel is never in a language. Anything at the
+ *    root is served from the `tr` segment, its address unchanged (a rewrite).
+ * 2. Legacy product addresses, in whichever language they came (above).
+ * 3. The rest goes on.
+ */
+export async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  if (pathname === "/tr" || pathname.startsWith("/tr/")) return moved(request, pathname.slice(3) || "/");
+
+  const language = /^\/(en|ar)(?=\/|$)/.exec(pathname)?.[1];
+  const path = language ? pathname.slice(3) || "/" : pathname;
+  if (language && /^\/admin(?:\/|$)/.test(path)) return moved(request, path);
+
+  const redirect = await productRedirect(request, path, language ? `/${language}` : "");
+  if (redirect) return redirect;
+
+  if (language) return NextResponse.next();
+  const url = request.nextUrl.clone();
+  url.pathname = `/tr${pathname === "/" ? "" : pathname}`;
+  return NextResponse.rewrite(url);
 }
 
 export const config = {
-  // A product id under /product, or one or two segments at the root (files and
-  // the shop's own pages are waved through above). Deeper paths never enter.
-  matcher: ["/product/:ref", "/:segment", "/:category/:slug"],
+  // Every page: not Next's own files (/_next), not the API proxy (/api), not a
+  // file by its extension (icons, robots.txt, the sitemap, public images).
+  // Extensions only — some product slugs carry a dot (an old store's "1.5").
+  matcher: [
+    "/((?!_next/|api/|.*\\.(?:txt|xml|svg|ico|png|jpe?g|webp|avif|gif|js|css|json|map|webmanifest|woff2?|pdf)$).*)",
+  ],
 };

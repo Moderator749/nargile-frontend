@@ -1,7 +1,8 @@
 "use client";
 
 import type { MouseEvent, ReactNode } from "react";
-import Link from "next/link";
+
+import Link from "@/components/i18n/Link";
 
 /**
  * A link to a section of a page ("/#avantajlar"). On that page it glides to
