@@ -22,8 +22,9 @@ import { SITE_NAME } from "@/lib/site";
  *   so there is never a hole, however many tiles the editor holds.
  *
  * On a tablet the first four make a 2×2 block and the rest follow in pairs,
- * an odd last one taking the row; on a phone they stack. Every row is the
- * same compact height.
+ * an odd last one taking the row; on a phone the featured tile has a row of
+ * its own and the rest go in pairs, smaller (an odd last one, again, takes
+ * the row). Every row is the same compact height.
  */
 interface Placed {
   tile: ResolvedTile;
@@ -34,6 +35,8 @@ interface Placed {
   span: number;
   /** The whole row on a tablet (an odd tile left at the end). */
   fullOnTablet: boolean;
+  /** The whole row on a phone: the featured tile, and an odd one left at the end. */
+  fullOnPhone: boolean;
 }
 
 /** Rows of at most four, as even as they come: 5 → [3, 2], 7 → [4, 3], 10 → [4, 3, 3]. */
@@ -56,17 +59,20 @@ function layout(tiles: ResolvedTile[]): Placed[] {
     featured: i === 0,
     span: topSpans[i],
     fullOnTablet: row.length % 2 === 1 && i === row.length - 1,
+    fullOnPhone: i === 0,
   }));
 
   const rest = indexed.slice(4);
   let at = 0;
   for (const size of rowSizes(rest.length)) {
     for (const t of rest.slice(at, at + size)) {
-      placed.push({ ...t, featured: false, span: 60 / size, fullOnTablet: false });
+      placed.push({ ...t, featured: false, span: 60 / size, fullOnTablet: false, fullOnPhone: false });
     }
     at += size;
   }
   if (rest.length % 2 === 1) placed[placed.length - 1].fullOnTablet = true;
+  // On a phone the featured tile takes its own row and the rest go in pairs.
+  if (placed.length > 1 && (placed.length - 1) % 2 === 1) placed[placed.length - 1].fullOnPhone = true;
   return placed;
 }
 
@@ -106,16 +112,18 @@ export function CatalogShowcase({ title, subtitle, tiles }: { title: string; sub
         )}
         <span aria-hidden className="mx-auto mb-10 mt-4 block h-1.5 w-14 rounded-full bg-red-600" />
 
-        <ul className="grid w-full grid-cols-1 gap-4 md:grid-cols-2 md:gap-5 lg:-mx-2.5 lg:w-[calc(100%+1.25rem)] lg:grid-cols-[repeat(60,minmax(0,1fr))] lg:gap-x-0">
-          {layout(tiles).map(({ tile, index, featured, span, fullOnTablet }) => {
+        <ul className="grid w-full grid-cols-2 gap-3 md:gap-4 md:grid-cols-2 md:gap-5 lg:-mx-2.5 lg:w-[calc(100%+1.25rem)] lg:grid-cols-[repeat(60,minmax(0,1fr))] lg:gap-x-0">
+          {layout(tiles).map(({ tile, index, featured, span, fullOnTablet, fullOnPhone }) => {
             const Icon = homeIcon(tile.icon);
+            // A half-width tile on a phone (≈170px): tighter padding, type and arrow.
+            const pair = !fullOnPhone;
             return (
               <li
                 key={`${tile.label}-${index}`}
                 style={{ "--span": span } as CSSProperties}
-                className={`min-w-0 ${featured ? "h-[240px]" : "h-[190px]"} md:h-[220px] lg:px-2.5 lg:[grid-column:span_var(--span)] ${
-                  fullOnTablet ? "md:col-span-2" : ""
-                }`}
+                className={`min-w-0 ${featured ? "h-[240px]" : pair ? "h-[170px]" : "h-[190px]"} md:h-[220px] lg:px-2.5 lg:[grid-column:span_var(--span)] ${
+                  fullOnPhone ? "col-span-2" : ""
+                } ${fullOnTablet ? "md:col-span-2" : fullOnPhone ? "md:col-span-1" : ""}`}
               >
                 <Link
                   href={tile.href}
@@ -128,7 +136,7 @@ export function CatalogShowcase({ title, subtitle, tiles }: { title: string; sub
                       src={tile.image}
                       alt={`${tile.label} | ${SITE_NAME}`}
                       fill
-                      sizes={`(min-width: 1024px) ${Math.round((span / 60) * 100)}vw, ${fullOnTablet ? "100vw" : "(min-width: 768px) 50vw, 100vw"}`}
+                      sizes={`(min-width: 1024px) ${Math.round((span / 60) * 100)}vw, (min-width: 768px) ${fullOnTablet ? "100vw" : "50vw"}, ${fullOnPhone ? "100vw" : "50vw"}`}
                       unoptimized={!canOptimiseImage(tile.image)}
                       className="-z-20 object-cover object-center transition-transform duration-700 ease-out motion-safe:group-hover:scale-105"
                     />
@@ -155,20 +163,30 @@ export function CatalogShowcase({ title, subtitle, tiles }: { title: string; sub
                   {/* On a small glass pill, so it reads on a photo shot on white too. */}
                   <span
                     aria-hidden
-                    className="absolute left-4 top-4 rounded-full bg-black/30 px-2.5 py-1 font-mono text-[11px] font-medium tracking-[0.2em] text-white/80 tabular-nums ring-1 ring-inset ring-white/15 backdrop-blur-md md:left-5 md:top-5"
+                    className={`absolute left-4 top-4 rounded-full bg-black/30 px-2.5 py-1 font-mono text-[11px] font-medium tracking-[0.2em] text-white/80 tabular-nums ring-1 ring-inset ring-white/15 backdrop-blur-md md:left-5 md:top-5 ${
+                      pair ? "max-md:left-3 max-md:top-3 max-md:px-2 max-md:text-[10px]" : ""
+                    }`}
                   >
                     {String(index + 1).padStart(2, "0")}
                   </span>
 
-                  <div className="flex w-full items-end justify-between gap-4 p-5 transition-transform duration-500 ease-out motion-safe:group-hover:-translate-y-1 md:p-6">
+                  <div
+                    className={`flex w-full items-end justify-between gap-4 p-5 transition-transform duration-500 ease-out motion-safe:group-hover:-translate-y-1 md:p-6 ${
+                      pair ? "max-md:gap-2 max-md:p-3.5" : ""
+                    }`}
+                  >
                     <div className="min-w-0">
-                      <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.22em] text-red-300">
+                      <span
+                        className={`mb-1 block text-[11px] font-semibold uppercase tracking-[0.22em] text-red-300 ${
+                          pair ? "max-md:truncate max-md:text-[10px] max-md:tracking-[0.14em]" : ""
+                        }`}
+                      >
                         {tile.eyebrow}
                       </span>
                       <h3
                         className={`text-balance font-semibold leading-[1.1] tracking-tighter text-white drop-shadow-md ${
                           featured ? "text-2xl md:text-3xl" : span <= 12 ? "text-lg md:text-xl lg:text-lg" : "text-xl"
-                        }`}
+                        } ${pair ? "max-md:text-base" : ""}`}
                       >
                         {tile.label}
                       </h3>
@@ -176,7 +194,9 @@ export function CatalogShowcase({ title, subtitle, tiles }: { title: string; sub
                     {/* The arrow, opening into "Keşfet" under the pointer. */}
                     <span
                       aria-hidden
-                      className="flex h-10 shrink-0 items-center rounded-full bg-white/10 px-3 text-white ring-1 ring-inset ring-white/20 backdrop-blur-md transition-colors duration-300 group-hover:bg-white group-hover:text-neutral-950"
+                      className={`flex h-10 shrink-0 items-center rounded-full bg-white/10 px-3 text-white ring-1 ring-inset ring-white/20 backdrop-blur-md transition-colors duration-300 group-hover:bg-white group-hover:text-neutral-950 ${
+                        pair ? "max-md:h-8 max-md:px-2" : ""
+                      }`}
                     >
                       <span className="max-w-0 overflow-hidden whitespace-nowrap text-sm font-semibold opacity-0 transition-[max-width,opacity,margin] duration-500 ease-out group-hover:mr-1.5 group-hover:max-w-[4.5rem] group-hover:opacity-100">
                         Keşfet

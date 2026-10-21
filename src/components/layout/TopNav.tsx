@@ -15,9 +15,9 @@ import { useCategoryDrawer } from "@/store/useCategoryDrawer";
 
 /**
  * The same list as the sidebar's, in a drawer for the screens it steps aside
- * on (below `lg`). Opened from the menu bar's "KATEGORİLER" and from the
- * phone's bottom bar (MobileTabBar), so it is drawn on every page — /cart too,
- * where the menu bar itself steps aside.
+ * on (below `lg`). Opened from the menu bar's "KATEGORİLER" on a tablet and
+ * from the header's menu button on a phone, so it is drawn on every page —
+ * /cart too, where the menu bar itself steps aside.
  */
 function CategoryDrawer({ categories }: { categories: ResolvedNav[] }) {
   const open = useCategoryDrawer((s) => s.open);
@@ -164,7 +164,7 @@ export function TopNav({ categories, links }: { categories: ResolvedNav[]; links
           onClick={() => setDrawer(true)}
           aria-expanded={drawer}
           aria-controls="category-drawer"
-          // A tablet's way to the drawer; a phone has the bottom bar's "Kategoriler".
+          // A tablet's way to the drawer; a phone has the header's menu button.
           className="hidden shrink-0 items-center gap-2.5 rounded-md bg-red-700 px-6 py-2 text-sm font-bold uppercase tracking-wider text-white shadow-sm transition-colors hover:bg-red-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-safe:animate-kategori-glow md:flex lg:hidden"
         >
           <LayoutGrid className="h-4 w-4 shrink-0 text-white" aria-hidden />

@@ -4,7 +4,7 @@ import { Suspense, useEffect, useRef } from "react";
 import Form from "next/form";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { PackageSearch, Search, ShoppingCart } from "lucide-react";
+import { Menu, PackageSearch, Search, ShoppingCart } from "lucide-react";
 
 import { Logo } from "@/components/brand/Logo";
 import { CurrencySelect } from "@/components/layout/CurrencySelect";
@@ -14,6 +14,7 @@ import { UserMenu } from "@/components/layout/UserMenu";
 import { isAdminRole } from "@/lib/roles";
 import { useAuthStore } from "@/store/useAuthStore";
 import { selectCartCount, useCartStore } from "@/store/useCartStore";
+import { useCategoryDrawer } from "@/store/useCategoryDrawer";
 import { SIDEBAR_WIDTH_LG } from "@/components/layout/CategorySidebar";
 import type { ResolvedNav } from "@/lib/storefrontNav";
 import { PAGE_CONTAINER } from "@/lib/layout";
@@ -89,6 +90,11 @@ export function Navbar({
 }) {
   const user = useAuthStore((s) => s.user);
   const cartCount = useCartStore(selectCartCount);
+  const openDrawer = useCategoryDrawer((s) => s.setOpen);
+  // On a storefront phone the account and the cart are the bottom bar's
+  // (MobileTabBar), so the header leaves them to it; the admin panel, which
+  // has no bottom bar, keeps both.
+  const desktopOnly = showMenu ? "max-md:hidden" : "";
   const headerRef = useRef<HTMLElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -126,7 +132,7 @@ export function Navbar({
   // Two blocks, pinned differently. From md both stay on screen, the menu
   // rows held right under the 64px logo row, and read as one header. On a
   // phone only the logo row stays: the search row and the menu bar scroll away
-  // with the page, and the bottom tab bar (MobileTabBar) keeps the categories
+  // with the page, and the menu button at the logo's left keeps the categories
   // a tap away — so a phone keeps 65px of header, not a third of its screen.
   return (
     <>
@@ -136,8 +142,22 @@ export function Navbar({
         // category column's grey, framing the page with the column.
         className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white text-foreground md:border-b-0 dark:border-border dark:bg-background"
       >
-        {/* Module 2: logo · search · currency · order tracking · account · cart */}
+        {/* Module 2: logo · search · currency · order tracking · account · cart;
+            on a phone: menu · logo · currency · order tracking · theme. */}
         <div className={`${PAGE_CONTAINER} flex h-16 items-center gap-1.5 sm:gap-2`}>
+          {/* A phone's way to the categories: the drawer the menu bar's
+              "KATEGORİLER" opens on a tablet. */}
+          {showMenu && (
+            <button
+              type="button"
+              onClick={() => openDrawer(true)}
+              aria-label="Kategoriler"
+              aria-controls="category-drawer"
+              className={`${iconButton} -ml-2 text-foreground md:hidden`}
+            >
+              <Menu className="h-[22px] w-[22px]" strokeWidth={1.75} aria-hidden />
+            </button>
+          )}
           {/* The logo sits in the category column's width, so what follows it
               starts exactly on that column's line — which is where
               the first entry of the bar below starts. */}
@@ -174,11 +194,13 @@ export function Navbar({
           <ThemeToggle />
 
           {user ? (
-            <UserMenu user={user} />
+            <div className={desktopOnly}>
+              <UserMenu user={user} />
+            </div>
           ) : (
             <Link
               href="/login"
-              className="flex h-9 shrink-0 items-center whitespace-nowrap rounded-full bg-foreground px-4 text-[13px] font-medium text-background transition-opacity duration-200 hover:opacity-85 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              className={`flex ${desktopOnly} h-9 shrink-0 items-center whitespace-nowrap rounded-full bg-foreground px-4 text-[13px] font-medium text-background transition-opacity duration-200 hover:opacity-85 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent`}
             >
               Giriş Yap
             </Link>
@@ -187,7 +209,7 @@ export function Navbar({
           <Link
             href="/cart"
             aria-label={`Sepet (${cartCount} ürün)`}
-            className={`${iconButton} text-accent hover:bg-accent/10 hover:text-accent`}
+            className={`${iconButton} ${desktopOnly} text-accent hover:bg-accent/10 hover:text-accent`}
           >
             <ShoppingCart className="h-[21px] w-[21px]" strokeWidth={2} aria-hidden />
             {cartCount > 0 && (

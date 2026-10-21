@@ -33,12 +33,19 @@ interface ProductCardProps {
 }
 
 // Shared by card and skeleton so both occupy identical space (0 CLS).
+//
+// The card fits itself to its own width, not the screen's (a container,
+// `@container`): two to a row on a phone it is ≈160–190px wide, and below
+// 13rem (208px) everything tightens — padding, type, the price row, the
+// badges — while the same card in a homepage row (70% of a phone's width)
+// or a desktop grid keeps its full size. The add button stays 44px either
+// way: it is a thumb's target.
 // The admin's "Birlikte Satılanlar" frame: a hairline border draws the card on
 // the white page (a shadow alone let it melt into it), and a lighter rule
 // under the photo parts it from the text. The photos' white backdrop still
 // runs edge to edge inside the frame.
 const cardClass =
-  "group relative flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-white/10 dark:bg-zinc-900";
+  "@container group relative flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-white/10 dark:bg-zinc-900";
 // Dark mode: supplier photos (shot on white) sit on an inset light plate, not a
 // harsh white square — the plate is its own edge there, so no rule under it.
 const mediaClass =
@@ -46,12 +53,12 @@ const mediaClass =
 // Widest card: 3 columns in the 80rem container (catalog); 4 on the homepage is smaller.
 // What a card actually measures: four to a row beside the 16rem category
 // column from xl (≈ 240px), three from lg (≈ a quarter of the screen), two
-// from sm, one on a phone. The browser picks the srcset width from this.
-const IMAGE_SIZES = "(min-width: 1280px) 260px, (min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw";
-const bodyClass = "flex flex-1 flex-col px-6 pb-6 pt-1";
+// from sm, two on a phone. The browser picks the srcset width from this.
+const IMAGE_SIZES = "(min-width: 1280px) 260px, (min-width: 1024px) 25vw, 50vw";
+const bodyClass = "flex flex-1 flex-col px-6 pb-6 pt-1 @max-[13rem]:px-3 @max-[13rem]:pb-3.5";
 // Minimal status pills: frosted glass, crimson only for a live deal.
 const badgeClass =
-  "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-medium uppercase tracking-widest backdrop-blur-md";
+  "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-[10px] font-medium uppercase tracking-widest backdrop-blur-md @max-[13rem]:gap-1 @max-[13rem]:px-2 @max-[13rem]:text-[9px] @max-[13rem]:tracking-wider";
 
 const ADDED_FEEDBACK_MS = 1600;
 const stepBtn =
@@ -145,7 +152,7 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
           />
         </div>
 
-        <div className="pointer-events-none absolute inset-x-3 top-3 flex items-start justify-between gap-2">
+        <div className="pointer-events-none absolute inset-x-3 top-3 flex items-start justify-between gap-2 @max-[13rem]:inset-x-2 @max-[13rem]:top-2">
           {isHeavy ? (
             <span className={`${badgeClass} bg-black/70 text-white`}>
               <Truck className="h-3 w-3" aria-hidden /> Ağır kargo
@@ -164,8 +171,12 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
               style={dealColor ? { backgroundColor: dealColor, color: readableInk(dealColor) } : undefined}
             >
               {/* Label, hourglass, then the clock it is counting. An offer with no
-                  deadline has nothing to count down to. */}
-              Fırsat Ürün <Hourglass className="h-3 w-3 shrink-0" aria-hidden />
+                  deadline has nothing to count down to. On a narrow card the
+                  three do not fit on one line: the coloured pill, the hourglass
+                  and the clock say "deal" there, and the words go to screen
+                  readers only. */}
+              <span className={sale.endsAt !== null ? "@max-[13rem]:sr-only" : undefined}>Fırsat Ürün</span>
+              <Hourglass className="h-3 w-3 shrink-0" aria-hidden />
               {sale.endsAt !== null && (
                 <span className="font-mono normal-case tracking-normal tabular-nums" role="timer" aria-label="Kalan süre">
                   {now === null ? "--:--:--" : formatCountdown(sale.endsAt - now)}
@@ -184,7 +195,7 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
           <div
             role="group"
             aria-label={`${product.name}: sepette ${inCartShown} adet`}
-            className="absolute bottom-3 right-3 z-10 flex h-11 items-center rounded-full bg-black/85 text-white shadow-lg backdrop-blur-md"
+            className="absolute bottom-3 right-3 z-10 flex h-11 items-center rounded-full bg-black/85 @max-[13rem]:bottom-2 @max-[13rem]:right-2 text-white shadow-lg backdrop-blur-md"
           >
             <button
               type="button"
@@ -215,7 +226,7 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
             href={productHref(product)}
             aria-label={`Renk seçin: ${product.name}`}
             title="Renk seçin"
-            className="absolute bottom-3 right-3 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-black/80 text-white shadow-lg backdrop-blur-md transition-[background-color,transform] duration-300 ease-out hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-safe:active:scale-95"
+            className="absolute bottom-3 right-3 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-black/80 text-white @max-[13rem]:bottom-2 @max-[13rem]:right-2 shadow-lg backdrop-blur-md transition-[background-color,transform] duration-300 ease-out hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-safe:active:scale-95"
           >
             <Plus className="h-5 w-5" strokeWidth={1.75} aria-hidden />
           </Link>
@@ -227,7 +238,7 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
             onClick={handleAdd}
             disabled={!canAdd}
             aria-label={soldOut ? `Tükendi: ${product.name}` : `Sepete ekle: ${product.name}`}
-            className={`absolute bottom-3 right-3 z-10 flex h-11 w-11 items-center justify-center rounded-full text-white shadow-lg backdrop-blur-md transition-[background-color,transform,opacity] duration-300 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40 motion-safe:active:scale-95 ${
+            className={`absolute bottom-3 right-3 z-10 flex h-11 w-11 items-center justify-center rounded-full text-white @max-[13rem]:bottom-2 @max-[13rem]:right-2 shadow-lg backdrop-blur-md transition-[background-color,transform,opacity] duration-300 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40 motion-safe:active:scale-95 ${
               added ? "bg-emerald-600" : "bg-black/80 enabled:hover:bg-accent"
             }`}
           >
@@ -255,7 +266,7 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
             product code B2B buyers order by. One fixed line each, so neither
             ever shifts the card. */}
         <div className="flex flex-col gap-0.5">
-          <p className="h-4 truncate text-xs uppercase leading-4 tracking-wider text-muted-foreground">
+          <p className="h-4 truncate text-xs uppercase leading-4 tracking-wider text-muted-foreground @max-[13rem]:text-[10px]">
             {product.brand ?? category?.name ?? ""}
             {needsColorChoice && (
               <>
@@ -264,11 +275,11 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
               </>
             )}
           </p>
-          <p className="h-4 truncate font-mono text-xs leading-4 text-slate-500 dark:text-zinc-400" title={product.base_code}>
+          <p className="h-4 truncate font-mono text-xs leading-4 text-slate-500 @max-[13rem]:text-[11px] dark:text-zinc-400" title={product.base_code}>
             {product.base_code}
           </p>
         </div>
-        <h3 className="mt-2 line-clamp-2 min-h-10 text-[15px] font-semibold leading-5 tracking-tight text-foreground">
+        <h3 className="mt-2 line-clamp-2 min-h-10 text-[15px] font-semibold leading-5 tracking-tight text-foreground @max-[13rem]:mt-1.5 @max-[13rem]:min-h-9 @max-[13rem]:text-[13px] @max-[13rem]:leading-[1.125rem]">
           {/* Stretched link: the whole card opens the product page; the "+" sits above it. */}
           <Link
             href={productHref(product)}
@@ -278,17 +289,19 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
           </Link>
         </h3>
 
-        {/* Fixed-height price row: switching public → segment prices never shifts layout. */}
-        <div className={`mt-3 ${publicPrices ? "public-price" : ""}`}>
-          <div className="flex h-6 items-baseline gap-2.5 overflow-hidden whitespace-nowrap font-mono tabular-nums">
+        {/* Fixed-height price row: switching public → segment prices never shifts layout.
+            On a narrow card it is two lines high, the old price and the
+            discount wrapping under the price rather than off the edge. */}
+        <div className={`mt-3 @max-[13rem]:mt-2 ${publicPrices ? "public-price" : ""}`}>
+          <div className="flex h-6 items-baseline gap-2.5 overflow-hidden whitespace-nowrap font-mono tabular-nums @max-[13rem]:h-10 @max-[13rem]:flex-wrap @max-[13rem]:content-start @max-[13rem]:gap-x-1.5 @max-[13rem]:gap-y-0">
             {price ? (
               <>
-                <span className="text-base font-medium tracking-tight text-foreground">{money.format(price)}</span>
+                <span className="text-base font-medium tracking-tight text-foreground @max-[13rem]:basis-full @max-[13rem]:text-[15px]">{money.format(price)}</span>
                 {hasDiscount && wasPrice && (
-                  <span className="text-xs text-muted-foreground line-through">{money.format(wasPrice)}</span>
+                  <span className="text-xs text-muted-foreground line-through @max-[13rem]:text-[11px]">{money.format(wasPrice)}</span>
                 )}
                 {hasDiscount && (sale.kind === "live" || !publicPrices) && (
-                  <span className="text-xs font-medium text-accent">−%{discountPct}</span>
+                  <span className="text-xs font-medium text-accent @max-[13rem]:text-[11px]">−%{discountPct}</span>
                 )}
               </>
             ) : (
@@ -311,13 +324,14 @@ export function ProductCardSkeleton() {
           <div className={`h-4 w-1/4 ${bar}`} />
           <div className={`h-4 w-1/5 ${bar}`} />
         </div>
-        {/* 2 × 14px bars + 6px gap + 4px padding = 38px, inside the title's 40px box. */}
-        <div className="mt-2 h-10 space-y-1.5 py-0.5">
+        {/* 2 × 14px bars + 6px gap + 4px padding = 38px, inside the title's 40px box
+            (36px on a narrow card, as its title). */}
+        <div className="mt-2 h-10 space-y-1.5 py-0.5 @max-[13rem]:mt-1.5 @max-[13rem]:h-9 @max-[13rem]:space-y-1">
           <div className={`h-3.5 w-11/12 ${bar}`} />
           <div className={`h-3.5 w-2/3 ${bar}`} />
         </div>
-        <div className="mt-3">
-          <div className={`h-6 w-1/3 ${bar}`} />
+        <div className="mt-3 @max-[13rem]:mt-2 @max-[13rem]:h-10">
+          <div className={`h-6 w-1/3 ${bar} @max-[13rem]:h-5 @max-[13rem]:w-1/2`} />
         </div>
       </div>
     </div>

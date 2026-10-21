@@ -2,13 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { House, LayoutGrid, ShoppingCart, UserRound, type LucideIcon } from "lucide-react";
+import { House, ShoppingCart, UserRound, type LucideIcon } from "lucide-react";
 
 import { useAuthStore } from "@/store/useAuthStore";
 import { selectCartCount, useCartStore } from "@/store/useCartStore";
-import { useCategoryDrawer } from "@/store/useCategoryDrawer";
 
-/** One tab: the icon over its label, the whole quarter of the bar a target. */
+/** One tab: the icon over its label, the whole third of the bar a target. */
 const TAB =
   "relative flex h-16 flex-col items-center justify-center gap-1 text-[11px] font-semibold transition-colors duration-200 focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-accent";
 
@@ -44,9 +43,9 @@ function TabLink({ href, label, Icon, active, badge }: { href: string; label: st
 }
 
 /**
- * The phone's bottom bar (below `md`), as an app has: Ana Sayfa, Kategoriler
- * (the same drawer the menu bar's "KATEGORİLER" opens), Sepetim with the live
- * count, and Hesabım (the account, or the sign-in page for a guest). Fixed to
+ * The phone's bottom bar (below `md`), as an app has: Ana Sayfa, Sepetim with
+ * the live count, and Hesabım (the account, or the sign-in page for a guest);
+ * the categories are the header's menu button, at the logo's left. Fixed to
  * the foot of the screen over a frosted white; StorefrontChrome leaves room
  * for it under the footer, so nothing on a page ends up behind it. The
  * iPhone's home indicator gets its own room under the tabs.
@@ -55,34 +54,18 @@ export function MobileTabBar() {
   const pathname = usePathname();
   const user = useAuthStore((s) => s.user);
   const cartCount = useCartStore(selectCartCount);
-  const drawer = useCategoryDrawer((s) => s.open);
-  const openDrawer = useCategoryDrawer((s) => s.setOpen);
 
   const account = user ? "/account" : "/login";
   const onAccount = ["/account", "/orders", "/login", "/register"].some((p) => pathname === p || pathname.startsWith(`${p}/`));
-  const onCategories = drawer || pathname.startsWith("/catalog");
 
   return (
     <nav
       aria-label="Mobil menü"
       className="fixed inset-x-0 bottom-0 z-50 border-t border-gray-200 bg-white/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden dark:border-border dark:bg-background/90"
     >
-      <ul className="grid grid-cols-4">
+      <ul className="grid grid-cols-3">
         <li>
           <TabLink href="/" label="Ana Sayfa" Icon={House} active={pathname === "/"} />
-        </li>
-        <li>
-          <button
-            type="button"
-            onClick={() => openDrawer(true)}
-            aria-expanded={drawer}
-            aria-controls="category-drawer"
-            className={`${TAB} w-full ${tabTone(onCategories)}`}
-          >
-            <Indicator active={onCategories} />
-            <LayoutGrid className="h-[22px] w-[22px]" strokeWidth={onCategories ? 2.25 : 1.75} aria-hidden />
-            Kategoriler
-          </button>
         </li>
         <li>
           <TabLink href="/cart" label="Sepetim" Icon={ShoppingCart} active={pathname === "/cart"} badge={cartCount} />
