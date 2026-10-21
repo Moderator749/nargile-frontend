@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 
 import { ExportNotice } from "@/components/auth/ExportNotice";
 import { AnnouncementPopup } from "@/components/banner/AnnouncementPopup";
+import { MobileTabBar } from "@/components/layout/MobileTabBar";
 import { Navbar } from "@/components/layout/Navbar";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { TopBanner } from "@/components/layout/TopBanner";
@@ -11,7 +12,7 @@ import { resolveNav } from "@/lib/storefrontNav";
 
 /**
  * The shop around a storefront page: the welcome strip, the landing popup,
- * the header with its menus, and the footer. Used by the (storefront) route
+ * the header with its menus, the footer, and the phone's bottom bar. Used by the (storefront) route
  * group's layout and by the site-wide 404, never by the admin panel.
  */
 export async function StorefrontChrome({ children }: { children: ReactNode }) {
@@ -34,6 +35,11 @@ export async function StorefrontChrome({ children }: { children: ReactNode }) {
       <Navbar categories={sidebar} links={menu} />
       {children}
       {home.sections.footer && <SiteFooter footer={home.footer} />}
+      {/* The phone's bottom bar, and the room it takes kept free under the
+          page (its height, the home indicator's included), so the footer's
+          last line scrolls clear of it. */}
+      <div aria-hidden className="h-[calc(4rem+1px+env(safe-area-inset-bottom))] shrink-0 md:hidden" />
+      <MobileTabBar />
     </>
   );
 }

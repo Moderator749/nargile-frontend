@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
+import { Suspense, useEffect, useLayoutEffect, useRef, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowLeft, ChevronDown, LayoutGrid, X } from "lucide-react";
@@ -11,6 +11,59 @@ import { SIDEBAR_WIDTH } from "@/components/layout/CategorySidebar";
 import { applySidebarFor, isSidebarCollapsed, opensByDefault, setSidebarCollapsed, subscribeSidebar } from "@/lib/sidebar";
 import type { ResolvedNav } from "@/lib/storefrontNav";
 import { PAGE_CONTAINER } from "@/lib/layout";
+import { useCategoryDrawer } from "@/store/useCategoryDrawer";
+
+/**
+ * The same list as the sidebar's, in a drawer for the screens it steps aside
+ * on (below `lg`). Opened from the menu bar's "KATEGORİLER" and from the
+ * phone's bottom bar (MobileTabBar), so it is drawn on every page — /cart too,
+ * where the menu bar itself steps aside.
+ */
+function CategoryDrawer({ categories }: { categories: ResolvedNav[] }) {
+  const open = useCategoryDrawer((s) => s.open);
+  const setOpen = useCategoryDrawer((s) => s.setOpen);
+  const dialog = useRef<HTMLDialogElement>(null);
+
+  // The native dialog brings the focus trap, Escape and the inert background.
+  useEffect(() => {
+    const element = dialog.current;
+    if (!element) return;
+    if (open && !element.open) element.showModal();
+    if (!open && element.open) element.close();
+  }, [open]);
+
+  return (
+    <dialog
+      ref={dialog}
+      id="category-drawer"
+      aria-label="Kategoriler"
+      onCancel={(event) => {
+        event.preventDefault();
+        setOpen(false);
+      }}
+      onClose={() => setOpen(false)}
+      onClick={(event) => {
+        if (event.target === dialog.current) setOpen(false);
+      }}
+      className="m-0 h-full max-h-none w-[18rem] max-w-[85vw] bg-background text-foreground backdrop:bg-black/50 lg:hidden"
+    >
+      <div className="flex items-center justify-between border-b border-border px-3 py-2.5">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.12em]">Kategoriler</p>
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          aria-label="Kapat"
+          className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        >
+          <X className="h-4 w-4" aria-hidden />
+        </button>
+      </div>
+      <Suspense fallback={null}>
+        <CategoryList items={categories} onNavigate={() => setOpen(false)} />
+      </Suspense>
+    </dialog>
+  );
+}
 
 /**
  * One link, plain text: the shop's red arrives on hover, with a 2px rule under
@@ -38,8 +91,8 @@ const LINK =
  */
 export function TopNav({ categories, links }: { categories: ResolvedNav[]; links: ResolvedNav[] }) {
   const pathname = usePathname();
-  const [drawer, setDrawer] = useState(false);
-  const dialog = useRef<HTMLDialogElement>(null);
+  const drawer = useCategoryDrawer((s) => s.open);
+  const setDrawer = useCategoryDrawer((s) => s.setOpen);
   // The column's own state lives on <html>, set before first paint; this only
   // follows it, so the chevron and the label always say what is on screen.
   const collapsed = useSyncExternalStore(subscribeSidebar, isSidebarCollapsed, () => !opensByDefault(pathname));
@@ -47,14 +100,6 @@ export function TopNav({ categories, links }: { categories: ResolvedNav[]; links
   // Arriving on a page by a link: the column as that page opens with. Before
   // paint, so a category page never shows a frame without it.
   useLayoutEffect(() => applySidebarFor(pathname), [pathname]);
-
-  // The native dialog brings the focus trap, Escape and the inert background.
-  useEffect(() => {
-    const element = dialog.current;
-    if (!element) return;
-    if (drawer && !element.open) element.showModal();
-    if (!drawer && element.open) element.close();
-  }, [drawer]);
 
   // Checkout is a corridor, not a shop floor: the seven categories, the
   // drawer and the column's handle all come off on /cart, and the red button
@@ -72,6 +117,7 @@ export function TopNav({ categories, links }: { categories: ResolvedNav[]; links
             Alışverişe Devam Et
           </Link>
         </div>
+        <CategoryDrawer categories={categories} />
       </nav>
     );
   }
@@ -157,36 +203,7 @@ export function TopNav({ categories, links }: { categories: ResolvedNav[]; links
         </ul>
       </div>
 
-      {/* The same list as the sidebar's, for the screens it steps aside on. */}
-      <dialog
-        ref={dialog}
-        id="category-drawer"
-        aria-label="Kategoriler"
-        onCancel={(event) => {
-          event.preventDefault();
-          setDrawer(false);
-        }}
-        onClose={() => setDrawer(false)}
-        onClick={(event) => {
-          if (event.target === dialog.current) setDrawer(false);
-        }}
-        className="m-0 h-full max-h-none w-[18rem] max-w-[85vw] bg-background text-foreground backdrop:bg-black/50 lg:hidden"
-      >
-        <div className="flex items-center justify-between border-b border-border px-3 py-2.5">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.12em]">Kategoriler</p>
-          <button
-            type="button"
-            onClick={() => setDrawer(false)}
-            aria-label="Kapat"
-            className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-          >
-            <X className="h-4 w-4" aria-hidden />
-          </button>
-        </div>
-        <Suspense fallback={null}>
-          <CategoryList items={categories} onNavigate={() => setDrawer(false)} />
-        </Suspense>
-      </dialog>
+      <CategoryDrawer categories={categories} />
     </nav>
   );
 }

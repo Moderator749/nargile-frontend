@@ -14,6 +14,7 @@ import {
   DealsTab,
   FooterTab,
   HeroTab,
+  MobileTab,
   NavigationTab,
   SectionsTab,
   ShowcaseTab,
@@ -36,14 +37,20 @@ type TabKey =
   | "brands"
   | "showcase"
   | "seo"
-  | "footer";
+  | "footer"
+  | "mobile";
 
 /** Deep links (/admin/homepage?tab=katalog-kategorileri), e.g. from the retired /admin/categories. */
-const TAB_PARAM: Record<string, TabKey> = { "katalog-kategorileri": "catalog", "kategori-duzenle": "navigation" };
+const TAB_PARAM: Record<string, TabKey> = {
+  "katalog-kategorileri": "catalog",
+  "kategori-duzenle": "navigation",
+  "mobil-yonetim": "mobile",
+};
 
 /** Each tab, and the part of the document it edits (none for the two that link out). */
 const TABS: { key: TabKey; label: string; doc?: keyof Homepage; section?: keyof HomeSections }[] = [
   { key: "sections", label: "Bölümler" },
+  { key: "mobile", label: "Mobil Yönetim", doc: "mobile" },
   { key: "catalog", label: "Katalog Kategorileri" },
   { key: "navigation", label: "Kategori Düzenle", doc: "navigation" },
   { key: "hero", label: "Hero & Kutular", section: "hero" },
@@ -77,6 +84,7 @@ const SECTION_NAMES: Record<string, string> = {
   showcase: "Premium Yelpaze",
   seo_intro: "Alt SEO Metni",
   footer: "Footer",
+  mobile: "Mobil Yönetim",
 };
 
 /** The first problem, said where it is: "Footer › blog › links › 2 › href". */
@@ -296,6 +304,7 @@ export function AdminHomepageView() {
             {tab === "showcase" && <ShowcaseTab value={doc.showcase} set={set("showcase")} categories={categories} brands={brands} />}
             {tab === "seo" && <SeoIntroTab value={doc.seo_intro} set={set("seo_intro")} />}
             {tab === "footer" && <FooterTab value={doc.footer} set={set("footer")} />}
+            {tab === "mobile" && <MobileTab value={doc.mobile} set={set("mobile")} />}
           </div>
 
           {current.doc && (

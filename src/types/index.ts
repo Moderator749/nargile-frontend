@@ -1475,6 +1475,27 @@ export interface Homepage {
   /** "Alt SEO Metni": the passage closing the homepage and catalog pages; an empty field means the default's. */
   seo_intro: HomeSeoIntro;
   footer: HomeFooter;
+  /** "Mobil Yönetim": what a phone shows differently. */
+  mobile: HomeMobile;
+}
+
+/** Homepage sections a phone can go without (hidden below `md` only). */
+export type HomeMobileSection =
+  | "perks"
+  | "promos"
+  | "brand_ticker"
+  | "lules"
+  | "sultanpuan"
+  | "kumbara"
+  | "campaigns"
+  | "brand_statement"
+  | "brand_showcase"
+  | "showcase";
+
+export interface HomeMobile {
+  /** A hero slide's portrait photo for phones (2:3 to 4:5), in place of its wide one. */
+  hero_images: { slide_id: number; image: string }[];
+  hidden: HomeMobileSection[];
 }
 
 export interface HomeSeoIntro {

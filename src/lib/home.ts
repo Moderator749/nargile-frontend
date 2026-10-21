@@ -31,6 +31,8 @@ export interface HeroSlide {
   guestCta?: { label: string; href: string };
   /** Optional background photo, shown at 30% under a vignette; null = CSS spotlight only. */
   image: string | null;
+  /** A portrait photo shown in its place on a phone ("Mobil Yönetim"); the wide one is cropped without it. */
+  mobileImage?: string | null;
   align: HeroTextAlign;
   /** The photo's focal point (0–100 %) and zoom (100 = fills the slide). */
   focus: { x: number; y: number };

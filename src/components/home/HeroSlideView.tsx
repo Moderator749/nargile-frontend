@@ -1,5 +1,6 @@
 import type { CSSProperties, HTMLAttributes, ReactNode } from "react";
-import Image from "next/image";
+import { preload } from "react-dom";
+import Image, { getImageProps } from "next/image";
 import { ArrowRight } from "lucide-react";
 
 import { LinkButton, linkButtonClass } from "@/components/ui/LinkButton";
@@ -30,6 +31,58 @@ const ALIGN: Record<HeroTextAlign, { block: string; actions: string }> = {
   center: { block: "items-center text-center", actions: "items-center sm:justify-center" },
   right: { block: "items-end text-right", actions: "items-end sm:justify-end" },
 };
+
+/** The wide photo's width on screen: the slider's, 1024px at most. */
+const WIDE_SIZES = "(min-width: 1280px) 1024px, 100vw";
+
+/** Where a slide's portrait photo gives way to its wide one: Tailwind's `md`. */
+const WIDE_MEDIA = "(min-width: 768px)";
+const NARROW_MEDIA = "(max-width: 767.98px)";
+
+/**
+ * A slide with a portrait photo for phones ("Mobil Yönetim"): one <img> in a
+ * <picture> (art direction, `getImageProps`), so a phone downloads only the
+ * portrait photo and a wider screen only the wide one — never both. The first
+ * slide's two are preloaded, each for its own screens only. The admin's crop
+ * (focus and zoom) was set on the wide photo, so it applies from `md`; the
+ * portrait one is shown centred, as it was composed.
+ */
+function ArtDirectedImage({
+  wide,
+  tall,
+  alt,
+  focus,
+  zoom,
+  eager,
+}: {
+  wide: string;
+  tall: string;
+  alt: string;
+  focus: { x: number; y: number };
+  zoom: number;
+  eager: boolean;
+}) {
+  const { props: wideProps } = getImageProps({ src: wide, alt, fill: true, sizes: WIDE_SIZES, unoptimized: !canOptimiseImage(wide) });
+  const { props: tallProps } = getImageProps({ src: tall, alt, fill: true, sizes: "100vw", unoptimized: !canOptimiseImage(tall) });
+  if (eager) {
+    const high = { as: "image", fetchPriority: "high" } as const;
+    preload(wideProps.src, { ...high, imageSrcSet: wideProps.srcSet, imageSizes: wideProps.sizes, media: WIDE_MEDIA });
+    preload(tallProps.src, { ...high, imageSrcSet: tallProps.srcSet, imageSizes: tallProps.sizes, media: NARROW_MEDIA });
+  }
+  return (
+    <picture>
+      <source media={WIDE_MEDIA} srcSet={wideProps.srcSet ?? wideProps.src} sizes={wideProps.sizes} />
+      {/* eslint-disable-next-line jsx-a11y/alt-text -- the alt is in the props getImageProps returned */}
+      <img
+        {...tallProps}
+        loading={eager ? "eager" : "lazy"}
+        fetchPriority={eager ? "high" : undefined}
+        className="pointer-events-none -z-20 object-cover object-center md:origin-(--focus) md:object-(--focus) md:scale-(--zoom)"
+        style={{ ...tallProps.style, "--focus": `${focus.x}% ${focus.y}%`, "--zoom": zoom / 100 } as CSSProperties}
+      />
+    </picture>
+  );
+}
 
 /** A part placed on the stage: centred on its point, as wide as its content. */
 const PLACED = "lg:absolute lg:left-(--x) lg:top-(--y) lg:m-0 lg:w-max lg:-translate-x-1/2 lg:-translate-y-1/2";
@@ -83,27 +136,42 @@ export function HeroSlideView({
       {...wrapperProps}
       className={`@container relative isolate flex flex-col justify-center px-6 pb-24 pt-20 sm:px-12 sm:pb-28 sm:pt-24 ${ALIGN[slide.align].block} ${
         placed ? "lg:block lg:aspect-video lg:p-0" : ""
+      } ${
+        // A portrait photo for phones gets a portrait slide to show it in (and,
+        // in the slider's stack, so do the slides beside it).
+        slide.image && slide.mobileImage ? "max-md:aspect-[4/5]" : ""
       } ${className}`}
     >
       {slide.image && (
         <>
-          <Image
-            src={slide.image}
-            // Named for search engines and image search; the visible title
-            // overlaps it, which costs a screen reader one repeated phrase.
-            alt={slide.title ? `${slide.title} | ${SITE_NAME}` : SITE_NAME}
-            fill
-            preload={preloadImage}
-            unoptimized={!canOptimiseImage(slide.image)}
-            sizes="(min-width: 1280px) 1024px, 100vw"
-            className="pointer-events-none -z-20 object-cover"
-            // The admin's crop: the focal point stays put as the zoom pushes in on it.
-            style={{
-              objectPosition: `${slide.focus.x}% ${slide.focus.y}%`,
-              transform: slide.zoom > 100 ? `scale(${slide.zoom / 100})` : undefined,
-              transformOrigin: `${slide.focus.x}% ${slide.focus.y}%`,
-            }}
-          />
+          {slide.mobileImage ? (
+            <ArtDirectedImage
+              wide={slide.image}
+              tall={slide.mobileImage}
+              alt={slide.title ? `${slide.title} | ${SITE_NAME}` : SITE_NAME}
+              focus={slide.focus}
+              zoom={slide.zoom}
+              eager={preloadImage}
+            />
+          ) : (
+            <Image
+              src={slide.image}
+              // Named for search engines and image search; the visible title
+              // overlaps it, which costs a screen reader one repeated phrase.
+              alt={slide.title ? `${slide.title} | ${SITE_NAME}` : SITE_NAME}
+              fill
+              preload={preloadImage}
+              unoptimized={!canOptimiseImage(slide.image)}
+              sizes={WIDE_SIZES}
+              className="pointer-events-none -z-20 object-cover"
+              // The admin's crop: the focal point stays put as the zoom pushes in on it.
+              style={{
+                objectPosition: `${slide.focus.x}% ${slide.focus.y}%`,
+                transform: slide.zoom > 100 ? `scale(${slide.zoom / 100})` : undefined,
+                transformOrigin: `${slide.focus.x}% ${slide.focus.y}%`,
+              }}
+            />
+          )}
           {/* A light wash keeps white text legible while the photo stays vivid; the
               bottom fade only darkens behind the slide controls. */}
           <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 bg-black/35" />

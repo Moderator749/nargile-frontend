@@ -18,7 +18,7 @@ import { FAQ_HREF } from "@/lib/faq";
 import { BLOG_LINKS, BRANCHES, FAQ_LINKS, SOCIAL_LINKS, WORKING_HOURS } from "@/lib/footer";
 import { SHOWCASE_TILES } from "@/lib/showcase";
 import { SIDEBAR_NAV, TOP_NAV } from "@/lib/storefrontNav";
-import type { Homepage, HomeSections, HomeSeoIntro } from "@/types";
+import type { Homepage, HomeMobileSection, HomeSections, HomeSeoIntro } from "@/types";
 
 export const SECTION_LABELS: Record<keyof HomeSections, { title: string; hint: string }> = {
   hero: { title: "Hero Slider & Sol Kategori Menüsü", hint: "Sayfanın üstündeki kayan bant ve yanındaki kategori sütunu." },
@@ -104,7 +104,23 @@ export const DEFAULT_HOMEPAGE: Homepage = {
     price_note: "Fiyatlara KDV dahildir. Döviz fiyatları TCMB kuruyla yaklaşıktır; ödeme TL ile alınır.",
     warning: "18 yaşından küçüklere satış yapılmaz. Tütün mamulleri sağlığa zararlıdır.",
   },
+  // A phone shows the whole page and the slides' wide photos until the admin says otherwise.
+  mobile: { hero_images: [], hidden: [] },
 };
+
+/** "Mobil Yönetim": the sections a phone can go without, in page order, as the switches name them. */
+export const MOBILE_SECTION_LABELS: { key: HomeMobileSection; title: string; hint: string }[] = [
+  { key: "perks", title: "Mobilde Avantaj Çubuğunu Gizle", hint: "Hero'nun altındaki taksit, sepet ve havale indirimi satırı." },
+  { key: "promos", title: "Mobilde Hero Kutularını Gizle", hint: "Slider'ın altındaki \"Topluluğa Katılın\" ve avantajlar kutuları." },
+  { key: "brand_ticker", title: "Mobilde Marka Şeridini Gizle", hint: "Kayan marka adları şeridi (her iki şerit)." },
+  { key: "lules", title: "Mobilde Lüle Bandını Gizle", hint: "\"Lüle Alırken Kararsız Kalacaksınız\" ürün satırı." },
+  { key: "sultanpuan", title: "Mobilde SultanPuan Bandını Gizle", hint: "%10 SultanPuan kartı ve ürünleri." },
+  { key: "kumbara", title: "Mobilde Kumbara Bandını Gizle", hint: "\"Kumbara 20.000 TL\" kartı ve marpuçlar." },
+  { key: "campaigns", title: "Mobilde Kampanya Kutularını Gizle", hint: "Fırsatların altındaki büyük kutu ve üç küçük kutu." },
+  { key: "brand_statement", title: "Mobilde Marka Metnini Gizle", hint: "\"Sektörde Referans Noktası\" bölümü." },
+  { key: "brand_showcase", title: "Mobilde Markalarımız'ı Gizle", hint: "Marka başına bir ürün bandı." },
+  { key: "showcase", title: "Mobilde Premium Yelpazeyi Gizle", hint: "\"Premium Ürün Yelpazesi\" kategori galerisi." },
+];
 
 /** The saved sections over the defaults: a saved section wins whole. */
 export function resolveHomepage(saved: Partial<Homepage> | null | undefined): Homepage {

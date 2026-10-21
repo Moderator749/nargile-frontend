@@ -116,7 +116,7 @@ function advantagesHref(href: string | null | undefined): string {
   return !link || /^\/?#avantajlar$/.test(link) ? PERKS_PAGE.href : link;
 }
 
-export function HeroAside({ box }: { box?: PromoBox }) {
+export function HeroAside({ box, className = "" }: { box?: PromoBox; className?: string }) {
   const widget = box?.widget;
   // The admin types the dots into the eyebrow; the overline has none.
   const eyebrow = box?.eyebrow.replace(/^[•·\s]+|[•·\s]+$/g, "") || "Ayrıcalıklar & Avantajlar";
@@ -128,7 +128,7 @@ export function HeroAside({ box }: { box?: PromoBox }) {
   return (
     <aside
       aria-label="Öne çıkanlar"
-      className="mt-4 grid min-w-0 gap-4 sm:grid-cols-2 lg:invisible lg:mt-0 lg:flex lg:h-0 lg:min-h-full lg:flex-col lg:overflow-hidden lg:opacity-0 lg:transition-[opacity,visibility] lg:duration-300 motion-reduce:transition-none lg:sidebar-closed:visible lg:sidebar-closed:opacity-100"
+      className={`mt-4 grid min-w-0 gap-4 sm:grid-cols-2 lg:invisible lg:mt-0 lg:flex lg:h-0 lg:min-h-full lg:flex-col lg:overflow-hidden lg:opacity-0 lg:transition-[opacity,visibility] lg:duration-300 motion-reduce:transition-none lg:sidebar-closed:visible lg:sidebar-closed:opacity-100 ${className}`}
     >
       <div className={CARD}>
         <Backdrop {...BACKDROPS.channels} />
