@@ -41,9 +41,16 @@ export function localePath(locale: Locale, path: string): string {
   return path === "/" ? `/${locale}` : `/${locale}${path}`;
 }
 
-/** The language a pathname is in and the pathname without its prefix: "/en/catalog" → ("en", "/catalog"). */
+/**
+ * The language a pathname is in and the pathname without its prefix:
+ * "/en/catalog" → ("en", "/catalog"). "/tr/…" is Turkish's internal address
+ * (the proxy's rewrite target, never shown to a visitor): a page prerendered
+ * at build time sees it as its pathname, while the browser sees "/cart" — so
+ * it is stripped too, or the two would render different pages and hydration
+ * would fail.
+ */
 export function splitLocale(pathname: string): { locale: Locale; path: string } {
-  const match = /^\/(en|ar)(?=\/|$|\?|#)(.*)$/.exec(pathname);
+  const match = /^\/(tr|en|ar)(?=\/|$|\?|#)(.*)$/.exec(pathname);
   if (!match) return { locale: DEFAULT_LOCALE, path: pathname };
   const rest = match[2];
   return { locale: match[1] as Locale, path: rest === "" ? "/" : rest.startsWith("/") ? rest : `/${rest}` };

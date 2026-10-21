@@ -6,7 +6,9 @@ import { ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
 
 import Link from "@/components/i18n/Link";
 import { ProductCard } from "@/components/catalog/ProductCard";
+import { useMessages } from "@/components/i18n/LocaleProvider";
 import { useOwnPrices } from "@/hooks/useOwnPrices";
+import { homeMessages } from "@/lib/i18n/messages/home";
 import { PAGE_CONTAINER } from "@/lib/layout";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useAuthHydrated } from "@/store/useHasHydrated";
@@ -76,6 +78,9 @@ interface BrandShowcaseProps {
  * On the page's own background, like the rest of the homepage. From `xl` the
  * brand column runs the full height of the cards beside it: the logo level
  * with their tops, the arrows under the button level with their bottoms.
+ *
+ * In Arabic the grid and the row both run right to left: the zig-zag mirrors,
+ * and the track's ends and moves are read with `scrollLeft` going negative.
  */
 export function BrandShowcase({
   brandName,
@@ -91,6 +96,7 @@ export function BrandShowcase({
   reverseLayout = false,
 }: BrandShowcaseProps) {
   const headingId = useId();
+  const t = useMessages(homeMessages);
   const mine = useOwnPrices(products);
   const hydrated = useAuthHydrated();
   const token = useAuthStore((s) => s.token);
@@ -103,7 +109,8 @@ export function BrandShowcase({
   function measure() {
     const el = track.current;
     if (!el) return;
-    setEnds({ start: el.scrollLeft <= 1, end: el.scrollLeft + el.clientWidth >= el.scrollWidth - 1 });
+    const scrolled = Math.abs(el.scrollLeft);
+    setEnds({ start: scrolled <= 1, end: scrolled + el.clientWidth >= el.scrollWidth - 1 });
   }
 
   useEffect(() => {
@@ -117,8 +124,10 @@ export function BrandShowcase({
     const el = track.current;
     const card = el?.firstElementChild as HTMLElement | undefined;
     if (!el || !card) return;
-    const gap = Number.parseFloat(getComputedStyle(el).columnGap) || 0;
-    el.scrollBy({ left: direction * (card.offsetWidth + gap), behavior: "smooth" });
+    const style = getComputedStyle(el);
+    const gap = Number.parseFloat(style.columnGap) || 0;
+    const sideways = style.direction === "rtl" ? -1 : 1;
+    el.scrollBy({ left: sideways * direction * (card.offsetWidth + gap), behavior: "smooth" });
   }
 
   if (products.length === 0) return null;
@@ -172,8 +181,8 @@ export function BrandShowcase({
               href={brandLink}
               className="inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-red-700 px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-red-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700"
             >
-              Koleksiyonu Keşfet
-              <ArrowUpRight className="h-4 w-4" aria-hidden />
+              {t.brands.collection}
+              <ArrowUpRight className="h-4 w-4 rtl:-scale-x-100" aria-hidden />
             </Link>
             {products.length > VISIBLE && (
               <div className="hidden gap-2 lg:flex">
@@ -183,13 +192,13 @@ export function BrandShowcase({
                     type="button"
                     onClick={() => slide(direction)}
                     disabled={direction === -1 ? ends.start : ends.end}
-                    aria-label={direction === -1 ? "Önceki ürünler" : "Sonraki ürünler"}
+                    aria-label={direction === -1 ? t.previousProducts : t.nextProducts}
                     className={ARROW}
                   >
                     {direction === -1 ? (
-                      <ChevronLeft className="h-4 w-4" aria-hidden />
+                      <ChevronLeft className="h-4 w-4 rtl:rotate-180" aria-hidden />
                     ) : (
-                      <ChevronRight className="h-4 w-4" aria-hidden />
+                      <ChevronRight className="h-4 w-4 rtl:rotate-180" aria-hidden />
                     )}
                   </button>
                 ))}

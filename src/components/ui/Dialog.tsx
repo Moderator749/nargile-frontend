@@ -3,6 +3,9 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { X } from "lucide-react";
 
+import { useMessages } from "@/components/i18n/LocaleProvider";
+import { uiMessages } from "@/lib/i18n/messages/layout";
+
 /**
  * A modal built on the native `<dialog>`, so the browser handles the focus trap,
  * the Escape key and the inert background rather than us re-implementing them.
@@ -23,6 +26,7 @@ export function Dialog({
   children: ReactNode;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
+  const m = useMessages(uiMessages);
 
   useEffect(() => {
     const element = ref.current;
@@ -57,7 +61,7 @@ export function Dialog({
         <button
           type="button"
           onClick={onClose}
-          aria-label="Kapat"
+          aria-label={m.close}
           className="-m-1 rounded-lg p-1 text-slate-400 transition-colors duration-200 hover:bg-slate-100 hover:text-slate-700 dark:text-zinc-500 dark:hover:bg-white/5 dark:hover:text-zinc-200"
         >
           <X className="h-5 w-5" aria-hidden />

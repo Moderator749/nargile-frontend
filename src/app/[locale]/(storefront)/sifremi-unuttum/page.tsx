@@ -3,22 +3,28 @@ import type { Metadata } from "next";
 import Link from "@/components/i18n/Link";
 import { AuthCard } from "@/components/auth/AuthCard";
 import { ForgotPasswordForm } from "@/components/auth/ForgotPasswordForm";
+import { authPageMessages } from "@/lib/i18n/messages/auth";
+import { getMessages } from "@/lib/i18n/server";
 import { PRIVATE_ROBOTS } from "@/lib/site";
 
-export const metadata: Metadata = {
-  title: "Şifremi Unuttum",
-  description: "Şifrenizi e-posta bağlantısı ya da SMS koduyla yenileyin.",
-  robots: PRIVATE_ROBOTS,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { forgot } = await getMessages(authPageMessages);
+  return { title: forgot.metaTitle, description: forgot.metaDescription, robots: PRIVATE_ROBOTS };
+}
 
-export default function ForgotPasswordPage() {
+export default async function ForgotPasswordPage() {
+  const t = await getMessages(authPageMessages);
+  const m = t.forgot;
   return (
     <AuthCard
-      title="Şifremi unuttum"
-      subtitle="Şifrenizi e-postanıza gelen bağlantıyla ya da cep telefonunuza gelen kodla yenileyin."
+      title={m.title}
+      subtitle={m.subtitle}
       footer={
         <Link href="/login" className="font-medium text-red-600 hover:underline dark:text-red-400">
-          ← Giriş sayfasına dön
+          <span aria-hidden className="inline-block rtl:-scale-x-100">
+            ←
+          </span>{" "}
+          {t.backToLogin}
         </Link>
       }
     >

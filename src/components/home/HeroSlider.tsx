@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { HERO_FRAME, HeroBackdrop, HeroSlideView } from "@/components/home/HeroSlideView";
+import { useMessages } from "@/components/i18n/LocaleProvider";
+import { homeMessages } from "@/lib/i18n/messages/home";
 import type { HeroSlide } from "@/lib/home";
 
 const AUTOPLAY_MS = 7000;
@@ -16,11 +18,16 @@ const controlClass =
  * the slider is as tall as its tallest slide (content-driven, no fixed height)
  * and switching slides never shifts the page. The first slide's title is the
  * page's <h1>.
+ *
+ * The slides cross-fade in place rather than slide, so nothing moves sideways
+ * in Arabic either: only the controls mirror (previous at the start, its
+ * chevron pointing that way).
  */
 export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const count = slides.length;
+  const t = useMessages(homeMessages);
 
   // Autoplay, unless paused (hover/focus), the tab is hidden, or motion is reduced.
   useEffect(() => {
@@ -38,7 +45,7 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
   return (
     <section
       aria-roledescription="carousel"
-      aria-label="Öne çıkanlar"
+      aria-label={t.highlights}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)}
@@ -82,8 +89,8 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
 
       {count > 1 && (
         <div className="absolute inset-x-0 bottom-6 flex items-center justify-center gap-4">
-          <button type="button" onClick={() => go(index - 1)} aria-label="Önceki slayt" className={controlClass}>
-            <ChevronLeft className="h-4 w-4" aria-hidden />
+          <button type="button" onClick={() => go(index - 1)} aria-label={t.hero.previous} className={controlClass}>
+            <ChevronLeft className="h-4 w-4 rtl:rotate-180" aria-hidden />
           </button>
           <div className="flex items-center gap-2">
             {slides.map((slide, i) => (
@@ -91,7 +98,7 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
                 key={slide.id}
                 type="button"
                 onClick={() => go(i)}
-                aria-label={`Slayt ${i + 1}: ${slide.eyebrow}`}
+                aria-label={t.hero.slide(i + 1, slide.eyebrow)}
                 aria-current={i === index ? "true" : undefined}
                 className="group flex h-6 items-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               >
@@ -103,8 +110,8 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
               </button>
             ))}
           </div>
-          <button type="button" onClick={() => go(index + 1)} aria-label="Sonraki slayt" className={controlClass}>
-            <ChevronRight className="h-4 w-4" aria-hidden />
+          <button type="button" onClick={() => go(index + 1)} aria-label={t.hero.next} className={controlClass}>
+            <ChevronRight className="h-4 w-4 rtl:rotate-180" aria-hidden />
           </button>
         </div>
       )}

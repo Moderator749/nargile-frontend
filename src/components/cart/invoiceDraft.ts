@@ -1,4 +1,6 @@
 import { EMPTY_ADDRESS, TURKEY, type AddressDraft } from "@/components/cart/delivery/addressDraft";
+import type { Locale } from "@/lib/i18n/config";
+import { checkoutMessages } from "@/lib/i18n/messages/checkout";
 import { digitsOnly, isValidTaxId } from "@/lib/trIdentity";
 import type { CorporateInvoiceDetails, InvoiceAddress } from "@/types";
 
@@ -61,15 +63,15 @@ export function initialInvoice(onFile: CorporateInvoiceDetails | null): InvoiceD
  * a mistyped tax number is otherwise only discovered when the invoice is
  * rejected, and an invoice without an address is not a document at all.
  */
-export function invoiceProblem(invoice: InvoiceDraft): string | null {
+export function invoiceProblem(invoice: InvoiceDraft, locale: Locale = "tr"): string | null {
   if (!invoice.toCompany) return null;
-  if (invoice.companyTitle.trim().length < 2) return "Fatura için firma ünvanını girin.";
-  if (!invoice.city) return "Şirket resmi adresi için il seçin.";
-  if (invoice.district.trim().length < 2) return "Şirket resmi adresi için ilçe girin.";
-  if (invoice.line.trim().length < 5) return "Şirketin açık adresini girin.";
-  if (invoice.taxOffice.trim().length < 2) return "Fatura için vergi dairesini girin.";
-  if (!isValidTaxId(digitsOnly(invoice.taxNumber)))
-    return "Vergi no 10 haneli VKN veya 11 haneli TC kimlik no olmalı.";
+  const m = checkoutMessages[locale].problems;
+  if (invoice.companyTitle.trim().length < 2) return m.companyTitle;
+  if (!invoice.city) return m.invoiceCity;
+  if (invoice.district.trim().length < 2) return m.invoiceDistrict;
+  if (invoice.line.trim().length < 5) return m.invoiceLine;
+  if (invoice.taxOffice.trim().length < 2) return m.taxOffice;
+  if (!isValidTaxId(digitsOnly(invoice.taxNumber))) return m.taxNumber;
   return null;
 }
 

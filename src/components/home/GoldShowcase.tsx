@@ -5,7 +5,9 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { ProductCard } from "@/components/catalog/ProductCard";
 import { GoldCoinBadge } from "@/components/home/GoldCoinBadge";
+import { useMessages } from "@/components/i18n/LocaleProvider";
 import { useOwnPrices } from "@/hooks/useOwnPrices";
+import { homeMessages } from "@/lib/i18n/messages/home";
 import { PAGE_CONTAINER } from "@/lib/layout";
 import { retailPerks } from "@/lib/perks";
 import { isAdminRole } from "@/lib/roles";
@@ -63,7 +65,7 @@ const TONES = {
 
 /** The small minted coin on each card: the advantages section's, card-sized. */
 const CARD_COIN =
-  "pointer-events-none absolute left-3 top-3 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-amber-200 via-amber-400 to-amber-600 text-[9px] font-bold tracking-tight text-amber-950/80 shadow-[0_6px_14px_-6px_rgba(217,119,6,0.6)] ring-1 ring-inset ring-white/50";
+  "pointer-events-none absolute start-3 top-3 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-amber-200 via-amber-400 to-amber-600 text-[9px] font-bold tracking-tight text-amber-950/80 shadow-[0_6px_14px_-6px_rgba(217,119,6,0.6)] ring-1 ring-inset ring-white/50";
 
 /**
  * A loyalty band on the homepage — "%10 SultanPuan", "Kumbara 20.000 TL": a
@@ -76,6 +78,10 @@ const CARD_COIN =
  * Sultan Puan is a retail perk: a signed-in B2B account (which cannot earn it)
  * does not see the band; a visitor, a retail customer and the panel's staff do.
  * The cards are re-priced for a signed-in visitor, as everywhere on the page.
+ *
+ * In Arabic the row runs right to left (`scrollLeft` from 0 down to negative),
+ * so its ends are read off the distance scrolled and every move is signed by
+ * the track's direction.
  */
 export function GoldShowcase({
   title,
@@ -100,6 +106,7 @@ export function GoldShowcase({
   tone?: keyof typeof TONES;
 }) {
   const headingId = useId();
+  const t = useMessages(homeMessages);
   const colours = TONES[tone];
   const mine = useOwnPrices(products);
   const hydrated = useAuthHydrated();
@@ -114,7 +121,8 @@ export function GoldShowcase({
   function measure() {
     const el = track.current;
     if (!el) return;
-    setEnds({ start: el.scrollLeft <= 1, end: el.scrollLeft + el.clientWidth >= el.scrollWidth - 1 });
+    const scrolled = Math.abs(el.scrollLeft);
+    setEnds({ start: scrolled <= 1, end: scrolled + el.clientWidth >= el.scrollWidth - 1 });
   }
 
   useEffect(() => {
@@ -139,7 +147,7 @@ export function GoldShowcase({
       const el = track.current;
       const card = el?.firstElementChild as HTMLElement | undefined;
       if (!el || !card) return;
-      if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 1) {
+      if (Math.abs(el.scrollLeft) + el.clientWidth >= el.scrollWidth - 1) {
         el.scrollTo({ left: 0, behavior: "smooth" });
         return;
       }
@@ -147,10 +155,12 @@ export function GoldShowcase({
       // on a phone), so the snap lands it on a card's edge, not between two.
       // The cards' widths are fractional: five fill the view to within a
       // pixel, so the count is floored with that pixel's grace.
-      const gap = Number.parseFloat(getComputedStyle(el).columnGap) || 0;
+      const style = getComputedStyle(el);
+      const gap = Number.parseFloat(style.columnGap) || 0;
       const step = card.getBoundingClientRect().width + gap;
       const perPage = Math.max(1, Math.floor((el.clientWidth + gap + 1) / step));
-      el.scrollBy({ left: perPage * step, behavior: "smooth" });
+      const sideways = style.direction === "rtl" ? -1 : 1;
+      el.scrollBy({ left: sideways * perPage * step, behavior: "smooth" });
     }, AUTOPLAY_MS);
     return () => window.clearInterval(id);
   }, [held, products.length]);
@@ -160,8 +170,10 @@ export function GoldShowcase({
     const el = track.current;
     const card = el?.firstElementChild as HTMLElement | undefined;
     if (!el || !card) return;
-    const gap = Number.parseFloat(getComputedStyle(el).columnGap) || 0;
-    el.scrollBy({ left: direction * (card.offsetWidth + gap), behavior: "smooth" });
+    const style = getComputedStyle(el);
+    const gap = Number.parseFloat(style.columnGap) || 0;
+    const sideways = style.direction === "rtl" ? -1 : 1;
+    el.scrollBy({ left: sideways * direction * (card.offsetWidth + gap), behavior: "smooth" });
   }
 
   if (products.length === 0) return null;
@@ -216,7 +228,7 @@ export function GoldShowcase({
               const product = mine?.get(listed.id) ?? listed;
               return (
                 <li key={listed.id} className={SLIDE}>
-                  {/* The coin on the card's top-left: this row's mark, laid
+                  {/* The coin on the card's top start corner: this row's mark, laid
                       over the shared card rather than built into it. */}
                   <div className={`relative flex w-full flex-1 flex-col [&>article]:flex-1 ${colours.card}`}>
                     <ProductCard
@@ -238,13 +250,13 @@ export function GoldShowcase({
           {/* Under the cards, centred: how many, and the arrows. */}
           <div className="mt-4 flex items-center justify-center gap-3">
             <span className={`text-xs font-semibold tabular-nums ${colours.count}`}>
-              {products.length} ürün
+              {t.loyalty.count(products.length)}
             </span>
-            <button type="button" onClick={() => slide(-1)} disabled={ends.start} aria-label="Önceki ürünler" className={`${ARROW} ${colours.arrow}`}>
-              <ChevronLeft className="h-5 w-5" aria-hidden />
+            <button type="button" onClick={() => slide(-1)} disabled={ends.start} aria-label={t.previousProducts} className={`${ARROW} ${colours.arrow}`}>
+              <ChevronLeft className="h-5 w-5 rtl:rotate-180" aria-hidden />
             </button>
-            <button type="button" onClick={() => slide(1)} disabled={ends.end} aria-label="Sonraki ürünler" className={`${ARROW} ${colours.arrow}`}>
-              <ChevronRight className="h-5 w-5" aria-hidden />
+            <button type="button" onClick={() => slide(1)} disabled={ends.end} aria-label={t.nextProducts} className={`${ARROW} ${colours.arrow}`}>
+              <ChevronRight className="h-5 w-5 rtl:rotate-180" aria-hidden />
             </button>
           </div>
         </div>

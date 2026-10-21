@@ -2,7 +2,9 @@
 
 import { useId, useState } from "react";
 
+import { useMessages } from "@/components/i18n/LocaleProvider";
 import { DEFAULT_SEO_INTRO } from "@/lib/homepage";
+import { homeMessages } from "@/lib/i18n/messages/home";
 import type { HomeSeoIntro } from "@/types";
 
 const PARAGRAPH = "text-sm leading-relaxed text-gray-600 md:text-base dark:text-zinc-400";
@@ -30,6 +32,7 @@ const paragraphs = (text: string) =>
 export function SeoIntro({ copy }: { copy?: Partial<HomeSeoIntro> | null }) {
   const [open, setOpen] = useState(false);
   const moreId = useId();
+  const t = useMessages(homeMessages);
   const title = copy?.title?.trim() || DEFAULT_SEO_INTRO.title;
   const first = copy?.summary?.trim() || DEFAULT_SEO_INTRO.summary;
   const rest = paragraphs(copy?.content?.trim() || DEFAULT_SEO_INTRO.content);
@@ -72,7 +75,7 @@ export function SeoIntro({ copy }: { copy?: Partial<HomeSeoIntro> | null }) {
             onClick={() => setOpen((value) => !value)}
             className="mt-4 inline-flex cursor-pointer items-center gap-1 text-sm font-medium text-red-600 transition-colors hover:text-red-700 focus-visible:rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 dark:text-red-400 dark:hover:text-red-300"
           >
-            {open ? "Daralt" : "Devamını Oku"}
+            {open ? t.readLess : t.readMore}
             <span aria-hidden>{open ? "↑" : "↓"}</span>
           </button>
         </>

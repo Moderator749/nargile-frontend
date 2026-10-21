@@ -5,6 +5,7 @@ import { SearchX } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 
 import { AdminCatalogPdf, useIsAdmin } from "@/components/catalog/AdminCatalogPdf";
+import { useLocale, useMessages } from "@/components/i18n/LocaleProvider";
 import { PriceCatalogExport } from "@/components/catalog/PriceCatalogExport";
 import { isExportAccount } from "@/lib/exportAccount";
 import { isB2BSegment } from "@/lib/priceList";
@@ -20,16 +21,10 @@ import {
   priceBounds,
   type CatalogFilters,
 } from "@/lib/catalogFilters";
+import { catalogMessages } from "@/lib/i18n/messages/catalog";
 import { useAuthStore } from "@/store/useAuthStore";
-import type { CatalogProduct, Category, SegmentType } from "@/types";
+import type { CatalogProduct, Category } from "@/types";
 import { CATALOG_GRID, PAGE_CONTAINER } from "@/lib/layout";
-
-const SEGMENT_LABELS: Record<SegmentType, string> = {
-  RETAIL: "Perakende",
-  CAFE: "Kafe",
-  WHOLESALE: "Toptan",
-  DEALER: "Bayi",
-};
 
 /** Cards whose photos load eagerly: the first row at the widest grid. */
 const EAGER_CARDS = 4;
@@ -103,6 +98,8 @@ function CatalogGrid({
   query,
 }: CatalogViewProps & { query: string }) {
   const user = useAuthStore((s) => s.user);
+  const locale = useLocale();
+  const t = useMessages(catalogMessages).grid;
   const [filters, setFilters] = useState<CatalogFilters>(EMPTY_FILTERS);
   const catalog = useCatalog({
     category: activeCategory?.slug ?? null,
@@ -122,14 +119,14 @@ function CatalogGrid({
   const now = useNow(catalog.products.some((p) => p.variants.some((v) => v.flash_sale)));
   const bounds = useMemo(() => priceBounds(catalog.products, now), [catalog.products, now]);
   const shown = useMemo(
-    () => applyCatalogFilters(catalog.products, filters, now),
-    [catalog.products, filters, now],
+    () => applyCatalogFilters(catalog.products, filters, now, locale),
+    [catalog.products, filters, now, locale],
   );
   // A filter can empty a grid that has products behind it: say which it was.
   const filtered = shown.length === 0 && catalog.products.length > 0;
 
   const patch = (next: Partial<CatalogFilters>) => setFilters((f) => ({ ...f, ...next }));
-  const collection = brand ? brand.name : searched ? `“${searched}” araması` : (activeCategory?.name ?? "Tüm ürünler");
+  const collection = brand ? brand.name : searched ? t.searchCollection(searched) : (activeCategory?.name ?? t.allProducts);
 
   return (
     <>
@@ -150,22 +147,18 @@ function CatalogGrid({
 
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <h2 id="products-heading" className="text-[11px] font-medium uppercase tracking-[0.25em] text-muted-foreground">
-          {catalog.loading
-            ? "Ürünler yükleniyor"
-            : searched
-              ? `“${searched}” için ${shown.length} ürün`
-              : `${shown.length} ürün`}
+          {catalog.loading ? t.loading : searched ? t.countFor(searched, shown.length) : t.count(shown.length)}
         </h2>
         {segment && segment !== "RETAIL" && (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-700 ring-1 ring-inset ring-red-200 dark:bg-red-500/10 dark:text-red-300 dark:ring-red-500/30">
             <span className="h-1.5 w-1.5 rounded-full bg-red-500" aria-hidden />
-            {SEGMENT_LABELS[segment]} fiyatları gösteriliyor
+            {t.segmentPrices(segment)}
           </span>
         )}
       </div>
 
       {catalog.loading ? (
-        <div className={gridClass} aria-busy aria-label="Ürünler yükleniyor">
+        <div className={gridClass} aria-busy aria-label={t.loading}>
           {Array.from({ length: 8 }, (_, i) => (
             <ProductCardSkeleton key={i} />
           ))}
@@ -174,7 +167,7 @@ function CatalogGrid({
         <div className="mx-auto max-w-md space-y-3 py-10">
           <Alert variant="error">{catalog.error}</Alert>
           <Button type="button" onClick={catalog.retry}>
-            Tekrar dene
+            {t.retry}
           </Button>
         </div>
       ) : shown.length === 0 ? (
@@ -182,24 +175,20 @@ function CatalogGrid({
           <SearchX className="h-10 w-10 text-slate-300 dark:text-zinc-700" strokeWidth={1.5} aria-hidden />
           <p className="mt-4 font-medium">
             {filtered
-              ? "Seçtiğiniz filtrelere uyan ürün yok."
+              ? t.noMatchFilters
               : searched
-                ? "Aramanızla eşleşen ürün bulunamadı."
+                ? t.noMatchSearch
                 : brand
-                  ? `${brand.name} ürünleri şu an satışta değil.`
-                  : "Bu kategoride henüz ürün bulunmamaktadır."}
+                  ? t.brandEmpty(brand.name)
+                  : t.categoryEmpty}
           </p>
           <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">
-            {filtered
-              ? "Fiyat aralığını genişletin ya da stok filtresini kaldırın."
-              : searched
-                ? "Farklı bir kelime deneyin ya da tüm kategorilerde arayın."
-                : "Yakında yeni ürünler eklenecek."}
+            {filtered ? t.widenFilters : searched ? t.trySearch : t.comingSoon}
           </p>
           {filtered && (
             <div className="mt-5 w-40">
               <Button type="button" variant="secondary" onClick={() => setFilters(EMPTY_FILTERS)}>
-                Filtreleri temizle
+                {t.clearFilters}
               </Button>
             </div>
           )}
@@ -235,7 +224,7 @@ function CatalogGrid({
           {catalog.hasMore && (
             <div className="mx-auto mt-10 max-w-xs">
               <Button type="button" variant="secondary" onClick={catalog.loadMore} loading={catalog.loadingMore}>
-                Daha fazla ürün göster
+                {t.loadMore}
               </Button>
             </div>
           )}

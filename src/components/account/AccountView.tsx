@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 
+import { useMessages } from "@/components/i18n/LocaleProvider";
 import Link from "@/components/i18n/Link";
 import { B2BApplicationPanel } from "@/components/account/B2BApplicationPanel";
 import { CommunicationPreferencesPanel } from "@/components/account/CommunicationPreferencesPanel";
 import { WalletPanel } from "@/components/account/WalletPanel";
 import { Alert } from "@/components/ui/Alert";
 import { getApiErrorMessage } from "@/lib/errors";
+import { accountMessages } from "@/lib/i18n/messages/account";
 import { fetchMyWallet } from "@/lib/ordersApi";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useAuthHydrated } from "@/store/useHasHydrated";
@@ -15,6 +17,7 @@ import type { Wallet } from "@/types";
 
 /** "Hesabım": profile basics and the Sultan Puan wallet. */
 export function AccountView() {
+  const m = useMessages(accountMessages);
   const hydrated = useAuthHydrated();
   const user = useAuthStore((s) => s.user);
   const token = useAuthStore((s) => s.token);
@@ -27,19 +30,19 @@ export function AccountView() {
     fetchMyWallet(controller.signal)
       .then(setWallet)
       .catch((err: unknown) => {
-        if (!controller.signal.aborted) setError(getApiErrorMessage(err, "Puan bilgileri yüklenemedi."));
+        if (!controller.signal.aborted) setError(getApiErrorMessage(err, m.walletFailed));
       });
     return () => controller.abort();
-  }, [hydrated, token]);
+  }, [hydrated, token, m.walletFailed]);
 
   if (!hydrated) return <main className="flex-1" aria-busy />;
   if (!user) {
     return (
       <main className="mx-auto w-full max-w-md flex-1 px-4 py-16 text-center">
-        <h1 className="text-xl font-semibold">Hesabım</h1>
-        <p className="mt-2 text-sm text-slate-600 dark:text-zinc-400">Devam etmek için giriş yapın.</p>
+        <h1 className="text-xl font-semibold">{m.title}</h1>
+        <p className="mt-2 text-sm text-slate-600 dark:text-zinc-400">{m.signInToContinue}</p>
         <Link href="/login?next=/account" className="mt-6 inline-flex h-11 items-center rounded-lg bg-red-600 px-6 text-sm font-semibold text-white hover:bg-red-500">
-          Giriş yap
+          {m.signIn}
         </Link>
       </main>
     );
@@ -47,7 +50,7 @@ export function AccountView() {
 
   return (
     <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-10 sm:px-6">
-      <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Hesabım</h1>
+      <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{m.title}</h1>
       <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">
         {user.full_name ? `${user.full_name} · ` : ""}
         {user.email}
@@ -60,7 +63,7 @@ export function AccountView() {
         </div>
       )}
 
-      <h2 className="mt-10 text-lg font-bold tracking-tight">Puan cüzdanı</h2>
+      <h2 className="mt-10 text-lg font-bold tracking-tight">{m.wallet}</h2>
       <div className="mt-4">
         {error ? (
           <Alert variant="error">{error}</Alert>
@@ -77,7 +80,7 @@ export function AccountView() {
 
       <p className="mt-10 text-sm">
         <Link href="/orders" className="font-medium text-red-600 hover:underline dark:text-red-400">
-          Siparişlerim →
+          {m.orders} <span aria-hidden className="inline-block rtl:-scale-x-100">→</span>
         </Link>
       </p>
     </main>

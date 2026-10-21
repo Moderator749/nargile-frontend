@@ -3,8 +3,10 @@
 import { useState } from "react";
 import { FileText } from "lucide-react";
 
+import { useMessages } from "@/components/i18n/LocaleProvider";
 import { RichText } from "@/components/ui/RichText";
 import { Dialog } from "@/components/ui/Dialog";
+import { cartMessages } from "@/lib/i18n/messages/cart";
 import type { LegalDocument, LegalKey } from "@/types";
 
 export interface Agreements {
@@ -14,20 +16,10 @@ export interface Agreements {
 
 export const NO_AGREEMENTS: Agreements = { distanceSales: false, terms: false };
 
-/** Which box maps to which document, and what the sentence beside it says. */
-const ITEMS: { field: keyof Agreements; key: LegalKey; label: string; fallback: string }[] = [
-  {
-    field: "distanceSales",
-    key: "DISTANCE_SALES",
-    label: "Mesafeli Satış Sözleşmesi'ni okudum ve kabul ediyorum",
-    fallback: "Mesafeli Satış Sözleşmesi",
-  },
-  {
-    field: "terms",
-    key: "TERMS",
-    label: "Şartlar ve Kurallar Sözleşmesi'ni okudum ve kabul ediyorum",
-    fallback: "Şartlar ve Kurallar Sözleşmesi",
-  },
+/** Which box maps to which document; the sentence beside it is in `cartMessages.legal`. */
+const ITEMS: { field: keyof Agreements; key: LegalKey }[] = [
+  { field: "distanceSales", key: "DISTANCE_SALES" },
+  { field: "terms", key: "TERMS" },
 ];
 
 /**
@@ -47,12 +39,19 @@ export function LegalConsent({
   onChange: (patch: Partial<Agreements>) => void;
   documents: Partial<Record<LegalKey, LegalDocument>> | null;
 }) {
+  const t = useMessages(cartMessages).legal;
   const [open, setOpen] = useState<LegalKey | null>(null);
   const shown = open ? documents?.[open] : undefined;
+  // The sentence, and the document's name until the panel's own title arrives.
+  const words = (field: keyof Agreements) =>
+    field === "distanceSales"
+      ? { label: t.distanceSales, fallback: t.distanceSalesTitle }
+      : { label: t.terms, fallback: t.termsTitle };
+  const openItem = ITEMS.find((item) => item.key === open);
 
   return (
     <div className="space-y-2 rounded-xl bg-slate-50 px-3 py-3 dark:bg-white/5">
-      {ITEMS.map(({ field, key, label, fallback }) => (
+      {ITEMS.map(({ field, key }) => (
         <div key={field} className="flex items-start gap-2.5 text-xs leading-5">
           <input
             id={`agreement-${field}`}
@@ -62,15 +61,16 @@ export function LegalConsent({
             className="mt-0.5 h-4 w-4 shrink-0 accent-red-600"
           />
           <label htmlFor={`agreement-${field}`} className="cursor-pointer text-slate-600 dark:text-zinc-300">
-            {label}
+            {words(field).label}
           </label>
           <button
             type="button"
             onClick={() => setOpen(key)}
-            className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-lg px-1.5 py-0.5 font-medium text-red-700 transition-colors duration-200 hover:bg-red-50 hover:text-red-800 dark:text-red-400 dark:hover:bg-red-500/10"
+            aria-label={t.readAria(documents?.[key]?.title ?? words(field).fallback)}
+            className="ms-auto inline-flex shrink-0 items-center gap-1 rounded-lg px-1.5 py-0.5 font-medium text-red-700 transition-colors duration-200 hover:bg-red-50 hover:text-red-800 dark:text-red-400 dark:hover:bg-red-500/10"
           >
             <FileText className="h-3.5 w-3.5" aria-hidden />
-            <span className="sr-only">{documents?.[key]?.title ?? fallback} metnini </span>Oku
+            {t.read}
           </button>
         </div>
       ))}
@@ -78,14 +78,12 @@ export function LegalConsent({
       <Dialog
         open={open !== null}
         onClose={() => setOpen(null)}
-        title={shown?.title ?? ITEMS.find((item) => item.key === open)?.fallback ?? "Sözleşme"}
+        title={shown?.title ?? (openItem ? words(openItem.field).fallback : t.dialogFallback)}
       >
         {shown ? (
           <RichText html={shown.body} nested className="text-sm text-slate-700 dark:text-zinc-300" />
         ) : (
-          <p className="text-sm text-slate-500 dark:text-zinc-400">
-            Sözleşme metni yüklenemedi. Sayfayı yenileyip tekrar deneyebilirsiniz.
-          </p>
+          <p className="text-sm text-slate-500 dark:text-zinc-400">{t.loadFailed}</p>
         )}
       </Dialog>
     </div>

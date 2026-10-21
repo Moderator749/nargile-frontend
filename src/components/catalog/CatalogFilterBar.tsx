@@ -3,7 +3,9 @@
 import { useId, useSyncExternalStore, type ReactNode } from "react";
 import { Check, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
+import { useMessages } from "@/components/i18n/LocaleProvider";
 import { SORT_OPTIONS, type CatalogFilters, type SortKey } from "@/lib/catalogFilters";
+import { catalogMessages } from "@/lib/i18n/messages/catalog";
 import { isSidebarCollapsed, setSidebarCollapsed, subscribeSidebar } from "@/lib/sidebar";
 
 const LABEL = "text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400";
@@ -20,7 +22,7 @@ interface CatalogFilterBarProps {
   onChange: (patch: Partial<CatalogFilters>) => void;
   /** The cheapest and dearest on screen, shown as the inputs' placeholders. */
   bounds: { min: number; max: number } | null;
-  /** Beside the sort, at the right end of the bar (the B2B catalogue download). */
+  /** Beside the sort, at the far end of the bar (the B2B catalogue download). */
   trailing?: ReactNode;
 }
 
@@ -43,6 +45,7 @@ interface CatalogFilterBarProps {
 function SidebarToggle() {
   // Catalog pages open with the column showing, which is what the server renders.
   const collapsed = useSyncExternalStore(subscribeSidebar, isSidebarCollapsed, () => false);
+  const t = useMessages(catalogMessages).filters;
   const Icon = collapsed ? PanelLeftOpen : PanelLeftClose;
   return (
     <button
@@ -51,8 +54,9 @@ function SidebarToggle() {
       aria-expanded={!collapsed}
       className="hidden h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl border border-red-600 bg-red-600 px-2.5 text-[11px] font-bold uppercase tracking-wide text-white shadow-sm transition-colors duration-200 hover:border-red-500 hover:bg-red-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent lg:inline-flex"
     >
-      <Icon className="h-3.5 w-3.5" aria-hidden />
-      {collapsed ? "Kategorileri Göster" : "Sayfayı Genişlet"}
+      {/* The column is at the reading direction's start: on the right in Arabic. */}
+      <Icon className="h-3.5 w-3.5 rtl:-scale-x-100" aria-hidden />
+      {collapsed ? t.showCategories : t.widenPage}
     </button>
   );
 }
@@ -61,16 +65,17 @@ export function CatalogFilterBar({ value, onChange, bounds, trailing }: CatalogF
   const minId = useId();
   const maxId = useId();
   const sortId = useId();
+  const t = useMessages(catalogMessages).filters;
 
   return (
     <div className="mb-8 flex w-full flex-wrap items-center justify-between gap-2 rounded-2xl border border-neutral-200/80 bg-white p-3 shadow-sm sm:p-4 dark:border-neutral-800 dark:bg-neutral-900">
       <div className="flex shrink-0 items-center gap-2">
         <SidebarToggle />
         <span className={`${LABEL} whitespace-nowrap`} id={`${minId}-label`}>
-          Fiyat Aralığı
+          {t.priceRange}
         </span>
         <label className="sr-only" htmlFor={minId}>
-          En düşük fiyat
+          {t.minPrice}
         </label>
         <input
           id={minId}
@@ -85,7 +90,7 @@ export function CatalogFilterBar({ value, onChange, bounds, trailing }: CatalogF
           –
         </span>
         <label className="sr-only" htmlFor={maxId}>
-          En yüksek fiyat
+          {t.maxPrice}
         </label>
         <input
           id={maxId}
@@ -118,25 +123,25 @@ export function CatalogFilterBar({ value, onChange, bounds, trailing }: CatalogF
         >
           {value.inStock && <Check className="h-3 w-3" strokeWidth={3} />}
         </span>
-        Stokta Olanlar
+        {t.inStock}
       </button>
 
       {/* With something beside the sort (the catalogue button) the group may
-          wrap under the rest; it stays in the right-hand corner when it does.
+          wrap under the rest; it stays in the far corner (the left in Arabic) when it does.
           Without it, the bar keeps its three-way spacing. */}
-      <div className={`flex flex-wrap items-center justify-end gap-2 xl:flex-nowrap ${trailing ? "ml-auto" : ""}`}>
+      <div className={`flex flex-wrap items-center justify-end gap-2 xl:flex-nowrap ${trailing ? "ms-auto" : ""}`}>
         <label className={`${LABEL} whitespace-nowrap`} htmlFor={sortId}>
-          Sırala
+          {t.sort}
         </label>
         <select
           id={sortId}
           value={value.sort}
           onChange={(e) => onChange({ sort: e.target.value as SortKey })}
-          className={`${FIELD} w-36 cursor-pointer pr-8`}
+          className={`${FIELD} w-36 cursor-pointer pe-8`}
         >
           {SORT_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
-              {option.label}
+              {t.sortOptions[option.value]}
             </option>
           ))}
         </select>

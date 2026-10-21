@@ -3,11 +3,13 @@
 import { useState } from "react";
 import { Check, Pencil } from "lucide-react";
 
+import { useLocale, useMessages } from "@/components/i18n/LocaleProvider";
 import { areaClass, inputClass, labelClass, noteClass, quietButtonClass } from "@/components/cart/invoice/fields";
 import { Alert } from "@/components/ui/Alert";
 import { addressSummary } from "@/components/cart/delivery/addressDraft";
 import { countryName } from "@/lib/countries";
 import { getApiErrorMessage } from "@/lib/errors";
+import { checkoutMessages } from "@/lib/i18n/messages/checkout";
 import { saveBillingAddress } from "@/lib/ordersApi";
 import { TR_PROVINCES } from "@/lib/provinces";
 import type { SavedAddress } from "@/types";
@@ -38,6 +40,9 @@ export function PersonalInvoicePanel({
   /** Re-read the addresses, so the delivery card below shows the new one. */
   onSaved: () => void;
 }) {
+  const locale = useLocale();
+  const m = useMessages(checkoutMessages);
+  const t = m.personal;
   const [draft, setDraft] = useState<Draft | null>(null);
   const [saving, setSaving] = useState(false);
   const [result, setResult] = useState<{ kind: "success" | "error"; text: string } | null>(null);
@@ -65,10 +70,10 @@ export function PersonalInvoicePanel({
         line: draft.line.trim(),
       });
       setDraft(null);
-      setResult({ kind: "success", text: "Fatura adresiniz güncellendi." });
+      setResult({ kind: "success", text: t.updated });
       onSaved();
     } catch (err) {
-      setResult({ kind: "error", text: getApiErrorMessage(err, "Adres kaydedilemedi.") });
+      setResult({ kind: "error", text: getApiErrorMessage(err, t.saveFailed) });
     } finally {
       setSaving(false);
     }
@@ -79,7 +84,7 @@ export function PersonalInvoicePanel({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-slate-900 dark:text-zinc-100">
-            {address?.full_name ?? "Fatura adresim"}
+            {address?.full_name ?? m.invoice.personalTitle}
           </p>
           {/* One line either way, so opening the cart does not shift it. */}
           {loading ? (
@@ -87,14 +92,14 @@ export function PersonalInvoicePanel({
           ) : (
             <p className={`mt-1 ${noteClass}`}>
               {address
-                ? addressSummary(address, countryName)
-                : "Kayıtlı fatura adresiniz yok; aşağıdan ekleyebilirsiniz."}
+                ? addressSummary(address, (code) => countryName(code, locale))
+                : t.none}
             </p>
           )}
         </div>
         {draft === null && (
           <button type="button" onClick={edit} className={quietButtonClass}>
-            <Pencil className="h-3.5 w-3.5" aria-hidden /> Düzenle
+            <Pencil className="h-3.5 w-3.5" aria-hidden /> {m.invoice.edit}
           </button>
         )}
       </div>
@@ -103,7 +108,7 @@ export function PersonalInvoicePanel({
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <label htmlFor="billing-city" className={labelClass}>
-              İl
+              {m.place.city}
             </label>
             <select
               id="billing-city"
@@ -111,7 +116,7 @@ export function PersonalInvoicePanel({
               onChange={(e) => setDraft({ ...draft, city: e.target.value })}
               className={inputClass}
             >
-              <option value="">İl seçin</option>
+              <option value="">{m.place.select}</option>
               {TR_PROVINCES.map((province) => (
                 <option key={province} value={province}>
                   {province}
@@ -121,7 +126,7 @@ export function PersonalInvoicePanel({
           </div>
           <div className="space-y-1.5">
             <label htmlFor="billing-district" className={labelClass}>
-              İlçe
+              {m.place.district}
             </label>
             <input
               id="billing-district"
@@ -133,7 +138,7 @@ export function PersonalInvoicePanel({
           </div>
           <div className="space-y-1.5 sm:col-span-2">
             <label htmlFor="billing-line" className={labelClass}>
-              Açık Adres
+              {t.line}
             </label>
             <textarea
               id="billing-line"
@@ -141,18 +146,18 @@ export function PersonalInvoicePanel({
               maxLength={200}
               value={draft.line}
               onChange={(e) => setDraft({ ...draft, line: e.target.value })}
-              placeholder="Mahalle, cadde/sokak, bina ve daire no"
+              placeholder={m.address.linePlaceholder}
               className={areaClass}
             />
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:col-span-2">
             <button type="button" onClick={save} disabled={!usable || saving} className={quietButtonClass}>
-              <Check className="h-3.5 w-3.5" aria-hidden /> {saving ? "Kaydediliyor…" : "Kaydet"}
+              <Check className="h-3.5 w-3.5" aria-hidden /> {saving ? m.invoice.saving : t.save}
             </button>
             <button type="button" onClick={() => setDraft(null)} className={quietButtonClass}>
-              Vazgeç
+              {t.cancel}
             </button>
-            <p className={noteClass}>Hesabınıza kaydedilir; sonraki siparişlerinizde hazır gelir.</p>
+            <p className={noteClass}>{t.saveNote}</p>
           </div>
         </div>
       )}

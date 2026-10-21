@@ -4,6 +4,9 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Loader2, Search, X } from "lucide-react";
 
+import { useMessages } from "@/components/i18n/LocaleProvider";
+import { catalogMessages } from "@/lib/i18n/messages/catalog";
+
 const DEBOUNCE_MS = 300;
 
 interface CatalogSearchProps {
@@ -27,9 +30,10 @@ function CatalogSearchField({
   busy,
   placeholder,
   initial,
-  label = "Ürün ara",
+  label,
   id = "catalog-search",
 }: CatalogSearchProps & { initial: string }) {
+  const t = useMessages(catalogMessages).search;
   const [value, setValue] = useState(initial);
 
   // A search from the URL (?q=, e.g. the header search or a brand filter) applies at once.
@@ -45,10 +49,10 @@ function CatalogSearchField({
   return (
     <div role="search" className="relative w-full sm:w-72">
       <label htmlFor={id} className="sr-only">
-        {label}
+        {label ?? t.label}
       </label>
       <Search
-        className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-zinc-500"
+        className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-zinc-500"
         aria-hidden
       />
       <input
@@ -59,9 +63,9 @@ function CatalogSearchField({
         placeholder={placeholder}
         maxLength={100}
         autoComplete="off"
-        className="h-10 w-full rounded-full border border-slate-200 bg-white pl-9 pr-9 text-sm text-slate-900 shadow-sm transition-[border-color,box-shadow] duration-200 placeholder:text-slate-400 focus:border-red-500 focus:outline-none focus:ring-4 focus:ring-red-500/15 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500 [&::-webkit-search-cancel-button]:hidden"
+        className="h-10 w-full rounded-full border border-slate-200 bg-white ps-9 pe-9 text-sm text-slate-900 shadow-sm transition-[border-color,box-shadow] duration-200 placeholder:text-slate-400 focus:border-red-500 focus:outline-none focus:ring-4 focus:ring-red-500/15 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500 [&::-webkit-search-cancel-button]:hidden"
       />
-      <span className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center">
+      <span className="absolute end-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center">
         {busy ? (
           <Loader2 className="h-4 w-4 animate-spin text-slate-400 dark:text-zinc-500" aria-hidden />
         ) : value ? (
@@ -69,7 +73,7 @@ function CatalogSearchField({
             type="button"
             onClick={() => setValue("")}
             className="flex h-6 w-6 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:text-zinc-500 dark:hover:bg-white/10 dark:hover:text-zinc-200"
-            aria-label="Aramayı temizle"
+            aria-label={t.clear}
           >
             <X className="h-3.5 w-3.5" aria-hidden />
           </button>

@@ -3,7 +3,10 @@
 import { useState } from "react";
 import { Coins } from "lucide-react";
 
+import { useLocale, useMessages } from "@/components/i18n/LocaleProvider";
 import { formatMoney } from "@/lib/format";
+import { cartMessages } from "@/lib/i18n/messages/cart";
+import { INTL_LOCALE } from "@/lib/i18n/messages";
 
 interface LoyaltyPointsInputProps {
   balance: number;
@@ -15,13 +18,15 @@ interface LoyaltyPointsInputProps {
 
 /** "Sultan Puan Kullan": redeem points, clamped to the balance. */
 export function LoyaltyPointsInput({ balance, value, onChange, conversionRate }: LoyaltyPointsInputProps) {
+  const t = useMessages(cartMessages).loyalty;
+  const locale = useLocale();
   const [draft, setDraft] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
 
   if (balance <= 0) {
     return (
       <p className="flex items-center gap-2 text-xs text-slate-500 dark:text-zinc-400">
-        <Coins className="h-4 w-4" aria-hidden /> Kullanılabilir puanınız bulunmuyor.
+        <Coins className="h-4 w-4" aria-hidden /> {t.none}
       </p>
     );
   }
@@ -29,9 +34,9 @@ export function LoyaltyPointsInput({ balance, value, onChange, conversionRate }:
   function commit(raw: string) {
     const n = raw === "" ? 0 : Number.parseInt(raw, 10);
     if (!Number.isFinite(n) || n < 0) {
-      setWarning("Geçerli bir puan girin.");
+      setWarning(t.invalid);
     } else if (n > balance) {
-      setWarning(`Bakiyeniz ${balance} puan; en fazla bu kadar kullanabilirsiniz.`);
+      setWarning(t.overBalance(balance));
       onChange(balance);
     } else {
       setWarning(null);
@@ -44,10 +49,12 @@ export function LoyaltyPointsInput({ balance, value, onChange, conversionRate }:
     <div className="space-y-1.5">
       <div className="flex items-center justify-between">
         <label htmlFor="loyalty-points" className="flex items-center gap-1.5 text-sm font-medium text-slate-700 dark:text-zinc-300">
-          <Coins className="h-4 w-4 text-red-500" aria-hidden /> Sultan Puan Kullan
+          <Coins className="h-4 w-4 text-red-500" aria-hidden /> {t.label}
         </label>
         <span className="text-xs text-slate-500 dark:text-zinc-400">
-          Bakiye: <strong className="text-slate-700 dark:text-zinc-300">{balance.toLocaleString("tr-TR")}</strong> puan
+          {t.balance}{" "}
+          <strong className="text-slate-700 dark:text-zinc-300">{balance.toLocaleString(INTL_LOCALE[locale])}</strong>{" "}
+          {t.points}
         </span>
       </div>
       <div className="flex gap-2">
@@ -75,11 +82,11 @@ export function LoyaltyPointsInput({ balance, value, onChange, conversionRate }:
           }}
           className="h-10 shrink-0 rounded-lg border border-slate-300 dark:border-white/15 px-3 text-xs font-semibold text-slate-700 dark:text-zinc-300 transition-colors hover:bg-slate-50 dark:hover:bg-white/5"
         >
-          {value === balance ? "Kaldır" : "Tümünü kullan"}
+          {value === balance ? t.remove : t.useAll}
         </button>
       </div>
       <p id="loyalty-points-help" className={`text-xs ${warning ? "text-red-600 dark:text-red-400" : "text-slate-500 dark:text-zinc-400"}`}>
-        {warning ?? `1 Sultan Puan = ${formatMoney(conversionRate)} · kargo hariç tutara uygulanır.`}
+        {warning ?? t.help(formatMoney(conversionRate))}
       </p>
     </div>
   );

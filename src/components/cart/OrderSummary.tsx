@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { Building2, Lock, Send, Ship, TrendingUp, Truck } from "lucide-react";
 
 import { LegalConsent, type Agreements } from "@/components/cart/LegalConsent";
+import { useLocale, useMessages } from "@/components/i18n/LocaleProvider";
 import { LoyaltyPointsInput } from "@/components/cart/LoyaltyPointsInput";
 import { PaymentMethodPicker } from "@/components/cart/PaymentMethodPicker";
 import { ShippingConsent } from "@/components/cart/ShippingConsent";
@@ -11,6 +12,9 @@ import { TransferDetails } from "@/components/payment/TransferDetails";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { formatMoney, formatMoneyCompact } from "@/lib/format";
+import type { Locale } from "@/lib/i18n/config";
+import { INTL_LOCALE } from "@/lib/i18n/messages";
+import { cartMessages } from "@/lib/i18n/messages/cart";
 import { shippingOption } from "@/lib/shipping";
 import { formatRate, transferDiscountHint } from "@/lib/storeParameters";
 import type { Cart, LegalDocument, LegalKey, PaymentMethod, ShippingMethod, StoreParameters } from "@/types";
@@ -63,14 +67,16 @@ function Row({ label, value, tone }: { label: ReactNode; value: string; tone?: "
   return (
     <div className="flex justify-between gap-4 text-sm">
       <dt className="text-slate-600 dark:text-zinc-400">{label}</dt>
-      <dd className={`tabular-nums ${tone === "discount" ? "text-emerald-600 dark:text-emerald-400" : "text-slate-900 dark:text-zinc-100"}`}>
+      {/* Left to right on an Arabic page too, so "−12,00 TL" keeps its minus in front. */}
+      <dd dir="ltr" className={`tabular-nums ${tone === "discount" ? "text-emerald-600 dark:text-emerald-400" : "text-slate-900 dark:text-zinc-100"}`}>
         {value}
       </dd>
     </div>
   );
 }
 
-const kg = (value: string) => Number(value).toLocaleString("tr-TR", { maximumFractionDigits: 1 });
+const kg = (value: string, locale: Locale) =>
+  Number(value).toLocaleString(INTL_LOCALE[locale], { maximumFractionDigits: 1 });
 
 /**
  * Explains the shipping line: when the shop pays the carrier, and when the buyer
@@ -79,12 +85,11 @@ const kg = (value: string) => Number(value).toLocaleString("tr-TR", { maximumFra
  * minimum. Every figure comes from the quote, i.e. from the live parameters.
  */
 function ShippingNote({ quote }: { quote: Cart }) {
+  const t = useMessages(cartMessages).summary;
+  const locale = useLocale();
   const s = quote.shipping;
   if (s.reason === "freight" || s.reason === "international") {
-    const note =
-      s.reason === "freight"
-        ? "Nakliye ambarı ücreti, malı teslim alırken ambara ödenir."
-        : "Uluslararası navlun ve gümrük bedeli sipariş sonrasında belirlenir, ayrıca faturalandırılır.";
+    const note = s.reason === "freight" ? t.freightNote : t.internationalNote;
     const Icon = s.reason === "freight" ? Building2 : Ship;
     return (
       <div className="flex gap-2 rounded-xl bg-sky-50 px-3 py-2.5 text-xs leading-5 text-sky-800 ring-1 ring-inset ring-sky-200 dark:bg-sky-500/10 dark:text-sky-200 dark:ring-sky-500/30">
@@ -100,12 +105,12 @@ function ShippingNote({ quote }: { quote: Cart }) {
       : s.reason === "tier_price"
         ? // Free shipping is a retail promotion: a tier price does not include
           // carriage, so there is no threshold to nudge towards.
-          "Gönderim ücreti sipariş tutarınıza eklenmez; teslimatta kargo görevlisine ödenir. Fiyat listenize kargo dahil değildir."
+          t.tierPrice
         : s.reason === "below_threshold"
-          ? `Gönderim ücreti sipariş tutarınıza eklenmez; teslimatta kargo görevlisine ödenir. ${formatMoney(remaining)} daha ekleyin, kargonuz ücretsiz olsun.`
+          ? t.belowThreshold(formatMoney(remaining))
           : s.coal_rule_basis === "quantity"
-            ? `Kömür ağırlıklı siparişlerde ücretsiz kargo için en az ${s.coal_min_quantity} adet kömür gereklidir. Sepetinizde ${s.coal_quantity} adet var; gönderim ücreti teslimatta alıcı tarafından ödenir.`
-            : `Kömür ağırlıklı siparişlerde ücretsiz kargo için en az ${kg(s.coal_min_kg)} kg kömür gereklidir. Sepetinizde ${kg(s.coal_weight_kg)} kg var; gönderim ücreti teslimatta alıcı tarafından ödenir.`;
+            ? t.coalQuantity(s.coal_min_quantity, s.coal_quantity)
+            : t.coalKg(kg(s.coal_min_kg, locale), kg(s.coal_weight_kg, locale));
   if (!message) return null;
 
   const coal = s.reason === "coal_weight";
@@ -121,7 +126,7 @@ function ShippingNote({ quote }: { quote: Cart }) {
       <p>
         {message}
         {coal && s.coal_rule_basis === "kg" && s.coal_weight_unknown && (
-          <span className="block opacity-80">Bazı kömürlerin ağırlığı tanımlı değil; bunlar 0 kg sayılır.</span>
+          <span className="block opacity-80">{t.coalUnknown}</span>
         )}
       </p>
     </div>
@@ -131,6 +136,8 @@ function ShippingNote({ quote }: { quote: Cart }) {
 /** "₺X more for the next volume tier", only when it's within reach — and only
  * for an account that would actually get it. */
 function VolumeNudge({ quote }: { quote: Cart }) {
+  const t = useMessages(cartMessages).summary;
+  const locale = useLocale();
   const next = quote.volume_next_tier;
   if (!next || !quote.perks_eligible) return null;
   const remaining = Number(next.threshold) - Number(quote.subtotal);
@@ -138,13 +145,18 @@ function VolumeNudge({ quote }: { quote: Cart }) {
   return (
     <p className="flex gap-2 rounded-xl bg-emerald-50 px-3 py-2.5 text-xs leading-5 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-200">
       <TrendingUp className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
-      {formatMoney(remaining)} daha ekleyin, {formatRate(next.rate)} ciro indirimi otomatik uygulansın.
+      {t.volumeNudge(formatMoney(remaining), formatRate(next.rate, locale))}
     </p>
   );
 }
 
 export function OrderSummary(props: OrderSummaryProps) {
   const { isLoggedIn, quote, quoteLoading, quoteError, submitting, checkoutError } = props;
+  const locale = useLocale();
+  const m = useMessages(cartMessages);
+  const t = m.summary;
+  const rate = (value: string | number) => formatRate(value, locale);
+  const shippingTitle = shippingOption(props.shippingMethod, locale).title;
   const needsConsent = !!quote?.shipping.receiver_pays;
   const canCheckout = !isLoggedIn || (!!quote && !quoteLoading && !quoteError && !props.blocker);
   const { params } = props;
@@ -156,7 +168,7 @@ export function OrderSummary(props: OrderSummaryProps) {
   const loyalty = props.perks && params.loyalty.enabled;
   // A B2B cart with products that give its list the havale discount ("Bayide / Toptanda / Kafede …").
   const b2bHavale = !!quote?.items.some((i) => i.havale_eligible);
-  const transferHint = transferDiscountHint(params);
+  const transferHint = transferDiscountHint(params, locale);
 
   return (
     <section
@@ -164,7 +176,7 @@ export function OrderSummary(props: OrderSummaryProps) {
       className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-zinc-900 p-5 shadow-sm sm:p-6 lg:sticky lg:top-24"
     >
       <h2 id="summary-heading" className="text-lg font-bold tracking-tight">
-        Sipariş Özeti
+        {t.heading}
       </h2>
 
       {/* An export account has no payment step at all: no gateway, no havale,
@@ -172,8 +184,7 @@ export function OrderSummary(props: OrderSummaryProps) {
           line saying what happens after the request. */}
       {isLoggedIn && props.quoteOnly && (
         <p className="mt-5 rounded-xl bg-amber-50 px-3.5 py-3 text-[13px] leading-relaxed text-amber-950 dark:bg-amber-500/10 dark:text-amber-100">
-          No payment is taken for this request. We will reply with a freight quote and
-          estimated delivery once the packages and total weight are known.
+          {m.export.noPayment}
         </p>
       )}
 
@@ -185,7 +196,7 @@ export function OrderSummary(props: OrderSummaryProps) {
             /* The havale discount is a retail promotion: a B2B account pays its
                tier price whichever way it pays — except on the products that
                give its list the discount. */
-            transferDiscount={props.perks ? transferHint : b2bHavale && transferHint ? `${transferHint}, işaretli ürünlerde` : null}
+            transferDiscount={props.perks ? transferHint : b2bHavale && transferHint ? t.markedProducts(transferHint) : null}
             cardAvailable={props.cardAvailable}
             saveCard={props.saveCard}
             onSaveCardChange={props.onSaveCardChange}
@@ -211,13 +222,20 @@ export function OrderSummary(props: OrderSummaryProps) {
         {quote && b2bInvoice ? (
           // Bayi / Toptan / Kafe: invoice lines, before VAT, the VAT, and the total.
           <>
-            <Row label={<span>Ara toplam <span className="text-xs opacity-75">(KDV hariç)</span></span>} value={formatMoney(quote.subtotal_excl_tax!)} />
+            <Row
+              label={
+                <span>
+                  {t.subtotal} <span className="text-xs opacity-75">{t.exclVat}</span>
+                </span>
+              }
+              value={formatMoney(quote.subtotal_excl_tax!)}
+            />
             {Number(quote.discount_amount) > 0 && (
               <Row
                 label={
                   <>
-                    Havale/EFT indirimi (−{formatRate(quote.discount_rate)}) <span className="text-xs opacity-75">(KDV hariç)</span>
-                    <span className="block text-xs opacity-75">yalnızca işaretli ürünlerde</span>
+                    {t.havaleDiscount(rate(quote.discount_rate))} <span className="text-xs opacity-75">{t.exclVat}</span>
+                    <span className="block text-xs opacity-75">{t.markedOnly}</span>
                   </>
                 }
                 value={`−${formatMoney(quote.line_discount_excl_tax ?? quote.discount_amount)}`}
@@ -225,22 +243,22 @@ export function OrderSummary(props: OrderSummaryProps) {
               />
             )}
             <Row
-              label={`Hesaplanan KDV (${(quote.vat_rates ?? []).map((r) => formatRate(Number(r) / 100)).join(" / ") || "%0"})`}
+              label={t.vat((quote.vat_rates ?? []).map((r) => rate(Number(r) / 100)).join(" / ") || rate(0))}
               value={formatMoney(quote.vat_total!)}
             />
             <Row
-              label={shippingOption(props.shippingMethod).title}
+              label={shippingTitle}
               value={
                 quote.shipping.free
-                  ? "Ücretsiz"
+                  ? t.free
                   : quote.shipping.reason === "international"
-                    ? "Sipariş sonrası"
-                    : "Teslimatta alıcı öder"
+                    ? t.afterOrder
+                    : t.receiverPays
               }
             />
             <div className="flex items-baseline justify-between gap-4 border-t border-slate-200 pt-3 dark:border-white/10">
               <dt className="text-base font-bold">
-                Genel toplam <span className="text-xs font-medium text-slate-500 dark:text-zinc-400">(KDV dahil)</span>
+                {t.grandTotal} <span className="text-xs font-medium text-slate-500 dark:text-zinc-400">{t.inclVat}</span>
               </dt>
               <dd className="font-mono text-base font-bold tabular-nums">{formatMoney(quote.net_total)}</dd>
             </div>
@@ -250,17 +268,15 @@ export function OrderSummary(props: OrderSummaryProps) {
               </div>
             )}
             <p className="text-xs text-slate-500 dark:text-zinc-400">
-              {b2bHavale
-                ? "Fiyatlarınız hesabınıza tanımlı fiyat listesinden gelir. Havale/EFT ile ödemede işaretli ürünlerde havale indirimi uygulanır; ciro ve Sultan Puan indirimleri bireysel (perakende) hesaplara tanımlıdır."
-                : "Fiyatlarınız hesabınıza tanımlı fiyat listesinden gelir; ciro, havale ve Sultan Puan indirimleri bireysel (perakende) hesaplara tanımlıdır."}
+              {b2bHavale ? t.b2bHavaleNote : t.b2bNote}
             </p>
           </>
         ) : quote ? (
           <>
-            <Row label="Ara toplam" value={formatMoney(quote.subtotal)} />
+            <Row label={t.subtotal} value={formatMoney(quote.subtotal)} />
             {Number(quote.volume_discount_amount) > 0 && (
               <Row
-                label={`Kazanılan ciro indirimi (−${formatRate(quote.volume_discount_rate)})`}
+                label={t.volumeDiscount(rate(quote.volume_discount_rate))}
                 value={`−${formatMoney(quote.volume_discount_amount)}`}
                 tone="discount"
               />
@@ -269,9 +285,9 @@ export function OrderSummary(props: OrderSummaryProps) {
               <Row
                 label={
                   <>
-                    Havale/EFT indirimi (−{formatRate(quote.discount_rate)})
+                    {t.havaleDiscount(rate(quote.discount_rate))}
                     {Number(quote.volume_discount_amount) > 0 && (
-                      <span className="block text-xs opacity-75">ciro indiriminden sonraki tutara</span>
+                      <span className="block text-xs opacity-75">{t.afterVolume}</span>
                     )}
                   </>
                 }
@@ -281,20 +297,20 @@ export function OrderSummary(props: OrderSummaryProps) {
             )}
             {/* Never a charge: either the shop covers it or the buyer pays on delivery. */}
             <Row
-              label={shippingOption(props.shippingMethod).title}
+              label={shippingTitle}
               value={
                 quote.shipping.free
-                  ? "Ücretsiz"
+                  ? t.free
                   : quote.shipping.reason === "international"
-                    ? "Sipariş sonrası"
-                    : "Teslimatta alıcı öder"
+                    ? t.afterOrder
+                    : t.receiverPays
               }
             />
             {Number(quote.points_discount) > 0 && (
               <Row label="Sultan Puan" value={`−${formatMoney(quote.points_discount)}`} tone="discount" />
             )}
             <div className="flex justify-between gap-4 border-t border-slate-200 dark:border-white/10 pt-3 text-base font-bold">
-              <dt>Toplam</dt>
+              <dt>{t.total}</dt>
               <dd className="tabular-nums">{formatMoney(quote.net_total)}</dd>
             </div>
             {!props.quoteOnly && (
@@ -305,24 +321,20 @@ export function OrderSummary(props: OrderSummaryProps) {
             )}
             {!props.quoteOnly && loyalty && quote.loyalty_points_to_earn > 0 && (
               <p className="text-xs text-zinc-600 dark:text-zinc-400">
-                Siparişiniz onaylandığında {quote.loyalty_points_to_earn.toLocaleString("tr-TR")} Sultan Puan
-                kazanacaksınız.
+                {t.pointsToEarn(quote.loyalty_points_to_earn.toLocaleString(INTL_LOCALE[locale]))}
               </p>
             )}
             {!props.quoteOnly && !quote.perks_eligible && (
-              <p className="text-xs text-slate-500 dark:text-zinc-400">
-                Fiyatlarınız hesabınıza tanımlı fiyat listesinden gelir; ciro, havale ve Sultan Puan indirimleri
-                bireysel (perakende) hesaplara tanımlıdır.
-              </p>
+              <p className="text-xs text-slate-500 dark:text-zinc-400">{t.b2bNote}</p>
             )}
           </>
         ) : (
           <>
-            <Row label="Ara toplam (tahmini)" value={formatMoney(props.estimatedSubtotal)} />
+            <Row label={t.estimatedSubtotal} value={formatMoney(props.estimatedSubtotal)} />
             <p className="text-xs text-slate-500 dark:text-zinc-400">
               {isLoggedIn
-                ? "Kargo ve indirimler hesaplanıyor…"
-                : `Ciro ve havale indirimleri ile size özel fiyatlar giriş yaptıktan sonra hesaplanır. ${formatMoneyCompact(params.free_shipping_threshold)} üzeri kargo ücretsiz (kömürde koşullu); altında gönderim ücreti teslimatta alıcı tarafından ödenir.`}
+                ? t.calculating
+                : t.guestNote(formatMoneyCompact(params.free_shipping_threshold))}
             </p>
           </>
         )}
@@ -353,30 +365,30 @@ export function OrderSummary(props: OrderSummaryProps) {
         <Button type="button" onClick={props.onCheckout} loading={submitting} disabled={!canCheckout}>
           {!isLoggedIn ? (
             props.quoteOnly ? (
-              "Sign in to submit your request"
+              m.export.signIn
             ) : (
-              "Siparişi tamamlamak için giriş yapın"
+              t.signIn
             )
           ) : props.quoteOnly ? (
             submitting ? (
-              "Submitting your request…"
+              m.export.submitting
             ) : (
               <>
-                <Send className="h-4 w-4" aria-hidden /> Submit Quote Request
+                <Send className="h-4 w-4 rtl:-scale-x-100" aria-hidden /> {m.export.submit}
               </>
             )
           ) : submitting ? (
-            props.paymentMethod === "CREDIT_CARD" ? "Ödeme sayfası açılıyor…" : "Sipariş oluşturuluyor…"
+            props.paymentMethod === "CREDIT_CARD" ? t.openingPayment : t.placingOrder
           ) : (
             <>
               <Lock className="h-4 w-4" aria-hidden />{" "}
-              {props.paymentMethod === "CREDIT_CARD" ? "Kart ile Öde" : "Siparişi Tamamla"}
+              {props.paymentMethod === "CREDIT_CARD" ? t.payByCard : t.placeOrder}
             </>
           )}
         </Button>
         {!props.quoteOnly && (
           <p className="text-center text-xs text-slate-500 dark:text-zinc-400">
-            Fiyatlara KDV dahildir. Nihai tutar sipariş anında sunucuda hesaplanır.
+            {t.vatIncluded}
           </p>
         )}
       </div>

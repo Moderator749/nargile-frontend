@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
 
+import { useMessages } from "@/components/i18n/LocaleProvider";
 import { CATALOG_PAGE_SIZE, fetchProducts } from "@/lib/catalogApi";
+import { catalogMessages } from "@/lib/i18n/messages/catalog";
 import { getApiErrorMessage } from "@/lib/errors";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useAuthHydrated } from "@/store/useHasHydrated";
@@ -31,8 +33,6 @@ interface UseCatalogOptions {
   seedQuery?: string;
 }
 
-const LOAD_ERROR = "Ürünler yüklenemedi. Lütfen tekrar deneyin.";
-
 /**
  * Catalog products priced for the current visitor.
  *
@@ -52,6 +52,8 @@ export function useCatalog({
   const [attempt, setAttempt] = useState(0);
   const [page, setPage] = useState<CatalogPage | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
+  // When the API says nothing of its own.
+  const loadError = useMessages(catalogMessages).grid.loadError;
 
   const viewer = hydrated ? (token ?? "anon") : null;
   const key = viewer === null ? null : `${viewer}|${category ?? ""}|${query}|${attempt}`;
@@ -72,10 +74,10 @@ export function useCatalog({
       )
       .catch((err: unknown) => {
         if (axios.isCancel(err)) return;
-        setPage({ key, products: [], error: getApiErrorMessage(err, LOAD_ERROR), hasMore: false });
+        setPage({ key, products: [], error: getApiErrorMessage(err, loadError), hasMore: false });
       });
     return () => controller.abort();
-  }, [key, seedIsFinal, category, query, pageSize]);
+  }, [key, seedIsFinal, category, query, pageSize, loadError]);
 
   const fetched = page && page.key === key ? page : null;
   // While a new search loads, keep the previous results — but only the same
@@ -109,11 +111,11 @@ export function useCatalog({
       });
     } catch (err) {
       if (keyRef.current !== requestKey) return;
-      setPage({ key: requestKey, products: base, error: getApiErrorMessage(err, LOAD_ERROR), hasMore: true });
+      setPage({ key: requestKey, products: base, error: getApiErrorMessage(err, loadError), hasMore: true });
     } finally {
       setLoadingMore(false);
     }
-  }, [key, view, loadingMore, category, query, pageSize]);
+  }, [key, view, loadingMore, category, query, pageSize, loadError]);
 
   return {
     products: view?.products ?? [],

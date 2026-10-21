@@ -3,11 +3,13 @@
 import { useEffect, useState } from "react";
 import { Check, Equal, Plus, ShoppingCart } from "lucide-react";
 
+import { useMessages } from "@/components/i18n/LocaleProvider";
 import { useDisplayMoney } from "@/hooks/useDisplayMoney";
 import { useNow } from "@/hooks/useNow";
 import { cartLineFor } from "@/lib/cartLine";
 import { isExportAccount } from "@/lib/exportAccount";
 import { saleState } from "@/lib/flashSale";
+import { productMessages } from "@/lib/i18n/messages/product";
 import { formatDisplayMoney, loadExchangeRates } from "@/lib/money";
 import { displayVariant, soldOut } from "@/lib/variants";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -63,6 +65,7 @@ export function BundleTotal({
   isLoggedIn: boolean;
 }) {
   const money = useDisplayMoney();
+  const t = useMessages(productMessages).bundle;
   const currency = useCurrencyStore((s) => s.currency);
   const quoteOnly = isExportAccount(useAuthStore((s) => s.user));
   const now = useNow(extras.some((p) => displayVariant(p)?.flash_sale));
@@ -128,24 +131,24 @@ export function BundleTotal({
   return (
     <div
       role="group"
-      aria-label="Birlikte alındığında toplam"
+      aria-label={t.label}
       className="w-full max-w-3xl rounded-2xl border border-border bg-white px-5 py-4 shadow-sm dark:bg-zinc-900"
     >
       <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-3 text-center">
         <span className="flex flex-col">
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Ana Ürün</span>
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t.main}</span>
           <span className="font-mono text-base font-semibold tabular-nums text-foreground">{show(mainTry)}</span>
         </span>
         <Plus className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
         <span className="flex flex-col">
           <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Ekstralar ({priced.length} ürün)
+            {t.extras(priced.length)}
           </span>
           <span className="font-mono text-base font-semibold tabular-nums text-foreground">{show(extrasSum)}</span>
         </span>
         <Equal className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
         <span className="flex flex-col rounded-xl bg-red-50 px-4 py-2 dark:bg-red-500/10">
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-red-700 dark:text-red-300">Toplam</span>
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-red-700 dark:text-red-300">{t.total}</span>
           <span className="font-mono text-xl font-bold tabular-nums text-red-700 dark:text-red-300">{show(mainTry + extrasSum)}</span>
         </span>
       </div>
@@ -154,20 +157,20 @@ export function BundleTotal({
           type="button"
           onClick={addAll}
           disabled={!canAdd}
-          title={canAdd ? undefined : "Ana ürün şu an sepete eklenemiyor"}
+          title={canAdd ? undefined : t.mainUnavailable}
           className={`inline-flex h-11 items-center gap-2 rounded-full px-6 text-sm font-semibold text-white shadow-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 disabled:cursor-not-allowed disabled:opacity-50 ${
             added ? "bg-emerald-600" : "bg-red-600 enabled:hover:bg-red-500"
           }`}
         >
           {added ? <Check className="h-4 w-4" aria-hidden /> : <ShoppingCart className="h-4 w-4" aria-hidden />}
-          {added ? "Hepsi sepete eklendi" : `Hepsini Sepete Ekle (${priced.length + 1} ürün)`}
+          {added ? t.allAdded : t.addAll(priced.length + 1)}
         </button>
       </div>
       <span className="sr-only" aria-live="polite">
-        {added ? `${priced.length + 1} ürün sepete eklendi` : ""}
+        {added ? t.addedLive(priced.length + 1) : ""}
       </span>
       <p className="mt-2 text-center text-xs text-muted-foreground">
-        Hepsi birlikte, KDV dahil. Kargo ve indirimler sepette hesaplanır.
+        {t.note}
       </p>
     </div>
   );

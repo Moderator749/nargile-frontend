@@ -6,7 +6,7 @@ import { ProductDetail } from "@/components/product/ProductDetail";
 import { RelatedCategories } from "@/components/product/RelatedCategories";
 import { SimilarProducts } from "@/components/product/SimilarProducts";
 import { JsonLd } from "@/components/seo/JsonLd";
-import { categoryCopy } from "@/lib/categories";
+import { categoryCopy, hasCategoryCopy } from "@/lib/categories";
 import { DEFAULT_LOCALE, localePath } from "@/lib/i18n/config";
 import { getI18n } from "@/lib/i18n/server";
 import { breadcrumbJsonLd, metaDescription, pageMetadata, productHref, productJsonLd, type Breadcrumb } from "@/lib/seo";
@@ -41,9 +41,13 @@ export async function generateMetadata(props: PageProps<"/[locale]/product/[slug
   // The admin's own description as written; otherwise the product's text,
   // topped up with the category's standing copy when it is too short to say
   // anything (a one-line "Ürün Kodu: …" is common in the imported catalogue).
-  // (In English and Arabic the name and the description are the translation
-  // and the category copy, written in Turkish, gives way to the shop's offer.)
-  const standing = locale === DEFAULT_LOCALE ? categoryCopy(category?.slug).description : `${t.meta.genuine} ${t.meta.shopPromise}`;
+  // (In English and Arabic the name and the description are the translation,
+  // and so is the category copy where the shop wrote one; without it, the
+  // shared default gives way to the shop's offer.)
+  const standing =
+    locale === DEFAULT_LOCALE || hasCategoryCopy(category?.slug)
+      ? categoryCopy(category?.slug, locale).description
+      : `${t.meta.genuine} ${t.meta.shopPromise}`;
   const fallback = `${product.name}${product.brand ? `, ${product.brand}` : ""}${category ? ` · ${category.name}` : ""}. ${standing}`;
   const own = metaDescription(product.description);
   const description =
@@ -92,7 +96,7 @@ export default async function ProductPage(props: PageProps<"/[locale]/product/[s
     getBrands(),
   ]);
   const similar = pickSimilar(categoryList, product);
-  const related = relatedCategories(product, categories, brands ?? []);
+  const related = relatedCategories(product, categories, brands ?? [], undefined, locale);
 
   // Ana Sayfa > Kategori > Ürün: the path a visitor takes from a menu to here.
   const crumbs: Breadcrumb[] = [

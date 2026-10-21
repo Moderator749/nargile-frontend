@@ -7,6 +7,7 @@ import { ExternalLink, Loader2, RotateCcw, Save } from "lucide-react";
 
 import { AdminCategoriesView } from "@/components/admin/AdminCategoriesView";
 import { AdminPageHeader } from "@/components/admin/AdminShell";
+import { TranslationsTab } from "@/components/admin/homepage/TranslationsTab";
 import { isSiteOrHttpsLink } from "@/components/admin/ContentEditor";
 import {
   SeoIntroTab,
@@ -38,13 +39,15 @@ type TabKey =
   | "showcase"
   | "seo"
   | "footer"
-  | "mobile";
+  | "mobile"
+  | "translations";
 
 /** Deep links (/admin/homepage?tab=katalog-kategorileri), e.g. from the retired /admin/categories. */
 const TAB_PARAM: Record<string, TabKey> = {
   "katalog-kategorileri": "catalog",
   "kategori-duzenle": "navigation",
   "mobil-yonetim": "mobile",
+  ceviriler: "translations",
 };
 
 /** Each tab, and the part of the document it edits (none for the two that link out). */
@@ -60,6 +63,8 @@ const TABS: { key: TabKey; label: string; doc?: keyof Homepage; section?: keyof 
   // The homepage switch for this passage is the one still called "about".
   { key: "seo", label: "Alt SEO Metni", doc: "seo_intro", section: "about" },
   { key: "footer", label: "Footer", doc: "footer", section: "footer" },
+  // The texts above in English and Arabic; saves on its own.
+  { key: "translations", label: "Çeviriler (EN/AR)" },
 ];
 
 const KEYS = Object.keys(DEFAULT_HOMEPAGE) as (keyof Homepage)[];
@@ -331,6 +336,7 @@ export function AdminHomepageView() {
             {tab === "seo" && <SeoIntroTab value={doc.seo_intro} set={set("seo_intro")} />}
             {tab === "footer" && <FooterTab value={doc.footer} set={set("footer")} />}
             {tab === "mobile" && <MobileTab value={doc.mobile} set={set("mobile")} />}
+            {tab === "translations" && <TranslationsTab doc={saved} />}
           </div>
 
           {current.doc && (

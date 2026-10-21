@@ -2,6 +2,9 @@
 
 import { Check } from "lucide-react";
 
+import { useLocale, useMessages } from "@/components/i18n/LocaleProvider";
+import { colorLabel } from "@/lib/i18n/colors";
+import { productMessages } from "@/lib/i18n/messages/product";
 import { variantInStock } from "@/lib/variants";
 import type { CatalogVariant } from "@/types";
 
@@ -25,10 +28,12 @@ export function ColorPicker({
   /** A signed-in buyer's own stock is not in yet: strike nothing through. */
   stockPending?: boolean;
 }) {
+  const t = useMessages(productMessages);
+  const locale = useLocale();
   return (
     <div className="mt-6">
       <h2 id="color-picker-label" className="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
-        Renk
+        {t.colour}
       </h2>
       {/* A radio group: arrow keys move between colours, as for any single choice. */}
       <div role="radiogroup" aria-labelledby="color-picker-label" className="mt-2 flex flex-wrap gap-2">
@@ -49,8 +54,8 @@ export function ColorPicker({
               } ${available ? "" : "line-through decoration-from-font"}`}
             >
               {selected && <Check className="h-3.5 w-3.5 shrink-0" aria-hidden />}
-              {variant.color_name}
-              <span className="sr-only">{available ? "" : " — tükendi"}</span>
+              {colorLabel(variant.color_name ?? "", locale)}
+              <span className="sr-only">{available ? "" : t.colourSoldOut}</span>
             </button>
           );
         })}

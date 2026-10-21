@@ -3,17 +3,20 @@
 import type { MouseEvent, ReactNode } from "react";
 
 import Link from "@/components/i18n/Link";
+import { usePagePath } from "@/components/i18n/navigation";
 
 /**
  * A link to a section of a page ("/#avantajlar"). On that page it glides to
  * the section instead of jumping — unless the visitor has asked for less
  * motion — and leaves the hash in the address bar; anywhere else it is an
- * ordinary link that lands on the section.
+ * ordinary link that lands on the section. "This page" is the path without its
+ * language, so "/#avantajlar" glides on /en and /ar too.
  */
 export function SmoothAnchor({ href, className, children }: { href: string; className?: string; children: ReactNode }) {
+  const page = usePagePath();
   function onClick(event: MouseEvent<HTMLAnchorElement>) {
     const [path, hash] = href.split("#");
-    if (!hash || (path && path !== window.location.pathname)) return;
+    if (!hash || (path && path !== page)) return;
     const target = document.getElementById(hash);
     if (!target) return;
     event.preventDefault();

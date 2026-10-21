@@ -3,12 +3,15 @@ import { ArrowRight, Mail, Phone } from "lucide-react";
 
 import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
 import { telHref } from "@/lib/contact";
+import { footerMessages } from "@/lib/i18n/messages/layout";
+import { getMessages } from "@/lib/i18n/server";
 
 /**
  * The three ways to reach the shop, as cards across the top of the footer.
  * The numbers come from the footer settings ("Ana Sayfa Düzenleme").
  */
-export function ContactBar({ phone, email, whatsappHref }: { phone: string; email: string; whatsappHref: string }) {
+export async function ContactBar({ phone, email, whatsappHref }: { phone: string; email: string; whatsappHref: string }) {
+  const m = await getMessages(footerMessages);
   const CONTACT: {
     label: string;
     value: string;
@@ -16,9 +19,9 @@ export function ContactBar({ phone, email, whatsappHref }: { phone: string; emai
     Icon: ComponentType<{ className?: string }>;
     external?: boolean;
   }[] = [
-    { label: "Telefon", value: phone, href: telHref(phone), Icon: Phone },
-    { label: "E-Posta", value: email, href: `mailto:${email}`, Icon: Mail },
-    { label: "WhatsApp", value: "Hemen Yazın", href: whatsappHref, Icon: WhatsAppIcon, external: true },
+    { label: m.phone, value: phone, href: telHref(phone), Icon: Phone },
+    { label: m.email, value: email, href: `mailto:${email}`, Icon: Mail },
+    { label: m.whatsapp, value: m.writeNow, href: whatsappHref, Icon: WhatsAppIcon, external: true },
   ];
 
   return (
@@ -36,11 +39,16 @@ export function ContactBar({ phone, email, whatsappHref }: { phone: string; emai
               </span>
               <span className="min-w-0">
                 <span className="block text-[10px] font-bold uppercase tracking-widest text-neutral-500">{label}</span>
-                <span className="block truncate text-sm font-semibold tracking-tight">{value}</span>
+                <span className="block truncate text-sm font-semibold tracking-tight">
+                  {/* Kept left to right as one piece: in Arabic the digit groups
+                      of "0212 553 05 92" would otherwise read in reverse order. */}
+                  <span dir="ltr">{value}</span>
+                </span>
               </span>
             </span>
+            {/* Points, and nudges, the way the text reads. */}
             <ArrowRight
-              className="h-4 w-4 shrink-0 text-neutral-500 transition-all duration-300 group-hover:text-red-500 motion-safe:group-hover:translate-x-0.5"
+              className="h-4 w-4 shrink-0 text-neutral-500 transition-all duration-300 group-hover:text-red-500 rtl:-scale-x-100 motion-safe:group-hover:translate-x-0.5 rtl:motion-safe:group-hover:-translate-x-0.5"
               strokeWidth={2}
               aria-hidden
             />

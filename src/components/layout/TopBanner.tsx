@@ -4,12 +4,15 @@ import { useCallback, useEffect, useState } from "react";
 
 import { LiveAnnouncementBar } from "@/components/banner/LiveAnnouncementBar";
 import { AnnouncementBar } from "@/components/home/AnnouncementBar";
+import { useMessages } from "@/components/i18n/LocaleProvider";
+import { useCmsText } from "@/components/i18n/useCmsText";
 import { DEFAULT_BANNER_STYLE } from "@/lib/banner";
 import { API_URL } from "@/lib/config";
+import { chromeMessages } from "@/lib/i18n/messages/layout";
 import type { Announcement } from "@/types";
 
-/** What the strip says when the shop has no special day running. */
-export const WELCOME = "SULTAN NARGİLE'YE HOŞ GELDİNİZ";
+/** What the strip says when the shop has no special day running (in Turkish; the strip reads it in the page's language). */
+export const WELCOME = chromeMessages.tr.welcome;
 
 /**
  * The strip across the very top of the storefront.
@@ -31,7 +34,11 @@ export const WELCOME = "SULTAN NARGİLE'YE HOŞ GELDİNİZ";
  * asks again, so the default banner comes back without a reload.
  */
 export function TopBanner() {
+  const m = useMessages(chromeMessages);
   const [live, setLive] = useState<Announcement | null>(null);
+  // The admin writes the banner in Turkish; its English and Arabic come from
+  // the homepage translation memory.
+  const cms = useCmsText();
   const [round, setRound] = useState(0);
   const expired = useCallback(() => {
     setLive(null);
@@ -54,13 +61,16 @@ export function TopBanner() {
     return () => controller.abort();
   }, [round]);
 
-  if (live) return <LiveAnnouncementBar key={`${live.message}|${live.expires_at}`} announcement={live} onExpire={expired} />;
+  if (live) {
+    const message = cms(live.message);
+    return <LiveAnnouncementBar key={`${message}|${live.expires_at}`} announcement={{ ...live, message }} onExpire={expired} />;
+  }
 
   // The greeting is not an announcement: the house gradient, and no icon to
   // read anything into.
   return (
     <AnnouncementBar
-      message={WELCOME}
+      message={m.welcome}
       backgroundStyle={DEFAULT_BANNER_STYLE}
       bgImageUrl={null}
       icon="none"

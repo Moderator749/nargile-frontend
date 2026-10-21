@@ -1,17 +1,19 @@
-
 import Link from "@/components/i18n/Link";
+import { productMessages } from "@/lib/i18n/messages/product";
+import { getMessages } from "@/lib/i18n/server";
 import type { RelatedLink } from "@/lib/related";
 
 /** "İlgili Kategoriler": plain links as tags, under the product's own shelves. */
-export function RelatedCategories({ links }: { links: RelatedLink[] }) {
+export async function RelatedCategories({ links }: { links: RelatedLink[] }) {
   if (links.length === 0) return null;
+  const t = await getMessages(productMessages);
   return (
     <nav aria-labelledby="related-categories-heading" className="mt-14 border-t border-border pt-10">
       <h2
         id="related-categories-heading"
         className="text-center text-2xl font-semibold tracking-tighter text-foreground sm:text-3xl"
       >
-        İlgili Kategoriler
+        {t.relatedCategories}
       </h2>
       <ul className="mx-auto mt-6 flex max-w-4xl flex-wrap justify-center gap-2.5">
         {links.map((link) => (

@@ -22,6 +22,10 @@ import Link from "@/components/i18n/Link";
  * leads to the left, the speed lines stream off the right and the road flows
  * back to the right. The courier faces left, toward its row's title, while
  * the van above faces right.
+ *
+ * In Arabic the header mirrors (the title at the right, the perks at the
+ * left), so does the drawing: `facing` is as seen on a left-to-right page,
+ * and each vehicle turns round in a right-to-left one.
  */
 
 /** Turns about its own centre: a wheel's spokes, inside its still tyre. */
@@ -120,7 +124,7 @@ export function DeliveryPerk({
         facing === "left" ? "gap-6 sm:gap-7" : "gap-3 sm:gap-4"
       } ${className}`}
     >
-      <div aria-hidden className={`shrink-0 text-neutral-900 dark:text-white ${width} ${facing === "left" ? "-scale-x-100" : ""}`}>
+      <div aria-hidden className={`shrink-0 text-neutral-900 dark:text-white ${width} ${facing === "left" ? "ltr:-scale-x-100" : "rtl:-scale-x-100"}`}>
         <svg viewBox={viewBox} className="block h-auto w-full overflow-visible">
           {vehicle}
         </svg>

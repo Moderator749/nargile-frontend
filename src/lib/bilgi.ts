@@ -6,11 +6,24 @@
  * published as it was given, so a correction belongs in the source document
  * and then here, never here alone. Only the structure was read from Word —
  * numbered section titles become headings, Word lists stay lists.
+ *
+ * The English and Arabic copies (lib/content/bilgi.en, bilgi.ar) are courtesy
+ * translations of these, block for block under the same slugs, each opening
+ * with a "notice" that the Turkish is the binding text. Read them through
+ * `bilgiDocuments(locale)`; `BILGI_DOCUMENTS` stays the Turkish.
  */
+
+import { BILGI_DOCUMENTS_AR, PERKS_PAGE_AR } from "@/lib/content/bilgi.ar";
+import { BILGI_DOCUMENTS_EN, PERKS_PAGE_EN } from "@/lib/content/bilgi.en";
+import type { Locale } from "@/lib/i18n/config";
 
 export const BILGI_HREF = "/bilgi";
 
-export type BilgiBlock = { type: "h2" | "h3" | "p"; text: string } | { type: "ul" | "ol"; items: string[] };
+export type BilgiBlock =
+  | { type: "h2" | "h3" | "p"; text: string }
+  | { type: "ul" | "ol"; items: string[] }
+  /** A translation's opening line: the Turkish text is the binding one. */
+  | { type: "notice"; text: string };
 
 export interface BilgiDocument {
   slug: string;
@@ -311,3 +324,19 @@ export const BILGI_DOCUMENTS: BilgiDocument[] = [
     ],
   },
 ];
+
+const DOCUMENTS: Record<Locale, BilgiDocument[]> = { tr: BILGI_DOCUMENTS, en: BILGI_DOCUMENTS_EN, ar: BILGI_DOCUMENTS_AR };
+
+/** The Bilgi documents in a language, in the Turkish order. */
+export const bilgiDocuments = (locale: Locale): BilgiDocument[] => DOCUMENTS[locale];
+
+/** One document by its (Turkish) slug, in a language. */
+export const bilgiDocument = (slug: string, locale: Locale): BilgiDocument | undefined =>
+  DOCUMENTS[locale].find((doc) => doc.slug === slug);
+
+/** `PERKS_PAGE` with its title and description in a language; the address stays. */
+export function perksPage(locale: Locale): typeof PERKS_PAGE {
+  if (locale === "en") return { ...PERKS_PAGE, ...PERKS_PAGE_EN };
+  if (locale === "ar") return { ...PERKS_PAGE, ...PERKS_PAGE_AR };
+  return PERKS_PAGE;
+}

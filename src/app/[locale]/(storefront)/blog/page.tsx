@@ -3,19 +3,23 @@ import { ArrowRight } from "lucide-react";
 
 import Link from "@/components/i18n/Link";
 import { InfoPage } from "@/components/info/InfoPage";
-import { ARTICLES, BLOG_HREF, articleHref } from "@/lib/blog";
+import { BLOG_HREF, articleHref, articles } from "@/lib/blog";
+import { blogMessages } from "@/lib/i18n/messages/info";
+import { getI18n } from "@/lib/i18n/server";
 import { pageMetadata } from "@/lib/seo";
 
-const TITLE = "Blog";
-const DESCRIPTION = "Nargile lülesi, ekipman seçimi ve içim üzerine Sultan Nargile rehberleri.";
+export async function generateMetadata(): Promise<Metadata> {
+  const { locale } = await getI18n();
+  const m = blogMessages[locale];
+  return pageMetadata({ title: m.title, description: m.description, href: BLOG_HREF, locale, locales: "all" });
+}
 
-export const metadata: Metadata = pageMetadata({ title: TITLE, description: DESCRIPTION, href: BLOG_HREF });
-
-export default function BlogPage() {
+export default async function BlogPage() {
+  const { locale } = await getI18n();
   return (
-    <InfoPage title={TITLE} href={BLOG_HREF}>
+    <InfoPage title={blogMessages[locale].title} href={BLOG_HREF}>
       <ul className="divide-y divide-border">
-        {ARTICLES.map((article) => (
+        {articles(locale).map((article) => (
           <li key={article.slug} className="py-6 first:pt-0 last:pb-0">
             <h2 className="text-base font-bold tracking-tight text-slate-900 dark:text-zinc-100">
               <Link href={articleHref(article)} className="transition-colors duration-200 hover:text-accent">
@@ -30,7 +34,7 @@ export default function BlogPage() {
                     href={`${articleHref(article)}#${section.id}`}
                     className="group inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors duration-200 hover:text-foreground"
                   >
-                    <ArrowRight className="h-3.5 w-3.5 text-accent" aria-hidden />
+                    <ArrowRight className="h-3.5 w-3.5 text-accent rtl:-scale-x-100" aria-hidden />
                     {section.title}
                   </Link>
                 </li>

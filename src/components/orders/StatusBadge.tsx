@@ -1,7 +1,13 @@
+"use client";
+
+import { useMessages } from "@/components/i18n/LocaleProvider";
+import { ordersMessages } from "@/lib/i18n/messages/orders";
 import type { OrderStatus } from "@/types";
 
 // Green = approved, red = cancelled; pending states are orange/amber (they need action).
 // Solid enough to read on the admin's grey and yellow order rows.
+// The labels are Turkish, as the admin panel reads them; the badge itself says
+// them in the page's language (`ordersMessages.status`).
 export const ORDER_STATUS: Record<OrderStatus, { label: string; className: string }> = {
   PENDING_APPROVAL: {
     label: "Onay bekliyor",
@@ -38,6 +44,7 @@ export const ORDER_STATUS: Record<OrderStatus, { label: string; className: strin
 /** `compact` is for the dense admin tables, where a full-size pill does not fit. */
 export function StatusBadge({ status, compact = false }: { status: OrderStatus; compact?: boolean }) {
   const s = ORDER_STATUS[status];
+  const label = useMessages(ordersMessages).status[status];
   return (
     <span
       className={`inline-flex max-w-full items-center justify-center rounded-full font-semibold ring-1 ring-inset ${
@@ -46,7 +53,7 @@ export function StatusBadge({ status, compact = false }: { status: OrderStatus; 
           : "whitespace-nowrap px-2.5 py-1 text-xs"
       } ${s.className}`}
     >
-      {s.label}
+      {label}
     </span>
   );
 }

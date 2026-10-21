@@ -360,7 +360,7 @@ html[data-sidebar="collapsed"] .category-sidebar {
   /* No height either: a closed column would still hold the row open to its
      own length, leaving a gap under the hero. */
   height: 0;
-  margin-right: 0;
+  margin-inline-end: 0;
   opacity: 0;
   overflow: hidden;
   visibility: hidden;

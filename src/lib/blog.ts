@@ -4,7 +4,15 @@
  *
  * Section bodies use the `LegalText` format: blank lines between paragraphs and
  * `## ` for a sub-heading.
+ *
+ * English and Arabic copies live in lib/content (blog.en, blog.ar), section
+ * for section under the same slug and anchor ids; read them through
+ * `articles(locale)` and `article(slug, locale)`.
  */
+
+import { LULE_GUIDE_AR } from "@/lib/content/blog.ar";
+import { LULE_GUIDE_EN } from "@/lib/content/blog.en";
+import type { Locale } from "@/lib/i18n/config";
 
 export const BLOG_HREF = "/blog";
 
@@ -104,3 +112,12 @@ export const ARTICLES: Article[] = [LULE_GUIDE];
 
 export const articleHref = (article: Article) => `${BLOG_HREF}/${article.slug}`;
 export const LULE_GUIDE_HREF = articleHref(LULE_GUIDE);
+
+const BY_LOCALE: Record<Locale, Article[]> = { tr: ARTICLES, en: [LULE_GUIDE_EN], ar: [LULE_GUIDE_AR] };
+
+/** The articles in a language, in the Turkish order. */
+export const articles = (locale: Locale): Article[] => BY_LOCALE[locale];
+
+/** One article by its (Turkish) slug, in a language. */
+export const article = (slug: string, locale: Locale): Article | undefined =>
+  BY_LOCALE[locale].find((a) => a.slug === slug);

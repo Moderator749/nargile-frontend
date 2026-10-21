@@ -4,15 +4,15 @@ import { useState } from "react";
 
 import { FreeShippingPerk } from "@/components/home/FreeShippingPerk";
 import { ProductRow } from "@/components/home/ProductRow";
+import { useMessages } from "@/components/i18n/LocaleProvider";
 import { useOwnPrices } from "@/hooks/useOwnPrices";
+import { homeMessages } from "@/lib/i18n/messages/home";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useAuthHydrated } from "@/store/useHasHydrated";
 import type { CatalogProduct, Category } from "@/types";
 
-const TABS = [
-  { key: "bestsellers", label: "Çok Satanlar" },
-  { key: "newest", label: "Yeni Gelenler" },
-] as const;
+/** The tabs, in order; each one's label is its key in the messages (`picks.bestsellers`). */
+const TABS = [{ key: "bestsellers" }, { key: "newest" }] as const;
 
 type TabKey = (typeof TABS)[number]["key"];
 
@@ -42,6 +42,7 @@ export function FeaturedProductsShowcase({
   categories: Category[];
 }) {
   const [tab, setTab] = useState<TabKey>("newest");
+  const t = useMessages(homeMessages);
   const mine = useOwnPrices(TABS.flatMap(({ key }) => lists[key]));
   const hydrated = useAuthHydrated();
   const token = useAuthStore((s) => s.token);
@@ -57,8 +58,8 @@ export function FeaturedProductsShowcase({
     // lüle row continues the white below, so this one keeps less at its foot.
     <ProductRow
       headingId="sectiklerimiz-baslik"
-      title="Sizin İçin Seçtiklerimiz"
-      subtitle="En çok tercih edilen ve yeni gelen ürünler"
+      title={t.picks.title}
+      subtitle={t.picks.subtitle}
       className="bg-white pt-8 pb-8 sm:pt-10 sm:pb-10 dark:bg-transparent"
       products={lists[active]}
       mine={mine}
@@ -68,8 +69,8 @@ export function FeaturedProductsShowcase({
       actions={<FreeShippingPerk className="self-start xl:justify-self-end" />}
       besideTitle={
         visible.length > 1 && (
-          <div className={TABS_TRACK} role="group" aria-label="Ürün listesi">
-            {visible.map(({ key, label }) => (
+          <div className={TABS_TRACK} role="group" aria-label={t.picks.tabs}>
+            {visible.map(({ key }) => (
               <button
                 key={key}
                 type="button"
@@ -77,7 +78,7 @@ export function FeaturedProductsShowcase({
                 onClick={() => setTab(key)}
                 className={`${TAB} ${key === active ? TAB_ACTIVE : TAB_IDLE}`}
               >
-                {label}
+                {t.picks[key]}
               </button>
             ))}
           </div>

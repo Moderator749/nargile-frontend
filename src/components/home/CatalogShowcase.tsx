@@ -5,6 +5,8 @@ import { ArrowUpRight } from "lucide-react";
 import Link from "@/components/i18n/Link";
 import { canOptimiseImage } from "@/lib/home";
 import { homeIcon } from "@/lib/homeIcons";
+import { homeMessages } from "@/lib/i18n/messages/home";
+import { getMessages } from "@/lib/i18n/server";
 import type { ResolvedTile } from "@/lib/showcase";
 import { SITE_NAME } from "@/lib/site";
 
@@ -92,8 +94,9 @@ function layout(tiles: ResolvedTile[]): Placed[] {
  *
  * On a white band in the light theme, as before.
  */
-export function CatalogShowcase({ title, subtitle, tiles }: { title: string; subtitle: string; tiles: ResolvedTile[] }) {
+export async function CatalogShowcase({ title, subtitle, tiles }: { title: string; subtitle: string; tiles: ResolvedTile[] }) {
   if (tiles.length === 0) return null;
+  const t = await getMessages(homeMessages);
 
   return (
     <section aria-labelledby="showcase-heading" className="bg-white py-12 sm:py-16 dark:bg-transparent">
@@ -163,8 +166,8 @@ export function CatalogShowcase({ title, subtitle, tiles }: { title: string; sub
                   {/* On a small glass pill, so it reads on a photo shot on white too. */}
                   <span
                     aria-hidden
-                    className={`absolute left-4 top-4 rounded-full bg-black/30 px-2.5 py-1 font-mono text-[11px] font-medium tracking-[0.2em] text-white/80 tabular-nums ring-1 ring-inset ring-white/15 backdrop-blur-md md:left-5 md:top-5 ${
-                      pair ? "max-md:left-3 max-md:top-3 max-md:px-2 max-md:text-[10px]" : ""
+                    className={`absolute start-4 top-4 rounded-full bg-black/30 px-2.5 py-1 font-mono text-[11px] font-medium tracking-[0.2em] text-white/80 tabular-nums ring-1 ring-inset ring-white/15 backdrop-blur-md md:start-5 md:top-5 ${
+                      pair ? "max-md:start-3 max-md:top-3 max-md:px-2 max-md:text-[10px]" : ""
                     }`}
                   >
                     {String(index + 1).padStart(2, "0")}
@@ -198,10 +201,10 @@ export function CatalogShowcase({ title, subtitle, tiles }: { title: string; sub
                         pair ? "max-md:h-8 max-md:px-2" : ""
                       }`}
                     >
-                      <span className="max-w-0 overflow-hidden whitespace-nowrap text-sm font-semibold opacity-0 transition-[max-width,opacity,margin] duration-500 ease-out group-hover:mr-1.5 group-hover:max-w-[4.5rem] group-hover:opacity-100">
-                        Keşfet
+                      <span className="max-w-0 overflow-hidden whitespace-nowrap text-sm font-semibold opacity-0 transition-[max-width,opacity,margin] duration-500 ease-out group-hover:me-1.5 group-hover:max-w-[4.5rem] group-hover:opacity-100">
+                        {t.explore}
                       </span>
-                      <ArrowUpRight className="h-4 w-4 transition-transform duration-300 motion-safe:group-hover:rotate-45" />
+                      <ArrowUpRight className="h-4 w-4 transition-transform duration-300 rtl:-scale-x-100 motion-safe:group-hover:rotate-45 rtl:motion-safe:group-hover:-rotate-45" />
                     </span>
                   </div>
                 </Link>

@@ -5,6 +5,8 @@ import Link from "@/components/i18n/Link";
 import { LogoEmblem, LogoWordmark } from "@/components/brand/Logo";
 import { InstagramIcon, YouTubeIcon } from "@/components/icons/SocialIcons";
 import { ContactBar } from "@/components/layout/ContactBar";
+import { footerMessages } from "@/lib/i18n/messages/layout";
+import { getMessages } from "@/lib/i18n/server";
 import type { HomeFooter, HomeFooterColumn, HomeSocialKind } from "@/types";
 
 const SOCIAL_ICONS: Partial<Record<HomeSocialKind, ComponentType<{ className?: string }>>> = {
@@ -17,7 +19,7 @@ const linkClass = "text-sm leading-6 text-neutral-400 transition-colors duration
 const pillClass =
   "mt-6 inline-flex items-center gap-1.5 rounded-full border border-neutral-700 px-4 py-2 text-xs font-bold uppercase tracking-wide text-white transition-colors duration-200 hover:border-red-600 hover:text-red-400";
 
-/** A column of links, each behind a red arrow. */
+/** A column of links, each behind a red arrow — pointing, and nudging, the way the text reads. */
 function ArrowLinks({ links }: { links: { label: string; href: string }[] }) {
   return (
     <ul className="space-y-2.5">
@@ -25,7 +27,7 @@ function ArrowLinks({ links }: { links: { label: string; href: string }[] }) {
         <li key={`${link.href}-${i}`}>
           <Link href={link.href} className={`group flex gap-2 ${linkClass}`}>
             <ArrowRight
-              className="mt-1.5 h-3.5 w-3.5 shrink-0 text-red-600 transition-transform duration-200 motion-safe:group-hover:translate-x-0.5"
+              className="mt-1.5 h-3.5 w-3.5 shrink-0 text-red-600 transition-transform duration-200 rtl:-scale-x-100 motion-safe:group-hover:translate-x-0.5 rtl:motion-safe:group-hover:-translate-x-0.5"
               aria-hidden
             />
             <span>{link.label}</span>
@@ -47,7 +49,7 @@ function LinkColumn({ id, column }: { id: string; column: HomeFooterColumn }) {
       {column.cta_label && column.cta_href && (
         <Link href={column.cta_href} className={pillClass}>
           {column.cta_label}
-          <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+          <ArrowRight className="h-3.5 w-3.5 rtl:-scale-x-100" aria-hidden />
         </Link>
       )}
     </nav>
@@ -56,9 +58,11 @@ function LinkColumn({ id, column }: { id: string; column: HomeFooterColumn }) {
 
 /**
  * Near-black with a crimson wash, dark in both themes. Every line of it comes
- * from the footer settings in "Ana Sayfa Düzenleme" (`lib/homepage`).
+ * from the footer settings in "Ana Sayfa Düzenleme" (`lib/homepage`), but for
+ * the few labels of its own (`footerMessages`).
  */
-export function SiteFooter({ footer }: { footer: HomeFooter }) {
+export async function SiteFooter({ footer }: { footer: HomeFooter }) {
+  const m = await getMessages(footerMessages);
   return (
     <footer className="dark relative overflow-hidden bg-[#0b0b0c] text-foreground">
       {/* The ruby glow behind the contact cards; decoration only. */}
@@ -77,7 +81,7 @@ export function SiteFooter({ footer }: { footer: HomeFooter }) {
                 column on a phone, two from md, four (≈284px each) from lg. */}
             <Link
               href="/"
-              aria-label={`${footer.brand_name} ana sayfa`}
+              aria-label={m.homeAria(footer.brand_name)}
               className="inline-flex items-center gap-3 rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
             >
               <LogoEmblem className="h-10 w-10 md:h-11 md:w-11" />
@@ -110,9 +114,7 @@ export function SiteFooter({ footer }: { footer: HomeFooter }) {
                 <p className="flex gap-2.5 text-sm leading-5 text-neutral-400">
                   <Clock className="mt-0.5 h-4 w-4 shrink-0 text-red-600" aria-hidden />
                   <span>
-                    <strong className="block text-xs font-bold uppercase tracking-wider text-white">
-                      Çalışma Saatleri
-                    </strong>
+                    <strong className="block text-xs font-bold uppercase tracking-wider text-white">{m.hours}</strong>
                     {footer.hours}
                   </span>
                 </p>

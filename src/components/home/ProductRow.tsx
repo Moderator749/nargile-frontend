@@ -4,7 +4,9 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 
 import Link from "@/components/i18n/Link";
+import { useMessages } from "@/components/i18n/LocaleProvider";
 import { ProductCard } from "@/components/catalog/ProductCard";
+import { homeMessages } from "@/lib/i18n/messages/home";
 import { PAGE_CONTAINER } from "@/lib/layout";
 import type { CatalogProduct, Category } from "@/types";
 
@@ -42,7 +44,7 @@ interface ProductRowProps {
    * phone, under them.
    */
   besideTitle?: ReactNode;
-  /** At the header's right (a delivery perk: the van, the moto courier). */
+  /** At the header's end (a delivery perk: the van, the moto courier). */
   actions?: ReactNode;
   /** As listed; `mine` holds a signed-in visitor's own copies, by id. */
   products: CatalogProduct[];
@@ -65,6 +67,10 @@ interface ProductRowProps {
  * Seçtiklerimiz" and "Lüle Alırken Kararsız Kalacaksınız" are both this, so they read as a pair.
  *
  * A new list (another tab) starts the row from its first card.
+ *
+ * In Arabic the row runs right to left: its first card is at the right,
+ * `scrollLeft` starts at 0 there and goes negative, so the ends are read off
+ * its size and the arrows move it by a negative amount.
  */
 export function ProductRow({
   headingId,
@@ -80,6 +86,7 @@ export function ProductRow({
   accent = false,
   more,
 }: ProductRowProps) {
+  const t = useMessages(homeMessages);
   const categoryById = new Map(categories.map((c) => [c.id, c]));
   const track = useRef<HTMLUListElement>(null);
   // Which ends the track is at, so the arrow that cannot move it is disabled
@@ -91,7 +98,8 @@ export function ProductRow({
   function measure() {
     const el = track.current;
     if (!el) return;
-    setEnds({ start: el.scrollLeft <= 1, end: el.scrollLeft + el.clientWidth >= el.scrollWidth - 1 });
+    const scrolled = Math.abs(el.scrollLeft);
+    setEnds({ start: scrolled <= 1, end: scrolled + el.clientWidth >= el.scrollWidth - 1 });
   }
 
   useEffect(() => {
@@ -107,8 +115,10 @@ export function ProductRow({
     const el = track.current;
     const card = el?.firstElementChild as HTMLElement | undefined;
     if (!el || !card) return;
-    const gap = Number.parseFloat(getComputedStyle(el).columnGap) || 0;
-    el.scrollBy({ left: direction * (card.offsetWidth + gap), behavior: "smooth" });
+    const style = getComputedStyle(el);
+    const gap = Number.parseFloat(style.columnGap) || 0;
+    const sideways = style.direction === "rtl" ? -1 : 1;
+    el.scrollBy({ left: sideways * direction * (card.offsetWidth + gap), behavior: "smooth" });
   }
 
   if (products.length === 0) return null;
@@ -118,7 +128,7 @@ export function ProductRow({
       {/* The page's gutters on the wrapper, so the header and the row inside it
           line up with every other row. */}
       <div className={PAGE_CONTAINER}>
-        {/* Heading at the left, `actions` at the right, one line from `md`.
+        {/* Heading at the start, `actions` at the end, one line from `md`.
             With something beside the heading (the picks' tabs), from `xl` the
             header is three columns — 1fr, auto, 1fr — so the middle one, the
             tabs, sits on the row's exact centre, over the middle card of the
@@ -187,11 +197,11 @@ export function ProductRow({
           <div className="mt-4 flex items-center justify-center gap-3">
             {!(ends.start && ends.end) && (
               <>
-                <button type="button" onClick={() => slide(-1)} disabled={ends.start} aria-label="Önceki ürünler" className={ARROW}>
-                  <ChevronLeft className="h-5 w-5" aria-hidden />
+                <button type="button" onClick={() => slide(-1)} disabled={ends.start} aria-label={t.previousProducts} className={ARROW}>
+                  <ChevronLeft className="h-5 w-5 rtl:rotate-180" aria-hidden />
                 </button>
-                <button type="button" onClick={() => slide(1)} disabled={ends.end} aria-label="Sonraki ürünler" className={ARROW}>
-                  <ChevronRight className="h-5 w-5" aria-hidden />
+                <button type="button" onClick={() => slide(1)} disabled={ends.end} aria-label={t.nextProducts} className={ARROW}>
+                  <ChevronRight className="h-5 w-5 rtl:rotate-180" aria-hidden />
                 </button>
               </>
             )}
@@ -203,7 +213,10 @@ export function ProductRow({
                   className="group/more inline-flex h-10 items-center gap-2 rounded-full border border-gray-900 px-5 text-sm font-semibold text-gray-900 transition-colors duration-200 hover:bg-gray-900 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-900 dark:border-white dark:text-white dark:hover:bg-white dark:hover:text-gray-900 dark:focus-visible:outline-white"
                 >
                   {more.label}
-                  <ArrowRight className="h-4 w-4 transition-transform duration-200 motion-safe:group-hover/more:translate-x-0.5" aria-hidden />
+                  <ArrowRight
+                    className="h-4 w-4 transition-transform duration-200 rtl:-scale-x-100 motion-safe:group-hover/more:translate-x-0.5 rtl:motion-safe:group-hover/more:-translate-x-0.5"
+                    aria-hidden
+                  />
                 </Link>
               </>
             )}

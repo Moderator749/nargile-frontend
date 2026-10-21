@@ -4,6 +4,7 @@ import { useId, useState, type SubmitEvent } from "react";
 import { useRouter } from "next/navigation";
 import { FileText } from "lucide-react";
 
+import { useLocale, useMessages } from "@/components/i18n/LocaleProvider";
 import { useLocalePath } from "@/components/i18n/navigation";
 import { AccountTypePicker } from "@/components/auth/AccountTypePicker";
 import { AddressFields } from "@/components/auth/AddressFields";
@@ -33,15 +34,16 @@ import { Input } from "@/components/ui/Input";
 import { useLegalDocuments } from "@/hooks/useLegalDocuments";
 import { register } from "@/lib/authApi";
 import { getApiErrorMessage } from "@/lib/errors";
+import { registrationMessages } from "@/lib/i18n/messages/auth";
 
 /** What a firm has to bring to the approval, said once and left on screen. */
 function DocumentNotice() {
+  const m = useMessages(registrationMessages);
   return (
     <p className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
       <FileText className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
       <span>
-        <strong className="font-semibold">NOT:</strong> Üyelik onayında vergi levhası ve varsa TAPDK belgesi
-        istenecektir.
+        <strong className="font-semibold">{m.documentNoticeLabel}</strong> {m.documentNotice}
       </span>
     </p>
   );
@@ -51,9 +53,10 @@ function DocumentNotice() {
  * Sign-up for all four kinds of account.
  *
  * The account type at the top decides which sections are on screen, and which
- * language they are in: the three Turkish types are asked in Turkish, an
- * international customer in English. Everything about what each one requires
- * lives in `registrationDraft`, which the server's own schema mirrors. Required
+ * language they are in: on the Turkish site the three Turkish types are asked
+ * in Turkish, an international customer in English; on the English and Arabic
+ * sites everything is in the page's language. Everything about what each one
+ * requires lives in `registrationDraft`, which the server's own schema mirrors. Required
  * fields keep their native `required`, so the browser catches a blank one and
  * puts the cursor in it; the rules a browser cannot express — a TC checksum, an
  * address that needs either a street or a neighbourhood — come back as one
@@ -81,6 +84,7 @@ function MarketingConsent({
   onChange: (checked: boolean) => void;
   copy: RegistrationCopy;
 }) {
+  const m = useMessages(registrationMessages);
   const documents = useLegalDocuments();
   const [open, setOpen] = useState(false);
   const privacy = documents?.PRIVACY;
@@ -115,9 +119,7 @@ function MarketingConsent({
         {privacy ? (
           <RichText html={privacy.body} nested className="text-sm text-slate-700 dark:text-zinc-300" />
         ) : (
-          <p className="text-sm text-slate-500 dark:text-zinc-400">
-            Metin yüklenemedi. Sayfayı yenileyip tekrar deneyebilirsiniz.
-          </p>
+          <p className="text-sm text-slate-500 dark:text-zinc-400">{m.privacyFailed}</p>
         )}
       </Dialog>
     </div>
@@ -127,6 +129,8 @@ function MarketingConsent({
 export function RegisterForm() {
   const router = useRouter();
   const to = useLocalePath();
+  const locale = useLocale();
+  const m = useMessages(registrationMessages);
   const [draft, setDraft] = useState<RegistrationDraft>(() => emptyDraft());
   // The form is a long one, so it waits to be asked for: picking a card selects
   // it, pressing the card's own button is what opens this.
@@ -139,14 +143,14 @@ export function RegisterForm() {
   // A Turkish firm. An international account has its own identity section, and
   // its own question about whether it is a business at all.
   const business = isTurkishBusiness(draft.accountType);
-  const copy = copyFor(international);
+  const copy = copyFor(international, locale);
   const set = (patch: Partial<RegistrationDraft>) => setDraft((current) => ({ ...current, ...patch }));
 
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     if (submitting) return;
 
-    const problem = registrationProblem(draft);
+    const problem = registrationProblem(draft, locale);
     if (problem) {
       setError(problem);
       return;
@@ -161,7 +165,7 @@ export function RegisterForm() {
       const next = international ? "export" : business ? "review" : "1";
       router.replace(to(`/login?registered=${next}`));
     } catch (err) {
-      setError(getApiErrorMessage(err, "Kayıt tamamlanamadı. Lütfen tekrar deneyin."));
+      setError(getApiErrorMessage(err, m.failed));
       setSubmitting(false);
     }
   }
@@ -184,8 +188,8 @@ export function RegisterForm() {
 
       {!opened && (
         <p className="text-sm text-slate-500 dark:text-zinc-400">
-          Hesap türünüzü seçip <span className="font-medium text-slate-700 dark:text-zinc-300">Üye Ol</span>{" "}
-          düğmesine basın; yalnızca size uygun alanlar sorulacak.
+          {m.pickFirst[0]} <span className="font-medium text-slate-700 dark:text-zinc-300">{m.cta}</span>
+          {m.pickFirst[1]}
         </p>
       )}
 
@@ -211,7 +215,7 @@ export function RegisterForm() {
               {/* The invoice address, in the section the invoice is described
                   in rather than one of its own. */}
               <fieldset className="border-t border-slate-200 pt-4 dark:border-white/10">
-                <legend className="mb-3 text-sm font-medium text-slate-700 dark:text-zinc-300">Adres</legend>
+                <legend className="mb-3 text-sm font-medium text-slate-700 dark:text-zinc-300">{m.address}</legend>
                 <AddressFields value={draft.billing} onChange={(billing) => set({ billing })} required />
               </fieldset>
               <DocumentNotice />
@@ -220,7 +224,7 @@ export function RegisterForm() {
         </FormSection>
       )}
 
-      <FormSection title={international || business ? copy.contactSection : "Kişisel Bilgiler"}>
+      <FormSection title={international || business ? copy.contactSection : m.personalSection}>
         <div className="grid gap-4 sm:grid-cols-2">
           {/* An international account gave its company name in the section above. */}
           {(business || international) && (
@@ -235,19 +239,21 @@ export function RegisterForm() {
           )}
           {!business && !international && (
             <Input
-              label="İsim Soyisim"
+              label={m.fullName}
               autoComplete="name"
               maxLength={150}
               required
               autoFocus
               value={draft.fullName}
               onChange={(e) => set({ fullName: e.target.value })}
-              placeholder="Adınız Soyadınız"
+              placeholder={m.fullNamePlaceholder}
             />
           )}
           <Input
             label={copy.mobile}
             type="tel"
+            // Phone numbers read left to right on the Arabic page too ("+966 …").
+            dir="ltr"
             autoComplete="tel"
             inputMode="tel"
             maxLength={30}
@@ -258,11 +264,12 @@ export function RegisterForm() {
           />
           {!international && (
             <Input
-              label="Sabit Telefon"
+              label={m.landline}
               type="tel"
+              dir="ltr"
               inputMode="tel"
               maxLength={30}
-              hint="İsteğe bağlı"
+              hint={m.optional}
               value={draft.landlinePhone}
               onChange={(e) => set({ landlinePhone: e.target.value })}
             />
@@ -298,10 +305,10 @@ export function RegisterForm() {
           />
           {showsNationalId(draft) && !business && (
             <Input
-              label="TC Kimlik No"
+              label={m.nationalId}
               inputMode="numeric"
               maxLength={11}
-              hint="İsteğe bağlı · fatura ve kargo işlemlerini hızlandırır"
+              hint={m.nationalIdHint}
               value={draft.nationalId}
               onChange={(e) => set({ nationalId: e.target.value.replace(/\D/g, "") })}
             />
@@ -330,7 +337,7 @@ export function RegisterForm() {
       )}
 
       {!business && !international && (
-        <FormSection title="Kurumsal Fatura">
+        <FormSection title={m.corporateInvoiceSection}>
           <label className="flex cursor-pointer items-start gap-3 text-sm">
             <input
               type="checkbox"
@@ -339,10 +346,8 @@ export function RegisterForm() {
               className="mt-0.5 h-4 w-4 accent-red-600"
             />
             <span>
-              <span className="font-medium">Faturayı Firmaya / Şirkete İstiyorum</span>
-              <span className="block text-xs text-slate-500 dark:text-zinc-400">
-                Fatura bir firma adına kesilsin. Fiyatlarınız değişmez.
-              </span>
+              <span className="font-medium">{m.corporateInvoice}</span>
+              <span className="block text-xs text-slate-500 dark:text-zinc-400">{m.corporateInvoiceHint}</span>
             </span>
           </label>
           {draft.corporateInvoice && (
@@ -354,7 +359,7 @@ export function RegisterForm() {
               {/* The firm's own address, whichever kind of firm it is: the
                   invoice is addressed to it, not to the customer. */}
               <fieldset className="border-t border-slate-200 pt-4 dark:border-white/10">
-                <legend className="mb-3 text-sm font-medium text-slate-700 dark:text-zinc-300">Adres</legend>
+                <legend className="mb-3 text-sm font-medium text-slate-700 dark:text-zinc-300">{m.address}</legend>
                 <AddressFields
                   value={draft.corporateAddress}
                   onChange={(corporateAddress) => set({ corporateAddress })}

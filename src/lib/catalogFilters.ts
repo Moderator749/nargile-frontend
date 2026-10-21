@@ -13,6 +13,8 @@
  */
 
 import { saleState } from "@/lib/flashSale";
+import type { Locale } from "@/lib/i18n/config";
+import { INTL_LOCALE } from "@/lib/i18n/messages";
 import { displayVariant, soldOut } from "@/lib/variants";
 import type { CatalogProduct } from "@/types";
 
@@ -34,6 +36,7 @@ export const EMPTY_FILTERS: CatalogFilters = {
   sort: "recommended",
 };
 
+/** The Turkish labels; the toolbar shows each language's own (lib/i18n/messages/catalog). */
 export const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: "recommended", label: "Önerilen" },
   { value: "price-asc", label: "Fiyat: Düşükten Yükseğe" },
@@ -64,9 +67,15 @@ export function priceBounds(products: CatalogProduct[], now: number | null) {
   return { min: Math.floor(Math.min(...prices)), max: Math.ceil(Math.max(...prices)) };
 }
 
-/** "1.299,90" and "1299.9" both read as a number; anything else is no bound. */
-function bound(raw: string): number | null {
-  const cleaned = raw.replace(/\s/g, "").replace(/\.(?=\d{3}\b)/g, "").replace(",", ".");
+/**
+ * "1.299,90" and "1299.9" both read as a number; anything else is no bound.
+ * In English and Arabic the comma groups thousands ("1,299.90"), as people
+ * there write it.
+ */
+function bound(raw: string, locale: Locale): number | null {
+  const compact = raw.replace(/\s/g, "");
+  const cleaned =
+    locale === "tr" ? compact.replace(/\.(?=\d{3}\b)/g, "").replace(",", ".") : compact.replace(/,(?=\d{3}\b)/g, "");
   if (cleaned === "") return null;
   const value = Number(cleaned);
   return Number.isFinite(value) ? value : null;
@@ -76,9 +85,11 @@ export function applyCatalogFilters(
   products: CatalogProduct[],
   { min, max, inStock, sort }: CatalogFilters,
   now: number | null,
+  /** The page's language: how the price boxes read a number, and how names sort. */
+  locale: Locale = "tr",
 ): CatalogProduct[] {
-  const low = bound(min);
-  const high = bound(max);
+  const low = bound(min, locale);
+  const high = bound(max, locale);
 
   const kept = products.filter((product) => {
     if (inStock && soldOut(product)) return false;
@@ -93,7 +104,7 @@ export function applyCatalogFilters(
   });
 
   if (sort === "recommended") return kept;
-  if (sort === "name-asc") return [...kept].sort((a, b) => a.name.localeCompare(b.name, "tr"));
+  if (sort === "name-asc") return [...kept].sort((a, b) => a.name.localeCompare(b.name, INTL_LOCALE[locale]));
 
   // Priceless products sink to the bottom either way rather than sorting as 0.
   const direction = sort === "price-asc" ? 1 : -1;

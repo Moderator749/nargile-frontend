@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { DEFAULT_LOCALE, LOCALES, OG_LOCALE, localePath, type Locale } from "@/lib/i18n/config";
+import { colorLabel } from "@/lib/i18n/colors";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { htmlToText } from "@/lib/richText";
 import { DEFAULT_OG_IMAGE, INDEXING_ALLOWED, SITE_NAME, SITE_URL } from "@/lib/site";
@@ -106,7 +107,9 @@ export function pageMetadata(page: PageSeo): Metadata {
   const href = localePath(locale, page.href);
   const fullTitle = page.absoluteTitle ? page.title : `${page.title} | ${SITE_NAME}`;
   const photos = (page.images ?? []).filter((src): src is string => !!src).slice(0, 4);
-  const images = photos.length > 0 ? photos.map((url) => ({ url, alt: page.imageAlt ?? page.title })) : [DEFAULT_OG_IMAGE];
+  // The shop's own card is drawn per language (app/[locale]/opengraph-image).
+  const card = { ...DEFAULT_OG_IMAGE, url: localePath(locale, DEFAULT_OG_IMAGE.url) };
+  const images = photos.length > 0 ? photos.map((url) => ({ url, alt: page.imageAlt ?? page.title })) : [card];
   return {
     title: page.absoluteTitle ? { absolute: page.title } : page.title,
     description: page.description,
@@ -375,7 +378,7 @@ export function productJsonLd(product: CatalogProduct, category: Category | unde
     availability: availability(variant.in_stock !== false),
     itemCondition: "https://schema.org/NewCondition",
     seller: { "@id": `${SITE_URL}/#organization` },
-    ...(variant.color_name ? { name: variant.color_name, color: variant.color_name } : {}),
+    ...(variant.color_name ? { name: colorLabel(variant.color_name, locale), color: colorLabel(variant.color_name, locale) } : {}),
     ...(sale?.ends_at ? { priceValidUntil: sale.ends_at.slice(0, 10) } : {}),
   });
 
@@ -390,7 +393,7 @@ export function productJsonLd(product: CatalogProduct, category: Category | unde
     ...(product.description ? { description: htmlToText(product.description) } : {}),
     ...(product.brand ? { brand: { "@type": "Brand", name: product.brand } } : {}),
     ...(category ? { category: category.name } : {}),
-    ...(product.color_names && product.color_names.length > 0 ? { color: product.color_names } : {}),
+    ...(product.color_names && product.color_names.length > 0 ? { color: product.color_names.map((c) => colorLabel(c, locale)) } : {}),
     ...(price
       ? {
           offers:

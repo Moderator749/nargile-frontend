@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { useLocale, useMessages } from "@/components/i18n/LocaleProvider";
 import { useLocalePath } from "@/components/i18n/navigation";
 import { CartLineRow } from "@/components/cart/CartLineRow";
 import { NO_AGREEMENTS, type Agreements } from "@/components/cart/LegalConsent";
@@ -55,6 +56,7 @@ import { useStoreParameters } from "@/hooks/useStoreParameters";
 import { fetchMe } from "@/lib/authApi";
 import { getApiErrorMessage } from "@/lib/errors";
 import { isExportAccount } from "@/lib/exportAccount";
+import { cartMessages } from "@/lib/i18n/messages/cart";
 import { fetchPaytrStatus, openPaytrPage, type PaytrPage, type PaytrStatus } from "@/lib/paytr";
 import { retailPerks } from "@/lib/perks";
 import {
@@ -91,6 +93,8 @@ function refreshProfile() {
 export function CartView() {
   const router = useRouter();
   const to = useLocalePath();
+  const locale = useLocale();
+  const t = useMessages(cartMessages);
   const cartHydrated = useCartHydrated();
   const authHydrated = useAuthHydrated();
 
@@ -262,10 +266,8 @@ export function CartView() {
     ? {
         summary: hasInvoiceAddress(invoice)
           ? [invoiceFirmName(invoice), invoiceAddressSummary(invoice)].filter(Boolean).join(" · ")
-          : "Firmanın resmi adresi girilince bu adrese teslim edilebilir.",
-        notice: hasInvoiceAddress(invoice)
-          ? null
-          : "Şirketin resmi adresini yukarıdaki Fatura Bilgileri bölümünde doldurun.",
+          : t.view.corporateSummaryMissing,
+        notice: hasInvoiceAddress(invoice) ? null : t.view.corporateNotice,
       }
     : null;
 
@@ -323,7 +325,7 @@ export function CartView() {
       phone: user?.phone ?? "",
     });
   }, [saved, user]);
-  const onFileAddressReady = onFile !== null && addressProblem(onFile) === null;
+  const onFileAddressReady = onFile !== null && addressProblem(onFile, locale) === null;
 
   /**
    * What ships: whatever has been typed, else the chosen card, else a blank form
@@ -392,14 +394,14 @@ export function CartView() {
         ? "YURTICI_BRANCH"
         : "YURTICI_DOOR";
 
-  const addressFault = addressProblem(draft);
+  const addressFault = addressProblem(draft, locale);
 
   const deliveryProblem =
-    invoiceProblem(invoice) ??
-    (firmFlow && card === "BRANCH" ? branchProblem(branchName) : null) ??
+    invoiceProblem(invoice, locale) ??
+    (firmFlow && card === "BRANCH" ? branchProblem(branchName, locale) : null) ??
     addressFault ??
-    (otherReceiver ? receiverProblem(receiverName, receiverPhone, abroad) : null) ??
-    (method === "NAKLIYE_AMBARI" ? freightProblem(details.freightPhone) : null);
+    (otherReceiver ? receiverProblem(receiverName, receiverPhone, abroad, locale) : null) ??
+    (method === "NAKLIYE_AMBARI" ? freightProblem(details.freightPhone, locale) : null);
 
   const { quote, loading: quoteLoading, error: quoteError } = useCartQuote(
     items,
@@ -416,22 +418,18 @@ export function CartView() {
     : quote?.items.find((i) => i.available_quantity !== undefined && i.quantity > i.available_quantity);
   const stockProblem = overStock
     ? overStock.available_quantity
-      ? `${overStock.product_name} için stokta en fazla ${overStock.available_quantity} adet var; adedi düşürün.`
-      : `${overStock.product_name} tükendi; sepetinizden çıkarın.`
+      ? t.view.overStock(overStock.product_name, overStock.available_quantity)
+      : t.view.soldOut(overStock.product_name)
     : null;
   const checkoutBlocker = quoteOnly
     ? // A request asks for one thing the cart cannot supply: how it travels.
       (deliveryProblem ??
-      (transportMode === null ? "Please confirm how your order should travel." : null))
+      (transportMode === null ? t.export.transportBlocker : null))
     : (stockProblem ??
       deliveryProblem ??
-      (needsConsent && !shippingConsent
-        ? "Gönderim ücretinin teslimatta alıcı tarafından ödeneceğini onaylayın."
-        : null) ??
+      (needsConsent && !shippingConsent ? t.view.consentBlocker : null) ??
       // An order is a contract: both agreements, or no order.
-      (agreements.distanceSales && agreements.terms
-        ? null
-        : "Siparişi tamamlamak için her iki sözleşmeyi de onaylayın."));
+      (agreements.distanceSales && agreements.terms ? null : t.view.agreementsBlocker));
   const serverLines = new Map(quote?.items.map((i) => [i.variant_id, i]));
 
   async function handleCheckout() {
@@ -469,7 +467,7 @@ export function CartView() {
           window.scrollTo({ top: 0 });
         } catch (err) {
           // The server has already released the order it could not open a page for.
-          setCheckoutError(getApiErrorMessage(err, "Ödeme sayfası açılamadı. Lütfen tekrar deneyin."));
+          setCheckoutError(getApiErrorMessage(err, t.view.paymentPageFailed));
         }
         setSubmitting(false);
         refreshProfile(); // points spent on it are held, or back
@@ -481,7 +479,7 @@ export function CartView() {
       refreshProfile(); // Sultan Puan balance changed
       // Keep `submitting` so the page doesn't flash the empty-cart state while navigating.
     } catch (err) {
-      setCheckoutError(getApiErrorMessage(err, "Sipariş oluşturulamadı. Lütfen tekrar deneyin."));
+      setCheckoutError(getApiErrorMessage(err, t.view.checkoutFailed));
       setSubmitting(false);
     }
   }
@@ -514,11 +512,10 @@ export function CartView() {
 
   return (
     <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6">
-      <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{quoteOnly ? "My Cart" : "Sepetim"}</h1>
+      {/* An export account is addressed in English, or in Arabic on an Arabic page. */}
+      <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{quoteOnly ? t.export.title : t.view.title}</h1>
       <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">
-        {quoteOnly
-          ? `${itemCount.toLocaleString("en-US")} item${itemCount === 1 ? "" : "s"}`
-          : `${itemCount.toLocaleString("tr-TR")} ürün`}
+        {quoteOnly ? t.export.items(itemCount) : t.view.items(itemCount)}
       </p>
 
       {/* The terms first: everything below behaves differently because of them. */}
@@ -531,7 +528,7 @@ export function CartView() {
       <div className="mt-6 grid grid-cols-1 items-start gap-8 lg:grid-cols-3">
         <section aria-labelledby="cart-items-heading" className="lg:col-span-2">
           <h2 id="cart-items-heading" className="sr-only">
-            Sepetteki ürünler
+            {t.view.itemsHeading}
           </h2>
           <ul className="divide-y divide-slate-200 dark:divide-white/10 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-zinc-900 px-4 sm:px-6">
             {items.map((item) => {
@@ -648,7 +645,7 @@ export function CartView() {
           )}
           {isLoggedIn && (
             <div className="mt-6">
-              <OrderNote value={orderNote} onChange={setOrderNote} english={quoteOnly} />
+              <OrderNote value={orderNote} onChange={setOrderNote} exportCopy={quoteOnly} />
             </div>
           )}
           {isLoggedIn && (

@@ -3,6 +3,8 @@
 import { useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 
+import { useMessages } from "@/components/i18n/LocaleProvider";
+import { lookbookMessages } from "@/lib/i18n/messages/home";
 import { lookbookPages, type PageLayout, type PlateShape } from "@/lib/lookbookPages";
 
 /*
@@ -16,6 +18,9 @@ import { lookbookPages, type PageLayout, type PlateShape } from "@/lib/lookbookP
  * Printing (see PrintableLookbook) shows only the lookbook, A4, one page a
  * sheet, never a plate cut across two; "PDF olarak kaydet" in the print dialog
  * makes the file.
+ *
+ * In Arabic (a customer's list on /ar) the sheet mirrors: the title and the
+ * labels at the right, the figures aligned to the end of their columns.
  */
 
 export type LookbookCurrency = "TRY" | "USD" | "EUR";
@@ -66,9 +71,9 @@ const CARMINE = "#991b1b";
 /** Label, before VAT, VAT, total: the same four tracks in the header and every row. */
 const matrixCols = "grid grid-cols-[1.15fr_1.2fr_1fr_1.3fr] items-baseline gap-x-2";
 
-/** A carmine corner mark, drawn on two edges of the frame. */
+/** A carmine corner mark, drawn on two edges of the frame: top start and bottom end. */
 function Corner({ at }: { at: "tl" | "br" }) {
-  const pos = at === "tl" ? "-left-px -top-px border-l-2 border-t-2" : "-bottom-px -right-px border-b-2 border-r-2";
+  const pos = at === "tl" ? "-start-px -top-px border-s-2 border-t-2" : "-bottom-px -end-px border-b-2 border-e-2";
   return <span aria-hidden className={`pointer-events-none absolute h-[4mm] w-[4mm] ${pos}`} style={{ borderColor: CARMINE }} />;
 }
 
@@ -147,6 +152,7 @@ const SCALE: Record<
  */
 function Plate({ item, shape }: { item: LookbookItem; shape: PlateShape }) {
   const s = SCALE[shape];
+  const t = useMessages(lookbookMessages);
   const wide = shape === "wide";
   return (
     // Double hairline: an outer rule, a breath of white, an inner rule.
@@ -158,14 +164,14 @@ function Plate({ item, shape }: { item: LookbookItem; shape: PlateShape }) {
             stage, no shadow added under it. */}
         <div
           className={`flex min-h-0 items-center justify-center bg-white ${s.photo} ${
-            wide ? "w-[46%] shrink-0 border-r border-zinc-200" : "flex-1"
+            wide ? "w-[46%] shrink-0 border-e border-zinc-200" : "flex-1"
           }`}
         >
           {item.imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={item.imageUrl} alt={item.name} className="max-h-full max-w-full object-contain" />
           ) : (
-            <span className="text-[9px] uppercase tracking-[0.2em] text-zinc-300">Görsel yok</span>
+            <span className="text-[9px] uppercase tracking-[0.2em] text-zinc-300">{t.noImage}</span>
           )}
         </div>
 
@@ -198,9 +204,9 @@ function Plate({ item, shape }: { item: LookbookItem; shape: PlateShape }) {
             >
               {/* The group column, unlabelled: the row names speak for themselves. */}
               <span aria-hidden />
-              <span className="text-right">KDV hariç</span>
-              <span className="text-right">+ KDV</span>
-              <span className="text-right">Toplam</span>
+              <span className="text-end">{t.exclVat}</span>
+              <span className="text-end">{t.vat}</span>
+              <span className="text-end">{t.total}</span>
             </div>
             {item.lines.map((l, i) => {
               const retail = l.tone === "retail";
@@ -224,16 +230,16 @@ function Plate({ item, shape }: { item: LookbookItem; shape: PlateShape }) {
                     </>
                   ) : (
                     <>
-                      <span className={`whitespace-nowrap text-right font-mono text-zinc-500 ${s.excl}`}>
+                      <span className={`whitespace-nowrap text-end font-mono text-zinc-500 ${s.excl}`}>
                         {money(l.excl, l.currency)}
                       </span>
-                      <span className={`whitespace-nowrap text-right font-mono text-zinc-400 ${s.vat}`}>
+                      <span className={`whitespace-nowrap text-end font-mono text-zinc-400 ${s.vat}`}>
                         +{money(l.vat, l.currency)}
                       </span>
                     </>
                   )}
                   <span
-                    className={`whitespace-nowrap text-right font-mono font-bold ${retail ? s.retailTotal : `${s.total} text-zinc-900`}`}
+                    className={`whitespace-nowrap text-end font-mono font-bold ${retail ? s.retailTotal : `${s.total} text-zinc-900`}`}
                     style={retail ? { color: CARMINE } : undefined}
                   >
                     {money(l.total, l.currency)}
@@ -241,7 +247,7 @@ function Plate({ item, shape }: { item: LookbookItem; shape: PlateShape }) {
                 </div>
               );
             })}
-            {item.lines.length === 0 && <p className={`${s.pad} py-2 text-[8px] text-zinc-400`}>Fiyat yok</p>}
+            {item.lines.length === 0 && <p className={`${s.pad} py-2 text-[8px] text-zinc-400`}>{t.noPrice}</p>}
           </div>
         </div>
       </div>
@@ -271,6 +277,7 @@ const GRID: Record<PageLayout, string> = {
  */
 export function Lookbook({ collection, date, items }: { collection: string; date: string; items: LookbookItem[] }) {
   const pages = lookbookPages(items);
+  const t = useMessages(lookbookMessages);
   return (
     <div className="catalog-sheet mx-auto space-y-10 text-zinc-900" style={{ width: "100%", maxWidth: "186mm" }}>
       {pages.map((page, n) => (
@@ -282,9 +289,9 @@ export function Lookbook({ collection, date, items }: { collection: string; date
           <header className="relative flex shrink-0 items-end justify-between gap-6 border-b border-zinc-200 pb-3">
             <div>
               <span aria-hidden className="mb-2 block h-[3px] w-6" style={{ background: CARMINE }} />
-              <h1 className="text-[30px] font-semibold leading-none tracking-[-0.02em]">Fiyat Listesi</h1>
+              <h1 className="text-[30px] font-semibold leading-none tracking-[-0.02em]">{t.title}</h1>
             </div>
-            <p className="text-right">
+            <p className="text-end">
               <span className="block text-[10px] font-semibold uppercase tracking-[0.22em] text-zinc-800">{collection}</span>
               <span className="mt-1 block font-mono text-[9px] tracking-wider text-zinc-500 tabular-nums">
                 {date}
@@ -292,7 +299,7 @@ export function Lookbook({ collection, date, items }: { collection: string; date
               </span>
             </p>
             {/* The carmine stroke under the title, on the hairline. */}
-            <span aria-hidden className="absolute -bottom-px left-0 h-[2px] w-[34mm]" style={{ background: CARMINE }} />
+            <span aria-hidden className="absolute -bottom-px start-0 h-[2px] w-[34mm]" style={{ background: CARMINE }} />
           </header>
           <div className={`mt-[6mm] grid min-h-0 flex-1 gap-[6mm] ${GRID[page.layout]}`}>
             {page.slots.map(({ item, shape }, i) => (

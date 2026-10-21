@@ -1,60 +1,58 @@
 import axios from "axios";
 
+import { DEFAULT_LOCALE, isLocale, type Locale } from "@/lib/i18n/config";
+import { apiErrorMessages } from "@/lib/i18n/messages/auth";
 import type { ApiError } from "@/types";
 
-// Backend `detail` strings that users can see, translated for the UI.
-const KNOWN_MESSAGES: Record<string, string> = {
-  "Invalid credentials": "E-posta veya şifre hatalı.",
-  "Account disabled": "Hesabınız devre dışı bırakılmış. Lütfen bizimle iletişime geçin.",
-  "Email already registered": "Bu e-posta adresiyle kayıtlı bir hesap zaten var.",
-  "Username already taken": "Bu kullanıcı adı alınmış. Lütfen başka bir tane seçin.",
-  "Invalid or expired token": "Oturumunuzun süresi doldu. Lütfen tekrar giriş yapın.",
-  "Order not found": "Sipariş bulunamadı.",
-  "Admin privileges required": "Bu işlem için yönetici yetkisi gerekiyor.",
-  "Variant not found": "Ürün varyantı bulunamadı.",
-};
+/**
+ * The language to answer in: the one given, else the page's own (the root
+ * layout writes it on <html lang>), else Turkish — on the server, and on the
+ * admin panel, which is always Turkish.
+ */
+function resolveLocale(locale?: Locale): Locale {
+  if (locale) return locale;
+  if (typeof document !== "undefined") {
+    const lang = document.documentElement.lang;
+    if (isLocale(lang)) return lang;
+  }
+  return DEFAULT_LOCALE;
+}
 
 // Checkout engine errors carry details (SKU, quantities); match and translate them.
-const PATTERNS: [RegExp, (m: RegExpMatchArray) => string][] = [
-  [
-    /^Insufficient stock for (\S+): requested (\d+), available (\d+)/,
-    (m) => `Stok yetersiz: ${m[1]} için en fazla ${m[3]} adet sipariş verebilirsiniz (sepette ${m[2]}).`,
-  ],
-  [
-    /^No TRY price for variant (\S+)/,
-    (m) => `${m[1]} kodlu ürün hesabınız için satışta değil. Lütfen sepetten çıkarın.`,
-  ],
-  [
-    /^Order cannot be approved — current status is (\w+)/,
-    (m) => `Bu sipariş onaylanamaz: durumu zaten "${m[1]}". Yalnızca onay bekleyen siparişler onaylanabilir.`,
-  ],
-  [/^Variant \S+ not found/, () => "Sepetinizdeki bir ürün artık satışta değil. Lütfen sepeti güncelleyin."],
+type Words = (typeof apiErrorMessages)[Locale];
+const PATTERNS: [RegExp, (m: RegExpMatchArray, t: Words) => string][] = [
+  [/^Insufficient stock for (\S+): requested (\d+), available (\d+)/, (m, t) => t.insufficientStock(m[1], m[2], m[3])],
+  [/^No TRY price for variant (\S+)/, (m, t) => t.notForSale(m[1])],
+  [/^Order cannot be approved — current status is (\w+)/, (m, t) => t.cannotApprove(m[1])],
+  [/^Variant \S+ not found/, (_m, t) => t.variantGone],
 ];
 
-function translate(detail: string): string {
-  if (KNOWN_MESSAGES[detail]) return KNOWN_MESSAGES[detail];
+/**
+ * A backend `detail` string the customer can see, in the page's language;
+ * one it does not know is shown as it came. Turkish details are left as they
+ * are in Turkish.
+ */
+export function translateApiDetail(detail: string, locale?: Locale): string {
+  const t = apiErrorMessages[resolveLocale(locale)];
+  if (Object.hasOwn(t.known, detail)) return t.known[detail];
   for (const [pattern, render] of PATTERNS) {
     const m = detail.match(pattern);
-    if (m) return render(m);
+    if (m) return render(m, t);
   }
   return detail;
 }
 
-/** Turns an API failure into a short, user-facing Turkish message. */
-export function getApiErrorMessage(error: unknown, fallback: string): string {
+/** Turns an API failure into a short, user-facing message in the page's language (Turkish by default). */
+export function getApiErrorMessage(error: unknown, fallback: string, locale?: Locale): string {
   if (!axios.isAxiosError<ApiError>(error)) return fallback;
+  const lang = resolveLocale(locale);
+  const t = apiErrorMessages[lang];
 
-  if (!error.response) {
-    return "Sunucuya ulaşılamadı. İnternet bağlantınızı kontrol edip tekrar deneyin.";
-  }
+  if (!error.response) return t.unreachable;
 
   const detail = error.response.data?.detail;
-  if (typeof detail === "string") return translate(detail);
-  if (Array.isArray(detail) && detail.length > 0) {
-    return "Girdiğiniz bilgileri kontrol edin.";
-  }
-  if (error.response.status >= 500) {
-    return "Sunucuda bir hata oluştu. Lütfen biraz sonra tekrar deneyin.";
-  }
+  if (typeof detail === "string") return translateApiDetail(detail, lang);
+  if (Array.isArray(detail) && detail.length > 0) return t.checkInput;
+  if (error.response.status >= 500) return t.serverError;
   return fallback;
 }

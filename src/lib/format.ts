@@ -42,19 +42,33 @@ export function formatMoneyCompact(
   }).format(value);
 }
 
-const dateFormatter = new Intl.DateTimeFormat("tr-TR", { dateStyle: "medium", timeStyle: "short" });
-
-export function formatDate(iso: string): string {
-  return dateFormatter.format(new Date(iso));
+/** One formatter per language and style, built on first use. */
+const dateFormatters = new Map<string, Intl.DateTimeFormat>();
+function dateFormatter(intlLocale: string, options: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
+  const key = `${intlLocale}|${JSON.stringify(options)}`;
+  let fmt = dateFormatters.get(key);
+  if (!fmt) {
+    fmt = new Intl.DateTimeFormat(intlLocale, options);
+    dateFormatters.set(key, fmt);
+  }
+  return fmt;
 }
 
-const dayFormatter = new Intl.DateTimeFormat("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" });
-const timeFormatter = new Intl.DateTimeFormat("tr-TR", { hour: "2-digit", minute: "2-digit" });
+/**
+ * A date and time as the page's language writes it; Turkish unless an Intl
+ * locale is given (lib/i18n/messages INTL_LOCALE: "en-GB", "ar-u-nu-latn").
+ */
+export function formatDate(iso: string, intlLocale = "tr-TR"): string {
+  return dateFormatter(intlLocale, { dateStyle: "medium", timeStyle: "short" }).format(new Date(iso));
+}
 
 /** Date and time in separate cells, for the order sheet's TARİH | SAAT columns. */
-export function formatDateParts(iso: string): { date: string; time: string } {
+export function formatDateParts(iso: string, intlLocale = "tr-TR"): { date: string; time: string } {
   const d = new Date(iso);
-  return { date: dayFormatter.format(d), time: timeFormatter.format(d) };
+  return {
+    date: dateFormatter(intlLocale, { day: "2-digit", month: "2-digit", year: "numeric" }).format(d),
+    time: dateFormatter(intlLocale, { hour: "2-digit", minute: "2-digit" }).format(d),
+  };
 }
 
 /**

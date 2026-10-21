@@ -1,4 +1,8 @@
-import { transferRateFor, formatRate } from "@/lib/storeParameters";
+"use client";
+
+import { useLocale, useMessages } from "@/components/i18n/LocaleProvider";
+import { formatPercent, productMessages } from "@/lib/i18n/messages/product";
+import { transferRateFor } from "@/lib/storeParameters";
 import type { CatalogPrice, ExchangeRates, StoreParameters } from "@/types";
 
 /**
@@ -25,6 +29,8 @@ export function TransferPrice({
   rates: ExchangeRates | null;
   format: (price: CatalogPrice) => string;
 }) {
+  const locale = useLocale();
+  const t = useMessages(productMessages);
   const amount = Number(price.price_incl_tax);
   const toTry = price.currency === "TRY" ? 1 : Number(rates?.rates[price.currency]);
   if (!(amount > 0) || !(toTry > 0)) return null;
@@ -40,7 +46,7 @@ export function TransferPrice({
     <p className="mt-2 flex flex-wrap items-baseline gap-x-1.5 text-base font-semibold text-emerald-600 sm:text-lg dark:text-emerald-400">
       <span className="font-mono tabular-nums">{format(discounted)}</span>
       <span className="text-sm font-medium sm:text-base">
-        Havale / EFT ile ({formatRate(rate)} İndirim)
+        {t.transfer(formatPercent(rate, locale))}
       </span>
     </p>
   );

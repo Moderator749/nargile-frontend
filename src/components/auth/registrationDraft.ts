@@ -19,6 +19,12 @@ import {
   isValidTckn,
   isValidVkn,
 } from "@/lib/trIdentity";
+import type { Locale } from "@/lib/i18n/config";
+import {
+  internationalMessages,
+  registrationMessages,
+  registrationProblemMessages,
+} from "@/lib/i18n/messages/auth";
 import type {
   AccountType,
   BillingEntity,
@@ -39,13 +45,13 @@ const USERNAME = /^[A-Za-z0-9][A-Za-z0-9._-]{1,28}[A-Za-z0-9]$/;
  * bought from on different terms, while şahıs firması or şirket is a question
  * about the invoice and is asked in the invoice section.
  */
-export const ACCOUNT_TYPES: { value: AccountType; title: string; cta: string }[] = [
-  { value: "INDIVIDUAL", title: "Bireysel", cta: "Üye Ol" },
-  { value: "CAFE", title: "Kafe & Restorant", cta: "Üye Ol" },
-  { value: "TOBACCO_SHOP", title: "Nargile & Tobacco Shop", cta: "Üye Ol" },
-  // In English, on purpose: whoever this card is for cannot read the others.
-  { value: "INTERNATIONAL", title: "Yurt Dışı / International", cta: "Register" },
-];
+const CARDS: AccountType[] = ["INDIVIDUAL", "CAFE", "TOBACCO_SHOP", "INTERNATIONAL"];
+/** In Turkish; AccountTypePicker shows each card in the page's language (registrationMessages). */
+export const ACCOUNT_TYPES: { value: AccountType; title: string; cta: string }[] = CARDS.map((value) => ({
+  value,
+  title: registrationMessages.tr.accountTypes[value],
+  cta: value === "INTERNATIONAL" ? registrationMessages.tr.internationalCta : registrationMessages.tr.cta,
+}));
 
 /** The two cards that are a Turkish firm, and are asked for an invoice identity. */
 export const TURKISH_BUSINESS_TYPES: AccountType[] = ["CAFE", "TOBACCO_SHOP"];
@@ -56,10 +62,9 @@ export const isTurkishBusiness = (accountType: AccountType) =>
  * What an international customer buys for. Both are businesses — there is no
  * private export customer — so both are asked for a company name and a contact.
  */
-export const INTERNATIONAL_KINDS: { value: InternationalKind; title: string; hint: string }[] = [
-  { value: "WHOLESALER", title: "Wholesaler / Distributor", hint: "Buying to resell" },
-  { value: "CAFE", title: "Cafe & Restaurant", hint: "Serving in your own venue" },
-];
+export const INTERNATIONAL_KINDS: { value: InternationalKind; title: string; hint: string }[] = (
+  ["WHOLESALER", "CAFE"] as const
+).map((value) => ({ value, ...internationalMessages.tr.kinds[value] }));
 
 export interface AddressDraft {
   neighbourhood: string;
@@ -195,99 +200,107 @@ export function addressTouched(address: AddressDraft): boolean {
   return Object.values(address).some((value) => value.trim() !== "");
 }
 
-function addressProblem(address: AddressDraft, label: string): string | null {
-  if (!address.city) return `${label} için şehir seçin.`;
-  if (address.district.trim().length < 2) return `${label} için ilçe girin.`;
+type DomesticWords = (typeof registrationProblemMessages)[Locale]["domestic"];
+
+function addressProblem(address: AddressDraft, label: string, m: DomesticWords): string | null {
+  if (!address.city) return m.city(label);
+  if (address.district.trim().length < 2) return m.district(label);
   if (!address.neighbourhood.trim() && !address.street.trim()) {
-    return `${label} için mahalle/köy veya cadde/sokak girin.`;
+    return m.street(label);
   }
   return null;
 }
 
-function taxNumberProblem(company: CompanyDraft, entity: BillingEntity | ""): string | null {
+function taxNumberProblem(company: CompanyDraft, entity: BillingEntity | "", m: DomesticWords): string | null {
   const given = company.tax_number.trim();
   if (entity === "COMPANY") {
-    return isValidVkn(given) ? null : "Şirket vergi numarası 10 haneli olmalı.";
+    return isValidVkn(given) ? null : m.companyVkn;
   }
-  if (!isValidTaxId(given)) return "Vergi numarası 10 (VKN) veya 11 (TC) haneli olmalı.";
+  if (!isValidTaxId(given)) return m.taxId;
   return null;
 }
 
-function companyProblem(company: CompanyDraft, entity: BillingEntity | ""): string | null {
-  if (company.title.trim().length < 2) return "Firma unvanını girin.";
+function companyProblem(company: CompanyDraft, entity: BillingEntity | "", m: DomesticWords): string | null {
+  if (company.title.trim().length < 2) return m.companyTitle;
   if (company.tax_plate_name.trim().length < 2) {
-    return "Vergi levhasındaki isim / şirket adını girin.";
+    return m.platename;
   }
-  if (company.tax_office.trim().length < 2) return "Vergi dairesini girin.";
-  return taxNumberProblem(company, entity);
+  if (company.tax_office.trim().length < 2) return m.taxOffice;
+  return taxNumberProblem(company, entity, m);
 }
 
-function internationalProblem(draft: RegistrationDraft): string | null {
+function internationalProblem(draft: RegistrationDraft, locale: Locale): string | null {
+  const m = registrationProblemMessages[locale].international;
   const address = draft.internationalAddress;
-  if (draft.company.title.trim().length < 2) return "Enter your company name.";
-  if (draft.contactName.trim().length < 2) return "Enter the contact person's name.";
+  if (draft.company.title.trim().length < 2) return m.companyTitle;
+  if (draft.contactName.trim().length < 2) return m.contactName;
   if (!isValidInternationalPhone(draft.phone)) {
-    return "Enter a valid mobile number, including the country code.";
+    return m.phone;
   }
-  if (!EMAIL.test(draft.email.trim())) return "Enter a valid email address.";
+  if (!EMAIL.test(draft.email.trim())) return m.email;
   if (draft.username.trim() && !USERNAME.test(draft.username.trim())) {
-    return "A username is 3-30 characters: letters, numbers, dot, dash or underscore.";
+    return m.username;
   }
   if (draft.password.length < MIN_PASSWORD_LENGTH) {
-    return `Your password must be at least ${MIN_PASSWORD_LENGTH} characters.`;
+    return m.password(MIN_PASSWORD_LENGTH);
   }
-  if (!address.country) return "Select your country.";
-  if (address.city.trim().length < 2) return "Enter your city, state or province.";
+  if (!address.country) return m.country;
+  if (address.city.trim().length < 2) return m.city;
   if (address.address_line1.trim().length < 3) {
-    return "Enter your address: street and building number.";
+    return m.address;
   }
   // No check on the tax / VAT number: there are as many formats as there are
   // jurisdictions, and a wrong guess would turn a customer away.
   return null;
 }
 
-/** Mirrors the server's checks, in the order the fields appear; null = ready to send. */
-export function registrationProblem(draft: RegistrationDraft): string | null {
-  if (draft.accountType === "INTERNATIONAL") return internationalProblem(draft);
+/**
+ * Mirrors the server's checks, in the order the fields appear; null = ready to
+ * send. The message is in `locale` (Turkish by default, where the
+ * international branch is answered in English, like its form).
+ */
+export function registrationProblem(draft: RegistrationDraft, locale: Locale = "tr"): string | null {
+  if (draft.accountType === "INTERNATIONAL") return internationalProblem(draft, locale);
+  const m = registrationProblemMessages[locale].domestic;
   const business = isTurkishBusiness(draft.accountType);
 
   if (business) {
-    if (!draft.company.entity_type) return "Şahıs firması mı şirket mi olduğunuzu seçin.";
-    const problem = companyProblem(draft.company, draft.company.entity_type);
+    if (!draft.company.entity_type) return m.entity;
+    const problem = companyProblem(draft.company, draft.company.entity_type, m);
     if (problem) return problem;
-    if (draft.contactName.trim().length < 2) return "Yetkili kişinin adı soyadını girin.";
+    if (draft.contactName.trim().length < 2) return m.contactName;
   } else if (draft.fullName.trim().length < 2) {
-    return "İsim soyisim girin.";
+    return m.fullName;
   }
 
-  if (!isValidPhone(draft.phone)) return "Geçerli bir cep telefonu girin.";
+  if (!isValidPhone(draft.phone)) return m.phone;
   if (draft.landlinePhone.trim() && !isValidPhone(draft.landlinePhone)) {
-    return "Sabit telefon numarasını kontrol edin.";
+    return m.landline;
   }
-  if (!EMAIL.test(draft.email.trim())) return "Geçerli bir e-posta adresi girin.";
+  if (!EMAIL.test(draft.email.trim())) return m.email;
   if (draft.username.trim() && !USERNAME.test(draft.username.trim())) {
-    return "Kullanıcı adı 3-30 karakter olmalı; harf, rakam, nokta, tire ve alt çizgi kullanılabilir.";
+    return m.username;
   }
   if (draft.password.length < MIN_PASSWORD_LENGTH) {
-    return `Şifreniz en az ${MIN_PASSWORD_LENGTH} karakter olmalı.`;
+    return m.password(MIN_PASSWORD_LENGTH);
   }
   // A şahıs firması is a person and may give theirs; a şirket is not asked.
   if (draft.nationalId.trim() && draft.company.entity_type !== "COMPANY" && !isValidTckn(draft.nationalId.trim())) {
-    return "TC kimlik numarası 11 haneli ve geçerli olmalı.";
+    return m.nationalId;
   }
 
   // A firm needs one for its invoice; an individual is invoiced where they say,
   // if they say — but a half-filled address is an error either way.
   if (business || addressTouched(draft.billing)) {
-    const problem = addressProblem(draft.billing, "Fatura adresi");
+    const problem = addressProblem(draft.billing, m.billingAddress, m);
     if (problem) return problem;
   }
 
   if (!business && draft.corporateInvoice) {
-    if (!draft.company.entity_type) return "Faturanın şahıs firmasına mı şirkete mi kesileceğini seçin.";
+    if (!draft.company.entity_type) return m.invoiceEntity;
     const problem =
-      companyProblem(draft.company, draft.company.entity_type) ??
-      addressProblem(draft.corporateAddress, "Kurumsal fatura adresi");
+      companyProblem(draft.company, draft.company.entity_type, m) ??
+      addressProblem(draft.corporateAddress, m.corporateAddress, m);
     if (problem) return problem;
   }
 

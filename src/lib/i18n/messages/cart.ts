@@ -1,0 +1,446 @@
+/**
+ * The cart's words: the lines, the summary beside them, payment, points, the
+ * agreements and the note. The delivery and invoice steps are in ./checkout,
+ * the order pages after checkout in ./orders.
+ *
+ * `export` is what an export (INTERNATIONAL) account reads instead. That
+ * customer is addressed in English on the Turkish pages as well, so Turkish
+ * and English share one set; an Arabic page has its own.
+ */
+
+import { defineMessages } from "@/lib/i18n/messages";
+
+/** "1 منتج", "2 منتجان", "3 منتجات", "11 منتجًا": Arabic counts its nouns. */
+const arItems = (n: number) =>
+  `${n.toLocaleString("ar-u-nu-latn")} ${n === 1 ? "منتج" : n === 2 ? "منتجان" : n % 100 >= 3 && n % 100 <= 10 ? "منتجات" : "منتجًا"}`;
+
+const exportEn = {
+  title: "My Cart",
+  items: (n: number) => `${n.toLocaleString("en-US")} item${n === 1 ? "" : "s"}`,
+  noticeAria: "Export order terms",
+  noticeTitle: "Important notice",
+  transportBlocker: "Please confirm how your order should travel.",
+  note: {
+    heading: "Order Note",
+    optional: "(Optional)",
+    label: "Order note",
+    placeholder: "Tell us about yourself, ask about products, or add any request for this order",
+    hint: "Your note reaches our export team with the request.",
+    counter: (n: number) => `${n} characters left`,
+  },
+  noPayment:
+    "No payment is taken for this request. We will reply with a freight quote and estimated delivery once the packages and total weight are known.",
+  signIn: "Sign in to submit your request",
+  submitting: "Submitting your request…",
+  submit: "Submit Quote Request",
+};
+
+const exportAr: typeof exportEn = {
+  title: "سلة التسوق",
+  items: arItems,
+  noticeAria: "شروط طلبات التصدير",
+  noticeTitle: "تنبيه مهم",
+  transportBlocker: "يُرجى تأكيد طريقة شحن طلبك.",
+  note: {
+    heading: "ملاحظة الطلب",
+    optional: "(اختياري)",
+    label: "ملاحظة الطلب",
+    placeholder: "عرّفنا بنفسك، أو اسأل عن المنتجات، أو أضف أي طلب يخص هذه الطلبية",
+    hint: "تصل ملاحظتك إلى فريق التصدير لدينا مع الطلب.",
+    counter: (n: number) => `الأحرف المتبقية: ${n}`,
+  },
+  noPayment:
+    "لا يُحصَّل أي مبلغ مقابل هذا الطلب. سنرد عليك بعرض سعر للشحن وموعد تسليم تقديري بعد معرفة عدد الطرود والوزن الإجمالي.",
+  signIn: "سجّل الدخول لإرسال طلبك",
+  submitting: "جارٍ إرسال طلبك…",
+  submit: "إرسال طلب عرض السعر",
+};
+
+export const cartMessages = defineMessages({
+  tr: {
+    meta: {
+      title: "Sepetim",
+      description: "Sepetinizdeki ürünleri inceleyin, Sultan Puan kullanın ve siparişinizi güvenle tamamlayın.",
+    },
+    view: {
+      title: "Sepetim",
+      items: (n: number) => `${n.toLocaleString("tr-TR")} ürün`,
+      itemsHeading: "Sepetteki ürünler",
+      corporateSummaryMissing: "Firmanın resmi adresi girilince bu adrese teslim edilebilir.",
+      corporateNotice: "Şirketin resmi adresini yukarıdaki Fatura Bilgileri bölümünde doldurun.",
+      overStock: (name: string, n: number) => `${name} için stokta en fazla ${n} adet var; adedi düşürün.`,
+      soldOut: (name: string) => `${name} tükendi; sepetinizden çıkarın.`,
+      consentBlocker: "Gönderim ücretinin teslimatta alıcı tarafından ödeneceğini onaylayın.",
+      agreementsBlocker: "Siparişi tamamlamak için her iki sözleşmeyi de onaylayın.",
+      paymentPageFailed: "Ödeme sayfası açılamadı. Lütfen tekrar deneyin.",
+      checkoutFailed: "Sipariş oluşturulamadı. Lütfen tekrar deneyin.",
+      quoteFailed: "Sepet tutarı hesaplanamadı.",
+    },
+    line: {
+      color: "Renk:",
+      perUnit: "/ adet",
+      havaleDiscount: (amount: string) => `Havale/EFT indirimi −${amount}`,
+      havaleEligible: "Havale/EFT ile ödemede indirimli",
+      remove: (label: string) => `${label} ürününü sepetten çıkar`,
+    },
+    stepper: {
+      decrease: (label: string) => `${label}: adedi azalt`,
+      quantity: (label: string) => `${label}: adet`,
+      increase: (label: string) => `${label}: adedi artır`,
+      maxStock: (n: number) => `Stokta en fazla ${n.toLocaleString("tr-TR")} adet var`,
+    },
+    empty: {
+      title: "Sepetiniz boş",
+      body: "Katalogdaki ürünlere göz atın, beğendiklerinizi sepete ekleyin.",
+      cta: "Kataloğa göz at",
+    },
+    note: {
+      heading: "Sipariş Notu",
+      optional: "(Opsiyonel)",
+      label: "Sipariş notu",
+      placeholder: "Siparişiniz hakkında mesaj bırakabilir, talepte bulunabilirsiniz",
+      hint: "Notunuz siparişinizle birlikte ekibimize iletilir.",
+      counter: (n: number) => `${n} karakter kaldı`,
+    },
+    loyalty: {
+      none: "Kullanılabilir puanınız bulunmuyor.",
+      invalid: "Geçerli bir puan girin.",
+      overBalance: (balance: number) => `Bakiyeniz ${balance} puan; en fazla bu kadar kullanabilirsiniz.`,
+      label: "Sultan Puan Kullan",
+      balance: "Bakiye:",
+      points: "puan",
+      useAll: "Tümünü kullan",
+      remove: "Kaldır",
+      help: (rate: string) => `1 Sultan Puan = ${rate} · kargo hariç tutara uygulanır.`,
+    },
+    payment: {
+      legend: "Ödeme yöntemi",
+      card: "Kredi / Banka Kartı",
+      cardHint: "PayTR güvencesiyle, taksit seçenekli",
+      cardUnavailable: "Şu anda kullanılamıyor",
+      transfer: "Havale / EFT",
+      transferHint: "Banka hesabımıza ödeme",
+      saveCard: "Kart bilgilerimi sonraki alışverişlerim için güvenle kaydet",
+      saveCardNote: "Kart bilgileri tarafımızdan görülmez; ödeme altyapısında saklanır.",
+    },
+    consent: {
+      title: "Karşı ödemeli gönderim",
+      text: "Gönderim ücreti teslimat sırasında alıcı tarafından ödenecektir. Okudum, onayladım.",
+    },
+    legal: {
+      distanceSales: "Mesafeli Satış Sözleşmesi'ni okudum ve kabul ediyorum",
+      distanceSalesTitle: "Mesafeli Satış Sözleşmesi",
+      terms: "Şartlar ve Kurallar Sözleşmesi'ni okudum ve kabul ediyorum",
+      termsTitle: "Şartlar ve Kurallar Sözleşmesi",
+      read: "Oku",
+      readAria: (title: string) => `${title} metnini Oku`,
+      dialogFallback: "Sözleşme",
+      loadFailed: "Sözleşme metni yüklenemedi. Sayfayı yenileyip tekrar deneyebilirsiniz.",
+    },
+    privacy: { heading: "Gizlilik Bilgilendirmesi" },
+    summary: {
+      heading: "Sipariş Özeti",
+      subtotal: "Ara toplam",
+      estimatedSubtotal: "Ara toplam (tahmini)",
+      exclVat: "(KDV hariç)",
+      inclVat: "(KDV dahil)",
+      havaleDiscount: (rate: string) => `Havale/EFT indirimi (−${rate})`,
+      markedOnly: "yalnızca işaretli ürünlerde",
+      vat: (rates: string) => `Hesaplanan KDV (${rates})`,
+      volumeDiscount: (rate: string) => `Kazanılan ciro indirimi (−${rate})`,
+      afterVolume: "ciro indiriminden sonraki tutara",
+      free: "Ücretsiz",
+      afterOrder: "Sipariş sonrası",
+      receiverPays: "Teslimatta alıcı öder",
+      grandTotal: "Genel toplam",
+      total: "Toplam",
+      b2bHavaleNote:
+        "Fiyatlarınız hesabınıza tanımlı fiyat listesinden gelir. Havale/EFT ile ödemede işaretli ürünlerde havale indirimi uygulanır; ciro ve Sultan Puan indirimleri bireysel (perakende) hesaplara tanımlıdır.",
+      b2bNote:
+        "Fiyatlarınız hesabınıza tanımlı fiyat listesinden gelir; ciro, havale ve Sultan Puan indirimleri bireysel (perakende) hesaplara tanımlıdır.",
+      pointsToEarn: (points: string) => `Siparişiniz onaylandığında ${points} Sultan Puan kazanacaksınız.`,
+      calculating: "Kargo ve indirimler hesaplanıyor…",
+      guestNote: (threshold: string) =>
+        `Ciro ve havale indirimleri ile size özel fiyatlar giriş yaptıktan sonra hesaplanır. ${threshold} üzeri kargo ücretsiz (kömürde koşullu); altında gönderim ücreti teslimatta alıcı tarafından ödenir.`,
+      markedProducts: (hint: string) => `${hint}, işaretli ürünlerde`,
+      signIn: "Siparişi tamamlamak için giriş yapın",
+      openingPayment: "Ödeme sayfası açılıyor…",
+      placingOrder: "Sipariş oluşturuluyor…",
+      payByCard: "Kart ile Öde",
+      placeOrder: "Siparişi Tamamla",
+      vatIncluded: "Fiyatlara KDV dahildir. Nihai tutar sipariş anında sunucuda hesaplanır.",
+      freightNote: "Nakliye ambarı ücreti, malı teslim alırken ambara ödenir.",
+      internationalNote: "Uluslararası navlun ve gümrük bedeli sipariş sonrasında belirlenir, ayrıca faturalandırılır.",
+      tierPrice:
+        "Gönderim ücreti sipariş tutarınıza eklenmez; teslimatta kargo görevlisine ödenir. Fiyat listenize kargo dahil değildir.",
+      belowThreshold: (remaining: string) =>
+        `Gönderim ücreti sipariş tutarınıza eklenmez; teslimatta kargo görevlisine ödenir. ${remaining} daha ekleyin, kargonuz ücretsiz olsun.`,
+      coalQuantity: (min: number, have: number) =>
+        `Kömür ağırlıklı siparişlerde ücretsiz kargo için en az ${min} adet kömür gereklidir. Sepetinizde ${have} adet var; gönderim ücreti teslimatta alıcı tarafından ödenir.`,
+      coalKg: (min: string, have: string) =>
+        `Kömür ağırlıklı siparişlerde ücretsiz kargo için en az ${min} kg kömür gereklidir. Sepetinizde ${have} kg var; gönderim ücreti teslimatta alıcı tarafından ödenir.`,
+      coalUnknown: "Bazı kömürlerin ağırlığı tanımlı değil; bunlar 0 kg sayılır.",
+      volumeNudge: (remaining: string, rate: string) =>
+        `${remaining} daha ekleyin, ${rate} ciro indirimi otomatik uygulansın.`,
+    },
+    export: exportEn,
+  },
+
+  en: {
+    meta: {
+      title: "My Cart",
+      description: "Review the items in your cart, use your Sultan Puan and complete your order securely.",
+    },
+    view: {
+      title: "My Cart",
+      items: (n: number) => `${n.toLocaleString("en-GB")} item${n === 1 ? "" : "s"}`,
+      itemsHeading: "Items in your cart",
+      corporateSummaryMissing: "Once the firm's official address is entered, the order can be delivered there.",
+      corporateNotice: "Fill in the company's official address in the Invoice Details section above.",
+      overStock: (name: string, n: number) => `Only ${n} of ${name} in stock; please lower the quantity.`,
+      soldOut: (name: string) => `${name} is sold out; please remove it from your cart.`,
+      consentBlocker: "Please confirm that the shipping fee is paid by the recipient on delivery.",
+      agreementsBlocker: "Please accept both agreements to place your order.",
+      paymentPageFailed: "The payment page could not be opened. Please try again.",
+      checkoutFailed: "Your order could not be placed. Please try again.",
+      quoteFailed: "The cart total could not be calculated.",
+    },
+    line: {
+      color: "Colour:",
+      perUnit: "/ pc",
+      havaleDiscount: (amount: string) => `Bank transfer discount −${amount}`,
+      havaleEligible: "Discounted when paid by bank transfer",
+      remove: (label: string) => `Remove ${label} from cart`,
+    },
+    stepper: {
+      decrease: (label: string) => `${label}: decrease quantity`,
+      quantity: (label: string) => `${label}: quantity`,
+      increase: (label: string) => `${label}: increase quantity`,
+      maxStock: (n: number) => `Only ${n.toLocaleString("en-GB")} in stock`,
+    },
+    empty: {
+      title: "Your cart is empty",
+      body: "Browse the catalog and add the products you like to your cart.",
+      cta: "Browse the catalog",
+    },
+    note: {
+      heading: "Order Note",
+      optional: "(Optional)",
+      label: "Order note",
+      placeholder: "Leave us a message or a request about your order",
+      hint: "Your note reaches our team together with your order.",
+      counter: (n: number) => `${n} characters left`,
+    },
+    loyalty: {
+      none: "You have no points to use.",
+      invalid: "Enter a valid number of points.",
+      overBalance: (balance: number) => `Your balance is ${balance} points; you can use up to that.`,
+      label: "Use Sultan Puan",
+      balance: "Balance:",
+      points: "points",
+      useAll: "Use all",
+      remove: "Remove",
+      help: (rate: string) => `1 Sultan Puan = ${rate} · applied to the amount before shipping.`,
+    },
+    payment: {
+      legend: "Payment method",
+      card: "Credit / Debit Card",
+      cardHint: "Secured by PayTR, with instalment options",
+      cardUnavailable: "Currently unavailable",
+      transfer: "Bank Transfer",
+      transferHint: "Pay into our bank account",
+      saveCard: "Save my card securely for future purchases",
+      saveCardNote: "We never see your card details; they are kept by the payment provider.",
+    },
+    consent: {
+      title: "Shipping paid on delivery",
+      text: "The shipping fee will be paid by the recipient on delivery. I have read and agree.",
+    },
+    legal: {
+      distanceSales: "I have read and accept the Distance Sales Agreement",
+      distanceSalesTitle: "Distance Sales Agreement",
+      terms: "I have read and accept the Terms and Conditions",
+      termsTitle: "Terms and Conditions",
+      read: "Read",
+      readAria: (title: string) => `Read the ${title}`,
+      dialogFallback: "Agreement",
+      loadFailed: "The agreement text could not be loaded. Refresh the page to try again.",
+    },
+    privacy: { heading: "Privacy Notice" },
+    summary: {
+      heading: "Order Summary",
+      subtotal: "Subtotal",
+      estimatedSubtotal: "Subtotal (estimated)",
+      exclVat: "(excl. VAT)",
+      inclVat: "(incl. VAT)",
+      havaleDiscount: (rate: string) => `Bank transfer discount (−${rate})`,
+      markedOnly: "on marked products only",
+      vat: (rates: string) => `VAT (${rates})`,
+      volumeDiscount: (rate: string) => `Volume discount earned (−${rate})`,
+      afterVolume: "on the amount after the volume discount",
+      free: "Free",
+      afterOrder: "After the order",
+      receiverPays: "Paid by recipient on delivery",
+      grandTotal: "Grand total",
+      total: "Total",
+      b2bHavaleNote:
+        "Your prices come from the price list assigned to your account. Paying by bank transfer takes the transfer discount off the marked products; volume and Sultan Puan discounts apply to individual (retail) accounts.",
+      b2bNote:
+        "Your prices come from the price list assigned to your account; volume, bank transfer and Sultan Puan discounts apply to individual (retail) accounts.",
+      pointsToEarn: (points: string) => `You will earn ${points} Sultan Puan once your order is approved.`,
+      calculating: "Calculating shipping and discounts…",
+      guestNote: (threshold: string) =>
+        `Volume and bank transfer discounts and your own prices are calculated once you sign in. Shipping is free over ${threshold} (conditions apply to charcoal); below that, the recipient pays for shipping on delivery.`,
+      markedProducts: (hint: string) => `${hint}, on marked products`,
+      signIn: "Sign in to place your order",
+      openingPayment: "Opening the payment page…",
+      placingOrder: "Placing your order…",
+      payByCard: "Pay by Card",
+      placeOrder: "Place Order",
+      vatIncluded: "Prices include VAT. The final amount is calculated by our system when you place the order.",
+      freightNote: "The freight depot's fee is paid to the depot when you collect the goods.",
+      internationalNote: "International freight and customs charges are set after the order and invoiced separately.",
+      tierPrice:
+        "Shipping is not added to your order total; you pay the courier on delivery. Your price list does not include shipping.",
+      belowThreshold: (remaining: string) =>
+        `Shipping is not added to your order total; you pay the courier on delivery. Add ${remaining} more for free shipping.`,
+      coalQuantity: (min: number, have: number) =>
+        `Orders made up mostly of charcoal need at least ${min} pcs of charcoal for free shipping. Your cart has ${have} pcs; the recipient pays for shipping on delivery.`,
+      coalKg: (min: string, have: string) =>
+        `Orders made up mostly of charcoal need at least ${min} kg of charcoal for free shipping. Your cart has ${have} kg; the recipient pays for shipping on delivery.`,
+      coalUnknown: "Some charcoal products have no weight set; they count as 0 kg.",
+      volumeNudge: (remaining: string, rate: string) =>
+        `Add ${remaining} more and a ${rate} volume discount is applied automatically.`,
+    },
+    export: exportEn,
+  },
+
+  ar: {
+    meta: {
+      title: "سلة التسوق",
+      description: "راجع المنتجات في سلتك، واستخدم نقاط Sultan Puan، وأكمل طلبك بأمان.",
+    },
+    view: {
+      title: "سلة التسوق",
+      items: arItems,
+      itemsHeading: "المنتجات في السلة",
+      corporateSummaryMissing: "يمكن التوصيل إلى هذا العنوان بعد إدخال العنوان الرسمي للشركة.",
+      corporateNotice: "أدخل العنوان الرسمي للشركة في قسم بيانات الفاتورة أعلاه.",
+      overStock: (name: string, n: number) => `المتوفر من ${name} في المخزون ${n} قطعة كحد أقصى؛ يُرجى تقليل الكمية.`,
+      soldOut: (name: string) => `نفد ${name} من المخزون؛ يُرجى إزالته من السلة.`,
+      consentBlocker: "يُرجى تأكيد أن المستلم سيدفع رسوم الشحن عند التسليم.",
+      agreementsBlocker: "يُرجى الموافقة على العقدين لإتمام الطلب.",
+      paymentPageFailed: "تعذّر فتح صفحة الدفع. يُرجى المحاولة مرة أخرى.",
+      checkoutFailed: "تعذّر إنشاء الطلب. يُرجى المحاولة مرة أخرى.",
+      quoteFailed: "تعذّر حساب إجمالي السلة.",
+    },
+    line: {
+      color: "اللون:",
+      perUnit: "/ قطعة",
+      // No minus sign: in a right-to-left line it lands on the wrong side of the amount.
+      havaleDiscount: (amount: string) => `خصم التحويل البنكي ${amount}`,
+      havaleEligible: "مخفّض عند الدفع بالتحويل البنكي",
+      remove: (label: string) => `إزالة ${label} من السلة`,
+    },
+    stepper: {
+      decrease: (label: string) => `${label}: إنقاص الكمية`,
+      quantity: (label: string) => `${label}: الكمية`,
+      increase: (label: string) => `${label}: زيادة الكمية`,
+      maxStock: (n: number) => `المتوفر ${n.toLocaleString("ar-u-nu-latn")} قطعة فقط`,
+    },
+    empty: {
+      title: "سلتك فارغة",
+      body: "تصفّح منتجات الكتالوج وأضف ما يعجبك إلى السلة.",
+      cta: "تصفّح الكتالوج",
+    },
+    note: {
+      heading: "ملاحظة الطلب",
+      optional: "(اختياري)",
+      label: "ملاحظة الطلب",
+      placeholder: "يمكنك ترك رسالة أو طلب بخصوص طلبك",
+      hint: "تصل ملاحظتك إلى فريقنا مع طلبك.",
+      counter: (n: number) => `الأحرف المتبقية: ${n}`,
+    },
+    loyalty: {
+      none: "ليس لديك نقاط متاحة للاستخدام.",
+      invalid: "أدخل عدد نقاط صحيحًا.",
+      overBalance: (balance: number) => `رصيدك ${balance} نقطة؛ لا يمكنك استخدام أكثر من ذلك.`,
+      label: "استخدم Sultan Puan",
+      balance: "الرصيد:",
+      points: "نقطة",
+      useAll: "استخدم الكل",
+      remove: "إزالة",
+      help: (rate: string) => `1 Sultan Puan = ${rate} · يُطبَّق على المبلغ دون الشحن.`,
+    },
+    payment: {
+      legend: "طريقة الدفع",
+      card: "بطاقة ائتمان / خصم مباشر",
+      cardHint: "بضمان PayTR، مع إمكانية التقسيط",
+      cardUnavailable: "غير متاح حاليًا",
+      transfer: "تحويل بنكي",
+      transferHint: "الدفع إلى حسابنا البنكي",
+      saveCard: "احفظ بيانات بطاقتي بأمان لمشترياتي القادمة",
+      saveCardNote: "لا نطّلع على بيانات بطاقتك؛ تُحفظ لدى مزوّد خدمة الدفع.",
+    },
+    consent: {
+      title: "شحن يدفعه المستلم",
+      text: "سيدفع المستلم رسوم الشحن عند التسليم. قرأت ذلك وأوافق عليه.",
+    },
+    legal: {
+      distanceSales: "قرأت عقد البيع عن بعد وأوافق عليه",
+      distanceSalesTitle: "عقد البيع عن بعد",
+      terms: "قرأت الشروط والأحكام وأوافق عليها",
+      termsTitle: "الشروط والأحكام",
+      read: "اقرأ",
+      readAria: (title: string) => `اقرأ نص ${title}`,
+      dialogFallback: "العقد",
+      loadFailed: "تعذّر تحميل نص العقد. يمكنك تحديث الصفحة والمحاولة مرة أخرى.",
+    },
+    privacy: { heading: "إشعار الخصوصية" },
+    summary: {
+      heading: "ملخص الطلب",
+      subtotal: "المجموع الفرعي",
+      estimatedSubtotal: "المجموع الفرعي (تقديري)",
+      exclVat: "(غير شامل الضريبة)",
+      inclVat: "(شامل الضريبة)",
+      havaleDiscount: (rate: string) => `خصم التحويل البنكي (${rate})`,
+      markedOnly: "على المنتجات المميزة فقط",
+      vat: (rates: string) => `ضريبة القيمة المضافة (${rates})`,
+      volumeDiscount: (rate: string) => `خصم حجم المشتريات (${rate})`,
+      afterVolume: "على المبلغ بعد خصم حجم المشتريات",
+      free: "مجاني",
+      afterOrder: "بعد الطلب",
+      receiverPays: "يدفعه المستلم عند التسليم",
+      grandTotal: "الإجمالي الكلي",
+      total: "الإجمالي",
+      b2bHavaleNote:
+        "تأتي أسعارك من قائمة الأسعار المخصّصة لحسابك. عند الدفع بالتحويل البنكي يُطبَّق خصم التحويل على المنتجات المميزة؛ أما خصومات حجم المشتريات وSultan Puan فمخصّصة لحسابات الأفراد (التجزئة).",
+      b2bNote:
+        "تأتي أسعارك من قائمة الأسعار المخصّصة لحسابك؛ خصومات حجم المشتريات والتحويل البنكي وSultan Puan مخصّصة لحسابات الأفراد (التجزئة).",
+      pointsToEarn: (points: string) => `ستكسب ${points} نقطة Sultan Puan عند الموافقة على طلبك.`,
+      calculating: "جارٍ حساب الشحن والخصومات…",
+      guestNote: (threshold: string) =>
+        `تُحتسب خصومات حجم المشتريات والتحويل البنكي وأسعارك الخاصة بعد تسجيل الدخول. الشحن مجاني فوق ${threshold} (بشروط للفحم)؛ وما دون ذلك يدفع المستلم رسوم الشحن عند التسليم.`,
+      markedProducts: (hint: string) => `${hint}، على المنتجات المميزة`,
+      signIn: "سجّل الدخول لإتمام الطلب",
+      openingPayment: "جارٍ فتح صفحة الدفع…",
+      placingOrder: "جارٍ إنشاء الطلب…",
+      payByCard: "ادفع بالبطاقة",
+      placeOrder: "إتمام الطلب",
+      vatIncluded: "الأسعار شاملة ضريبة القيمة المضافة. يُحتسب المبلغ النهائي لحظة إتمام الطلب.",
+      freightNote: "تُدفع رسوم مستودع الشحن للمستودع عند استلام البضاعة.",
+      internationalNote: "تُحدَّد تكاليف الشحن الدولي والجمارك بعد الطلب وتُفوتَر بشكل منفصل.",
+      tierPrice: "لا تُضاف رسوم الشحن إلى إجمالي طلبك؛ تُدفع لمندوب الشحن عند التسليم. قائمة أسعارك لا تشمل الشحن.",
+      belowThreshold: (remaining: string) =>
+        `لا تُضاف رسوم الشحن إلى إجمالي طلبك؛ تُدفع لمندوب الشحن عند التسليم. أضف منتجات بقيمة ${remaining} ليصبح الشحن مجانيًا.`,
+      coalQuantity: (min: number, have: number) =>
+        `تحتاج الطلبات التي يغلب عليها الفحم إلى ${min} قطعة فحم على الأقل للشحن المجاني. في سلتك ${have} قطعة؛ يدفع المستلم رسوم الشحن عند التسليم.`,
+      coalKg: (min: string, have: string) =>
+        `تحتاج الطلبات التي يغلب عليها الفحم إلى ${min} كغ من الفحم على الأقل للشحن المجاني. في سلتك ${have} كغ؛ يدفع المستلم رسوم الشحن عند التسليم.`,
+      coalUnknown: "بعض منتجات الفحم ليس لها وزن محدد؛ تُحتسب بوزن 0 كغ.",
+      volumeNudge: (remaining: string, rate: string) =>
+        `أضف منتجات بقيمة ${remaining} ليُطبَّق خصم حجم المشتريات ${rate} تلقائيًا.`,
+    },
+    export: exportAr,
+  },
+});

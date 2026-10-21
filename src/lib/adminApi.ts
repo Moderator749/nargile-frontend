@@ -59,6 +59,7 @@ import type {
   UploadedImage,
   Wallet,
 } from "@/types";
+import type { HomeTranslations } from "@/lib/homeTranslations";
 
 export const ADMIN_PAGE_SIZE = 50;
 
@@ -587,6 +588,17 @@ export async function adminUpdateLegalDocument(
 /** The saved homepage document: only the sections an admin has saved. */
 export async function adminGetHomepage(signal?: AbortSignal): Promise<HomepageSettingsResponse> {
   const { data } = await api.get<HomepageSettingsResponse>("/admin/home/settings", { signal });
+  return data;
+}
+
+/** The homepage's translation memory (lib/homeTranslations): read publicly, written by an admin. */
+export async function adminGetHomeTranslations(signal?: AbortSignal): Promise<HomeTranslations> {
+  const { data } = await api.get<HomeTranslations>("/home/translations", { signal });
+  return data;
+}
+
+export async function adminSaveHomeTranslations(body: Pick<HomeTranslations, "en" | "ar">): Promise<HomeTranslations> {
+  const { data } = await api.put<HomeTranslations>("/admin/home/translations", body);
   return data;
 }
 

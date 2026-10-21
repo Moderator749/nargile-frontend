@@ -3,20 +3,25 @@
 import { CreditCard, ShoppingCart, TrendingDown, type LucideIcon } from "lucide-react";
 
 import Link from "@/components/i18n/Link";
+import { useMessages } from "@/components/i18n/LocaleProvider";
 import { useShippingPerks } from "@/hooks/useShippingPerks";
 import { useStoreParameters } from "@/hooks/useStoreParameters";
 import { PERKS_PAGE } from "@/lib/bilgi";
+import { homeMessages } from "@/lib/i18n/messages/home";
 import { PAGE_CONTAINER } from "@/lib/layout";
-import { formatRate } from "@/lib/storeParameters";
 import type { ParameterTier } from "@/types";
 
-/** "%5 – %8": a ladder's lowest and highest rate that give anything; null with none. */
-function rateSpan(tiers: ParameterTier[]): string | null {
+/**
+ * "%5 – %8": a ladder's lowest and highest rate that give anything; null with
+ * none. Written as formatRate would, in the page's language ("5% – 8%").
+ */
+function rateSpan(tiers: ParameterTier[], percent: (n: number) => string): string | null {
   const rates = tiers.map((t) => Number(t.rate)).filter((r) => r > 0);
   if (rates.length === 0) return null;
   const low = Math.min(...rates);
   const high = Math.max(...rates);
-  return low === high ? formatRate(low) : `${formatRate(low)} – ${formatRate(high)}`;
+  const rate = (r: number) => percent(r * 100);
+  return low === high ? rate(low) : `${rate(low)} – ${rate(high)}`;
 }
 
 interface Perk {
@@ -44,26 +49,27 @@ interface Perk {
 export function StorePerks() {
   const { show } = useShippingPerks();
   const params = useStoreParameters();
+  const t = useMessages(homeMessages);
   if (!show) return null;
 
-  const volume = rateSpan(params.volume_tiers);
-  const transfer = rateSpan(params.bank_transfer_tiers);
+  const volume = rateSpan(params.volume_tiers, t.percent);
+  const transfer = rateSpan(params.bank_transfer_tiers, t.percent);
   const perks: Perk[] = [
     {
       anchor: "taksit",
       Icon: CreditCard,
-      label: "Taksit Avantajı",
-      value: "Peşin fiyatına 3 taksit",
-      note: "Anlaşmalı kredi kartlarına 3 eşit taksit.",
+      label: t.perks.installmentsLabel,
+      value: t.perks.installmentsValue,
+      note: t.perks.installmentsNote,
     },
     ...(volume
       ? [
           {
             anchor: "sepet-indirimi",
             Icon: ShoppingCart,
-            label: "Sepette İndirim",
+            label: t.perks.volumeLabel,
             value: volume,
-            note: "Sepet tutarınıza göre anında otomatik indirim.",
+            note: t.perks.volumeNote,
           },
         ]
       : []),
@@ -72,9 +78,9 @@ export function StorePerks() {
           {
             anchor: "havale-indirimi",
             Icon: TrendingDown,
-            label: "Havale & EFT",
+            label: t.perks.transferLabel,
             value: transfer,
-            note: "Havale ve EFT ödemelerinde ekstra nakit indirimi.",
+            note: t.perks.transferNote,
           },
         ]
       : []),
@@ -83,7 +89,7 @@ export function StorePerks() {
   return (
     <section aria-labelledby="magaza-avantajlari-baslik" className="bg-white pt-8 pb-4 md:pt-10 dark:bg-transparent">
       <h2 id="magaza-avantajlari-baslik" className="sr-only">
-        Mağaza avantajları
+        {t.perks.heading}
       </h2>
       <ul
         className={`${PAGE_CONTAINER} flex flex-col gap-8 md:grid md:gap-0 md:divide-x md:divide-neutral-200 dark:md:divide-white/10 ${
@@ -91,7 +97,7 @@ export function StorePerks() {
         }`}
       >
         {perks.map(({ anchor, Icon, label, value, note }) => (
-          <li key={anchor} className="md:px-6 md:first:pl-0 md:last:pr-0 lg:px-10">
+          <li key={anchor} className="md:px-6 md:first:ps-0 md:last:pe-0 lg:px-10">
             <Link
               href={`${PERKS_PAGE.href}#${anchor}`}
               // The icon beside the words, but over them on a tablet, where a

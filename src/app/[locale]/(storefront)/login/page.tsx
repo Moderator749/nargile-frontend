@@ -4,13 +4,14 @@ import { ArrowRight } from "lucide-react";
 import { AuthCard } from "@/components/auth/AuthCard";
 import { LoginForm, type RegistrationNotice } from "@/components/auth/LoginForm";
 import { LinkButton } from "@/components/ui/LinkButton";
+import { authPageMessages } from "@/lib/i18n/messages/auth";
+import { getMessages } from "@/lib/i18n/server";
 import { PRIVATE_ROBOTS } from "@/lib/site";
 
-export const metadata: Metadata = {
-  title: "Giriş Yap",
-  description: "Hesabınıza giriş yapın; size özel kafe, toptan ve bayi fiyatlarına erişin.",
-  robots: PRIVATE_ROBOTS,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { login } = await getMessages(authPageMessages);
+  return { title: login.metaTitle, description: login.metaDescription, robots: PRIVATE_ROBOTS };
+}
 
 /** `?registered=` as sign-up leaves it; anything else is nobody arriving from there. */
 function notice(registered: string | string[] | undefined): RegistrationNotice | null {
@@ -29,19 +30,20 @@ function safeRedirect(next: string | string[] | undefined): string {
 
 export default async function LoginPage(props: PageProps<"/[locale]/login">) {
   const { registered, next } = await props.searchParams;
+  const { login: m } = await getMessages(authPageMessages);
 
   return (
     <AuthCard
-      title="Hoş geldiniz"
-      subtitle="Siparişlerinize ve size özel fiyatlara erişmek için giriş yapın."
+      title={m.title}
+      subtitle={m.subtitle}
       footer={
         /* The same button the registration page points back with. */
         <>
-          <span className="block">Hesabınız yok mu?</span>
+          <span className="block">{m.noAccount}</span>
           <LinkButton href="/register" variant="secondary" className="mt-3">
-            Üye olun
+            {m.signUp}
             <ArrowRight
-              className="h-4 w-4 transition-transform duration-200 motion-safe:group-hover:translate-x-0.5"
+              className="h-4 w-4 transition-transform duration-200 motion-safe:group-hover:translate-x-0.5 rtl:-scale-x-100 rtl:motion-safe:group-hover:-translate-x-0.5"
               aria-hidden
             />
           </LinkButton>

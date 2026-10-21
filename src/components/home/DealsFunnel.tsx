@@ -6,10 +6,12 @@ import { ArrowRight, ChevronLeft, ChevronRight, Package } from "lucide-react";
 
 import Link from "@/components/i18n/Link";
 import { ProductImage } from "@/components/catalog/ProductImage";
+import { useMessages } from "@/components/i18n/LocaleProvider";
 import { useDisplayMoney } from "@/hooks/useDisplayMoney";
 import { useNow } from "@/hooks/useNow";
 import { fetchFlashSaleProducts } from "@/lib/catalogApi";
 import { DEALS_HREF, saleState } from "@/lib/flashSale";
+import { homeMessages } from "@/lib/i18n/messages/home";
 import { productHref, productImageAlt } from "@/lib/seo";
 import { displayVariant, soldOut as allSoldOut } from "@/lib/variants";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -197,12 +199,23 @@ function placeCards(track: HTMLElement) {
  */
 const loopCopies = (count: number) => 2 * Math.ceil(12 / count) + 1;
 
-/** The scroll position that stops `card` first in focus: the snap padding's arithmetic, in pixels. */
+/**
+ * The scroll position that stops `card` first in focus: the snap padding's arithmetic, in pixels.
+ *
+ * Right to left (Arabic) the cards run leftwards from the track's right edge,
+ * `scrollLeft` and the later cards' `offsetLeft` go negative, and a card snaps
+ * by its right edge: so it is that edge that stops the padding short of the
+ * track's right. Everything else — `placeCards`, the loop's sets — is in the
+ * same physical pixels either way and needs no turning round.
+ */
 function stopFor(track: HTMLElement, card: HTMLElement): number {
   const style = getComputedStyle(track);
   const n = Number.parseInt(style.getPropertyValue("--n"), 10) || 1;
   const gap = Number.parseFloat(style.columnGap) || 0;
-  return card.offsetLeft - (track.clientWidth - n * card.offsetWidth - (n - 1) * gap) / 2;
+  const padding = (track.clientWidth - n * card.offsetWidth - (n - 1) * gap) / 2;
+  return style.direction === "rtl"
+    ? card.offsetLeft + card.offsetWidth + padding - track.clientWidth
+    : card.offsetLeft - padding;
 }
 
 /**
@@ -272,6 +285,7 @@ export function DealsFunnel({ initialProducts, categories, title, subtitle }: De
   const token = useAuthStore((s) => s.token);
   const money = useDisplayMoney();
   const now = useNow(true);
+  const t = useMessages(homeMessages);
   const [own, setOwn] = useState<{ token: string; products: CatalogProduct[] } | null>(null);
   const track = useRef<HTMLUListElement>(null);
   /** An arrow's move (`data-direction`): one card and one gap, measured off the track rather than assumed. */
@@ -279,8 +293,11 @@ export function DealsFunnel({ initialProducts, categories, title, subtitle }: De
     const element = track.current;
     const card = element?.firstElementChild as HTMLElement | undefined;
     if (!element || !card) return;
-    const gap = Number.parseFloat(getComputedStyle(element).columnGap) || 0;
-    element.scrollBy({ left: Number(event.currentTarget.dataset.direction) * (card.offsetWidth + gap), behavior: "smooth" });
+    const style = getComputedStyle(element);
+    const gap = Number.parseFloat(style.columnGap) || 0;
+    // Previous and next are along the reading direction: leftwards in Arabic.
+    const sideways = style.direction === "rtl" ? -1 : 1;
+    element.scrollBy({ left: sideways * Number(event.currentTarget.dataset.direction) * (card.offsetWidth + gap), behavior: "smooth" });
   };
   const client = useSyncExternalStore(subscribeNothing, () => true, () => false);
 
@@ -446,13 +463,13 @@ export function DealsFunnel({ initialProducts, categories, title, subtitle }: De
                 type="button"
                 data-direction={direction}
                 onClick={slide}
-                aria-label={direction === -1 ? "Önceki fırsatlar" : "Sonraki fırsatlar"}
-                className={`${ARROW} ${THEME.arrow} ${direction === -1 ? "left-2" : "right-2"}`}
+                aria-label={direction === -1 ? t.deals.previous : t.deals.next}
+                className={`${ARROW} ${THEME.arrow} ${direction === -1 ? "start-2" : "end-2"}`}
               >
                 {direction === -1 ? (
-                  <ChevronLeft className="h-5 w-5" aria-hidden />
+                  <ChevronLeft className="h-5 w-5 rtl:rotate-180" aria-hidden />
                 ) : (
-                  <ChevronRight className="h-5 w-5" aria-hidden />
+                  <ChevronRight className="h-5 w-5 rtl:rotate-180" aria-hidden />
                 )}
               </button>
             ))}
@@ -498,12 +515,12 @@ export function DealsFunnel({ initialProducts, categories, title, subtitle }: De
                       </div>
 
                       {sale.kind === "missed" ? (
-                        <span className="absolute left-3 top-3 z-10 rounded-lg bg-neutral-800 px-2.5 py-1 text-[11px] font-bold tracking-wider text-neutral-200 shadow-md">
-                          Fırsat Kaçtı
+                        <span className="absolute start-3 top-3 z-10 rounded-lg bg-neutral-800 px-2.5 py-1 text-[11px] font-bold tracking-wider text-neutral-200 shadow-md">
+                          {t.deals.missed}
                         </span>
                       ) : (
-                        <span className="absolute left-3 top-3 z-10 rounded-lg bg-red-600 px-2.5 py-1 text-[11px] font-bold tracking-wider text-white shadow-md">
-                          {saving > 0 ? `-%${saving}` : "Fırsat"}
+                        <span className="absolute start-3 top-3 z-10 rounded-lg bg-red-600 px-2.5 py-1 text-[11px] font-bold tracking-wider text-white shadow-md">
+                          {saving > 0 ? t.deals.saving(saving) : t.deals.deal}
                         </span>
                       )}
                     </div>
@@ -512,7 +529,7 @@ export function DealsFunnel({ initialProducts, categories, title, subtitle }: De
                     <div className="flex flex-1 flex-col justify-between space-y-3 bg-white p-4">
                       <div>
                         <p className="truncate text-[10px] font-bold uppercase tracking-wider text-neutral-500">
-                          {category?.name ?? "Fırsat ürünü"}
+                          {category?.name ?? t.deals.dealProduct}
                         </p>
                         {/* Ink of its own: the card is white in either theme. */}
                         <h3
@@ -529,7 +546,7 @@ export function DealsFunnel({ initialProducts, categories, title, subtitle }: De
                           from public to the visitor's own prices moves nothing. */}
                       <div className={`flex h-11 flex-col justify-center ${publicPrices ? "public-price" : ""}`}>
                         {gone ? (
-                          <span className="text-sm font-semibold tracking-tight text-neutral-500">Tükendi</span>
+                          <span className="text-sm font-semibold tracking-tight text-neutral-500">{t.deals.soldOut}</span>
                         ) : (
                           <>
                             {saving > 0 && was && (
@@ -545,9 +562,9 @@ export function DealsFunnel({ initialProducts, categories, title, subtitle }: De
                       </div>
 
                       <span className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-red-600 px-3 py-2.5 text-xs font-semibold text-white shadow-md shadow-red-600/30 transition-all duration-200 group-hover:bg-red-700">
-                        İncele
+                        {t.deals.view}
                         <ArrowRight
-                          className="h-3.5 w-3.5 transition-transform duration-300 motion-safe:group-hover:translate-x-0.5"
+                          className="h-3.5 w-3.5 transition-transform duration-300 rtl:-scale-x-100 motion-safe:group-hover:translate-x-0.5 rtl:motion-safe:group-hover:-translate-x-0.5"
                           strokeWidth={2.5}
                           aria-hidden
                         />
@@ -568,9 +585,9 @@ export function DealsFunnel({ initialProducts, categories, title, subtitle }: De
             href={DEALS_HREF}
             className="group/cta inline-flex w-full max-w-xs items-center justify-center gap-2 rounded-full bg-red-600 px-8 py-3.5 text-sm font-semibold tracking-wide text-white shadow-lg shadow-red-600/30 ring-1 ring-inset ring-white/15 transition-all duration-200 hover:bg-red-700 hover:shadow-[0_12px_32px_rgba(216,16,40,0.45)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:w-auto sm:max-w-none"
           >
-            Fırsatları Gör
+            {t.deals.all}
             <ArrowRight
-              className="h-4 w-4 transition-transform duration-300 motion-safe:group-hover/cta:translate-x-1"
+              className="h-4 w-4 transition-transform duration-300 rtl:-scale-x-100 motion-safe:group-hover/cta:translate-x-1 rtl:motion-safe:group-hover/cta:-translate-x-1"
               strokeWidth={2.5}
               aria-hidden
             />

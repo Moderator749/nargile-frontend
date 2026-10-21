@@ -1,12 +1,16 @@
 "use client";
 
-import { COUNTRIES } from "@/lib/countries";
+import { useLocale, useMessages } from "@/components/i18n/LocaleProvider";
+import { countryOptions } from "@/lib/countries";
+import { checkoutMessages } from "@/lib/i18n/messages/checkout";
 import { TR_PROVINCES } from "@/lib/provinces";
 import { TURKEY, type AddressDraft } from "@/components/cart/delivery/addressDraft";
 
 const inputClass =
   "block h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20 dark:border-white/15 dark:bg-zinc-900 dark:text-zinc-100";
 const labelClass = "block text-sm font-medium text-slate-700 dark:text-zinc-300";
+/** A phone number reads left to right on an Arabic page too; it only sits on the right. */
+const phoneClass = `${inputClass} rtl:text-right`;
 
 /**
  * Where this order goes, typed out.
@@ -33,6 +37,10 @@ export function AddressFields({
   abroad: boolean;
   lockPlace?: boolean;
 }) {
+  const locale = useLocale();
+  const m = useMessages(checkoutMessages);
+  // The export customer's form, in their language; the Turkish form's, in the page's.
+  const x = m.export.address;
   const set = (patch: Partial<AddressDraft>) => onChange({ ...value, ...patch });
   const locked = lockPlace
     ? { disabled: true, "aria-describedby": "addr-place-note", className: `${inputClass} cursor-not-allowed opacity-70` }
@@ -42,14 +50,12 @@ export function AddressFields({
     <div className="grid gap-4 sm:grid-cols-2">
       {lockPlace && (
         <p id="addr-place-note" className="text-xs text-slate-500 sm:col-span-2 dark:text-zinc-400">
-          {abroad
-            ? "The country and city come from your registered invoice address."
-            : "İl ve ilçe kayıtlı fatura adresinizden gelir."}
+          {abroad ? x.placeNote : m.address.placeNote}
         </p>
       )}
       <div className="space-y-1.5">
         <label htmlFor="addr-name" className={labelClass}>
-          {abroad ? "Recipient name" : "Ad Soyad"}
+          {abroad ? x.name : m.address.name}
         </label>
         <input
           id="addr-name"
@@ -62,7 +68,7 @@ export function AddressFields({
       </div>
       <div className="space-y-1.5">
         <label htmlFor="addr-phone" className={labelClass}>
-          {abroad ? "Phone" : "Telefon"}
+          {abroad ? x.phone : m.address.phone}
         </label>
         <input
           id="addr-phone"
@@ -70,10 +76,11 @@ export function AddressFields({
           autoComplete="tel"
           inputMode="tel"
           maxLength={30}
-          placeholder={abroad ? "+49 30 1234 5678" : "05xx xxx xx xx"}
+          dir="ltr"
+          placeholder={abroad ? x.phonePlaceholder : m.address.phonePlaceholder}
           value={value.phone}
           onChange={(e) => set({ phone: e.target.value })}
-          className={inputClass}
+          className={phoneClass}
         />
       </div>
 
@@ -81,7 +88,7 @@ export function AddressFields({
         <>
           <div className="space-y-1.5">
             <label htmlFor="addr-country" className={labelClass}>
-              Country
+              {x.country}
             </label>
             <select
               id="addr-country"
@@ -90,8 +97,8 @@ export function AddressFields({
               onChange={(e) => set({ country: e.target.value })}
               {...locked}
             >
-              <option value="">Select a country</option>
-              {COUNTRIES.map(({ code, name }) => (
+              <option value="">{x.countryPlaceholder}</option>
+              {countryOptions(locale).map(({ code, name }) => (
                 <option key={code} value={code}>
                   {name}
                 </option>
@@ -100,7 +107,7 @@ export function AddressFields({
           </div>
           <div className="space-y-1.5">
             <label htmlFor="addr-city" className={labelClass}>
-              City / State / Province
+              {x.city}
             </label>
             <input
               id="addr-city"
@@ -113,7 +120,7 @@ export function AddressFields({
           </div>
           <div className="space-y-1.5">
             <label htmlFor="addr-postal" className={labelClass}>
-              Postal code / ZIP
+              {x.postal}
             </label>
             <input
               id="addr-postal"
@@ -126,7 +133,7 @@ export function AddressFields({
           </div>
           <div className="space-y-1.5 sm:col-span-2">
             <label htmlFor="addr-line" className={labelClass}>
-              Address
+              {x.line}
             </label>
             <textarea
               id="addr-line"
@@ -135,7 +142,7 @@ export function AddressFields({
               maxLength={300}
               value={value.line}
               onChange={(e) => set({ line: e.target.value })}
-              placeholder="Street and building number, apartment, suite"
+              placeholder={x.linePlaceholder}
               className={`${inputClass} h-auto resize-y py-2.5`}
             />
           </div>
@@ -144,7 +151,7 @@ export function AddressFields({
         <>
           <div className="space-y-1.5">
             <label htmlFor="addr-city" className={labelClass}>
-              İl
+              {m.place.city}
             </label>
             <select
               id="addr-city"
@@ -153,7 +160,7 @@ export function AddressFields({
               onChange={(e) => set({ city: e.target.value })}
               {...locked}
             >
-              <option value="">İl seçin</option>
+              <option value="">{m.place.select}</option>
               {TR_PROVINCES.map((province) => (
                 <option key={province} value={province}>
                   {province}
@@ -163,7 +170,7 @@ export function AddressFields({
           </div>
           <div className="space-y-1.5">
             <label htmlFor="addr-district" className={labelClass}>
-              İlçe
+              {m.place.district}
             </label>
             <input
               id="addr-district"
@@ -176,7 +183,7 @@ export function AddressFields({
           </div>
           <div className="space-y-1.5 sm:col-span-2">
             <label htmlFor="addr-line" className={labelClass}>
-              Açık adres
+              {m.address.line}
             </label>
             <textarea
               id="addr-line"
@@ -185,7 +192,7 @@ export function AddressFields({
               maxLength={300}
               value={value.line}
               onChange={(e) => set({ line: e.target.value })}
-              placeholder="Mahalle, cadde/sokak, bina ve daire no"
+              placeholder={m.address.linePlaceholder}
               className={`${inputClass} h-auto resize-y py-2.5`}
             />
           </div>

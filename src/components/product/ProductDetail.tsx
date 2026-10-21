@@ -5,6 +5,7 @@ import axios from "axios";
 import { Check, ChevronRight, Hourglass, ShoppingBag, Truck } from "lucide-react";
 
 import Link from "@/components/i18n/Link";
+import { useMessages } from "@/components/i18n/LocaleProvider";
 import { QuantityStepper } from "@/components/cart/QuantityStepper";
 import { ColorPicker } from "@/components/product/ColorPicker";
 import { CrossSells } from "@/components/product/CrossSells";
@@ -22,6 +23,8 @@ import { cartLineFor } from "@/lib/cartLine";
 import { categoryCopy } from "@/lib/categories";
 import { normalizeHex, readableInk } from "@/lib/color";
 import { saleState } from "@/lib/flashSale";
+import { catalogMessages } from "@/lib/i18n/messages/catalog";
+import { productMessages } from "@/lib/i18n/messages/product";
 import { productImageAlt, type Breadcrumb } from "@/lib/seo";
 import { PAGE_CONTAINER } from "@/lib/layout";
 import { hasColorChoice, initialVariantId, resolveVariant, variantInStock } from "@/lib/variants";
@@ -41,10 +44,11 @@ interface ProductDetailProps {
   sidebar?: ReactNode;
 }
 
-function countdown(ms: number) {
+/** "2g 14:03:22", the days in the page's language. */
+function countdown(ms: number, day: (n: number) => string) {
   const { days, hours, minutes, seconds } = countdownParts(ms);
   const pad = (n: number) => String(n).padStart(2, "0");
-  return `${days > 0 ? `${days}g ` : ""}${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+  return `${days > 0 ? day(days) : ""}${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
 }
 
 /**
@@ -72,6 +76,9 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
   const [draft, setDraft] = useState<number | null>(null);
   const [added, setAdded] = useState(false);
   const money = useDisplayMoney();
+  const t = useMessages(productMessages);
+  const card = useMessages(catalogMessages).card;
+  const breadcrumbLabel = useMessages(catalogMessages).breadcrumb;
   // The dock decides the shape of the row above the colour pills.
   const perksShown = showsRetailPerks(user);
   // The live rules behind the dock and the havale price line.
@@ -163,14 +170,14 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
       {sidebar}
 
       <div className="min-w-0 flex-1">
-      <nav aria-label="Sayfa konumu">
+      <nav aria-label={breadcrumbLabel}>
         <ol className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
           {breadcrumbs.slice(0, -1).map((c) => (
             <li key={c.href} className="flex items-center gap-1">
               <Link href={c.href} className="hover:text-foreground">
                 {c.name}
               </Link>
-              <ChevronRight className="h-3 w-3" aria-hidden />
+              <ChevronRight className="h-3 w-3 rtl:rotate-180" aria-hidden />
             </li>
           ))}
           <li aria-current="page" className="max-w-64 truncate text-foreground">
@@ -209,7 +216,7 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
           <h1 className="mt-3 text-balance text-2xl font-bold leading-snug tracking-tight text-foreground sm:text-[26px]">
             {product.name}
           </h1>
-          {variant && <p className="mt-2 font-mono text-xs text-muted-foreground">Ürün kodu: {variant.sku}</p>}
+          {variant && <p className="mt-2 font-mono text-xs text-muted-foreground">{t.productCode(variant.sku)}</p>}
           {/* A business account also reads its price before VAT, as it books it —
               muted, beside the gross price below rather than competing with it.
               Its own price only: nothing until that has arrived. The split is the
@@ -217,7 +224,7 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
               no "+ KDV" to state. */}
           {vatSplit && price && Number(price.vat_rate) > 0 && (
             <p className="mt-3 font-mono text-sm font-medium tabular-nums text-zinc-500 dark:text-zinc-400">
-              {money.format({ ...price, price_incl_tax: price.price_excl_tax })} + KDV
+              {money.format({ ...price, price_incl_tax: price.price_excl_tax })} {t.plusVat}
             </p>
           )}
 
@@ -228,19 +235,19 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
                 {discount > 0 && was && (
                   <>
                     <span className="text-base text-muted-foreground line-through">{money.format(was)}</span>
-                    <span className="text-sm font-medium text-accent">−%{discount}</span>
+                    <span className="text-sm font-medium text-accent">{card.discount(discount)}</span>
                   </>
                 )}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">Fiyat bilgisi yok</p>
+              <p className="text-sm text-muted-foreground">{card.noPrice}</p>
             )}
             {/* The havale discount is a retail promotion: not promised to an
                 account that pays its tier price whichever way it pays. */}
             {price && perksShown && (
               <TransferPrice price={price} params={params} rates={money.rates} format={money.format} />
             )}
-            <p className="mt-1 text-xs text-muted-foreground">KDV dahil</p>
+            <p className="mt-1 text-xs text-muted-foreground">{t.vatIncluded}</p>
           </div>
 
           <div className="mt-4 flex flex-wrap gap-2">
@@ -253,31 +260,31 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
                 }`}
                 style={dealColor ? { backgroundColor: dealColor, color: readableInk(dealColor) } : undefined}
               >
-                Fırsat Ürün <Hourglass className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                {card.deal} <Hourglass className="h-3.5 w-3.5 shrink-0" aria-hidden />
                 {sale.endsAt !== null && (
-                  <span className="font-mono tabular-nums" role="timer" aria-label="Kalan süre">
-                    {now === null ? "--:--:--" : countdown(sale.endsAt - now)}
+                  <span className="font-mono tabular-nums" role="timer" aria-label={card.timeLeft}>
+                    {now === null ? "--:--:--" : countdown(sale.endsAt - now, card.days)}
                   </span>
                 )}
               </span>
             )}
             {sale.kind === "missed" && (
               <span className="inline-flex items-center gap-1.5 rounded-full bg-zinc-900 px-3 py-1 text-xs font-medium text-zinc-100 dark:bg-zinc-700">
-                Fırsat Kaçtı <Hourglass className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                {card.missed} <Hourglass className="h-3.5 w-3.5 shrink-0" aria-hidden />
               </span>
             )}
             {pricesPending ? null : soldOut ? (
               <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700 ring-1 ring-inset ring-zinc-200 dark:bg-white/10 dark:text-zinc-200 dark:ring-white/10">
-                Tükendi
+                {card.soldOut}
               </span>
             ) : (
               <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
-                Stokta
+                {t.inStock}
               </span>
             )}
             {isHeavy && (
               <span className="inline-flex items-center gap-1 rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700 dark:bg-white/10 dark:text-zinc-200">
-                <Truck className="h-3 w-3" aria-hidden /> Ağır kargo
+                <Truck className="h-3 w-3" aria-hidden /> {card.heavy}
               </span>
             )}
           </div>
@@ -328,23 +335,23 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
               )}
               {inCart > 0
                 ? changed
-                  ? "Sepeti Güncelle"
+                  ? t.updateCart
                   : added
-                    ? "Sepet güncellendi"
-                    : "Sepette"
+                    ? t.cartUpdated
+                    : t.inCart
                 : soldOut
-                  ? "Tükendi"
+                  ? card.soldOut
                   : added
-                    ? "Sepete eklendi"
-                    : "Sepete Ekle"}
+                    ? t.addedToCart
+                    : t.addToCart}
             </button>
           </div>
           <p className="mt-3 h-5 text-sm text-muted-foreground" aria-live="polite">
             {inCart > 0 && (
               <>
-                Sepetinizde {inCart} adet ·{" "}
+                {t.inYourCart(inCart)} ·{" "}
                 <Link href="/cart" className="font-medium text-foreground underline-offset-2 hover:underline">
-                  Sepete git
+                  {t.goToCart}
                 </Link>{" "}
                 ·{" "}
                 <button
@@ -355,7 +362,7 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
                   }}
                   className="font-medium text-foreground underline-offset-2 hover:underline"
                 >
-                  Sepetten çıkar
+                  {t.removeFromCart}
                 </button>
               </>
             )}

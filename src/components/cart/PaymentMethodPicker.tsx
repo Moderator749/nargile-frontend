@@ -1,4 +1,9 @@
+"use client";
+
 import { CreditCard, Landmark, ShieldCheck } from "lucide-react";
+
+import { useMessages } from "@/components/i18n/LocaleProvider";
+import { cartMessages } from "@/lib/i18n/messages/cart";
 
 import type { PaymentMethod } from "@/types";
 
@@ -27,24 +32,25 @@ export function PaymentMethodPicker({
   saveCard,
   onSaveCardChange,
 }: PaymentMethodPickerProps) {
+  const t = useMessages(cartMessages).payment;
   const options: { value: PaymentMethod; title: string; hint: string; Icon: typeof CreditCard; disabled?: boolean }[] = [
     {
       value: "CREDIT_CARD",
-      title: "Kredi / Banka Kartı",
-      hint: cardAvailable ? "PayTR güvencesiyle, taksit seçenekli" : "Şu anda kullanılamıyor",
+      title: t.card,
+      hint: cardAvailable ? t.cardHint : t.cardUnavailable,
       Icon: CreditCard,
       disabled: !cardAvailable,
     },
     {
       value: "BANK_TRANSFER",
-      title: "Havale / EFT",
-      hint: transferDiscount ?? "Banka hesabımıza ödeme",
+      title: t.transfer,
+      hint: transferDiscount ?? t.transferHint,
       Icon: Landmark,
     },
   ];
   return (
     <fieldset>
-      <legend className="text-sm font-medium text-slate-700 dark:text-zinc-300">Ödeme yöntemi</legend>
+      <legend className="text-sm font-medium text-slate-700 dark:text-zinc-300">{t.legend}</legend>
       <div className="mt-2 grid grid-cols-2 gap-2">
         {options.map(({ value: option, title, hint, Icon, disabled }) => (
           <label
@@ -85,9 +91,9 @@ export function PaymentMethodPicker({
           <span className="text-slate-600 dark:text-zinc-300">
             <span className="flex items-center gap-1.5 font-medium text-slate-900 dark:text-zinc-100">
               <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" aria-hidden />
-              Kart bilgilerimi sonraki alışverişlerim için güvenle kaydet
+              {t.saveCard}
             </span>
-            Kart bilgileri tarafımızdan görülmez; ödeme altyapısında saklanır.
+            {t.saveCardNote}
           </span>
         </label>
       )}

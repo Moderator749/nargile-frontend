@@ -4,7 +4,14 @@
  * The answers follow what the shop actually does — the price and delivery
  * answers say what `lib/shipping` and the B2B registration enforce — so a
  * change there is a change here. The same list builds the FAQPage JSON-LD.
+ *
+ * English and Arabic answers live in lib/content (faq.en, faq.ar), under the
+ * same ids; read them through `faqItems(locale)`.
  */
+
+import { FAQ_AR } from "@/lib/content/faq.ar";
+import { FAQ_EN } from "@/lib/content/faq.en";
+import type { Locale } from "@/lib/i18n/config";
 
 export const FAQ_HREF = "/sss";
 
@@ -41,11 +48,20 @@ export const FAQ: FaqItem[] = [
   },
 ];
 
-/** Schema.org FAQPage, built from the same list the page shows. */
-export function faqJsonLd(items: FaqItem[] = FAQ) {
+const BY_LOCALE: Record<Locale, FaqItem[]> = { tr: FAQ, en: FAQ_EN, ar: FAQ_AR };
+
+/** The questions and answers in a language, in the Turkish order. */
+export const faqItems = (locale: Locale): FaqItem[] => BY_LOCALE[locale];
+
+/** schema.org's `inLanguage` (BCP 47), as lib/seo writes it. */
+const IN_LANGUAGE: Record<Locale, string> = { tr: "tr-TR", en: "en", ar: "ar" };
+
+/** Schema.org FAQPage, built from the same list the page shows, in the page's language. */
+export function faqJsonLd(items: FaqItem[] = FAQ, locale?: Locale) {
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",
+    ...(locale ? { inLanguage: IN_LANGUAGE[locale] } : {}),
     mainEntity: items.map((item) => ({
       "@type": "Question",
       name: item.question,

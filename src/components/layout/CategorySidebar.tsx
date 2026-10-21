@@ -1,5 +1,11 @@
+"use client";
+
+// A client component for its label in the page's language. The pages that
+// draw it are server components, and the header imports its widths.
+
 import { Suspense } from "react";
 
+import { useT } from "@/components/i18n/LocaleProvider";
 import { CategoryList } from "@/components/layout/CategoryList";
 import type { ResolvedNav } from "@/lib/storefrontNav";
 
@@ -33,7 +39,8 @@ export const SIDEBAR_WIDTH_LG = "lg:w-64";
  * `lib/sidebar`): the `category-sidebar` class is what the CSS gives up the
  * width of, and the content beside it widens into the space. The right margin
  * belongs to the column rather than to a gap on the row, so collapsing takes
- * the gap with it.
+ * the gap with it. It is the inline end's (the left in Arabic, where the
+ * column is down the right), and `sidebar-closed:` takes it either way.
  *
  * `fit` (the catalog's): no hero to match, so the column is as tall as its list
  * and no taller — its grey ends with the last row, and the page's white carries
@@ -44,10 +51,11 @@ export const SIDEBAR_WIDTH_LG = "lg:w-64";
  * scrolls inside, so the last rows are always in reach.
  */
 export function CategorySidebar({ items, fit = false }: { items: ResolvedNav[]; fit?: boolean }) {
+  const t = useT();
   return (
     <nav
-      aria-label="Kategoriler"
-      className={`category-sidebar hidden shrink-0 ${SIDEBAR_WIDTH} lg:mr-6 lg:block lg:overflow-hidden lg:rounded-xl lg:bg-background ${
+      aria-label={t.nav.categories}
+      className={`category-sidebar hidden shrink-0 ${SIDEBAR_WIDTH} lg:me-6 lg:sidebar-closed:me-0 lg:block lg:overflow-hidden lg:rounded-xl lg:bg-background ${
         fit
           ? "lg:sticky lg:top-[calc(var(--header-height)+1.5rem)] lg:h-fit lg:self-start"
           : "lg:relative lg:self-stretch"

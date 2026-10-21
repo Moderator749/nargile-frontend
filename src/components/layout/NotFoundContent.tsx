@@ -3,13 +3,15 @@ import { ArrowRight, SearchX } from "lucide-react";
 
 import Link from "@/components/i18n/Link";
 import { PrePaintFallback } from "@/components/layout/PrePaintFallback";
+import { errorMessages } from "@/lib/i18n/messages/layout";
+import { getMessages } from "@/lib/i18n/server";
 import { getCategories } from "@/lib/server/catalog";
 
-/** Both 404 pages' metadata: never indexed, its links still followed. */
-export const NOT_FOUND_METADATA: Metadata = {
-  title: "Sayfa bulunamadı",
-  robots: { index: false, follow: true },
-};
+/** Both 404 pages' metadata, in the page's language: never indexed, its links still followed. */
+export async function notFoundMetadata(): Promise<Metadata> {
+  const m = await getMessages(errorMessages);
+  return { title: m.notFoundMeta, robots: { index: false, follow: true } };
+}
 
 /**
  * The 404 itself, without the shop's chrome: whoever renders it decides where
@@ -18,6 +20,7 @@ export const NOT_FOUND_METADATA: Metadata = {
  * it stands.
  */
 export async function NotFoundContent() {
+  const m = await getMessages(errorMessages);
   const categories = ((await getCategories()) ?? [])
     .filter((c) => c.parent_id === null)
     .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
@@ -29,29 +32,27 @@ export async function NotFoundContent() {
         <SearchX className="h-8 w-8" strokeWidth={1.5} aria-hidden />
       </span>
       <p className="mt-6 font-mono text-sm font-semibold tracking-widest text-red-600 dark:text-red-400">404</p>
-      <h1 className="mt-2 text-balance text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">Aradığınız sayfa bulunamadı</h1>
-      <p className="mt-3 max-w-md text-balance text-sm text-muted-foreground">
-        Bağlantı değişmiş ya da sayfa kaldırılmış olabilir. Aşağıdaki kategorilerden devam edebilir veya kataloğun tamamına göz atabilirsiniz.
-      </p>
+      <h1 className="mt-2 text-balance text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">{m.notFoundTitle}</h1>
+      <p className="mt-3 max-w-md text-balance text-sm text-muted-foreground">{m.notFoundBody}</p>
 
       <div className="mt-8 flex flex-wrap justify-center gap-3">
         <Link
           href="/"
           className="inline-flex h-11 items-center gap-2 rounded-full bg-red-600 px-6 text-sm font-semibold text-white shadow-sm transition-colors duration-200 hover:bg-red-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
         >
-          Ana sayfaya dön
+          {m.home}
         </Link>
         <Link
           href="/catalog"
           className="inline-flex h-11 items-center gap-2 rounded-full px-6 text-sm font-semibold text-foreground ring-1 ring-inset ring-border transition-colors duration-200 hover:bg-foreground/[0.04] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
         >
-          Tüm ürünler <ArrowRight className="h-4 w-4" aria-hidden />
+          {m.allProducts} <ArrowRight className="h-4 w-4 rtl:-scale-x-100" aria-hidden />
         </Link>
       </div>
 
       {categories.length > 0 && (
-        <nav aria-label="Kategoriler" className="mt-12 w-full">
-          <h2 className="text-[11px] font-semibold uppercase tracking-[0.25em] text-muted-foreground">Kategoriler</h2>
+        <nav aria-label={m.categories} className="mt-12 w-full">
+          <h2 className="text-[11px] font-semibold uppercase tracking-[0.25em] text-muted-foreground">{m.categories}</h2>
           <ul className="mt-4 flex flex-wrap justify-center gap-2">
             {categories.map((c) => (
               <li key={c.id}>

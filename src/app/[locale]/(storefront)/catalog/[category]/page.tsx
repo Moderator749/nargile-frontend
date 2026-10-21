@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 
 import { CatalogScreen } from "@/components/catalog/CatalogScreen";
-import { DEFAULT_LOCALE, localePath } from "@/lib/i18n/config";
+import { localePath } from "@/lib/i18n/config";
 import { getI18n } from "@/lib/i18n/server";
 import { hasCategoryCopy, categoryCopy } from "@/lib/categories";
 import { getBrands, getCategories, getCategoryBySlug, getPublicProducts, required } from "@/lib/server/catalog";
@@ -30,13 +30,13 @@ export async function generateMetadata(props: PageProps<"/[locale]/catalog/[cate
   if (!category) return { title: t.meta.categoryNotFound, robots: { index: false } };
 
   // The admin's own introduction (in the page's language: the API answers
-  // with its translation), else written copy where the shop has it (Turkish
-  // only), else built from what the category sells, so no two categories
-  // share one description.
+  // with its translation), else written copy where the shop has it (in all
+  // three languages, lib/categories), else built from what the category
+  // sells, so no two categories share one description.
   const description = category.description
     ? metaDescription(category.description)
-    : locale === DEFAULT_LOCALE && hasCategoryCopy(category.slug)
-      ? categoryCopy(category.slug).description
+    : hasCategoryCopy(category.slug)
+      ? categoryCopy(category.slug, locale).description
       : categoryDescription(category, products, locale);
   return pageMetadata({
     title: t.meta.categoryTitle(category.name),
@@ -85,7 +85,7 @@ export default async function CategoryPage(props: PageProps<"/[locale]/catalog/[
       // The admin's introduction, else the shop's written copy where it has
       // one (the meta description's generated fallback is for search
       // results, not the page). Long text is clamped, all of it in the HTML.
-      intro={category.description || (locale === DEFAULT_LOCALE && hasCategoryCopy(slug) ? categoryCopy(slug).description : null)}
+      intro={category.description || (hasCategoryCopy(slug) ? categoryCopy(slug, locale).description : null)}
     />
   );
 }

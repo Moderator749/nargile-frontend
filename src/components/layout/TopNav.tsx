@@ -4,14 +4,14 @@ import { Suspense, useEffect, useLayoutEffect, useRef, useSyncExternalStore } fr
 import { ArrowLeft, ChevronDown, LayoutGrid, X } from "lucide-react";
 
 import { usePagePath } from "@/components/i18n/navigation";
-import { useT } from "@/components/i18n/LocaleProvider";
+import { useLocale, useT } from "@/components/i18n/LocaleProvider";
 import { LanguageSelect } from "@/components/layout/LanguageSelect";
 import Link from "@/components/i18n/Link";
 import { CategoryList } from "@/components/layout/CategoryList";
 import { SIDEBAR_WIDTH } from "@/components/layout/CategorySidebar";
 
 import { applySidebarFor, isSidebarCollapsed, opensByDefault, setSidebarCollapsed, subscribeSidebar } from "@/lib/sidebar";
-import type { ResolvedNav } from "@/lib/storefrontNav";
+import { navLabel, type ResolvedNav } from "@/lib/storefrontNav";
 import { PAGE_CONTAINER } from "@/lib/layout";
 import { useCategoryDrawer } from "@/store/useCategoryDrawer";
 
@@ -101,6 +101,7 @@ export function TopNav({ categories, links }: { categories: ResolvedNav[]; links
   // Without its language (/en/cart is /cart), as every check below expects.
   const pathname = usePagePath();
   const t = useT();
+  const locale = useLocale();
   const drawer = useCategoryDrawer((s) => s.open);
   const setDrawer = useCategoryDrawer((s) => s.setOpen);
   // The column's own state lives on <html>, set before first paint; this only
@@ -135,8 +136,8 @@ export function TopNav({ categories, links }: { categories: ResolvedNav[]; links
   // A band under the white logo row in the category column's grey, framing
   // the page with it; a hairline between the two rows.
   return (
-    <nav aria-label="Ana menü" className="border-t border-gray-200 bg-background dark:border-border">
-      {/* The gap after the red button is the category column's right margin,
+    <nav aria-label={t.nav.mainMenu} className="border-t border-gray-200 bg-background dark:border-border">
+      {/* The gap after the red button is the category column's end margin,
           not a gap of its own choosing: 16rem of button plus 1.5rem of gap is
           what puts the first link on the hero's left edge, exactly as the
           column below puts the hero there. */}
@@ -155,16 +156,19 @@ export function TopNav({ categories, links }: { categories: ResolvedNav[]; links
           {t.nav.categories}
           <span
             aria-hidden
-            className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/15 ring-1 ring-white/25 transition-[background-color,box-shadow] duration-300 group-hover:bg-white/30 group-hover:ring-white/60 group-focus-visible:bg-white/30"
+            className="ms-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/15 ring-1 ring-white/25 transition-[background-color,box-shadow] duration-300 group-hover:bg-white/30 group-hover:ring-white/60 group-focus-visible:bg-white/30"
           >
             {/* Down while the column is closed (floating with the glow); once it
                 is open it turns to point left, the way the column folds away,
-                and on hover it nudges that way (`--bob-x`). With reduced
-                motion it neither turns nor moves. */}
+                and on hover it nudges that way (`--bob-x`) — right in Arabic,
+                where the column is down the right. With reduced motion it
+                neither turns nor moves. */}
             <ChevronDown
               strokeWidth={2.75}
               className={`h-4 w-4 text-white transition-transform duration-300 ease-out motion-reduce:transition-none motion-safe:group-hover:animate-chevron-bob ${
-                collapsed ? "motion-safe:animate-chevron-float" : "rotate-90 [--bob:0px] [--bob-x:-2px]"
+                collapsed
+                  ? "motion-safe:animate-chevron-float"
+                  : "rotate-90 [--bob:0px] [--bob-x:-2px] rtl:-rotate-90 rtl:[--bob-x:2px]"
               }`}
             />
           </span>
@@ -206,7 +210,7 @@ export function TopNav({ categories, links }: { categories: ResolvedNav[]; links
                         : "border-transparent text-gray-600 hover:border-red-700 hover:text-red-700 dark:text-neutral-300 dark:hover:border-red-400 dark:hover:text-red-400"
                   }`}
                 >
-                  {label}
+                  {navLabel(label, locale)}
                 </Link>
               </li>
             );

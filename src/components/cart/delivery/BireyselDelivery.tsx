@@ -3,6 +3,7 @@
 import { Building2, MapPin, Package, Plus } from "lucide-react";
 
 import { AddressFields } from "@/components/cart/delivery/AddressFields";
+import { useLocale, useMessages } from "@/components/i18n/LocaleProvider";
 import {
   BRANCH_DELIVERY,
   CORPORATE_DELIVERY,
@@ -14,15 +15,13 @@ import {
 import { DeliveryCard } from "@/components/cart/delivery/DeliveryCard";
 import { ReceiverFields } from "@/components/cart/delivery/MethodFields";
 import { countryName } from "@/lib/countries";
+import { checkoutMessages } from "@/lib/i18n/messages/checkout";
 import type { SavedAddress } from "@/types";
 
 const inputClass =
   "block h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20 dark:border-white/15 dark:bg-zinc-900 dark:text-zinc-100";
 const labelClass = "block text-sm font-medium text-slate-700 dark:text-zinc-300";
 const noteClass = "text-xs text-slate-500 dark:text-zinc-400";
-
-/** The card for the address on file, in the words the blueprint uses. */
-const BILLING_TITLE = "Fatura adresime istiyorum";
 
 interface BireyselDeliveryProps {
   /** Addresses on file; null while they load. */
@@ -65,6 +64,10 @@ interface BireyselDeliveryProps {
  * no separate list of shipping methods.
  */
 export function BireyselDelivery(props: BireyselDeliveryProps) {
+  const locale = useLocale();
+  const m = useMessages(checkoutMessages);
+  // The card for the address on file, in the words the blueprint uses.
+  const t = m.bireysel;
   const { saved, choice, address } = props;
   const hasSaved = (saved?.length ?? 0) > 0;
   const receiver = (
@@ -83,7 +86,7 @@ export function BireyselDelivery(props: BireyselDeliveryProps) {
 
   return (
     <fieldset className="mt-5">
-      <legend className={labelClass}>Teslimat bilgileri</legend>
+      <legend className={labelClass}>{m.delivery.legend}</legend>
       <div className="mt-2 space-y-2">
         {saved === null ? (
           // Hold the row an address on file would take, so nothing jumps.
@@ -101,8 +104,8 @@ export function BireyselDelivery(props: BireyselDeliveryProps) {
                 name="delivery_choice"
                 selected={choice?.kind === "saved" && choice.index === index}
                 onSelect={() => props.onChoiceChange({ kind: "saved", index })}
-                title={BILLING_TITLE}
-                summary={addressSummary(entry, countryName)}
+                title={t.billingTitle}
+                summary={addressSummary(entry, (code) => countryName(code, locale))}
                 Icon={MapPin}
               />
             ) : null,
@@ -116,7 +119,7 @@ export function BireyselDelivery(props: BireyselDeliveryProps) {
             name="delivery_choice"
             selected={choice?.kind === "corporate"}
             onSelect={() => props.onChoiceChange(CORPORATE_DELIVERY)}
-            title="Kurumsal fatura adresime istiyorum"
+            title={t.corporateTitle}
             summary={props.invoiceTarget.summary}
             notice={props.invoiceTarget.notice ?? undefined}
             disabled={props.invoiceTarget.notice !== null}
@@ -128,8 +131,8 @@ export function BireyselDelivery(props: BireyselDeliveryProps) {
           name="delivery_choice"
           selected={choice?.kind === "branch"}
           onSelect={() => props.onChoiceChange(BRANCH_DELIVERY)}
-          title="Yurtiçi Kargo Şube Teslimatı - Adınıza Gönderilir"
-          summary="Kargonuz size en yakın Yurtiçi Kargo şubesinde teslim alınmak üzere bekler."
+          title={t.branchTitle}
+          summary={t.branchSummary}
           Icon={Package}
         >
           <div className="space-y-4">
@@ -137,16 +140,16 @@ export function BireyselDelivery(props: BireyselDeliveryProps) {
                 is typed here as well. */}
             {!hasSaved && saved !== null && addressForm}
             <div className="space-y-1.5">
-              <p className={noteClass}>Size ait anlaşma varsa kodunuzu girebilirsiniz.</p>
+              <p className={noteClass}>{t.contractNote}</p>
               <label htmlFor="branch-contract-no" className={labelClass}>
-                Anlaşma No
+                {m.method.contractLabel}
               </label>
               <input
                 id="branch-contract-no"
                 maxLength={50}
                 value={props.contractNo}
                 onChange={(e) => props.onContractNoChange(e.target.value)}
-                placeholder="Yurtiçi Kargo anlaşma numaranız"
+                placeholder={m.method.contractPlaceholder}
                 className={inputClass}
               />
             </div>
@@ -158,8 +161,8 @@ export function BireyselDelivery(props: BireyselDeliveryProps) {
           name="delivery_choice"
           selected={choice?.kind === "new"}
           onSelect={() => props.onChoiceChange(NEW_ADDRESS)}
-          title="Yeni Adres Ekle"
-          summary="Bu siparişe özel; hesabınıza kaydedilmez."
+          title={t.newTitle}
+          summary={t.newSummary}
           Icon={Plus}
         >
           <div className="space-y-4">

@@ -2,16 +2,19 @@
 
 import { useEffect, useState, type SubmitEvent } from "react";
 
+import { useMessages } from "@/components/i18n/LocaleProvider";
 import Link from "@/components/i18n/Link";
 import { MIN_PASSWORD_LENGTH } from "@/components/auth/registrationDraft";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { checkResetLink, confirmPasswordReset } from "@/lib/authApi";
-import { getApiErrorMessage } from "@/lib/errors";
+import { getApiErrorMessage, translateApiDetail } from "@/lib/errors";
+import { passwordMessages } from "@/lib/i18n/messages/auth";
 
 /** The page the e-mailed link opens: a new password for the link's token. */
 export function ResetPasswordForm({ token }: { token: string }) {
+  const m = useMessages(passwordMessages);
   const [valid, setValid] = useState<boolean | null>(token ? null : false);
   const [password, setPassword] = useState("");
   const [repeat, setRepeat] = useState("");
@@ -28,13 +31,13 @@ export function ResetPasswordForm({ token }: { token: string }) {
 
   async function submit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (password !== repeat) return setError("Şifreler aynı değil.");
+    if (password !== repeat) return setError(m.mismatch);
     setBusy(true);
     setError(null);
     try {
       setDone(await confirmPasswordReset({ token, new_password: password }));
     } catch (err) {
-      setError(getApiErrorMessage(err, "Şifre değiştirilemedi."));
+      setError(getApiErrorMessage(err, m.changeFailed));
     } finally {
       setBusy(false);
     }
@@ -43,9 +46,9 @@ export function ResetPasswordForm({ token }: { token: string }) {
   if (done) {
     return (
       <div className="space-y-4">
-        <Alert variant="success">{done}</Alert>
+        <Alert variant="success">{translateApiDetail(done)}</Alert>
         <Link href="/login" className="block text-center text-sm font-semibold text-red-600 hover:underline dark:text-red-400">
-          Giriş yap →
+          {m.signIn} <span aria-hidden className="inline-block rtl:-scale-x-100">→</span>
         </Link>
       </div>
     );
@@ -54,9 +57,9 @@ export function ResetPasswordForm({ token }: { token: string }) {
   if (!valid) {
     return (
       <div className="space-y-4">
-        <Alert variant="error">Bu bağlantı geçersiz, kullanılmış ya da süresi dolmuş.</Alert>
+        <Alert variant="error">{m.invalidLink}</Alert>
         <Link href="/sifremi-unuttum" className="block text-center text-sm font-semibold text-red-600 hover:underline dark:text-red-400">
-          Yeni bağlantı iste →
+          {m.newLink} <span aria-hidden className="inline-block rtl:-scale-x-100">→</span>
         </Link>
       </div>
     );
@@ -64,10 +67,10 @@ export function ResetPasswordForm({ token }: { token: string }) {
   return (
     <form onSubmit={submit} className="space-y-4">
       {error && <Alert variant="error">{error}</Alert>}
-      <Input label="Yeni şifre" type="password" name="new-password" autoComplete="new-password" minLength={MIN_PASSWORD_LENGTH} required autoFocus value={password} onChange={(e) => setPassword(e.target.value)} hint={`En az ${MIN_PASSWORD_LENGTH} karakter.`} />
-      <Input label="Yeni şifre (tekrar)" type="password" name="repeat-password" autoComplete="new-password" minLength={MIN_PASSWORD_LENGTH} required value={repeat} onChange={(e) => setRepeat(e.target.value)} />
+      <Input label={m.newPassword} type="password" name="new-password" autoComplete="new-password" minLength={MIN_PASSWORD_LENGTH} required autoFocus value={password} onChange={(e) => setPassword(e.target.value)} hint={m.minLength(MIN_PASSWORD_LENGTH)} />
+      <Input label={m.repeatPassword} type="password" name="repeat-password" autoComplete="new-password" minLength={MIN_PASSWORD_LENGTH} required value={repeat} onChange={(e) => setRepeat(e.target.value)} />
       <Button type="submit" loading={busy}>
-        Şifreyi değiştir
+        {m.change}
       </Button>
     </form>
   );

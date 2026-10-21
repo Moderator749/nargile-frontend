@@ -3,6 +3,9 @@
 import type { ReactNode } from "react";
 import { Check, type LucideIcon } from "lucide-react";
 
+import { useMessages } from "@/components/i18n/LocaleProvider";
+import { checkoutMessages } from "@/lib/i18n/messages/checkout";
+
 /**
  * One delivery choice: what it is, and an "Onay" button that confirms it.
  *
@@ -45,6 +48,7 @@ export function DeliveryCard({
   /** What this option asks for, revealed once it is the chosen one. */
   children?: ReactNode;
 }) {
+  const t = useMessages(checkoutMessages).delivery;
   return (
     <div
       className={`rounded-xl border p-3 transition-[color,background-color,border-color,box-shadow,opacity] duration-200 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-red-500/40 ${
@@ -102,10 +106,10 @@ export function DeliveryCard({
         >
           {selected ? (
             <>
-              <Check className="h-3.5 w-3.5" aria-hidden /> Onaylandı
+              <Check className="h-3.5 w-3.5" aria-hidden /> {t.confirmed}
             </>
           ) : (
-            "Onay"
+            t.confirm
           )}
         </button>
       </div>

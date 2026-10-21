@@ -4,6 +4,10 @@ import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } f
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, X, ZoomIn, ZoomOut } from "lucide-react";
 
+import { useLocale, useMessages } from "@/components/i18n/LocaleProvider";
+import { DIRECTION } from "@/lib/i18n/config";
+import { productMessages } from "@/lib/i18n/messages/product";
+
 /** How far a tap zooms in, and how far a pinch or the wheel may go. */
 const TAP_ZOOM = 2.5;
 const MAX_ZOOM = 4;
@@ -34,6 +38,8 @@ const control =
  * to 4×, around the fingers or the pointer. Zoomed in, the photo is dragged
  * about, never further than its own edges. At rest a sideways swipe changes
  * photo. A tap beside the photo, ✕ or Esc closes; ← → change photo, + − zoom.
+ * In Arabic the photos run right to left, as the page reads: the next one is
+ * to the left — the left arrow key, a swipe to the right.
  *
  * A native <dialog>, as the category drawer: the focus stays inside and the
  * page behind is inert; the page does not scroll under it either. Mounted
@@ -66,6 +72,9 @@ export function ProductLightbox({
   const pinch = useRef<{ distance: number; view: View; mid: { x: number; y: number } } | null>(null);
   const count = images.length;
   const close = () => onClose(index);
+  const t = useMessages(productMessages).gallery;
+  /** +1 left to right, −1 in Arabic: which way "next" is on screen. */
+  const forward = DIRECTION[useLocale()] === "rtl" ? -1 : 1;
 
   useEffect(() => {
     dialog.current?.showModal();
@@ -193,10 +202,11 @@ export function ProductLightbox({
       else close();
       return;
     }
-    // At rest, a sideways swipe is the next or the previous photo.
+    // At rest, a sideways swipe is the next or the previous photo: pulling
+    // the next one in from the reading direction's end.
     const dx = event.clientX - started.x;
     if (view.scale === 1 && count > 1 && Math.abs(dx) > SWIPE && Math.abs(dx) > Math.abs(event.clientY - started.y)) {
-      go(index + (dx < 0 ? 1 : -1));
+      go(index + (dx * forward < 0 ? 1 : -1));
     }
   }
 
@@ -205,14 +215,16 @@ export function ProductLightbox({
   return (
     <dialog
       ref={dialog}
-      aria-label={`${alt} — görsel ${index + 1} / ${count}`}
+      aria-label={t.viewer(alt, index + 1, count)}
       onCancel={(event) => {
         event.preventDefault();
         close();
       }}
       onKeyDown={(event) => {
-        if (event.key === "ArrowLeft" && count > 1) go(index - 1);
-        else if (event.key === "ArrowRight" && count > 1) go(index + 1);
+        // The arrow keys follow the screen: ← is the previous photo left to
+        // right, the next one in Arabic.
+        if (event.key === "ArrowLeft" && count > 1) go(index - forward);
+        else if (event.key === "ArrowRight" && count > 1) go(index + forward);
         else if (event.key === "+" || event.key === "=") zoomBy(1.5);
         else if (event.key === "-") zoomBy(1 / 1.5);
         else return;
@@ -227,13 +239,13 @@ export function ProductLightbox({
             {index + 1} / {count}
           </p>
           <div className="flex items-center gap-2">
-            <button type="button" onClick={() => zoomBy(1 / 1.5)} disabled={view.scale <= 1} aria-label="Uzaklaştır" className={control}>
+            <button type="button" onClick={() => zoomBy(1 / 1.5)} disabled={view.scale <= 1} aria-label={t.zoomOut} className={control}>
               <ZoomOut className="h-5 w-5" aria-hidden />
             </button>
-            <button type="button" onClick={() => zoomBy(1.5)} disabled={view.scale >= MAX_ZOOM} aria-label="Yakınlaştır" className={control}>
+            <button type="button" onClick={() => zoomBy(1.5)} disabled={view.scale >= MAX_ZOOM} aria-label={t.zoomIn} className={control}>
               <ZoomIn className="h-5 w-5" aria-hidden />
             </button>
-            <button ref={closeButton} type="button" onClick={close} aria-label="Kapat" className={`${control} ml-2`}>
+            <button ref={closeButton} type="button" onClick={close} aria-label={t.close} className={`${control} ms-2`}>
               <X className="h-5 w-5" aria-hidden />
             </button>
           </div>
@@ -259,7 +271,7 @@ export function ProductLightbox({
                 key={images[index]}
                 ref={photo}
                 src={images[index]}
-                alt={`${alt} - ${index + 1}. görsel`}
+                alt={t.nth(alt, index + 1)}
                 fill
                 // Full width at the screen's density: the sharpest copy there
                 // is for a zoom, and never more than the original.
@@ -275,11 +287,11 @@ export function ProductLightbox({
               and the arrows would sit on the photo's edges. */}
           {count > 1 && (
             <>
-              <button type="button" onClick={() => go(index - 1)} aria-label="Önceki görsel" className={`${control} absolute left-3 top-1/2 -translate-y-1/2 max-sm:hidden sm:left-6`}>
-                <ChevronLeft className="h-6 w-6" aria-hidden />
+              <button type="button" onClick={() => go(index - 1)} aria-label={t.previous} className={`${control} absolute start-3 top-1/2 -translate-y-1/2 max-sm:hidden sm:start-6`}>
+                <ChevronLeft className="h-6 w-6 rtl:rotate-180" aria-hidden />
               </button>
-              <button type="button" onClick={() => go(index + 1)} aria-label="Sonraki görsel" className={`${control} absolute right-3 top-1/2 -translate-y-1/2 max-sm:hidden sm:right-6`}>
-                <ChevronRight className="h-6 w-6" aria-hidden />
+              <button type="button" onClick={() => go(index + 1)} aria-label={t.next} className={`${control} absolute end-3 top-1/2 -translate-y-1/2 max-sm:hidden sm:end-6`}>
+                <ChevronRight className="h-6 w-6 rtl:rotate-180" aria-hidden />
               </button>
             </>
           )}
@@ -287,7 +299,7 @@ export function ProductLightbox({
 
         {/* Bottom: every photo, the one shown ringed. */}
         {count > 1 && (
-          <ul className="flex justify-center gap-2 overflow-x-auto px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] [scrollbar-width:none]" aria-label="Görseller">
+          <ul className="flex justify-center gap-2 overflow-x-auto px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] [scrollbar-width:none]" aria-label={t.images}>
             {images.map((src, i) => (
               <li key={src} className="shrink-0">
                 <button
@@ -298,7 +310,7 @@ export function ProductLightbox({
                     i === index ? "ring-2 ring-white" : "opacity-50 hover:opacity-90"
                   }`}
                 >
-                  <Image src={src} alt={`${alt} - ${i + 1}. görsel`} fill sizes="56px" className="object-contain p-1" />
+                  <Image src={src} alt={t.nth(alt, i + 1)} fill sizes="56px" className="object-contain p-1" />
                 </button>
               </li>
             ))}

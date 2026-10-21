@@ -5,6 +5,7 @@ import axios from "axios";
 import { SearchX } from "lucide-react";
 
 import Link from "@/components/i18n/Link";
+import { useLocale, useMessages } from "@/components/i18n/LocaleProvider";
 import { AdminCatalogPdf, useIsAdmin } from "@/components/catalog/AdminCatalogPdf";
 import { CatalogFilterBar } from "@/components/catalog/CatalogFilterBar";
 import { PriceCatalogExport } from "@/components/catalog/PriceCatalogExport";
@@ -15,6 +16,7 @@ import { fetchFlashSaleProducts } from "@/lib/catalogApi";
 import { EMPTY_FILTERS, applyCatalogFilters, priceBounds, type CatalogFilters } from "@/lib/catalogFilters";
 import { isExportAccount } from "@/lib/exportAccount";
 import { CATALOG_GRID } from "@/lib/layout";
+import { catalogMessages } from "@/lib/i18n/messages/catalog";
 import { isB2BSegment } from "@/lib/priceList";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useAuthHydrated } from "@/store/useHasHydrated";
@@ -22,9 +24,6 @@ import type { CatalogProduct, Category } from "@/types";
 
 /** The first row on a wide screen loads at once; the rest lazily. */
 const EAGER_CARDS = 4;
-/** The PDF catalogue's collection line. */
-const COLLECTION = "Fırsat Ürünleri";
-
 /** A deal that can still be claimed in some colour — the funnel's own rule. */
 const live = (p: CatalogProduct) => p.is_opportunity && p.variants.some((v) => v.flash_sale);
 
@@ -55,6 +54,11 @@ export function DealsGrid({
   const [own, setOwn] = useState<{ token: string; products: CatalogProduct[] | null } | null>(null);
   const [filters, setFilters] = useState<CatalogFilters>(EMPTY_FILTERS);
   const isAdmin = useIsAdmin();
+  const locale = useLocale();
+  const messages = useMessages(catalogMessages);
+  const t = messages.deals;
+  /** The PDF catalogue's collection line. */
+  const collection = t.collection;
 
   useEffect(() => {
     if (!hydrated || !token) return;
@@ -79,7 +83,7 @@ export function DealsGrid({
   // Sales end while the page is open; the filters price what the cards price.
   const now = useNow(products.length > 0);
   const bounds = useMemo(() => priceBounds(products, now), [products, now]);
-  const shown = useMemo(() => applyCatalogFilters(products, filters, now), [products, filters, now]);
+  const shown = useMemo(() => applyCatalogFilters(products, filters, now, locale), [products, filters, now, locale]);
   const patch = (next: Partial<CatalogFilters>) => setFilters((f) => ({ ...f, ...next }));
 
   return (
@@ -92,40 +96,38 @@ export function DealsGrid({
         // group's prices, a Bayi / Toptan / Kafe account's at the ones below it.
         trailing={
           isAdmin ? (
-            <AdminCatalogPdf products={shown} collection={COLLECTION} />
+            <AdminCatalogPdf products={shown} collection={collection} />
           ) : canExport ? (
-            <PriceCatalogExport products={shown} collection={COLLECTION} hasMore={false} />
+            <PriceCatalogExport products={shown} collection={collection} hasMore={false} />
           ) : undefined
         }
       />
 
       {products.length === 0 ? (
         <div className="flex flex-col items-center rounded-2xl border border-dashed border-border px-6 py-16 text-center">
-          <p className="text-base font-semibold text-foreground">Şu anda aktif bir fırsat yok.</p>
-          <p className="mt-1 text-sm text-muted-foreground">Yeni fırsatlar eklendiğinde burada listelenecek.</p>
+          <p className="text-base font-semibold text-foreground">{t.none}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{t.noneHint}</p>
           <Link
             href="/catalog"
             className="mt-5 text-sm font-medium text-foreground underline-offset-4 transition-colors duration-200 hover:text-accent hover:underline"
           >
-            Tüm ürünlere göz atın
+            {t.browseAll}
           </Link>
         </div>
       ) : (
         <>
           <h2 className="mb-5 text-[11px] font-medium uppercase tracking-[0.25em] text-muted-foreground">
-            {shown.length} fırsat ürünü
+            {t.count(shown.length)}
           </h2>
           {shown.length === 0 ? (
             // Deals behind the filters: say so, and offer the way back.
             <div className="flex flex-col items-center py-20 text-center">
               <SearchX className="h-10 w-10 text-slate-300 dark:text-zinc-700" strokeWidth={1.5} aria-hidden />
-              <p className="mt-4 font-medium">Seçtiğiniz filtrelere uyan fırsat ürünü yok.</p>
-              <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">
-                Fiyat aralığını genişletin ya da stok filtresini kaldırın.
-              </p>
+              <p className="mt-4 font-medium">{t.noMatchFilters}</p>
+              <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">{messages.grid.widenFilters}</p>
               <div className="mt-5 w-40">
                 <Button type="button" variant="secondary" onClick={() => setFilters(EMPTY_FILTERS)}>
-                  Filtreleri temizle
+                  {messages.grid.clearFilters}
                 </Button>
               </div>
             </div>

@@ -5,8 +5,10 @@ import axios from "axios";
 import { ChevronRight } from "lucide-react";
 
 import Link from "@/components/i18n/Link";
+import { useMessages } from "@/components/i18n/LocaleProvider";
 import { ProductShelf } from "@/components/product/ProductShelf";
 import { fetchProductsByIds } from "@/lib/catalogApi";
+import { productMessages } from "@/lib/i18n/messages/product";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useAuthHydrated } from "@/store/useHasHydrated";
 import type { CatalogProduct, Category } from "@/types";
@@ -31,6 +33,7 @@ export function SimilarProducts({
 }) {
   const hydrated = useAuthHydrated();
   const token = useAuthStore((s) => s.token);
+  const t = useMessages(productMessages);
   const [own, setOwn] = useState<{ token: string; products: CatalogProduct[] | null } | null>(null);
 
   useEffect(() => {
@@ -59,7 +62,7 @@ export function SimilarProducts({
   return (
     <ProductShelf
       id="similar-products-heading"
-      title="Benzer Ürünler"
+      title={t.similar}
       products={mine ?? products}
       categories={categories}
       isLoggedIn={loggedIn}
@@ -69,8 +72,8 @@ export function SimilarProducts({
           href={`/catalog/${category.slug}`}
           className="inline-flex items-center gap-1 text-sm font-medium text-foreground underline-offset-4 transition-colors duration-200 hover:text-accent hover:underline"
         >
-          Tüm {category.name} ürünleri
-          <ChevronRight className="h-4 w-4" aria-hidden />
+          {t.allInCategory(category.name)}
+          <ChevronRight className="h-4 w-4 rtl:rotate-180" aria-hidden />
         </Link>
       }
     />

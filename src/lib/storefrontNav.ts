@@ -15,6 +15,8 @@
 
 import { DEALS_HREF } from "@/lib/flashSale";
 import { catalogSearchHref } from "@/lib/home";
+import type { Locale } from "@/lib/i18n/config";
+import { INTL_LOCALE } from "@/lib/i18n/messages";
 import { brandHref } from "@/lib/seo";
 import type { Brand, Category, HomeNavItem } from "@/types";
 
@@ -27,6 +29,7 @@ import type { Brand, Category, HomeNavItem } from "@/types";
 export type NavEntry = HomeNavItem;
 
 export interface ResolvedNav {
+  /** As the admin wrote it (or the category's name); `navLabel` sets it in capitals for the menus. */
   label: string;
   href: string;
   accent?: boolean;
@@ -99,6 +102,14 @@ export function navHref(
 }
 
 /**
+ * A menu label in capitals, by the rules of the page's language: Turkish turns
+ * "i" into "İ", which in an English label would read "ACCESSORİES". So the
+ * menus capitalise as they render (TopNav, CategoryList), where the language
+ * is known, rather than resolveNav, which every page calls without one.
+ */
+export const navLabel = (label: string, locale: Locale) => label.toLocaleUpperCase(INTL_LOCALE[locale]);
+
+/**
  * The entries as links, against the catalog as it stands. An entry that names
  * a category or brand but leaves its label blank takes that one's current
  * name, so renaming the category renames the menu too.
@@ -119,6 +130,6 @@ export function resolveNav(
       (entry.brand ? brandBySlug.get(entry.brand)?.name : undefined);
     // A nameless entry whose category is gone (or switched off) has nothing to say.
     if (!label) return [];
-    return [{ label: label.toLocaleUpperCase("tr-TR"), href: navHref(entry, bySlug, brandBySlug), accent: entry.accent || undefined }];
+    return [{ label, href: navHref(entry, bySlug, brandBySlug), accent: entry.accent || undefined }];
   });
 }

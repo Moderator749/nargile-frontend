@@ -1,8 +1,6 @@
-import type { Metadata } from "next";
+import { NotFoundContent, notFoundMetadata } from "@/components/layout/NotFoundContent";
 
-import { NOT_FOUND_METADATA, NotFoundContent } from "@/components/layout/NotFoundContent";
-
-export const metadata: Metadata = NOT_FOUND_METADATA;
+export const generateMetadata = notFoundMetadata;
 
 /**
  * The 404 for a storefront page that calls `notFound()` — /marka/<unknown>,

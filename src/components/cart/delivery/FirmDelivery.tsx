@@ -3,10 +3,11 @@
 import { ReceiptText } from "lucide-react";
 
 import { AddressFields } from "@/components/cart/delivery/AddressFields";
+import { useLocale, useMessages } from "@/components/i18n/LocaleProvider";
 import { addressSummary, type AddressDraft } from "@/components/cart/delivery/addressDraft";
 import { DeliveryCard } from "@/components/cart/delivery/DeliveryCard";
 import {
-  FIRM_CARD_COPY,
+  FIRM_CARD_ICON,
   METHOD_BY_FIRM_CARD,
   firmCards,
   istanbulShortfall,
@@ -15,6 +16,7 @@ import {
 import { MethodFields, type MethodDetails } from "@/components/cart/delivery/MethodFields";
 import { countryName } from "@/lib/countries";
 import { formatMoneyCompact } from "@/lib/format";
+import { checkoutMessages } from "@/lib/i18n/messages/checkout";
 import type { SavedAddress } from "@/types";
 
 const inputClass =
@@ -64,6 +66,10 @@ interface FirmDeliveryProps {
  * no separate list of carriers to disagree with it.
  */
 export function FirmDelivery(props: FirmDeliveryProps) {
+  const locale = useLocale();
+  const m = useMessages(checkoutMessages);
+  const t = m.firm;
+  const summaryOf = (entry: SavedAddress) => addressSummary(entry, (code) => countryName(code, locale));
   const { saved, card, address, registeredInIstanbul, subtotal, istanbulMinimum } = props;
   const registered = saved?.[0] ?? null;
   const hasSaved = registered !== null;
@@ -93,7 +99,7 @@ export function FirmDelivery(props: FirmDeliveryProps) {
           className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-zinc-100"
         >
           <ReceiptText className="h-4 w-4 shrink-0 text-slate-400 dark:text-zinc-500" aria-hidden />
-          Fatura Adresim
+          {t.billingHeading}
         </h3>
         {/* One line either way, so the block is the same height before and
             after the addresses land. */}
@@ -101,18 +107,17 @@ export function FirmDelivery(props: FirmDeliveryProps) {
           <p className="mt-1.5 h-4 w-2/3 rounded bg-slate-200 motion-safe:animate-pulse dark:bg-white/10" aria-busy />
         ) : (
           <p className={`mt-1 ${noteClass}`}>
-            {registered
-              ? addressSummary(registered, countryName)
-              : "Kayıtlı fatura adresiniz yok; teslimat adresinizi aşağıda girebilirsiniz."}
+            {registered ? summaryOf(registered) : t.noBilling}
           </p>
         )}
       </section>
 
       <fieldset className="mt-5">
-        <legend className={labelClass}>Teslimat bilgileri</legend>
+        <legend className={labelClass}>{m.delivery.legend}</legend>
         <div className="mt-2 space-y-2">
           {cards.map((value) => {
-            const { title, summary, Icon } = FIRM_CARD_COPY[value];
+            const { title, summary } = t.cards[value];
+            const Icon = FIRM_CARD_ICON[value];
             const selected = card === value;
             const vanWaiting = value === "ISTANBUL_FREE" && shortfall > 0;
             return (
@@ -124,16 +129,16 @@ export function FirmDelivery(props: FirmDeliveryProps) {
                 title={title}
                 summary={
                   value === "BILLING" && registered
-                    ? addressSummary(registered, countryName)
+                    ? summaryOf(registered)
                     : value === "ISTANBUL_FREE"
-                      ? `${formatMoneyCompact(istanbulMinimum)} ve üzeri siparişlerde kayıtlı fatura adresinize ücretsiz teslimat.`
+                      ? t.istanbulSummary(formatMoneyCompact(istanbulMinimum))
                       : summary
                 }
                 Icon={Icon}
                 disabled={vanWaiting}
                 notice={
                   vanWaiting
-                    ? `Ücretsiz teslimat için sepetinize ${formatMoneyCompact(shortfall)} daha ekleyin.`
+                    ? t.vanShortfall(formatMoneyCompact(shortfall))
                     : undefined
                 }
               >
@@ -141,7 +146,7 @@ export function FirmDelivery(props: FirmDeliveryProps) {
                   <div className="space-y-4">
                     <div className="space-y-1.5">
                       <label htmlFor="branch-name" className={labelClass}>
-                        Şube Adı
+                        {t.branchName}
                       </label>
                       <input
                         id="branch-name"
@@ -149,28 +154,18 @@ export function FirmDelivery(props: FirmDeliveryProps) {
                         required
                         value={props.branchName}
                         onChange={(e) => props.onBranchNameChange(e.target.value)}
-                        placeholder="Kadıköy Şubesi"
+                        placeholder={t.branchPlaceholder}
                         className={inputClass}
                       />
-                      <p className={noteClass}>
-                        Şubenizin adresi ve telefonu aşağıdaki alanlara girilir; sipariş bu şube
-                        adıyla gönderilir.
-                      </p>
+                      <p className={noteClass}>{t.branchNote}</p>
                     </div>
                     {addressForm}
                   </div>
                 ) : value === "ISTANBUL_FREE" ? (
                   <div className="space-y-1.5 text-sm">
-                    <p className="font-medium text-slate-700 dark:text-zinc-300">
-                      Kayıtlı fatura adresiniz
-                    </p>
-                    <p className={noteClass}>
-                      {registered ? addressSummary(registered, countryName) : "—"}
-                    </p>
-                    <p className={noteClass}>
-                      Teslimat öncesi aranarak kendi aracımızla getirilir; doldurmanız gereken bir
-                      alan yok.
-                    </p>
+                    <p className="font-medium text-slate-700 dark:text-zinc-300">{t.registeredAddress}</p>
+                    <p className={noteClass}>{registered ? summaryOf(registered) : "—"}</p>
+                    <p className={noteClass}>{t.vanNote}</p>
                   </div>
                 ) : value === "YURTICI_DOOR" || value === "NAKLIYE_AMBARI" ? (
                   /* The agreement number and the ambar belong to the two cards
@@ -202,11 +197,9 @@ export function FirmDelivery(props: FirmDeliveryProps) {
           nothing usable on file has to be able to give an address somewhere. */}
       {card !== "BRANCH" && typedAddressNeeded && (
         <fieldset className="mt-5 border-t border-slate-200 pt-5 dark:border-white/10">
-          <legend className={labelClass}>Teslimat adresi</legend>
+          <legend className={labelClass}>{t.deliveryAddress}</legend>
           <p className={`mt-1 ${noteClass}`}>
-            {hasSaved
-              ? "Kayıtlı fatura adresiniz teslimat için yeterli değil; aşağıdaki alanları tamamlayın."
-              : "Hesabınızda kayıtlı fatura adresi yok; teslimat adresinizi girin."}
+            {hasSaved ? t.incomplete : t.noAddress}
           </p>
           <div className="mt-2">{addressForm}</div>
         </fieldset>

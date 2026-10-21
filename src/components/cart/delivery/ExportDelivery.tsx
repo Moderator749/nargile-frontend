@@ -3,10 +3,12 @@
 import { MapPin, Plane, Ship, Truck, type LucideIcon } from "lucide-react";
 
 import { AddressFields } from "@/components/cart/delivery/AddressFields";
+import { useLocale, useMessages } from "@/components/i18n/LocaleProvider";
 import { addressSummary, billingIndex, type AddressDraft } from "@/components/cart/delivery/addressDraft";
 import { DeliveryCard } from "@/components/cart/delivery/DeliveryCard";
 import { countryName } from "@/lib/countries";
-import { TRANSPORT_OPTIONS } from "@/lib/exportAccount";
+import { TRANSPORT_OPTIONS_TEXT } from "@/lib/exportAccount";
+import { checkoutMessages } from "@/lib/i18n/messages/checkout";
 import type { SavedAddress, TransportMode } from "@/types";
 
 const ICONS: Record<TransportMode, LucideIcon> = { ROAD: Truck, AIR: Plane, SEA: Ship };
@@ -46,6 +48,8 @@ export function ExportDelivery({
   transportMode: TransportMode | null;
   onTransportModeChange: (mode: TransportMode) => void;
 }) {
+  const locale = useLocale();
+  const t = useMessages(checkoutMessages).export.delivery;
   // The same address the order will carry: the cart reads this one too.
   const registered = saved && saved.length > 0 ? saved[billingIndex(saved)] : null;
   const readOnly = registered !== null && addressReady;
@@ -54,7 +58,7 @@ export function ExportDelivery({
     <>
       <section aria-labelledby="export-address-heading" className="mt-5">
         <h3 id="export-address-heading" className={labelClass}>
-          Delivery address
+          {t.addressHeading}
         </h3>
 
         {saved === null ? (
@@ -70,18 +74,16 @@ export function ExportDelivery({
               <span className="block font-semibold text-slate-900 dark:text-zinc-100">
                 {registered.full_name}
               </span>
-              <span className={`block ${noteClass}`}>{addressSummary(registered, countryName)}</span>
-              <span className={`mt-1 block ${noteClass}`}>
-                Your registered account address. To change it, update your profile.
+              <span className={`block ${noteClass}`}>
+                {addressSummary(registered, (code) => countryName(code, locale))}
               </span>
+              <span className={`mt-1 block ${noteClass}`}>{t.registeredNote}</span>
             </span>
           </div>
         ) : (
           <>
             <p className={`mt-1 ${noteClass}`}>
-              {registered
-                ? "Your registered address is not complete enough to ship to; please fill in the fields below."
-                : "There is no address on your account yet; please enter where the goods should go."}
+              {registered ? t.incomplete : t.none}
             </p>
             <div className="mt-2">
               <AddressFields value={address} onChange={onAddressChange} abroad lockPlace={false} />
@@ -91,13 +93,10 @@ export function ExportDelivery({
       </section>
 
       <fieldset className="mt-5 border-t border-slate-200 pt-5 dark:border-white/10">
-        <legend className={labelClass}>Delivery information</legend>
-        <p className={`mt-1 ${noteClass}`}>
-          Choose how your order should travel. Freight and customs are quoted after the
-          request, against the option you confirm here.
-        </p>
+        <legend className={labelClass}>{t.legend}</legend>
+        <p className={`mt-1 ${noteClass}`}>{t.transportNote}</p>
         <div className="mt-2 space-y-2">
-          {TRANSPORT_OPTIONS.map(({ value, title, note }) => (
+          {TRANSPORT_OPTIONS_TEXT[locale].map(({ value, title, note }) => (
             <DeliveryCard
               key={value}
               name="export_transport"

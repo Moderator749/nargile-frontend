@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Check, Hourglass, Minus, Plus, Truck } from "lucide-react";
 
 import Link from "@/components/i18n/Link";
+import { useMessages } from "@/components/i18n/LocaleProvider";
 import { ProductImage } from "@/components/catalog/ProductImage";
 import { useDisplayMoney } from "@/hooks/useDisplayMoney";
 import { useNow } from "@/hooks/useNow";
@@ -13,6 +14,7 @@ import { cartLineFor } from "@/lib/cartLine";
 import { isExportAccount } from "@/lib/exportAccount";
 import { normalizeHex, readableInk } from "@/lib/color";
 import { saleState } from "@/lib/flashSale";
+import { catalogMessages } from "@/lib/i18n/messages/catalog";
 import { productHref, productImageAlt } from "@/lib/seo";
 import { displayVariant, hasColorChoice, soldOut as allSoldOut } from "@/lib/variants";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -65,11 +67,14 @@ const ADDED_FEEDBACK_MS = 1600;
 const stepBtn =
   "flex h-11 w-10 items-center justify-center rounded-full transition-colors duration-200 hover:bg-white/15 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-white disabled:cursor-not-allowed disabled:opacity-40";
 
-/** "2g 14:03:22" / "14:03:22" — monospaced, so the badge never changes width as it ticks. */
-function formatCountdown(ms: number): string {
+/**
+ * "2g 14:03:22" / "14:03:22" — monospaced, so the badge never changes width as
+ * it ticks. `day` writes the days in the page's language ("2g ", "2d ").
+ */
+function formatCountdown(ms: number, day: (n: number) => string): string {
   const { days, hours, minutes, seconds } = countdownParts(ms);
   const pad = (n: number) => String(n).padStart(2, "0");
-  return `${days > 0 ? `${days}g ` : ""}${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+  return `${days > 0 ? day(days) : ""}${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
 }
 
 export function ProductCard({ product, category, isLoggedIn, publicPrices, pricesPending, eager }: ProductCardProps) {
@@ -88,6 +93,7 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
   const isHeavy = product.tags?.includes("HEAVY_CARGO") ?? false;
   const Icon = categoryCopy(category?.slug).icon;
   const money = useDisplayMoney();
+  const t = useMessages(catalogMessages).card;
 
   // Ticks only for cards with a sale; at expiry the regular price comes back (checkout agrees).
   const now = useNow(!!variant?.flash_sale);
@@ -156,13 +162,13 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
         <div className="pointer-events-none absolute inset-x-3 top-3 flex items-start justify-between gap-2 @max-[13rem]:inset-x-2 @max-[13rem]:top-2">
           {isHeavy ? (
             <span className={`${badgeClass} bg-black/70 text-white`}>
-              <Truck className="h-3 w-3" aria-hidden /> Ağır kargo
+              <Truck className="h-3 w-3" aria-hidden /> {t.heavy}
             </span>
           ) : (
             <span />
           )}
           {soldOut ? (
-            <span className={`${badgeClass} bg-white/80 text-zinc-900 ring-1 ring-inset ring-black/10`}>Tükendi</span>
+            <span className={`${badgeClass} bg-white/80 text-zinc-900 ring-1 ring-inset ring-black/10`}>{t.soldOut}</span>
           ) : sale.kind === "live" ? (
             // The admin's "Fırsat rengi" is a free hex, so it goes in as an inline
             // style (Tailwind only ships classes it saw at build time), with ink
@@ -176,17 +182,17 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
                   three do not fit on one line: the coloured pill, the hourglass
                   and the clock say "deal" there, and the words go to screen
                   readers only. */}
-              <span className={sale.endsAt !== null ? "@max-[13rem]:sr-only" : undefined}>Fırsat Ürün</span>
+              <span className={sale.endsAt !== null ? "@max-[13rem]:sr-only" : undefined}>{t.deal}</span>
               <Hourglass className="h-3 w-3 shrink-0" aria-hidden />
               {sale.endsAt !== null && (
-                <span className="font-mono normal-case tracking-normal tabular-nums" role="timer" aria-label="Kalan süre">
-                  {now === null ? "--:--:--" : formatCountdown(sale.endsAt - now)}
+                <span className="font-mono normal-case tracking-normal tabular-nums" role="timer" aria-label={t.timeLeft}>
+                  {now === null ? "--:--:--" : formatCountdown(sale.endsAt - now, t.days)}
                 </span>
               )}
             </span>
           ) : sale.kind === "missed" ? (
             <span className={`${badgeClass} bg-zinc-900/75 text-zinc-100`}>
-              Fırsat Kaçtı <Hourglass className="h-3 w-3 shrink-0" aria-hidden />
+              {t.missed} <Hourglass className="h-3 w-3 shrink-0" aria-hidden />
             </span>
           ) : null}
         </div>
@@ -195,13 +201,13 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
           // In the cart: a mini stepper replaces the "+" (− at 1 removes the item).
           <div
             role="group"
-            aria-label={`${product.name}: sepette ${inCartShown} adet`}
-            className="absolute bottom-3 right-3 z-10 flex h-11 items-center rounded-full bg-black/85 @max-[13rem]:bottom-2 @max-[13rem]:right-2 text-white shadow-lg backdrop-blur-md"
+            aria-label={t.inCart(product.name, inCartShown)}
+            className="absolute bottom-3 end-3 z-10 flex h-11 items-center rounded-full bg-black/85 @max-[13rem]:bottom-2 @max-[13rem]:end-2 text-white shadow-lg backdrop-blur-md"
           >
             <button
               type="button"
               onClick={() => useCartStore.getState().updateQuantity(variant.id, inCartShown - 1)}
-              aria-label={inCartShown === 1 ? `${product.name}: sepetten çıkar` : `${product.name}: bir azalt`}
+              aria-label={inCartShown === 1 ? t.removeOne(product.name) : t.decrease(product.name)}
               className={stepBtn}
             >
               <Minus className="h-4 w-4" strokeWidth={2} aria-hidden />
@@ -213,7 +219,7 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
               type="button"
               onClick={handleAdd}
               disabled={!canAdd}
-              aria-label={`${product.name}: bir artır`}
+              aria-label={t.increase(product.name)}
               className={stepBtn}
             >
               <Plus className="h-4 w-4" strokeWidth={2} aria-hidden />
@@ -225,9 +231,9 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
           // instead of guessing.
           <Link
             href={productHref(product)}
-            aria-label={`Renk seçin: ${product.name}`}
-            title="Renk seçin"
-            className="absolute bottom-3 right-3 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-black/80 text-white @max-[13rem]:bottom-2 @max-[13rem]:right-2 shadow-lg backdrop-blur-md transition-[background-color,transform] duration-300 ease-out hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-safe:active:scale-95"
+            aria-label={t.chooseColourFor(product.name)}
+            title={t.chooseColour}
+            className="absolute bottom-3 end-3 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-black/80 text-white @max-[13rem]:bottom-2 @max-[13rem]:end-2 shadow-lg backdrop-blur-md transition-[background-color,transform] duration-300 ease-out hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-safe:active:scale-95"
           >
             <Plus className="h-5 w-5" strokeWidth={1.75} aria-hidden />
           </Link>
@@ -238,8 +244,8 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
             type="button"
             onClick={handleAdd}
             disabled={!canAdd}
-            aria-label={soldOut ? `Tükendi: ${product.name}` : `Sepete ekle: ${product.name}`}
-            className={`absolute bottom-3 right-3 z-10 flex h-11 w-11 items-center justify-center rounded-full text-white @max-[13rem]:bottom-2 @max-[13rem]:right-2 shadow-lg backdrop-blur-md transition-[background-color,transform,opacity] duration-300 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40 motion-safe:active:scale-95 ${
+            aria-label={soldOut ? t.soldOutFor(product.name) : t.addFor(product.name)}
+            className={`absolute bottom-3 end-3 z-10 flex h-11 w-11 items-center justify-center rounded-full text-white @max-[13rem]:bottom-2 @max-[13rem]:end-2 shadow-lg backdrop-blur-md transition-[background-color,transform,opacity] duration-300 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40 motion-safe:active:scale-95 ${
               added ? "bg-emerald-600" : "bg-black/80 enabled:hover:bg-accent"
             }`}
           >
@@ -257,7 +263,7 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
           </button>
         )}
         <span className="sr-only" aria-live="polite">
-          {added ? `${product.name} sepete eklendi` : sale.kind === "missed" ? `${product.name}: fırsat kaçtı` : ""}
+          {added ? t.added(product.name) : sale.kind === "missed" ? t.missedFor(product.name) : ""}
         </span>
       </div>
 
@@ -272,7 +278,7 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
             {needsColorChoice && (
               <>
                 {(product.brand ?? category?.name) && " · "}
-                {product.variants.length} renk
+                {t.colours(product.variants.length)}
               </>
             )}
           </p>
@@ -304,11 +310,11 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
                   <span className="text-xs text-muted-foreground line-through @max-[13rem]:text-[11px]">{money.format(wasPrice)}</span>
                 )}
                 {hasDiscount && (sale.kind === "live" || !publicPrices) && (
-                  <span className="text-xs font-medium text-accent @max-[13rem]:text-[11px]">−%{discountPct}</span>
+                  <span className="text-xs font-medium text-accent @max-[13rem]:text-[11px]">{t.discount(discountPct)}</span>
                 )}
               </>
             ) : (
-              <span className="font-sans text-sm text-muted-foreground">Fiyat bilgisi yok</span>
+              <span className="font-sans text-sm text-muted-foreground">{t.noPrice}</span>
             )}
           </div>
         </div>

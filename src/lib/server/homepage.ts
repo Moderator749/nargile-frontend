@@ -3,16 +3,22 @@
 
 import { API_URL } from "@/lib/config";
 import { resolveHomepage } from "@/lib/homepage";
-import { CATALOG_REVALIDATE } from "@/lib/server/catalog";
+import { CATALOG_REVALIDATE, inPageLanguage } from "@/lib/server/catalog";
 import type { Homepage, HomepageSettingsResponse } from "@/types";
 
 /**
- * The homepage as the admin last saved it, over the defaults. Cached with the
+ * The homepage as the admin last saved it, over the defaults, in the page's
+ * language (its texts through the translation memory, lib/homeTranslations —
+ * the defaults included). Cached with the
  * catalog: the editor's save drops the "catalog" tag, so a change shows on the
  * next request. If the backend cannot be reached the defaults stand, so the
  * storefront never loses its menus or footer.
  */
 export async function getHomepage(): Promise<Homepage> {
+  return inPageLanguage(await readHomepage());
+}
+
+async function readHomepage(): Promise<Homepage> {
   try {
     const res = await fetch(`${API_URL}/home/settings`, {
       next: { revalidate: CATALOG_REVALIDATE, tags: ["catalog"] },

@@ -1,3 +1,6 @@
+import { homeMessages } from "@/lib/i18n/messages/home";
+import { getLocale, getMessages } from "@/lib/i18n/server";
+
 const SECONDS_PER_BRAND = 3;
 
 /**
@@ -21,8 +24,14 @@ const SECONDS_PER_BRAND = 3;
  * The homepage runs it twice — under the perks bar near the top, and under
  * the statement near the foot. The top one is `decorative`: hidden from
  * screen readers, so the list is announced once, as its own region.
+ *
+ * In Arabic the track lays out from the right and overflows to the left, so
+ * the same -50% would slide it off into nothing. There it starts half a track
+ * over (`translate`, which the keyframes' `transform` adds to) and runs the
+ * keyframes backwards: the frames are the same two copies, the names drift
+ * rightwards — the way Arabic reads on — and the loop still has no seam.
  */
-export function BrandTicker({
+export async function BrandTicker({
   brands,
   decorative = false,
   className = "pb-2 pt-4 sm:pt-5",
@@ -34,13 +43,17 @@ export function BrandTicker({
   className?: string;
 }) {
   if (brands.length === 0) return null;
+  const [locale, t] = await Promise.all([getLocale(), getMessages(homeMessages)]);
+  // Capitals by the page's language: Turkish turns "i" into "İ", which an
+  // English or Arabic page would show on "Khalil Mamoon".
+  const upper = locale === "tr" ? "tr-TR" : "en-GB";
   const half = [...brands, ...brands];
   const duration = `${half.length * SECONDS_PER_BRAND}s`;
 
   const band = (copy: number) => (
     <ul
       aria-hidden={copy > 0 || undefined}
-      className={`flex shrink-0 items-center gap-8 pr-8 motion-reduce:w-full motion-reduce:shrink motion-reduce:flex-wrap motion-reduce:justify-center motion-reduce:gap-y-3 motion-reduce:px-6 motion-reduce:pr-6 ${
+      className={`flex shrink-0 items-center gap-8 pe-8 motion-reduce:w-full motion-reduce:shrink motion-reduce:flex-wrap motion-reduce:justify-center motion-reduce:gap-y-3 motion-reduce:px-6 motion-reduce:pe-6 ${
         copy > 0 ? "motion-reduce:hidden" : ""
       }`}
     >
@@ -54,7 +67,7 @@ export function BrandTicker({
             className={`flex items-center gap-8 whitespace-nowrap ${primary ? "" : "motion-reduce:hidden"}`}
           >
             <span className="cursor-pointer select-none transition-colors duration-200 hover:text-neutral-900 dark:hover:text-white">
-              {brand.toLocaleUpperCase("tr-TR")}
+              {brand.toLocaleUpperCase(upper)}
             </span>
             {/* A jewel dot rather than a typed bullet: it sits on the
                 x-height's centre at any size and carries a faint glow. */}
@@ -70,7 +83,7 @@ export function BrandTicker({
 
   return (
     <section
-      aria-label={decorative ? undefined : "Dünya markaları"}
+      aria-label={decorative ? undefined : t.brands.ticker}
       aria-hidden={decorative || undefined}
       className={`bg-white dark:bg-transparent ${className}`}
     >
@@ -82,7 +95,7 @@ export function BrandTicker({
           {/* Still, the list wraps instead, so there is no moving edge to fade. */}
           <div className="overflow-hidden rounded-none py-4 [mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)] sm:py-5 motion-reduce:[mask-image:none]">
             <div
-              className="flex w-max text-xs font-bold uppercase tracking-[0.2em] text-neutral-500 motion-safe:animate-[marquee_var(--marquee-duration)_linear_infinite] hover:[animation-play-state:paused] motion-reduce:w-full motion-reduce:justify-center sm:text-sm dark:text-neutral-500"
+              className="flex w-max text-xs font-bold uppercase tracking-[0.2em] text-neutral-500 motion-safe:animate-[marquee_var(--marquee-duration)_linear_infinite] motion-safe:rtl:translate-x-1/2 motion-safe:rtl:[animation-direction:reverse] hover:[animation-play-state:paused] motion-reduce:w-full motion-reduce:justify-center sm:text-sm dark:text-neutral-500"
               style={{ "--marquee-duration": duration } as React.CSSProperties}
             >
               {band(0)}

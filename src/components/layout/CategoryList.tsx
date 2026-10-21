@@ -3,9 +3,10 @@
 import { useSearchParams } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 
+import { useLocale } from "@/components/i18n/LocaleProvider";
 import { usePagePath } from "@/components/i18n/navigation";
 import Link from "@/components/i18n/Link";
-import type { ResolvedNav } from "@/lib/storefrontNav";
+import { navLabel, type ResolvedNav } from "@/lib/storefrontNav";
 
 /**
  * One line of text per category, on the page itself: no box, no shadow, a
@@ -37,6 +38,7 @@ export function CategoryList({
 }) {
   // Without its language (/en/cart is /cart), as every check below expects.
   const pathname = usePagePath();
+  const locale = useLocale();
   const query = useSearchParams().get("q");
 
   const isCurrent = ({ href }: ResolvedNav) => {
@@ -50,6 +52,7 @@ export function CategoryList({
     <ul>
       {items.map((item, i) => {
         const current = isCurrent(item);
+        const label = navLabel(item.label, locale);
         return (
           <li key={`${item.href}-${i}`} className="border-b border-border last:border-0">
             <Link
@@ -58,11 +61,12 @@ export function CategoryList({
               aria-current={current ? "page" : undefined}
               className={current ? CURRENT : ITEM}
             >
-              <span className="min-w-0 truncate" title={item.label}>
-                {item.label}
+              <span className="min-w-0 truncate" title={label}>
+                {label}
               </span>
+              {/* Points the way the text reads: left in Arabic. */}
               <ChevronRight
-                className={`h-3.5 w-3.5 shrink-0 transition-colors ${
+                className={`h-3.5 w-3.5 shrink-0 transition-colors rtl:rotate-180 ${
                   current ? "text-red-700 dark:text-red-400" : "text-gray-400 dark:text-neutral-500"
                 }`}
                 aria-hidden

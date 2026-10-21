@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 
+import { useMessages } from "@/components/i18n/LocaleProvider";
 import { buildCheckoutRequest, calculateCart } from "@/lib/ordersApi";
 import { getApiErrorMessage } from "@/lib/errors";
+import { cartMessages } from "@/lib/i18n/messages/cart";
 import type { Cart, CartLineItem, PaymentMethod, ShippingMethod } from "@/types";
 
 const DEBOUNCE_MS = 400;
@@ -31,6 +33,7 @@ export function useCartQuote(
   const payload = buildCheckoutRequest(items, paymentMethod, pointsToRedeem, shippingMethod);
   const key = enabled && items.length > 0 ? JSON.stringify(payload) : null;
   const [result, setResult] = useState<QuoteResult | null>(null);
+  const failed = useMessages(cartMessages).view.quoteFailed;
 
   useEffect(() => {
     if (key === null) return;
@@ -43,7 +46,7 @@ export function useCartQuote(
           setResult({
             key,
             quote: null,
-            error: getApiErrorMessage(err, "Sepet tutarı hesaplanamadı."),
+            error: getApiErrorMessage(err, failed),
           });
         });
     }, DEBOUNCE_MS);
@@ -51,7 +54,7 @@ export function useCartQuote(
       clearTimeout(timer);
       controller.abort();
     };
-  }, [key]);
+  }, [key, failed]);
 
   const current = key !== null && result?.key === key ? result : null;
   // While a new quote loads, keep showing the previous one (dimmed by the caller).

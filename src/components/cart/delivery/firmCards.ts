@@ -15,6 +15,8 @@
 
 import { Building2, MapPin, Store, Truck, Van, type LucideIcon } from "lucide-react";
 
+import type { Locale } from "@/lib/i18n/config";
+import { checkoutMessages } from "@/lib/i18n/messages/checkout";
 import type { ShippingMethod } from "@/types";
 
 export type FirmCard = "BILLING" | "BRANCH" | "YURTICI_DOOR" | "NAKLIYE_AMBARI" | "ISTANBUL_FREE";
@@ -22,39 +24,17 @@ export type FirmCard = "BILLING" | "BRANCH" | "YURTICI_DOOR" | "NAKLIYE_AMBARI" 
 /** The card the cart opens on: the address the firm is invoiced at. */
 export const DEFAULT_FIRM_CARD: FirmCard = "BILLING";
 
-export interface FirmCardCopy {
-  title: string;
-  /** The line under the title; the registered address replaces it on BILLING. */
-  summary: string;
-  Icon: LucideIcon;
-}
-
-export const FIRM_CARD_COPY: Record<FirmCard, FirmCardCopy> = {
-  BILLING: {
-    title: "Fatura adresime istiyorum",
-    summary: "Kayıtlı fatura adresinize gönderilir.",
-    Icon: MapPin,
-  },
-  BRANCH: {
-    title: "Şubeme istiyorum",
-    summary: "Şubenizin adını, adresini ve telefonunu girin.",
-    Icon: Store,
-  },
-  YURTICI_DOOR: {
-    title: "Yurtiçi Kargo adres teslim istiyorum",
-    summary: "Teslimatta alıcı öder; kendi anlaşmanız varsa ona faturalanır.",
-    Icon: Truck,
-  },
-  NAKLIYE_AMBARI: {
-    title: "Nakliye ambarı ile teslimat istiyorum",
-    summary: "Ambar ücreti teslim alırken ödenir.",
-    Icon: Building2,
-  },
-  ISTANBUL_FREE: {
-    title: "İstanbul içi ücretsiz teslimat",
-    summary: "Kendi aracımızla, teslimat öncesi arayarak.",
-    Icon: Van,
-  },
+/**
+ * Each card's icon. Its title and the line under it are words, in
+ * `checkoutMessages.firm.cards`; the registered address replaces the line on
+ * BILLING.
+ */
+export const FIRM_CARD_ICON: Record<FirmCard, LucideIcon> = {
+  BILLING: MapPin,
+  BRANCH: Store,
+  YURTICI_DOOR: Truck,
+  NAKLIYE_AMBARI: Building2,
+  ISTANBUL_FREE: Van,
 };
 
 /** How the order travels, once a card has been confirmed. */
@@ -80,8 +60,8 @@ export function firmCards(registeredInIstanbul: boolean): FirmCard[] {
 }
 
 /** A branch has to be named — it is what the shop writes on the parcel. */
-export function branchProblem(name: string): string | null {
-  return name.trim().length < 2 ? "Şube adını girin." : null;
+export function branchProblem(name: string, locale: Locale = "tr"): string | null {
+  return name.trim().length < 2 ? checkoutMessages[locale].problems.branch : null;
 }
 
 /**

@@ -2,6 +2,9 @@
 
 import { MessageSquareText } from "lucide-react";
 
+import { useMessages } from "@/components/i18n/LocaleProvider";
+import { cartMessages } from "@/lib/i18n/messages/cart";
+
 /** Long enough for a paragraph; the server refuses more. */
 export const ORDER_NOTE_MAX = 500;
 
@@ -16,32 +19,19 @@ export const ORDER_NOTE_MAX = 500;
 export function OrderNote({
   value,
   onChange,
-  english = false,
+  exportCopy = false,
 }: {
   value: string;
   onChange: (value: string) => void;
-  /** An export account is addressed in English everywhere else; so here. */
-  english?: boolean;
+  /**
+   * An export account is addressed in English everywhere else (in Arabic on an
+   * Arabic page), and is writing to the export team; so here.
+   */
+  exportCopy?: boolean;
 }) {
+  const t = useMessages(cartMessages);
   const left = ORDER_NOTE_MAX - value.length;
-  const copy = english
-    ? {
-        heading: "Order Note",
-        optional: "(Optional)",
-        label: "Order note",
-        placeholder:
-          "Tell us about yourself, ask about products, or add any request for this order",
-        hint: "Your note reaches our export team with the request.",
-        counter: (n: number) => `${n} characters left`,
-      }
-    : {
-        heading: "Sipariş Notu",
-        optional: "(Opsiyonel)",
-        label: "Sipariş notu",
-        placeholder: "Siparişiniz hakkında mesaj bırakabilir, talepte bulunabilirsiniz",
-        hint: "Notunuz siparişinizle birlikte ekibimize iletilir.",
-        counter: (n: number) => `${n} karakter kaldı`,
-      };
+  const copy = exportCopy ? t.export.note : t.note;
 
   return (
     <section

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { PopupCard } from "@/components/banner/PopupCard";
+import { useCmsText } from "@/components/i18n/useCmsText";
 import { API_URL } from "@/lib/config";
 import type { PopupAnnouncement } from "@/types";
 
@@ -29,6 +30,8 @@ function dismissedVersion(): string | null {
  */
 export function AnnouncementPopup() {
   const [popup, setPopup] = useState<PopupAnnouncement | null>(null);
+  // Written in Turkish in the panel; English and Arabic from the homepage translation memory.
+  const cms = useCmsText();
   const closeRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -84,8 +87,8 @@ export function AnnouncementPopup() {
       />
       <div className="relative w-full max-w-md motion-safe:animate-[popup-in_240ms_ease-out]">
         <PopupCard
-          title={popup.title}
-          message={popup.message}
+          title={cms(popup.title)}
+          message={cms(popup.message)}
           onClose={close}
           titleId="announcement-popup-title"
           closeRef={closeRef}

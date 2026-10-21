@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Check, Pencil } from "lucide-react";
 
+import { useLocale, useMessages } from "@/components/i18n/LocaleProvider";
 import {
   areaClass,
   inputClass,
@@ -18,6 +19,7 @@ import {
 } from "@/components/cart/invoiceDraft";
 import { Alert } from "@/components/ui/Alert";
 import { getApiErrorMessage } from "@/lib/errors";
+import { checkoutMessages } from "@/lib/i18n/messages/checkout";
 import { saveCorporateInvoice } from "@/lib/ordersApi";
 import { TR_PROVINCES } from "@/lib/provinces";
 import type { CorporateInvoiceDetails } from "@/types";
@@ -44,11 +46,14 @@ export function CorporateInvoiceFields({
   onFile: CorporateInvoiceDetails | null;
   onSaved: (details: CorporateInvoiceDetails) => void;
 }) {
+  const locale = useLocale();
+  const m = useMessages(checkoutMessages);
+  const t = m.corporate;
   // A firm on file opens collapsed; anything else opens as a form to fill in.
   const [editing, setEditing] = useState(onFile === null);
   const [saving, setSaving] = useState(false);
   const [result, setResult] = useState<{ kind: "success" | "error"; text: string } | null>(null);
-  const problem = invoiceProblem({ ...value, toCompany: true });
+  const problem = invoiceProblem({ ...value, toCompany: true }, locale);
 
   async function save() {
     if (problem || saving) return;
@@ -57,9 +62,9 @@ export function CorporateInvoiceFields({
     try {
       const saved = await saveCorporateInvoice(toCorporatePayload(value));
       onSaved(saved);
-      setResult({ kind: "success", text: "Firma bilgileriniz hesabınıza kaydedildi." });
+      setResult({ kind: "success", text: t.saved });
     } catch (err) {
-      setResult({ kind: "error", text: getApiErrorMessage(err, "Bilgiler kaydedilemedi.") });
+      setResult({ kind: "error", text: getApiErrorMessage(err, t.saveFailed) });
     } finally {
       setSaving(false);
     }
@@ -80,7 +85,7 @@ export function CorporateInvoiceFields({
             </p>
           </div>
           <button type="button" onClick={() => setEditing(true)} className={quietButtonClass}>
-            <Pencil className="h-3.5 w-3.5" aria-hidden /> Düzenle
+            <Pencil className="h-3.5 w-3.5" aria-hidden /> {m.invoice.edit}
           </button>
         </div>
       </div>
@@ -91,7 +96,7 @@ export function CorporateInvoiceFields({
     <div className="mt-5 grid gap-4 sm:grid-cols-2">
       <div className="space-y-1.5 sm:col-span-2">
         <label htmlFor="invoice-title" className={labelClass}>
-          Firma Ünvanı
+          {t.title}
         </label>
         <input
           id="invoice-title"
@@ -100,26 +105,26 @@ export function CorporateInvoiceFields({
           autoComplete="organization"
           value={value.companyTitle}
           onChange={(e) => onChange({ companyTitle: e.target.value })}
-          placeholder="Vergi levhasında kayıtlı tam ticari ünvan"
+          placeholder={t.titlePlaceholder}
           className={inputClass}
         />
       </div>
       <div className="space-y-1.5 sm:col-span-2">
         <label htmlFor="invoice-trade-name" className={labelClass}>
-          Firma Adı
+          {t.tradeName}
         </label>
         <input
           id="invoice-trade-name"
           maxLength={200}
           value={value.tradeName}
           onChange={(e) => onChange({ tradeName: e.target.value })}
-          placeholder="Firmanın bilinen adı (ünvandan farklıysa)"
+          placeholder={t.tradeNamePlaceholder}
           className={inputClass}
         />
       </div>
       <div className="space-y-1.5 sm:col-span-2">
         <label htmlFor="invoice-line" className={labelClass}>
-          Şirket Resmi Adresi
+          {t.line}
         </label>
         <textarea
           id="invoice-line"
@@ -128,13 +133,13 @@ export function CorporateInvoiceFields({
           required
           value={value.line}
           onChange={(e) => onChange({ line: e.target.value })}
-          placeholder="Vergi levhasındaki mahalle, cadde/sokak, bina ve kat/daire no"
+          placeholder={t.linePlaceholder}
           className={areaClass}
         />
       </div>
       <div className="space-y-1.5">
         <label htmlFor="invoice-city" className={labelClass}>
-          İl
+          {m.place.city}
         </label>
         <select
           id="invoice-city"
@@ -143,7 +148,7 @@ export function CorporateInvoiceFields({
           onChange={(e) => onChange({ city: e.target.value })}
           className={inputClass}
         >
-          <option value="">İl seçin</option>
+          <option value="">{m.place.select}</option>
           {TR_PROVINCES.map((province) => (
             <option key={province} value={province}>
               {province}
@@ -153,7 +158,7 @@ export function CorporateInvoiceFields({
       </div>
       <div className="space-y-1.5">
         <label htmlFor="invoice-district" className={labelClass}>
-          İlçe
+          {m.place.district}
         </label>
         <input
           id="invoice-district"
@@ -166,7 +171,7 @@ export function CorporateInvoiceFields({
       </div>
       <div className="space-y-1.5">
         <label htmlFor="invoice-tax-office" className={labelClass}>
-          Vergi Dairesi
+          {t.taxOffice}
         </label>
         <input
           id="invoice-tax-office"
@@ -174,13 +179,13 @@ export function CorporateInvoiceFields({
           required
           value={value.taxOffice}
           onChange={(e) => onChange({ taxOffice: e.target.value })}
-          placeholder="Bağlı olunan vergi dairesi"
+          placeholder={t.taxOfficePlaceholder}
           className={inputClass}
         />
       </div>
       <div className="space-y-1.5">
         <label htmlFor="invoice-tax-number" className={labelClass}>
-          Vergi No / TC
+          {t.taxNumber}
         </label>
         <input
           id="invoice-tax-number"
@@ -189,19 +194,19 @@ export function CorporateInvoiceFields({
           required
           value={value.taxNumber}
           onChange={(e) => onChange({ taxNumber: e.target.value })}
-          placeholder="10 haneli VKN veya 11 haneli TC"
+          placeholder={t.taxNumberPlaceholder}
           className={inputClass}
         />
-        <p className={noteClass}>Şahıs şirketleri TC kimlik numarasını girebilir.</p>
+        <p className={noteClass}>{t.taxNumberNote}</p>
       </div>
 
       <div className="flex flex-wrap items-center gap-2 sm:col-span-2">
         <button type="button" onClick={save} disabled={!!problem || saving} className={quietButtonClass}>
           <Check className="h-3.5 w-3.5" aria-hidden />
-          {saving ? "Kaydediliyor…" : "Hesabıma kaydet"}
+          {saving ? m.invoice.saving : t.saveToAccount}
         </button>
         <p className={noteClass}>
-          {problem ?? "Kaydederseniz sonraki siparişlerinizde bu bilgiler hazır gelir."}
+          {problem ?? t.saveNote}
         </p>
       </div>
 

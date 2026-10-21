@@ -1,5 +1,6 @@
 "use client";
 
+import { useMessages } from "@/components/i18n/LocaleProvider";
 import { BireyselDelivery } from "@/components/cart/delivery/BireyselDelivery";
 import {
   shipsAbroad,
@@ -11,6 +12,7 @@ import { ExportDelivery } from "@/components/cart/delivery/ExportDelivery";
 import { FirmDelivery } from "@/components/cart/delivery/FirmDelivery";
 import type { FirmCard } from "@/components/cart/delivery/firmCards";
 import type { MethodDetails } from "@/components/cart/delivery/MethodFields";
+import { checkoutMessages } from "@/lib/i18n/messages/checkout";
 import type { AccountType, SavedAddress, TransportMode } from "@/types";
 
 interface DeliveryStepProps {
@@ -69,6 +71,7 @@ interface DeliveryStepProps {
  * or sea — which is what the freight will be quoted against.
  */
 export function DeliveryStep(props: DeliveryStepProps) {
+  const t = useMessages(checkoutMessages).delivery;
   const abroad = shipsAbroad(props.accountType);
   const firmFlow = shipsToRegistered(props.accountType) && !abroad;
 
@@ -78,7 +81,7 @@ export function DeliveryStep(props: DeliveryStepProps) {
       className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-white/10 dark:bg-zinc-900 sm:p-6"
     >
       <h2 id="delivery-heading" className="text-lg font-bold tracking-tight">
-        Teslimat ve Adres
+        {t.heading}
       </h2>
 
       {abroad ? (

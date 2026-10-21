@@ -26,10 +26,16 @@ import { SITE_NAME } from "@/lib/site";
  *   back to the centred stack there.
  */
 
+/**
+ * The admin's alignment is a side of the photo, so it stays that side in
+ * Arabic too: the words keep clear of the subject the photo was composed
+ * around (and a part placed on the stage keeps its x). In a right-to-left
+ * page a flex column's `start` is the right, hence the `rtl:` swaps.
+ */
 const ALIGN: Record<HeroTextAlign, { block: string; actions: string }> = {
-  left: { block: "items-start text-left", actions: "items-start sm:justify-start" },
+  left: { block: "items-start text-left rtl:items-end", actions: "items-start sm:justify-start rtl:items-end sm:rtl:justify-end" },
   center: { block: "items-center text-center", actions: "items-center sm:justify-center" },
-  right: { block: "items-end text-right", actions: "items-end sm:justify-end" },
+  right: { block: "items-end text-right rtl:items-start", actions: "items-end sm:justify-end rtl:items-start sm:rtl:justify-start" },
 };
 
 /** The wide photo's width on screen: the slider's, 1024px at most. */
@@ -223,7 +229,7 @@ export function HeroSlideView({
         <HeroButton editor={!!editor} placed={placed} href={slide.cta.href} variant="primary">
           {slide.cta.label}
           <ArrowRight
-            className={`h-4 w-4 transition-transform duration-200 motion-safe:group-hover:translate-x-0.5 ${placed ? "lg:h-[1.681cqw] lg:w-[1.681cqw]" : ""}`}
+            className={`h-4 w-4 transition-transform duration-200 rtl:-scale-x-100 motion-safe:group-hover:translate-x-0.5 rtl:motion-safe:group-hover:-translate-x-0.5 ${placed ? "lg:h-[1.681cqw] lg:w-[1.681cqw]" : ""}`}
             aria-hidden
           />
         </HeroButton>

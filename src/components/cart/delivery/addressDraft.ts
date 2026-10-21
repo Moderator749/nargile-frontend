@@ -11,6 +11,8 @@
  * address abroad needs a country and a city, and has neither.
  */
 
+import type { Locale } from "@/lib/i18n/config";
+import { checkoutMessages } from "@/lib/i18n/messages/checkout";
 import { isValidPhone, isValidInternationalPhone } from "@/lib/trIdentity";
 import type { AccountType, SavedAddress, ShippingAddress } from "@/types";
 
@@ -115,29 +117,35 @@ export function fromSaved(saved: SavedAddress, fallback: { full_name?: string; p
   };
 }
 
-/** Mirrors the server's checks; null = this address can be shipped to. */
-export function addressProblem(a: AddressDraft): string | null {
+/**
+ * Mirrors the server's checks; null = this address can be shipped to. The
+ * answer is in the page's language; an address abroad is the export
+ * customer's, and is answered in English on a Turkish page.
+ */
+export function addressProblem(a: AddressDraft, locale: Locale = "tr"): string | null {
+  const m = checkoutMessages[locale];
   const abroad = a.country !== TURKEY;
-  if (a.full_name.trim().length < 2) return "Teslimat için ad soyad girin.";
+  if (a.full_name.trim().length < 2) return m.problems.name;
   const phoneOk = abroad ? isValidInternationalPhone(a.phone) : isValidPhone(a.phone);
-  if (!phoneOk) return "Geçerli bir telefon numarası girin.";
-  if (!a.country) return abroad ? "Select a country." : "Ülke seçin.";
+  if (!phoneOk) return m.problems.phone;
+  if (!a.country) return abroad ? m.export.problems.country : m.problems.country;
   if (abroad) {
-    if (a.city.trim().length < 2) return "Enter the city, state or province.";
-    if (a.line.trim().length < 5) return "Enter the delivery address.";
+    if (a.city.trim().length < 2) return m.export.problems.city;
+    if (a.line.trim().length < 5) return m.export.problems.line;
     return null;
   }
-  if (!a.city) return "İl seçin.";
-  if (a.district.trim().length < 2) return "İlçe girin.";
-  if (a.line.trim().length < 5) return "Açık adresi girin.";
+  if (!a.city) return m.problems.city;
+  if (a.district.trim().length < 2) return m.problems.district;
+  if (a.line.trim().length < 5) return m.problems.line;
   return null;
 }
 
 /** "Başka biri teslim alacak": both fields or neither, and both must be usable. */
-export function receiverProblem(name: string, phone: string, abroad: boolean): string | null {
-  if (name.trim().length < 2) return "Teslim alacak kişinin adını girin.";
+export function receiverProblem(name: string, phone: string, abroad: boolean, locale: Locale = "tr"): string | null {
+  const m = checkoutMessages[locale];
+  if (name.trim().length < 2) return m.problems.receiverName;
   const ok = abroad ? isValidInternationalPhone(phone) : isValidPhone(phone);
-  return ok ? null : "Teslim alacak kişinin telefonunu girin.";
+  return ok ? null : m.problems.receiverPhone;
 }
 
 /**
@@ -145,9 +153,9 @@ export function receiverProblem(name: string, phone: string, abroad: boolean): s
  * than none, so an ambar phone is checked if one is typed. The server applies
  * the same rule and would refuse the order.
  */
-export function freightProblem(phone: string): string | null {
+export function freightProblem(phone: string, locale: Locale = "tr"): string | null {
   if (!phone.trim()) return null;
-  return isValidPhone(phone) ? null : "Ambar telefonunu kontrol edin veya boş bırakın.";
+  return isValidPhone(phone) ? null : checkoutMessages[locale].problems.freightPhone;
 }
 
 const trimmed = (value: string) => value.trim() || null;

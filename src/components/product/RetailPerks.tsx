@@ -2,11 +2,13 @@
 
 import { BadgePercent, Clock, Crown, Landmark, ShieldCheck, Truck, type LucideIcon } from "lucide-react";
 
+import { useLocale, useMessages } from "@/components/i18n/LocaleProvider";
 import { formatMoneyCompact } from "@/lib/format";
+import type { Locale } from "@/lib/i18n/config";
+import { formatPercent, productMessages } from "@/lib/i18n/messages/product";
 import { retailPerks } from "@/lib/perks";
-import { formatRate, rateRange } from "@/lib/storeParameters";
 import { useAuthStore } from "@/store/useAuthStore";
-import type { StoreParameters, User } from "@/types";
+import type { ParameterTier, StoreParameters, User } from "@/types";
 
 interface Perk {
   Icon: LucideIcon;
@@ -21,21 +23,35 @@ interface Perk {
  * has it switched off or empty. The other two are the shop's own promises
  * rather than anything the cart arithmetic knows about.
  */
-function perks(params: StoreParameters): Perk[] {
+/**
+ * "%5 – %7": the span of the havale ladder's rates, or null when it gives
+ * nothing — `rateRange` (lib/storeParameters), with the percentage written the
+ * page's way ("5% – 7%" in English and Arabic).
+ */
+function rateSpan(tiers: ParameterTier[], locale: Locale): string | null {
+  const rates = tiers.map((t) => Number(t.rate)).filter((r) => r > 0);
+  if (!rates.length) return null;
+  const low = Math.min(...rates);
+  const high = Math.max(...rates);
+  return low === high ? formatPercent(low, locale) : `${formatPercent(low, locale)} – ${formatPercent(high, locale)}`;
+}
+
+function perks(params: StoreParameters, locale: Locale): Perk[] {
+  const t = productMessages[locale].perks;
   const threshold = formatMoneyCompact(params.free_shipping_threshold);
-  const havale = rateRange(params.bank_transfer_tiers);
+  const havale = rateSpan(params.bank_transfer_tiers, locale);
   return [
     {
       Icon: Truck,
-      title: `${threshold}+ Ücretsiz Kargo & Hızlı Sevk`,
-      note: `${threshold} ve üzeri siparişlerde kargo ücretsiz.`,
+      title: t.freeShipping(threshold),
+      note: t.freeShippingNote(threshold),
     },
     ...(havale
       ? [
           {
             Icon: Landmark,
-            title: `Havale / EFT ile ${havale} İndirim`,
-            note: "Ödeme adımında anında otomatik sepet indirimi.",
+            title: t.transfer(havale),
+            note: t.transferNote,
           },
         ]
       : []),
@@ -43,27 +59,20 @@ function perks(params: StoreParameters): Perk[] {
       ? [
           {
             Icon: Crown,
-            title: "Sultan Puan Kazanın",
-            note: `${formatMoneyCompact(params.loyalty.band_min)} – ${formatMoneyCompact(params.loyalty.band_max)} arası siparişlerde ${formatRate(params.loyalty.base_rate)} Sultan Puan; bir sonraki alışverişinizde indirim olarak kullanın.`,
+            title: t.loyalty,
+            note: t.loyaltyNote(
+              formatMoneyCompact(params.loyalty.band_min),
+              formatMoneyCompact(params.loyalty.band_max),
+              formatPercent(params.loyalty.base_rate, locale),
+            ),
           },
         ]
       : []),
-    ...PROMISES,
+    // The shop's own promises.
+    { Icon: Clock, title: t.courier, note: t.courierNote },
+    { Icon: ShieldCheck, title: t.genuine, note: t.genuineNote },
   ];
 }
-
-const PROMISES: Perk[] = [
-  {
-    Icon: Clock,
-    title: "İstanbul İçi Kurye Aynı Gün Teslimat",
-    note: "Saat 10:00 – 20:00 arası hızlı teslimat seçeneği.",
-  },
-  {
-    Icon: ShieldCheck,
-    title: "%100 Orijinal Ürün & Güvenli Ödeme",
-    note: "256-bit SSL güvencesiyle distribütör garantili.",
-  },
-];
 
 /**
  * The retail buyer's terms, in the space beside the title and the price.
@@ -94,20 +103,22 @@ export const showsRetailPerks = (user: Pick<User, "account_type" | "segment_code
 
 export function RetailPerks({ params }: { params: StoreParameters }) {
   const user = useAuthStore((s) => s.user);
+  const locale = useLocale();
+  const t = useMessages(productMessages).perks;
   if (!showsRetailPerks(user)) return null;
 
   return (
     <aside
-      aria-label="Bireysel alışveriş avantajları"
+      aria-label={t.label}
       className="flex w-full flex-col"
     >
       <p className="mb-3 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-red-600 sm:mb-4 dark:text-red-400">
         <BadgePercent className="h-3.5 w-3.5 shrink-0" strokeWidth={2.25} aria-hidden />
-        Size Özel Alışveriş Avantajları
+        {t.heading}
       </p>
 
       <ul className="space-y-5 sm:space-y-6">
-        {perks(params).map(({ Icon, title, note }) => (
+        {perks(params, locale).map(({ Icon, title, note }) => (
           <li key={title} className="flex items-start gap-2.5">
             <Icon
               className="mt-[3px] h-4 w-4 shrink-0 text-red-600 dark:text-red-400"

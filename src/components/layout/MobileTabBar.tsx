@@ -3,8 +3,9 @@
 import { House, ShoppingCart, UserRound, type LucideIcon } from "lucide-react";
 
 import { usePagePath } from "@/components/i18n/navigation";
-import { useT } from "@/components/i18n/LocaleProvider";
+import { useMessages, useT } from "@/components/i18n/LocaleProvider";
 import Link from "@/components/i18n/Link";
+import { chromeMessages } from "@/lib/i18n/messages/layout";
 import { useAuthStore } from "@/store/useAuthStore";
 import { selectCartCount, useCartStore } from "@/store/useCartStore";
 
@@ -22,18 +23,19 @@ function Indicator({ active }: { active: boolean }) {
 }
 
 function TabLink({ href, label, Icon, active, badge }: { href: string; label: string; Icon: LucideIcon; active: boolean; badge?: number }) {
+  const m = useMessages(chromeMessages);
   return (
     <Link
       href={href}
       aria-current={active ? "page" : undefined}
-      aria-label={badge ? `${label} (${badge} ürün)` : undefined}
+      aria-label={badge ? m.withCount(label, badge) : undefined}
       className={`${TAB} ${tabTone(active)}`}
     >
       <Indicator active={active} />
       <span className="relative">
         <Icon className="h-[22px] w-[22px]" strokeWidth={active ? 2.25 : 1.75} aria-hidden />
         {!!badge && (
-          <span className="absolute -right-2.5 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-600 px-1 font-mono text-[10px] font-bold leading-none text-white ring-2 ring-white tabular-nums dark:ring-background">
+          <span className="absolute -end-2.5 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-600 px-1 font-mono text-[10px] font-bold leading-none text-white ring-2 ring-white tabular-nums dark:ring-background">
             {badge > 99 ? "99+" : badge}
           </span>
         )}

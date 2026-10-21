@@ -5,10 +5,13 @@ import axios from "axios";
 import { ExternalLink, PackageSearch, Truck } from "lucide-react";
 
 import Link from "@/components/i18n/Link";
+import { useLocale, useMessages } from "@/components/i18n/LocaleProvider";
 import { StatusBadge } from "@/components/orders/StatusBadge";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { formatDate } from "@/lib/format";
+import { INTL_LOCALE } from "@/lib/i18n/messages";
+import { ordersMessages } from "@/lib/i18n/messages/orders";
 import { fetchMyOrders } from "@/lib/ordersApi";
 import { carrierName, trackingHref, yurticiTrackingUrl } from "@/lib/tracking";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -24,6 +27,8 @@ const following = (o: Order) => o.status === "SHIPPED" || o.status === "APPROVED
  * also finds their recent shipments here, each with its tracking link.
  */
 export function CargoTracking() {
+  const locale = useLocale();
+  const t = useMessages(ordersMessages).tracking;
   const hydrated = useAuthHydrated();
   const token = useAuthStore((s) => s.token);
   const [code, setCode] = useState("");
@@ -50,16 +55,13 @@ export function CargoTracking() {
     <div className="space-y-10">
       <section aria-labelledby="track-by-code">
         <h2 id="track-by-code" className="flex items-center gap-2 text-lg font-bold tracking-tight">
-          <PackageSearch className="h-5 w-5 text-red-600" aria-hidden /> Takip numarası ile sorgula
+          <PackageSearch className="h-5 w-5 text-red-600" aria-hidden /> {t.byCode}
         </h2>
-        <p className="mt-1 text-sm text-slate-600 dark:text-zinc-400">
-          Kargoya verildiğinde e-postanıza gelen Yurtiçi Kargo takip numarasını girin; gönderinizin durumu Yurtiçi
-          Kargo&apos;nun sayfasında açılır.
-        </p>
+        <p className="mt-1 text-sm text-slate-600 dark:text-zinc-400">{t.byCodeNote}</p>
         <form onSubmit={track} className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
           <div className="flex-1">
             <Input
-              label="Yurtiçi Kargo takip numarası"
+              label={t.codeLabel}
               value={code}
               onChange={(e) => setCode(e.target.value)}
               inputMode="numeric"
@@ -69,30 +71,30 @@ export function CargoTracking() {
             />
           </div>
           <Button type="submit" disabled={!code.trim()} className="sm:w-auto!">
-            Sorgula <ExternalLink className="h-4 w-4" aria-hidden />
+            {t.query} <ExternalLink className="h-4 w-4" aria-hidden />
           </Button>
         </form>
       </section>
 
       <section aria-labelledby="my-shipments">
         <h2 id="my-shipments" className="flex items-center gap-2 text-lg font-bold tracking-tight">
-          <Truck className="h-5 w-5 text-red-600" aria-hidden /> Siparişlerimin kargo durumu
+          <Truck className="h-5 w-5 text-red-600" aria-hidden /> {t.myShipments}
         </h2>
         {!hydrated ? null : !token ? (
           <p className="mt-2 text-sm text-slate-600 dark:text-zinc-400">
-            Siparişlerinizin kargo bilgilerini görmek için{" "}
+            {t.signInBefore}
             <Link href="/login?next=/kargo-takip" className="font-medium text-red-700 hover:underline dark:text-red-400">
-              giriş yapın
+              {t.signInLink}
             </Link>
-            .
+            {t.signInAfter}
           </p>
         ) : orders === null ? (
-          <p className="mt-2 text-sm text-slate-500 dark:text-zinc-400">Yükleniyor…</p>
+          <p className="mt-2 text-sm text-slate-500 dark:text-zinc-400">{t.loading}</p>
         ) : orders.length === 0 ? (
           <p className="mt-2 text-sm text-slate-600 dark:text-zinc-400">
-            Yolda ya da hazırlanan bir siparişiniz yok.{" "}
+            {t.none}{" "}
             <Link href="/orders" className="font-medium text-red-700 hover:underline dark:text-red-400">
-              Tüm siparişleriniz
+              {t.allOrders}
             </Link>
           </p>
         ) : (
@@ -105,10 +107,13 @@ export function CargoTracking() {
                     <p className="font-mono text-sm font-semibold">{order.order_number}</p>
                     <p className="text-xs text-slate-500 dark:text-zinc-400">
                       {order.status === "SHIPPED"
-                        ? [carrierName(order), order.shipped_at && `kargoya verildi ${formatDate(order.shipped_at)}`]
+                        ? [
+                            carrierName(order, locale),
+                            order.shipped_at && t.shippedOn(formatDate(order.shipped_at, INTL_LOCALE[locale])),
+                          ]
                             .filter(Boolean)
                             .join(" · ")
-                        : "Hazırlanıyor; kargoya verildiğinde takip bağlantısı burada olacak."}
+                        : t.preparing}
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
@@ -120,7 +125,7 @@ export function CargoTracking() {
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 text-sm font-medium text-red-700 hover:underline dark:text-red-400"
                       >
-                        Takip et <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+                        {t.track} <ExternalLink className="h-3.5 w-3.5" aria-hidden />
                       </a>
                     ) : order.status === "SHIPPED" && order.tracking_code ? (
                       <span className="font-mono text-sm">{order.tracking_code}</span>

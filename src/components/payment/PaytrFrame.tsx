@@ -4,7 +4,9 @@ import { useEffect, useRef } from "react";
 import Script from "next/script";
 import { ArrowLeft, Lock } from "lucide-react";
 
+import { useMessages } from "@/components/i18n/LocaleProvider";
 import { formatMoney } from "@/lib/format";
+import { ordersMessages } from "@/lib/i18n/messages/orders";
 import type { PaytrPage } from "@/lib/paytr";
 
 declare global {
@@ -33,6 +35,7 @@ export function PaytrFrame({
   orderNumber: string;
   onBack: () => void;
 }) {
+  const t = useMessages(ordersMessages).payment;
   const frame = useRef<HTMLIFrameElement>(null);
 
   // The script may already be on the page from an earlier attempt.
@@ -45,10 +48,10 @@ export function PaytrFrame({
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 id="paytr-heading" className="flex items-center gap-2 text-2xl font-bold tracking-tight">
-            <Lock className="h-5 w-5 text-emerald-600" aria-hidden /> Kart ile güvenli ödeme
+            <Lock className="h-5 w-5 text-emerald-600" aria-hidden /> {t.paytrHeading}
           </h1>
           <p className="mt-1 text-sm text-slate-600 dark:text-zinc-400">
-            Sipariş <span className="font-mono font-semibold">{orderNumber}</span> · Ödenecek tutar{" "}
+            {t.order} <span className="font-mono font-semibold">{orderNumber}</span> · {t.amountDue}{" "}
             <strong className="font-mono">{formatMoney(page.amount)}</strong>
           </p>
         </div>
@@ -57,13 +60,13 @@ export function PaytrFrame({
           onClick={onBack}
           className="inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-sm font-medium text-slate-600 ring-1 ring-inset ring-slate-300 transition-colors hover:bg-slate-50 dark:text-zinc-300 dark:ring-white/15 dark:hover:bg-white/5"
         >
-          <ArrowLeft className="h-4 w-4" aria-hidden /> Ödeme yöntemini değiştir
+          <ArrowLeft className="h-4 w-4 rtl:-scale-x-100" aria-hidden /> {t.changeMethod}
         </button>
       </div>
 
       {page.test_mode && (
         <p className="mt-4 rounded-xl bg-amber-50 px-3.5 py-2.5 text-xs text-amber-900 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-100 dark:ring-amber-500/30">
-          Test modu: PayTR test kartlarıyla deneyin; kartınızdan çekim yapılmaz.
+          {t.testMode}
         </p>
       )}
 
@@ -71,7 +74,7 @@ export function PaytrFrame({
         <iframe
           ref={frame}
           id="paytriframe"
-          title="PayTR güvenli ödeme sayfası"
+          title={t.frameTitle}
           src={page.iframe_url}
           className="block min-h-[640px] w-full border-0"
           scrolling="no"
@@ -79,7 +82,7 @@ export function PaytrFrame({
         />
       </div>
       <p className="mt-3 text-center text-xs text-slate-500 dark:text-zinc-400">
-        Kart bilgileriniz PayTR&apos;ın güvenli sayfasında işlenir; tarafımıza ulaşmaz.
+        {t.secureNote}
       </p>
 
       <Script

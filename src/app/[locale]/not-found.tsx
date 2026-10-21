@@ -1,9 +1,7 @@
-import type { Metadata } from "next";
-
-import { NOT_FOUND_METADATA, NotFoundContent } from "@/components/layout/NotFoundContent";
+import { NotFoundContent, notFoundMetadata } from "@/components/layout/NotFoundContent";
 import { StorefrontChrome } from "@/components/layout/StorefrontChrome";
 
-export const metadata: Metadata = NOT_FOUND_METADATA;
+export const generateMetadata = notFoundMetadata;
 
 /**
  * The 404 for an address no route matches (a mistyped link, an old URL). It

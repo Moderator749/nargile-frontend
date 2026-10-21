@@ -34,7 +34,8 @@ export function Switch({ checked, onChange, labelledBy, describedBy, disabled, t
     >
       <span
         className={`inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
-          checked ? "translate-x-6" : "translate-x-1"
+          // The track fills from the reading side: in Arabic the thumb starts at the right.
+          checked ? "translate-x-6 rtl:-translate-x-6" : "translate-x-1 rtl:-translate-x-1"
         }`}
       />
     </button>

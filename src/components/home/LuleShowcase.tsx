@@ -4,7 +4,9 @@ import { Fragment } from "react";
 
 import { CourierPerks } from "@/components/home/CourierPerks";
 import { ProductRow } from "@/components/home/ProductRow";
+import { useMessages } from "@/components/i18n/LocaleProvider";
 import { useOwnPrices } from "@/hooks/useOwnPrices";
+import { homeMessages } from "@/lib/i18n/messages/home";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useAuthHydrated } from "@/store/useHasHydrated";
 import type { CatalogProduct, Category } from "@/types";
@@ -17,8 +19,6 @@ import type { CatalogProduct, Category } from "@/types";
  * turning red on hover (`accent`).
  * Server-rendered at the public price, re-priced for a signed-in visitor.
  */
-/** The kinds of lüle the shop carries, in pairs, before the closing phrase. */
-const LULE_KINDS = ["Sırlı & Sırsız", "Phunnel & Killer", "Cam & Silikon", "Toprak & Seramik"];
 
 /**
  * "Sırlı & Sırsız | Phunnel & Killer | … | Aradığınız tüm lüle marka ve
@@ -28,20 +28,22 @@ const LULE_KINDS = ["Sırlı & Sırsız", "Phunnel & Killer", "Cam & Silikon", "
  * are a shade lighter than the words; the closing phrase wraps as text does,
  * but never leaves "burada" on a line of its own.
  */
-const SUBTITLE = (
-  <>
-    {LULE_KINDS.map((kind) => (
-      <Fragment key={kind}>
-        <span className="whitespace-nowrap">
-          {kind}
-          <span className="text-gray-300 dark:text-neutral-600">{"\u00a0|"}</span>
-        </span>{" "}
-      </Fragment>
-    ))}
-    {/* Its last two words held together, so it never ends on one alone. */}
-    {"Aradığınız tüm lüle marka ve modelleri\u00a0burada"}
-  </>
-);
+function Subtitle({ kinds, closing }: { kinds: string[]; closing: string }) {
+  return (
+    <>
+      {kinds.map((kind) => (
+        <Fragment key={kind}>
+          <span className="whitespace-nowrap">
+            {kind}
+            <span className="text-gray-300 dark:text-neutral-600">{"\u00a0|"}</span>
+          </span>{" "}
+        </Fragment>
+      ))}
+      {/* Its last two words held together (in the messages), so it never ends on one alone. */}
+      {closing}
+    </>
+  );
+}
 
 export function LuleShowcase({
   products,
@@ -56,12 +58,13 @@ export function LuleShowcase({
   const mine = useOwnPrices(products);
   const hydrated = useAuthHydrated();
   const token = useAuthStore((s) => s.token);
+  const t = useMessages(homeMessages);
 
   return (
     <ProductRow
       headingId="luleler-baslik"
-      title="Lüle Alırken Kararsız Kalacaksınız"
-      subtitle={SUBTITLE}
+      title={t.lules.title}
+      subtitle={<Subtitle kinds={t.lules.kinds} closing={t.lules.closing} />}
       // The picks row's white, continued: the two read as a pair.
       className="bg-white pt-8 pb-12 sm:pt-10 sm:pb-16 dark:bg-transparent"
       actions={<CourierPerks />}
@@ -70,7 +73,7 @@ export function LuleShowcase({
       loggedIn={hydrated && !!token}
       categories={categories}
       accent
-      more={{ href: categoryHref, label: "Tüm Lüleleri Gör" }}
+      more={{ href: categoryHref, label: t.lules.more }}
     />
   );
 }

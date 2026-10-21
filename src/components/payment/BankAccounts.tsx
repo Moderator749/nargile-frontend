@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Check, Copy } from "lucide-react";
 
+import { useMessages } from "@/components/i18n/LocaleProvider";
+import { ordersMessages } from "@/lib/i18n/messages/orders";
 import { formatIban } from "@/lib/provinces";
 import type { BankAccount } from "@/types";
 
@@ -46,6 +48,7 @@ function BankMark({ account }: { account: BankAccount }) {
 }
 
 export function CopyButton({ text, label }: { text: string; label: string }) {
+  const t = useMessages(ordersMessages).payment;
   const [copied, setCopied] = useState(false);
   return (
     <button
@@ -56,17 +59,18 @@ export function CopyButton({ text, label }: { text: string; label: string }) {
           setTimeout(() => setCopied(false), 1500);
         });
       }}
-      aria-label={`${label} kopyala`}
+      aria-label={t.copyAria(label)}
       className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-white/10 dark:text-zinc-300 dark:hover:bg-white/5"
     >
       {copied ? <Check className="h-3.5 w-3.5 text-emerald-600" aria-hidden /> : <Copy className="h-3.5 w-3.5" aria-hidden />}
-      {copied ? "Kopyalandı" : "Kopyala"}
+      {copied ? t.copied : t.copy}
     </button>
   );
 }
 
 /** The active accounts from "Banka Hesapları", each with a copyable IBAN. */
 export function BankAccountList({ accounts }: { accounts: BankAccount[] }) {
+  const t = useMessages(ordersMessages).payment;
   return (
     <ul className="space-y-3">
       {accounts.map((acc) => (
@@ -78,11 +82,15 @@ export function BankAccountList({ accounts }: { accounts: BankAccount[] }) {
                 {acc.bank_name}
                 {acc.branch && <span className="font-normal text-slate-500 dark:text-zinc-400"> · {acc.branch}</span>}
               </p>
-              <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">Alıcı: {acc.account_holder}</p>
+              <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">
+                {t.holder} {acc.account_holder}
+              </p>
             </div>
           </div>
           <div className="mt-3 flex items-center justify-between gap-3">
-            <p className="break-all font-mono text-sm tracking-wide">{formatIban(acc.iban)}</p>
+            <p dir="ltr" className="break-all font-mono text-sm tracking-wide rtl:text-right">
+              {formatIban(acc.iban)}
+            </p>
             <CopyButton text={acc.iban} label={`${acc.bank_name} IBAN`} />
           </div>
         </li>

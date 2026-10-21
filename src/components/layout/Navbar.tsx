@@ -8,12 +8,13 @@ import { Menu, PackageSearch, Search, ShoppingCart } from "lucide-react";
 import Link from "@/components/i18n/Link";
 import { Logo } from "@/components/brand/Logo";
 import { useLocalePath } from "@/components/i18n/navigation";
-import { useT } from "@/components/i18n/LocaleProvider";
+import { useMessages, useT } from "@/components/i18n/LocaleProvider";
 import { CurrencySelect } from "@/components/layout/CurrencySelect";
 import { LanguageSelect } from "@/components/layout/LanguageSelect";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { TopNav } from "@/components/layout/TopNav";
 import { UserMenu } from "@/components/layout/UserMenu";
+import { chromeMessages } from "@/lib/i18n/messages/layout";
 import { isAdminRole } from "@/lib/roles";
 import { useAuthStore } from "@/store/useAuthStore";
 import { selectCartCount, useCartStore } from "@/store/useCartStore";
@@ -94,6 +95,7 @@ export function Navbar({
   showMenu?: boolean;
 }) {
   const t = useT();
+  const m = useMessages(chromeMessages);
   const user = useAuthStore((s) => s.user);
   const cartCount = useCartStore(selectCartCount);
   const openDrawer = useCategoryDrawer((s) => s.setOpen);
@@ -129,7 +131,7 @@ export function Navbar({
 
   // Doors only some accounts have; the menu below is the same for everyone.
   const accountLinks = [
-    ...(isAdminRole(user?.role) ? [{ href: "/admin", label: "Yönetim" }] : []),
+    ...(isAdminRole(user?.role) ? [{ href: "/admin", label: m.admin }] : []),
   ];
   // Open to everyone: a tracking number works without an account, and a
   // signed-in customer sees their own shipments there too.

@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 
+import { useMessages } from "@/components/i18n/LocaleProvider";
+import { uiMessages } from "@/lib/i18n/messages/layout";
 import { shiftHeadings, toHtml } from "@/lib/richText";
 
 /**
@@ -43,6 +45,7 @@ export function ReadMore({
   const [open, setOpen] = useState(false);
   const [overflows, setOverflows] = useState(false);
   const body = useRef<HTMLDivElement>(null);
+  const m = useMessages(uiMessages);
   const markup = toHtml(html);
 
   useEffect(() => {
@@ -89,7 +92,7 @@ export function ReadMore({
             aria-controls={id}
             className="inline-flex items-center gap-1.5 text-sm font-medium text-foreground underline-offset-4 transition-colors duration-200 hover:text-accent hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
-            {open ? "Daha Az Göster" : "Devamını Oku"}
+            {open ? m.showLess : m.readMore}
             <ChevronDown
               className={`h-4 w-4 shrink-0 transition-transform duration-200 ease-out motion-reduce:transition-none ${
                 open ? "-rotate-180" : ""

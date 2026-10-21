@@ -4,11 +4,15 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, FileDown } from "lucide-react";
 
 import Link from "@/components/i18n/Link";
+import { useLocale, useMessages } from "@/components/i18n/LocaleProvider";
 import { Lookbook, PrintableLookbook, printLookbook, type LookbookItem, type LookbookLine } from "@/components/lookbook/Lookbook";
 import { Alert } from "@/components/ui/Alert";
 import { getApiErrorMessage } from "@/lib/errors";
 import { formatDateParts } from "@/lib/format";
-import { CATALOG_GROUP_LABELS, fetchAdminCatalog, fetchPriceList, readCatalogRequest, type PriceListItem } from "@/lib/priceList";
+import type { Locale } from "@/lib/i18n/config";
+import { INTL_LOCALE } from "@/lib/i18n/messages";
+import { catalogMessages } from "@/lib/i18n/messages/catalog";
+import { fetchAdminCatalog, fetchPriceList, readCatalogRequest, type PriceListItem } from "@/lib/priceList";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useAuthHydrated } from "@/store/useHasHydrated";
 import type { SegmentType } from "@/types";
@@ -18,13 +22,13 @@ import type { SegmentType } from "@/types";
  * buyer works with; the retail row is a shelf price, VAT-inclusive, as a
  * shopper reads it — its total only, nothing marked "+ KDV".
  */
-function plateOf(item: PriceListItem, groups: SegmentType[]): LookbookItem {
+function plateOf(item: PriceListItem, groups: SegmentType[], locale: Locale): LookbookItem {
   const lines = groups.flatMap<LookbookLine>((g) => {
     const p = item.prices[g];
     if (!p) return [];
     const excl = Number(p.price_excl_tax);
     const total = Number(p.price_incl_tax);
-    const label = CATALOG_GROUP_LABELS[g].toLocaleUpperCase("tr-TR");
+    const label = catalogMessages[locale].priceCatalog.groupLabel[g].toLocaleUpperCase(INTL_LOCALE[locale]);
     return g === "RETAIL"
       ? [{ key: g, label, excl, vat: 0, total, currency: "TRY", tone: "retail", totalOnly: true }]
       : [{ key: g, label, excl, vat: Math.round((total - excl) * 100) / 100, total, currency: "TRY" }];
@@ -45,8 +49,10 @@ export function PriceCatalogPage({ requestKey }: { requestKey: string }) {
   const [items, setItems] = useState<PriceListItem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const printed = useRef(false);
+  const locale = useLocale();
+  const t = useMessages(catalogMessages).priceCatalog;
   const request = useMemo(() => (typeof window === "undefined" ? null : readCatalogRequest(requestKey)), [requestKey]);
-  const date = useMemo(() => formatDateParts(new Date().toISOString()).date, []);
+  const date = useMemo(() => formatDateParts(new Date().toISOString(), INTL_LOCALE[locale]).date, [locale]);
 
   useEffect(() => {
     if (!hydrated || !token || !request) return;
@@ -58,14 +64,14 @@ export function PriceCatalogPage({ requestKey }: { requestKey: string }) {
     rows
       .then(setItems)
       .catch((err) => {
-        if (!controller.signal.aborted) setError(getApiErrorMessage(err, "Katalog hazırlanamadı."));
+        if (!controller.signal.aborted) setError(getApiErrorMessage(err, t.loadError));
       });
     return () => controller.abort();
-  }, [hydrated, token, request]);
+  }, [hydrated, token, request, t.loadError]);
 
   const plates = useMemo(
-    () => (items && request ? items.map((i) => plateOf(i, request.groups)).filter((p) => p.lines.length > 0) : []),
-    [items, request],
+    () => (items && request ? items.map((i) => plateOf(i, request.groups, locale)).filter((p) => p.lines.length > 0) : []),
+    [items, request, locale],
   );
 
   // The saved PDF is named after the page's title: the collection, not the
@@ -74,11 +80,11 @@ export function PriceCatalogPage({ requestKey }: { requestKey: string }) {
   useEffect(() => {
     if (!request || !ready) return;
     const before = document.title;
-    document.title = `Fiyat Listesi - ${request.collection} - ${date}`;
+    document.title = t.documentTitle(request.collection, date);
     return () => {
       document.title = before;
     };
-  }, [request, date, ready]);
+  }, [request, date, ready, t]);
 
   // Straight to the print dialog, once, when the catalogue is ready.
   useEffect(() => {
@@ -89,13 +95,13 @@ export function PriceCatalogPage({ requestKey }: { requestKey: string }) {
   }, [plates]);
 
   if (!hydrated) return <div className="h-96 rounded-2xl bg-foreground/[0.04] motion-safe:animate-pulse" aria-busy />;
-  if (!token) return <Alert variant="error">Fiyat kataloğu için giriş yapın.</Alert>;
+  if (!token) return <Alert variant="error">{t.signIn}</Alert>;
   if (!request) {
-    return <Alert variant="error">Katalog bilgisi bulunamadı. Ürünler sayfasından “Fiyat Kataloğu İndir” ile yeniden oluşturun.</Alert>;
+    return <Alert variant="error">{t.missingRequest}</Alert>;
   }
   if (error) return <Alert variant="error">{error}</Alert>;
   if (!items) return <div className="h-96 rounded-2xl bg-foreground/[0.04] motion-safe:animate-pulse" aria-busy />;
-  if (!plates.length) return <Alert variant="error">Seçilen fiyat grubunda fiyatı olan ürün yok.</Alert>;
+  if (!plates.length) return <Alert variant="error">{t.nothingPriced}</Alert>;
 
   const sheet = <Lookbook collection={request.collection} date={date} items={plates} />;
   const left = items.length - plates.length;
@@ -104,20 +110,20 @@ export function PriceCatalogPage({ requestKey }: { requestKey: string }) {
       <PrintableLookbook>{sheet}</PrintableLookbook>
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <Link href="/catalog" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-4 w-4" aria-hidden /> Ürünler
+          <ArrowLeft className="h-4 w-4 rtl:-scale-x-100" aria-hidden /> {t.back}
         </Link>
         <button
           type="button"
           onClick={() => void printLookbook()}
           className="inline-flex h-10 items-center gap-2 rounded-full bg-red-600 px-5 text-sm font-semibold text-white hover:bg-red-500"
         >
-          <FileDown className="h-4 w-4" aria-hidden /> PDF olarak kaydet
+          <FileDown className="h-4 w-4" aria-hidden /> {t.savePdf}
         </button>
       </div>
       <p className="mb-5 text-sm text-muted-foreground">
-        {plates.length.toLocaleString("tr-TR")} ürün · {request.groups.map((g) => CATALOG_GROUP_LABELS[g]).join(" ve ")} fiyatları.
-        {left > 0 && ` Bu fiyat grubunda fiyatı olmayan ${left} ürün kataloğa alınmadı.`} Yazdırma penceresinde Hedef olarak
-        “PDF olarak kaydet”i seçin.
+        {t.summary(plates.length.toLocaleString(INTL_LOCALE[locale]), request.groups)}
+        {left > 0 && t.skipped(left)}
+        {t.printHint}
       </p>
       {/* The preview: the same sheet, on a white page. */}
       <div className="overflow-x-auto rounded-2xl border border-border bg-white p-6 shadow-sm">{sheet}</div>

@@ -2,7 +2,9 @@
 
 import { ShieldCheck } from "lucide-react";
 
+import { useMessages } from "@/components/i18n/LocaleProvider";
 import { RichText } from "@/components/ui/RichText";
+import { cartMessages } from "@/lib/i18n/messages/cart";
 import type { LegalDocument } from "@/types";
 
 /**
@@ -13,6 +15,7 @@ import type { LegalDocument } from "@/types";
  * from moving.
  */
 export function PrivacyNotice({ document }: { document: LegalDocument | undefined | null }) {
+  const t = useMessages(cartMessages).privacy;
   return (
     <section
       aria-labelledby="privacy-notice-heading"
@@ -23,7 +26,7 @@ export function PrivacyNotice({ document }: { document: LegalDocument | undefine
         className="flex items-center gap-2 text-sm font-bold tracking-tight text-slate-900 dark:text-zinc-100"
       >
         <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" aria-hidden />
-        Gizlilik Bilgilendirmesi
+        {t.heading}
       </h2>
       <div className="mt-2 min-h-[4.5rem]">
         {document ? (

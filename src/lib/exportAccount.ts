@@ -1,3 +1,4 @@
+import type { Locale } from "@/lib/i18n/config";
 import type { TransportMode, User } from "@/types";
 
 /**
@@ -17,9 +18,10 @@ export const isExportAccount = (user: Pick<User, "account_type"> | null | undefi
 
 /**
  * What the shop tells an export customer before they start, and again at the
- * top of their cart. English, because it is the only language this customer is
- * addressed in, and the same text in both places on purpose: it is the terms
- * of the arrangement, not a notification.
+ * top of their cart. English, because it is the language this customer is
+ * addressed in — on the Turkish pages too; an Arabic page shows the Arabic in
+ * `exportNoticeMessages` (lib/i18n/messages/auth). The same text in both places
+ * on purpose: it is the terms of the arrangement, not a notification.
  */
 export const EXPORT_NOTICE = [
   "The checkout payment screen is disabled for your account; direct payments cannot be made. " +
@@ -39,12 +41,29 @@ export interface TransportOption {
   note: string;
 }
 
-/** The three ways an export shipment can leave, as the quote will price them. */
-export const TRANSPORT_OPTIONS: TransportOption[] = [
-  { value: "ROAD", title: "Road Transport", note: "Karayolu · full or part load by truck" },
-  { value: "AIR", title: "Air Freight", note: "Hava yolu · fastest, priced by weight" },
-  { value: "SEA", title: "Sea Freight", note: "Deniz yolu · container, lowest cost" },
-];
+/**
+ * The three ways an export shipment can leave, as the quote will price them.
+ * The Turkish pages keep the English, with the Turkish word beside it.
+ */
+export const TRANSPORT_OPTIONS_TEXT: Record<Locale, TransportOption[]> = {
+  tr: [
+    { value: "ROAD", title: "Road Transport", note: "Karayolu · full or part load by truck" },
+    { value: "AIR", title: "Air Freight", note: "Hava yolu · fastest, priced by weight" },
+    { value: "SEA", title: "Sea Freight", note: "Deniz yolu · container, lowest cost" },
+  ],
+  en: [
+    { value: "ROAD", title: "Road Transport", note: "Full or part load by truck" },
+    { value: "AIR", title: "Air Freight", note: "Fastest, priced by weight" },
+    { value: "SEA", title: "Sea Freight", note: "Container shipping, lowest cost" },
+  ],
+  ar: [
+    { value: "ROAD", title: "النقل البري", note: "حمولة كاملة أو جزئية بالشاحنات" },
+    { value: "AIR", title: "الشحن الجوي", note: "الأسرع، والسعر حسب الوزن" },
+    { value: "SEA", title: "الشحن البحري", note: "بالحاويات، وبأقل تكلفة" },
+  ],
+};
+
+export const TRANSPORT_OPTIONS = TRANSPORT_OPTIONS_TEXT.tr;
 
 /** The storage key that remembers one account acknowledged the notice. */
 export const exportNoticeKey = (userId: string) => `export-notice:${userId}`;

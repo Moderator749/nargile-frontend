@@ -1,8 +1,15 @@
+"use client";
+
 import { Truck } from "lucide-react";
 
-/** The wording the buyer accepts; the server refuses the order without it. */
-export const SHIPPING_CONSENT_TEXT =
-  "Gönderim ücreti teslimat sırasında alıcı tarafından ödenecektir. Okudum, onayladım.";
+import { useMessages } from "@/components/i18n/LocaleProvider";
+import { cartMessages } from "@/lib/i18n/messages/cart";
+
+/**
+ * The wording the buyer accepts, in Turkish; the server refuses the order
+ * without it. The page shows it in its own language (`cartMessages.consent`).
+ */
+export const SHIPPING_CONSENT_TEXT = cartMessages.tr.consent.text;
 
 /**
  * Mandatory consent for a "karşı ödemeli" shipment, shown right above the
@@ -16,6 +23,7 @@ export function ShippingConsent({
   checked: boolean;
   onChange: (checked: boolean) => void;
 }) {
+  const t = useMessages(cartMessages).consent;
   return (
     <label
       className={`flex cursor-pointer gap-3 rounded-xl border p-3 text-xs leading-5 transition-colors duration-200 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-red-500/40 ${
@@ -33,9 +41,9 @@ export function ShippingConsent({
       />
       <span>
         <span className="flex items-center gap-1.5 font-semibold">
-          <Truck className="h-3.5 w-3.5 shrink-0" aria-hidden /> Karşı ödemeli gönderim
+          <Truck className="h-3.5 w-3.5 shrink-0" aria-hidden /> {t.title}
         </span>
-        <span className="mt-0.5 block">{SHIPPING_CONSENT_TEXT}</span>
+        <span className="mt-0.5 block">{t.text}</span>
       </span>
     </label>
   );

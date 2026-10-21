@@ -4,6 +4,7 @@
 import { API_URL, CATALOG_PAGE_SIZE } from "@/lib/config";
 import { DEFAULT_LOCALE } from "@/lib/i18n/config";
 import { getLocale } from "@/lib/i18n/server";
+import { translateTexts, type HomeTranslations } from "@/lib/homeTranslations";
 import { DEFAULT_STORE_PARAMETERS } from "@/lib/storeParameters";
 import type {
   Brand,
@@ -178,9 +179,27 @@ export function getBrands(): Promise<Brand[] | null> {
   return getJson<Brand[]>("/brands");
 }
 
-/** Homepage CMS content (slides, the promo box); refreshed by admin saves. */
-export function getHomeContent(): Promise<HomeContent | null> {
-  return getJson<HomeContent>("/home/content");
+/**
+ * The homepage's translation memory (lib/homeTranslations): its texts in
+ * English and Arabic. Cached with the catalog; saving it in the panel drops
+ * the tag like every other homepage save.
+ */
+export function getHomeTranslations(): Promise<HomeTranslations | null> {
+  return getJson<HomeTranslations>("/home/translations");
+}
+
+/** A homepage value (settings, slides) in the page's language: as it is in Turkish. */
+export async function inPageLanguage<T>(value: T): Promise<T> {
+  const locale = await getLocale();
+  if (locale === DEFAULT_LOCALE) return value;
+  const memory = await getHomeTranslations();
+  return translateTexts(value, memory?.[locale as "en" | "ar"]);
+}
+
+/** Homepage CMS content (slides, the promo box), in the page's language; refreshed by admin saves. */
+export async function getHomeContent(): Promise<HomeContent | null> {
+  const content = await getJson<HomeContent>("/home/content");
+  return content ? inPageLanguage(content) : null;
 }
 
 /**

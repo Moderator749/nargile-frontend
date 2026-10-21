@@ -2,8 +2,9 @@
 
 import { FIGURE, GOLD } from "@/components/home/GoldCoinBadge";
 import { GoldShowcase } from "@/components/home/GoldShowcase";
+import { useMessages } from "@/components/i18n/LocaleProvider";
 import { useStoreParameters } from "@/hooks/useStoreParameters";
-import { formatRate } from "@/lib/storeParameters";
+import { homeMessages } from "@/lib/i18n/messages/home";
 import type { CatalogProduct, Category } from "@/types";
 
 const whole = new Intl.NumberFormat("tr-TR", { maximumFractionDigits: 0 });
@@ -20,11 +21,13 @@ const whole = new Intl.NumberFormat("tr-TR", { maximumFractionDigits: 0 });
  */
 export function KumbaraShowcase({ products, categories }: { products: CatalogProduct[]; categories: Category[] }) {
   const { loyalty } = useStoreParameters();
+  const t = useMessages(homeMessages);
   const target = Number(loyalty.annual_spend_threshold);
   if (!loyalty.enabled || loyalty.annual_bonus_points <= 0 || target <= 0) return null;
 
   const amount = `${whole.format(target)} TL`;
-  const bonus = formatRate((loyalty.annual_bonus_points * Number(loyalty.conversion_rate)) / target);
+  // As formatRate has it ("%5"), in the page's language ("5%" in English and Arabic).
+  const bonus = t.percent(((loyalty.annual_bonus_points * Number(loyalty.conversion_rate)) / target) * 100);
 
   return (
     <GoldShowcase
@@ -36,9 +39,9 @@ export function KumbaraShowcase({ products, categories }: { products: CatalogPro
           <span className={`${FIGURE} ${GOLD} text-3xl md:text-4xl`}>{amount}</span>
         </>
       }
-      subtitle="Az ya da çok, her alışverişe SultanPuan"
-      note={`Toplam ${amount} barajına ulaşın, ekstra ${bonus} KumbaraPuan kazanın.`}
-      call="Birikim Yapın!"
+      subtitle={t.loyalty.kumbaraSubtitle}
+      note={t.loyalty.kumbaraNote(amount, bonus)}
+      call={t.loyalty.kumbaraCall}
       products={products}
       categories={categories}
       // Light grey, as "Fırsatları Kaçırma" and the SultanPuan band.

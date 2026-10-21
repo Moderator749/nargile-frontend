@@ -102,11 +102,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...products.flatMap((p) =>
       inLanguages(productHref(p), p.locales, { lastModified: latest([p.updated_at]), changeFrequency: "weekly", priority: 0.6 }),
     ),
-    // The Bilgi Sayfaları, the FAQ and the blog: Turkish only, for now.
-    ...[BILGI_HREF, ...INFO_LINKS.map((l) => l.href), FAQ_HREF, BLOG_HREF, ...ARTICLES.map(articleHref)].map((href) => ({
-      url: `${SITE_URL}${href}`,
-      changeFrequency: "monthly" as const,
-      priority: 0.4,
-    })),
+    // The Bilgi Sayfaları, the FAQ and the blog, in every language (each has
+    // its English and Arabic, lib/content).
+    ...[BILGI_HREF, ...INFO_LINKS.map((l) => l.href), FAQ_HREF, BLOG_HREF, ...ARTICLES.map(articleHref)].flatMap((href) =>
+      inLanguages(href, "all", { changeFrequency: "monthly", priority: 0.4 }),
+    ),
   ];
 }

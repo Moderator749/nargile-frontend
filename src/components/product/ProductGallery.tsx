@@ -5,7 +5,9 @@ import Image from "next/image";
 import { ChevronLeft, ChevronRight, Expand, Play } from "lucide-react";
 
 import { ProductImage } from "@/components/catalog/ProductImage";
+import { useMessages } from "@/components/i18n/LocaleProvider";
 import { ProductLightbox } from "@/components/product/ProductLightbox";
+import { productMessages } from "@/lib/i18n/messages/product";
 import { youtubeEmbed, youtubeId, youtubeThumbnail } from "@/lib/youtube";
 
 type Slide = { kind: "image"; src: string } | { kind: "video"; id: string };
@@ -42,6 +44,7 @@ export function ProductGallery({
   dimmed?: boolean;
   fallback: ReactNode;
 }) {
+  const t = useMessages(productMessages).gallery;
   const videoId = youtubeId(youtubeUrl);
   // `images` can be missing, not just empty: a product page rendered before
   // galleries existed can still be served from the ISR cache, and its payload has
@@ -72,7 +75,7 @@ export function ProductGallery({
             <ProductImage
               src={current.src}
               // The cover is the product's name; the others say which view they are.
-              alt={index === 0 ? alt : `${alt} - ${index + 1}. görsel`}
+              alt={index === 0 ? alt : t.nth(alt, index + 1)}
               sizes="(min-width: 1024px) 600px, 100vw"
               fallback={fallback}
               // The cover is the page's LCP; a photo picked later is not.
@@ -81,7 +84,7 @@ export function ProductGallery({
           ) : playing ? (
             <iframe
               src={youtubeEmbed(current.id)}
-              title={`${alt} — ürün videosu`}
+              title={t.videoTitle(alt)}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
               className="h-full w-full border-0"
@@ -91,12 +94,12 @@ export function ProductGallery({
               type="button"
               onClick={() => setPlaying(true)}
               className="group/play relative h-full w-full bg-zinc-950"
-              aria-label={`${alt} videosunu oynat`}
+              aria-label={t.play(alt)}
             >
               {/* Poster frame straight from YouTube; no player, no cookies yet. */}
               <Image
                 src={youtubeThumbnail(current.id)}
-                alt={`${alt} - ürün videosu`}
+                alt={t.videoAlt(alt)}
                 fill
                 sizes="(min-width: 1024px) 600px, 100vw"
                 className="object-cover opacity-90 transition-opacity duration-300 group-hover/play:opacity-100"
@@ -118,12 +121,12 @@ export function ProductGallery({
           <button
             type="button"
             onClick={() => setLightbox(index)}
-            aria-label="Görseli büyüt"
+            aria-label={t.enlarge}
             className="group/zoom absolute inset-0 cursor-zoom-in rounded-3xl focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-accent"
           >
             <span
               aria-hidden
-              className="absolute bottom-3 right-3 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-zinc-900 shadow-md ring-1 ring-inset ring-black/[0.06] backdrop-blur transition-transform duration-200 motion-safe:group-hover/zoom:scale-110"
+              className="absolute bottom-3 end-3 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-zinc-900 shadow-md ring-1 ring-inset ring-black/[0.06] backdrop-blur transition-transform duration-200 motion-safe:group-hover/zoom:scale-110"
             >
               <Expand className="h-4 w-4" />
             </span>
@@ -132,11 +135,12 @@ export function ProductGallery({
 
         {slides.length > 1 && (
           <>
-            <button type="button" onClick={() => go(index - 1)} aria-label="Önceki görsel" className={`${arrowClass} left-3`}>
-              <ChevronLeft className="h-5 w-5" aria-hidden />
+            {/* Previous at the reading direction's start, next at its end. */}
+            <button type="button" onClick={() => go(index - 1)} aria-label={t.previous} className={`${arrowClass} start-3`}>
+              <ChevronLeft className="h-5 w-5 rtl:rotate-180" aria-hidden />
             </button>
-            <button type="button" onClick={() => go(index + 1)} aria-label="Sonraki görsel" className={`${arrowClass} right-3`}>
-              <ChevronRight className="h-5 w-5" aria-hidden />
+            <button type="button" onClick={() => go(index + 1)} aria-label={t.next} className={`${arrowClass} end-3`}>
+              <ChevronRight className="h-5 w-5 rtl:rotate-180" aria-hidden />
             </button>
           </>
         )}
@@ -155,13 +159,13 @@ export function ProductGallery({
       )}
 
       {slides.length > 1 && (
-        <ul className="mt-3 flex flex-wrap gap-2" aria-label="Ürün görselleri">
+        <ul className="mt-3 flex flex-wrap gap-2" aria-label={t.thumbnails}>
           {slides.map((slide, i) => (
             <li key={slide.kind === "image" ? slide.src : slide.id}>
               <button
                 type="button"
                 onClick={() => go(i)}
-                aria-label={slide.kind === "video" ? `${alt} ürün videosu` : undefined}
+                aria-label={slide.kind === "video" ? t.videoThumb(alt) : undefined}
                 aria-current={i === index}
                 className={`relative h-16 w-16 overflow-hidden rounded-xl bg-white ring-1 transition-[box-shadow,opacity] duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent dark:bg-zinc-100 ${
                   i === index ? "ring-2 ring-accent" : "ring-black/[0.08] hover:opacity-80 dark:ring-white/10"
@@ -172,7 +176,7 @@ export function ProductGallery({
                 <Image
                   src={slide.kind === "image" ? slide.src : youtubeThumbnail(slide.id)}
                   // The image names the button: the product, and which view it is.
-                  alt={slide.kind === "image" ? `${alt} - ${i + 1}. görsel` : `${alt} - ürün videosu`}
+                  alt={slide.kind === "image" ? t.nth(alt, i + 1) : t.videoAlt(alt)}
                   fill
                   sizes="64px"
                   className="object-cover"

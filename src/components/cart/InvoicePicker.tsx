@@ -2,10 +2,12 @@
 
 import { Building2, ReceiptText } from "lucide-react";
 
+import { useMessages } from "@/components/i18n/LocaleProvider";
 import { CorporateInvoiceFields } from "@/components/cart/invoice/CorporateInvoiceFields";
 import { PersonalInvoicePanel } from "@/components/cart/invoice/PersonalInvoicePanel";
 import { labelClass } from "@/components/cart/invoice/fields";
 import type { InvoiceDraft } from "@/components/cart/invoiceDraft";
+import { checkoutMessages } from "@/lib/i18n/messages/checkout";
 import type { CorporateInvoiceDetails, SavedAddress } from "@/types";
 
 const cardClass = (selected: boolean) =>
@@ -15,19 +17,10 @@ const cardClass = (selected: boolean) =>
       : "border-slate-200 bg-slate-50 opacity-70 hover:border-slate-400 hover:opacity-100 dark:border-white/10 dark:bg-white/[0.02] dark:hover:border-white/25"
   }`;
 
+/** The two answers; their words are `checkoutMessages.invoice`. */
 const OPTIONS = [
-  {
-    toCompany: false,
-    title: "Fatura adresim",
-    hint: "Fatura, kayıtlı ad ve adresinizle kendi adınıza düzenlenir.",
-    Icon: ReceiptText,
-  },
-  {
-    toCompany: true,
-    title: "Faturayı firmaya/şirkete istiyorum",
-    hint: "Fatura, aşağıda belirttiğiniz firma adına ve adresine düzenlenir.",
-    Icon: Building2,
-  },
+  { toCompany: false, Icon: ReceiptText },
+  { toCompany: true, Icon: Building2 },
 ] as const;
 
 /**
@@ -60,22 +53,25 @@ export function InvoicePicker({
   corporateOnFile: CorporateInvoiceDetails | null;
   onCorporateSaved: (details: CorporateInvoiceDetails) => void;
 }) {
+  const t = useMessages(checkoutMessages).invoice;
   return (
     <section
       aria-labelledby="invoice-heading"
       className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-white/10 dark:bg-zinc-900 sm:p-6"
     >
       <h2 id="invoice-heading" className="text-lg font-bold tracking-tight">
-        Fatura Bilgileri
+        {t.heading}
       </h2>
 
       <fieldset className="mt-5">
-        <legend className={labelClass}>Fatura kime düzenlenecek?</legend>
+        <legend className={labelClass}>{t.legend}</legend>
         <div className="mt-2 grid gap-2 sm:grid-cols-2">
-          {OPTIONS.map(({ toCompany, title, hint, Icon }) => {
+          {OPTIONS.map(({ toCompany, Icon }) => {
             const selected = value.toCompany === toCompany;
+            const title = toCompany ? t.companyTitle : t.personalTitle;
+            const hint = toCompany ? t.companyHint : t.personalHint;
             return (
-              <label key={title} className={cardClass(selected)}>
+              <label key={String(toCompany)} className={cardClass(selected)}>
                 <input
                   type="radio"
                   name="invoice_target"

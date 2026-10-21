@@ -1,8 +1,12 @@
+"use client";
+
 import type { ReactNode } from "react";
 import { X } from "lucide-react";
 
 import { BannerMoodIcon } from "@/components/banner/BannerMoodIcon";
+import { useMessages } from "@/components/i18n/LocaleProvider";
 import { bannerTone, isHexColour, isSafeImageUrl, resolveBannerIcon, resolveBannerStyle } from "@/lib/banner";
+import { bannerMessages } from "@/lib/i18n/messages/home";
 import type { BannerBackgroundStyle, BannerIcon } from "@/types";
 
 interface AnnouncementBarProps {
@@ -34,6 +38,7 @@ const CLOSE = {
  * admin live preview (both via LiveAnnouncementBar), so both look identical.
  */
 export function AnnouncementBar({ message, backgroundStyle, bgImageUrl, icon, aside, onDismiss }: AnnouncementBarProps) {
+  const t = useMessages(bannerMessages);
   const style = resolveBannerStyle(backgroundStyle);
   const custom = isHexColour(style);
   const image = bgImageUrl && isSafeImageUrl(bgImageUrl) ? bgImageUrl : null;
@@ -43,7 +48,7 @@ export function AnnouncementBar({ message, backgroundStyle, bgImageUrl, icon, as
 
   return (
     <section
-      aria-label="Duyuru"
+      aria-label={t.announcement}
       className={`relative isolate overflow-hidden border-b border-black/20 ${custom ? "" : SURFACE[style as keyof typeof SURFACE]} ${TEXT[tone]}`}
       style={custom ? { backgroundColor: style } : undefined}
     >
@@ -95,7 +100,7 @@ export function AnnouncementBar({ message, backgroundStyle, bgImageUrl, icon, as
           height to say so. One line at every width, so the page below never
           moves when the message changes. */}
       <div
-        className={`mx-auto flex min-h-12 max-w-7xl flex-wrap items-center justify-center gap-x-5 gap-y-1 py-3.5 text-center sm:min-h-[3.25rem] sm:py-4 ${onDismiss ? "pl-4 pr-12 sm:px-12" : "px-4 sm:px-6"}`}
+        className={`mx-auto flex min-h-12 max-w-7xl flex-wrap items-center justify-center gap-x-5 gap-y-1 py-3.5 text-center sm:min-h-[3.25rem] sm:py-4 ${onDismiss ? "ps-4 pe-12 sm:px-12" : "px-4 sm:px-6"}`}
       >
         <div className="flex items-center gap-2.5 sm:gap-3">
           <BannerMoodIcon icon={mood} className={iconClass} />
@@ -109,8 +114,8 @@ export function AnnouncementBar({ message, backgroundStyle, bgImageUrl, icon, as
         <button
           type="button"
           onClick={onDismiss}
-          aria-label="Duyuruyu kapat"
-          className={`absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-current ${CLOSE[tone]}`}
+          aria-label={t.close}
+          className={`absolute end-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-current ${CLOSE[tone]}`}
         >
           <X className="h-3.5 w-3.5" aria-hidden />
         </button>

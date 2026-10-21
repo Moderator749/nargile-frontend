@@ -1,8 +1,10 @@
 "use client";
 
 import { AMBER, BEAM, BeamGradient, DeliveryPerk, IDLE, RED, SpeedLines, Wheel } from "@/components/home/DeliveryPerk";
+import { useMessages } from "@/components/i18n/LocaleProvider";
 import { useShippingPerks } from "@/hooks/useShippingPerks";
 import { PERKS_PAGE } from "@/lib/bilgi";
+import { homeMessages } from "@/lib/i18n/messages/home";
 
 /**
  * The courier perk in the lüle row's header, beside its title: İstanbul's
@@ -15,6 +17,7 @@ import { PERKS_PAGE } from "@/lib/bilgi";
  */
 export function CourierPerks() {
   const { show } = useShippingPerks();
+  const t = useMessages(homeMessages);
   if (!show) return null;
 
   return (
@@ -22,7 +25,7 @@ export function CourierPerks() {
       viewBox="0 0 132 76"
       width="w-[104px] sm:w-[132px]"
       href={`${PERKS_PAGE.href}#istanbul-kurye`}
-      eyebrow="Kurye Ayrıcalığı"
+      eyebrow={t.perks.courierEyebrow}
       facing="left"
       className="self-start md:self-end"
       vehicle={
@@ -73,7 +76,7 @@ export function CourierPerks() {
         </>
       }
     >
-      <p className="mt-1.5 text-sm font-semibold leading-snug text-neutral-900 dark:text-white">İstanbul içi aynı gün teslimat</p>
+      <p className="mt-1.5 text-sm font-semibold leading-snug text-neutral-900 dark:text-white">{t.perks.courierText}</p>
     </DeliveryPerk>
   );
 }

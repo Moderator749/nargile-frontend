@@ -1,7 +1,9 @@
 "use client";
 
+import { useMessages } from "@/components/i18n/LocaleProvider";
 import { BundleTotal, type BundleMain } from "@/components/product/BundleTotal";
 import { ProductShelf } from "@/components/product/ProductShelf";
+import { productMessages } from "@/lib/i18n/messages/product";
 import type { CatalogProduct, Category } from "@/types";
 
 /**
@@ -28,10 +30,11 @@ export function CrossSells({
   /** The product itself, as its page has it: the chosen colour, at the price shown. */
   main: BundleMain;
 }) {
+  const t = useMessages(productMessages);
   return (
     <ProductShelf
       id="cross-sells-heading"
-      title="Birlikte İyi Gider"
+      title={t.crossSells}
       products={products ?? []}
       categories={categories}
       isLoggedIn={isLoggedIn}

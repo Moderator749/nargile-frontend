@@ -1,5 +1,7 @@
 // The product page's internal links: "Benzer Ürünler" and "İlgili Kategoriler".
 
+import type { Locale } from "@/lib/i18n/config";
+import { productMessages } from "@/lib/i18n/messages/product";
 import { brandCanonical } from "@/lib/seo";
 import type { Brand, CatalogProduct, CatalogProductDetail, Category } from "@/types";
 
@@ -45,6 +47,8 @@ export function relatedCategories(
   categories: Category[],
   brands: Brand[],
   count = RELATED_CATEGORY_COUNT,
+  /** The page's language, for the brand link's words. */
+  locale: Locale = "tr",
 ): RelatedLink[] {
   const byId = new Map(categories.map((c) => [c.id, c]));
   const stocked = (c: Category | undefined): c is Category => !!c && (c.product_count ?? 1) > 0;
@@ -76,7 +80,7 @@ export function relatedCategories(
     : undefined;
   if (brand) {
     const href = brandCanonical(brand.slug, categories);
-    if (!shown.some((link) => link.href === href)) shown.push({ name: `Tüm ${brand.name} ürünleri`, href });
+    if (!shown.some((link) => link.href === href)) shown.push({ name: productMessages[locale].allOfBrand(brand.name), href });
   }
   return shown;
 }

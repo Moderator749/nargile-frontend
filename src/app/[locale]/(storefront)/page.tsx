@@ -35,7 +35,8 @@ import {
 import { getHomepage } from "@/lib/server/homepage";
 import { resolveShowcase, tileSlug } from "@/lib/showcase";
 import { resolveNav } from "@/lib/storefrontNav";
-import { getI18n } from "@/lib/i18n/server";
+import { homeMessages } from "@/lib/i18n/messages/home";
+import { getI18n, getMessages } from "@/lib/i18n/server";
 import { PAGE_CONTAINER } from "@/lib/layout";
 import { displayVariant } from "@/lib/variants";
 import type { CatalogProduct, HomeBlock, HomeMobileSection } from "@/types";
@@ -119,7 +120,8 @@ function fillPicks(lists: Picks, spare: CatalogProduct[]): Picks {
 /**
  * "Markalarımız": one section per brand under a single heading, down the page
  * in a zig-zag (brand on the left, then the right, then the left). `brand` is the products' own brand name and the
- * term they are searched by; `slug` is its /marka page.
+ * term they are searched by; `slug` is its /marka page, and names its line
+ * in the homepage's messages (`brands.sultan`…).
  */
 const BRAND_SHOWCASES = [
   {
@@ -127,8 +129,6 @@ const BRAND_SHOWCASES = [
     slug: "sultan",
     brandName: "Sultan Nargile",
     logo: { src: "/images/logo.png", width: 2756, height: 359 },
-    description:
-      "Geleneksel nargile zanaatını modern mühendislikle buluşturan Sultan Nargile; dayanıklı çelik takımları, tescilli aksesuarları ve benzersiz içim kalitesiyle sektör standartlarını belirliyor.",
   },
   {
     brand: "Oduman",
@@ -137,16 +137,12 @@ const BRAND_SHOWCASES = [
     // A square file with the mark across its middle: framed to the mark's band
     // (about 942×385), and shown smaller than the wordmarks, being taller.
     logo: { src: "/images/oduman_logo.png", width: 960, height: 960, displayWidth: 180, frameRatio: 2.45 },
-    description:
-      "Camın zarafetini paslanmaz çelikle birleştiren Oduman, kompakt ve yenilikçi tasarımlarıyla nargile deneyimine modern bir dokunuş katıyor. Her detayıyla kusursuz bir içim keyfi.",
   },
   {
     brand: "Legend",
     slug: "legend",
     brandName: "Legend Hookah",
     logo: { src: "/images/logo_legend.png", width: 2892, height: 710 },
-    description:
-      "Geleneksel estetiği modern nargile mühendisliğiyle buluşturan Legend Hookah, benzersiz tahliye sistemleri ve kusursuz işçiliğiyle elit bir performans sunar.",
   },
 ] as const;
 
@@ -192,7 +188,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function HomePage() {
   // What to show and what it says: "Ana Sayfa Düzenleme" (/admin/homepage).
-  const [home, { locale, t }] = await Promise.all([getHomepage(), getI18n()]);
+  const [home, { locale, t }, words] = await Promise.all([getHomepage(), getI18n(), getMessages(homeMessages)]);
   const { sections } = home;
   const [
     categories, featured, flashSales, brands, content, artwork, bestsellers, newest, brandRows, sultanPuan, lules, marpuclar,
@@ -337,11 +333,11 @@ export default async function HomePage() {
             id="markalarimiz-baslik"
             className="pt-12 text-center text-3xl font-extrabold text-gray-900 md:text-4xl dark:text-white"
           >
-            Markalarımız
+            {words.brands.heading}
           </h2>
           {/* The red rule under the heading, as "Premium Ürün Yelpazesi" has. */}
           <span aria-hidden className="mx-auto mt-4 mb-8 block h-1.5 w-14 rounded-full bg-red-600" />
-          {BRAND_SHOWCASES.map(({ slug, brandName, logo, description }, i) => (
+          {BRAND_SHOWCASES.map(({ slug, brandName, logo }, i) => (
             <BrandShowcase
               key={slug}
               categories={allCategories}
@@ -351,7 +347,7 @@ export default async function HomePage() {
               logoHeight={logo.height}
               logoDisplayWidth={"displayWidth" in logo ? logo.displayWidth : undefined}
               logoFrameRatio={"frameRatio" in logo ? logo.frameRatio : undefined}
-              description={description}
+              description={words.brands[slug]}
               brandLink={brandHref(slug)}
               products={brandRows[i]}
               reverseLayout={i % 2 === 1}
@@ -367,11 +363,11 @@ export default async function HomePage() {
         "kozlukler",
         <CategoryRow
           headingId="kozlukler-baslik"
-          title="Közlükler"
-          subtitle="Isı yöneticileri, elekler ve lüle başlıkları: kömürü doğru ısıda tutan aparatlar"
+          title={words.rows.kozlukTitle}
+          subtitle={words.rows.kozlukSubtitle}
           products={showable(onePerName(kozlukProducts), CATEGORY_ROW_COUNT)}
           categories={allCategories}
-          more={{ href: `/catalog/${KOZLUK_CATEGORY_SLUG}`, label: "Tüm Közlükleri Gör" }}
+          more={{ href: `/catalog/${KOZLUK_CATEGORY_SLUG}`, label: words.rows.kozlukMore }}
         />,
       ),
     games: () =>
@@ -379,11 +375,11 @@ export default async function HomePage() {
         "games",
         <CategoryRow
           headingId="oyun-baslik"
-          title="Oyun & Eğlence"
-          subtitle="Tavla, okey ve iskambil: sohbetin en keyifli ortakları"
+          title={words.rows.gamesTitle}
+          subtitle={words.rows.gamesSubtitle}
           products={showable(onePerName(gameProducts), CATEGORY_ROW_COUNT)}
           categories={allCategories}
-          more={{ href: `/catalog/${GAMES_CATEGORY_SLUG}`, label: "Tüm Oyunları Gör" }}
+          more={{ href: `/catalog/${GAMES_CATEGORY_SLUG}`, label: words.rows.gamesMore }}
         />,
       ),
     // "Premium Ürün Yelpazesi": the catalog as a gallery (the category bento).

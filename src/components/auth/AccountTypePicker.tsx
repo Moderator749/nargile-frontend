@@ -3,6 +3,8 @@
 import { Building2, Coffee, Globe, Store, User } from "lucide-react";
 
 import { ACCOUNT_TYPES } from "@/components/auth/registrationDraft";
+import { useMessages } from "@/components/i18n/LocaleProvider";
+import { registrationMessages } from "@/lib/i18n/messages/auth";
 import type { AccountType } from "@/types";
 
 const ICONS: Record<AccountType, typeof User> = {
@@ -42,11 +44,12 @@ export function AccountTypePicker({
   onChange: (value: AccountType) => void;
   onRegister: (value: AccountType) => void;
 }) {
+  const m = useMessages(registrationMessages);
   return (
     <fieldset>
-      <legend className="text-sm font-medium text-slate-700 dark:text-zinc-300">Hesap türü</legend>
+      <legend className="text-sm font-medium text-slate-700 dark:text-zinc-300">{m.accountType}</legend>
       <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-        {ACCOUNT_TYPES.map(({ value: option, title, cta }) => {
+        {ACCOUNT_TYPES.map(({ value: option }) => {
           const Icon = ICONS[option];
           const selected = value === option;
           return (
@@ -71,7 +74,7 @@ export function AccountTypePicker({
                   className={`h-5 w-5 shrink-0 ${selected ? "text-red-600 dark:text-red-400" : "text-slate-400 dark:text-zinc-500"}`}
                   aria-hidden
                 />
-                <span className="font-semibold text-slate-900 dark:text-zinc-100">{title}</span>
+                <span className="font-semibold text-slate-900 dark:text-zinc-100">{m.accountTypes[option]}</span>
               </label>
               <button
                 type="button"
@@ -84,7 +87,7 @@ export function AccountTypePicker({
                     : "bg-white text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50 dark:bg-zinc-900 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
                 }`}
               >
-                {cta}
+                {option === "INTERNATIONAL" ? m.internationalCta : m.cta}
               </button>
             </div>
           );

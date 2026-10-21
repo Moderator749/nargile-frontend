@@ -4,8 +4,11 @@ import Image from "next/image";
 import { Package, Trash2 } from "lucide-react";
 
 import Link from "@/components/i18n/Link";
+import { useLocale, useMessages } from "@/components/i18n/LocaleProvider";
+import { colorLabel } from "@/lib/i18n/colors";
 import { QuantityStepper } from "@/components/cart/QuantityStepper";
 import { formatMoney } from "@/lib/format";
+import { cartMessages } from "@/lib/i18n/messages/cart";
 import { canOptimiseImage } from "@/lib/home";
 import { useCartStore } from "@/store/useCartStore";
 import type { CartLineItem, DecimalString } from "@/types";
@@ -37,10 +40,14 @@ export function CartLineRow({
   havaleDiscount,
   maxQuantity,
 }: CartLineRowProps) {
+  const t = useMessages(cartMessages).line;
   const image = serverImageUrl ?? item.image_url ?? null;
   // Which colour this line is. The quote is authoritative; the snapshot covers a
   // line added before the page had one.
-  const color = serverColorName ?? item.color_name ?? null;
+  const locale = useLocale();
+  // Shown in the page's language; the stored name stays the line's key.
+  const typed = serverColorName ?? item.color_name ?? null;
+  const color = typed ? colorLabel(typed, locale) : null;
   const updateQuantity = useCartStore((s) => s.updateQuantity);
   const removeItem = useCartStore((s) => s.removeItem);
 
@@ -81,17 +88,17 @@ export function CartLineRow({
           </h3>
           {color && (
             <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">
-              Renk: <span className="font-medium text-slate-700 dark:text-zinc-200">{color}</span>
+              {t.color} <span className="font-medium text-slate-700 dark:text-zinc-200">{color}</span>
             </p>
           )}
           <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">
-            {formatMoney(unitPrice)} <span className="text-xs">/ adet</span>
+            {formatMoney(unitPrice)} <span className="text-xs">{t.perUnit}</span>
           </p>
           {havaleEligible && (
             <p className="mt-1.5 inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/30">
               {Number(havaleDiscount ?? 0) > 0
-                ? `Havale/EFT indirimi −${formatMoney(havaleDiscount!)}`
-                : "Havale/EFT ile ödemede indirimli"}
+                ? t.havaleDiscount(formatMoney(havaleDiscount!))
+                : t.havaleEligible}
             </p>
           )}
         </div>
@@ -103,14 +110,14 @@ export function CartLineRow({
             label={label}
             max={maxQuantity}
           />
-          <p className="w-28 text-right text-sm font-semibold tabular-nums text-slate-900 dark:text-zinc-100">
+          <p className="w-28 text-end text-sm font-semibold tabular-nums text-slate-900 dark:text-zinc-100">
             {formatMoney(lineTotal)}
           </p>
           <button
             type="button"
             onClick={() => removeItem(item.variant_id)}
             className="rounded-md p-2 text-slate-400 dark:text-zinc-500 transition-colors hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400"
-            aria-label={`${label} ürününü sepetten çıkar`}
+            aria-label={t.remove(label)}
           >
             <Trash2 className="h-4 w-4" aria-hidden />
           </button>

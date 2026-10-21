@@ -20,7 +20,8 @@ function TurkishFlag({ className }: { className?: string }) {
 /**
  * Inline-SVG mood icon (no emoji: the 🇹🇷 flag emoji renders as "TR" on Windows).
  * Sizing is fixed here (20px square icons, 24×16 flag; smaller with `small`); `className` adds colour/visibility.
- * `mirrored` flips directional icons for the trailing side of the banner text.
+ * `mirrored` flips directional icons for the trailing side of the banner text;
+ * in Arabic the leading side is the right, so the flip changes sides with it.
  */
 export function BannerMoodIcon({
   icon,
@@ -37,7 +38,7 @@ export function BannerMoodIcon({
   const square = small ? "h-4 w-4" : "h-5 w-5";
   switch (icon) {
     case "celebration":
-      return <PartyPopper className={`${square} ${mirrored ? "-scale-x-100" : ""} ${className}`} aria-hidden />;
+      return <PartyPopper className={`${square} ${mirrored ? "ltr:-scale-x-100" : "rtl:-scale-x-100"} ${className}`} aria-hidden />;
     case "memorial":
       return <TurkishFlag className={`${small ? "h-3 w-[18px]" : "h-4 w-6"} rounded-[2px] shadow-sm ${className}`} />;
     case "campaign":

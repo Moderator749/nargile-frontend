@@ -1,6 +1,7 @@
-
 import Link from "@/components/i18n/Link";
 import { ReadMore } from "@/components/ui/ReadMore";
+import { catalogMessages } from "@/lib/i18n/messages/catalog";
+import { getMessages } from "@/lib/i18n/server";
 import type { Breadcrumb } from "@/lib/seo";
 
 /**
@@ -12,7 +13,7 @@ import type { Breadcrumb } from "@/lib/seo";
  * emits BreadcrumbList structured data, and that markup is supposed to
  * describe a path the visitor can actually see.
  */
-export function CatalogHeading({
+export async function CatalogHeading({
   title,
   breadcrumbs,
   intro,
@@ -21,9 +22,10 @@ export function CatalogHeading({
   breadcrumbs: Breadcrumb[];
   intro?: string | null;
 }) {
+  const t = await getMessages(catalogMessages);
   return (
     <header className="mb-4">
-      <nav aria-label="Sayfa konumu">
+      <nav aria-label={t.breadcrumb}>
         <ol className="flex flex-wrap items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
           {breadcrumbs.map((crumb, i) => {
             const last = i === breadcrumbs.length - 1;

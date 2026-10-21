@@ -1,5 +1,7 @@
 // Carriers and tracking links, as the storefront and the admin panel show them.
 
+import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n/config";
+import { carrierMessages } from "@/lib/i18n/messages/layout";
 import type { Carrier, Order } from "@/types";
 
 /** Where a customer follows a Yurtiçi shipment by its gönderi kodu. */
@@ -7,6 +9,7 @@ export const YURTICI_TRACKING_URL = "https://www.yurticikargo.com/Tracking/Detai
 
 export const yurticiTrackingUrl = (code: string) => `${YURTICI_TRACKING_URL}${encodeURIComponent(code.trim())}`;
 
+/** The admin panel's choice of carrier at "Kargola" (Turkish only, as the panel is). */
 export const CARRIER_LABELS: Record<Carrier, string> = {
   YURTICI: "Yurtiçi Kargo",
   OTHER: "Diğer kargo / ambar",
@@ -21,12 +24,14 @@ const viaYurtici = (order: Shipment) =>
 /**
  * Who carries it, as a customer reads it: the carrier recorded at "Kargola",
  * or — for an order shipped before carriers were kept — Yurtiçi when that is
- * how it was to travel.
+ * how it was to travel. In the page's language (`locale`, Turkish when not
+ * given — the admin panel's); a carrier's own name is shown as it was typed.
  */
-export function carrierName(order: Shipment): string | null {
-  if (order.carrier === "OTHER") return order.carrier_name || "Kargo";
-  if (order.carrier === "OWN") return "Kendi aracımızla";
-  return viaYurtici(order) ? "Yurtiçi Kargo" : null;
+export function carrierName(order: Shipment, locale: Locale = DEFAULT_LOCALE): string | null {
+  const m = carrierMessages[locale];
+  if (order.carrier === "OTHER") return order.carrier_name || m.other;
+  if (order.carrier === "OWN") return m.own;
+  return viaYurtici(order) ? m.yurtici : null;
 }
 
 /**

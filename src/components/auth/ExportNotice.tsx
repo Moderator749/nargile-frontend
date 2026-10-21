@@ -3,7 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 
-import { EXPORT_NOTICE, exportNoticeKey, isExportAccount } from "@/lib/exportAccount";
+import { useMessages } from "@/components/i18n/LocaleProvider";
+import { exportNoticeKey, isExportAccount } from "@/lib/exportAccount";
+import { exportNoticeMessages } from "@/lib/i18n/messages/auth";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useAuthHydrated } from "@/store/useHasHydrated";
 
@@ -31,6 +33,7 @@ function wasAccepted(userId: string): boolean {
  * right failure.
  */
 export function ExportNotice() {
+  const m = useMessages(exportNoticeMessages);
   const hydrated = useAuthHydrated();
   const user = useAuthStore((s) => s.user);
   const dialog = useRef<HTMLDialogElement>(null);
@@ -80,16 +83,16 @@ export function ExportNotice() {
         </span>
         <div>
           <h2 id="export-notice-title" className="text-base font-semibold tracking-tight">
-            Important Notice
+            {m.title}
           </h2>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            Export account · wholesale prices · quote on request
+            {m.subtitle}
           </p>
         </div>
       </div>
 
       <div className="space-y-3 px-6 py-5 text-sm leading-relaxed text-foreground/90">
-        {EXPORT_NOTICE.map((paragraph) => (
+        {m.paragraphs.map((paragraph) => (
           <p key={paragraph.slice(0, 24)}>{paragraph}</p>
         ))}
       </div>
@@ -101,7 +104,7 @@ export function ExportNotice() {
           autoFocus
           className="inline-flex h-11 items-center justify-center rounded-full bg-accent px-8 text-sm font-medium text-white transition-opacity duration-200 hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
-          OK, I understand
+          {m.accept}
         </button>
       </div>
     </dialog>

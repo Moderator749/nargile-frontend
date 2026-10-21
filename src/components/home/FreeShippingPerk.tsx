@@ -1,8 +1,10 @@
 "use client";
 
 import { AMBER, BEAM, BeamGradient, DeliveryPerk, IDLE, RED, SpeedLines, Wheel } from "@/components/home/DeliveryPerk";
+import { useMessages } from "@/components/i18n/LocaleProvider";
 import { useShippingPerks } from "@/hooks/useShippingPerks";
 import { PERKS_PAGE } from "@/lib/bilgi";
+import { homeMessages } from "@/lib/i18n/messages/home";
 
 /** The van's windows: a pale sky, light against its dark body in either theme. */
 const GLASS = "rgb(186 230 253)";
@@ -19,14 +21,16 @@ const GLASS = "rgb(186 230 253)";
  */
 export function FreeShippingPerk({ className = "" }: { className?: string }) {
   const { show, thresholdTl } = useShippingPerks();
+  const t = useMessages(homeMessages);
   if (!show) return null;
+  const text = t.perks.shippingText(thresholdTl);
 
   return (
     <DeliveryPerk
       viewBox="0 0 150 76"
       width="w-[118px] sm:w-[140px]"
       href={`${PERKS_PAGE.href}#ucretsiz-kargo`}
-      eyebrow="Ücretsiz Kargo & Hızlı Sevk"
+      eyebrow={t.perks.shippingEyebrow}
       className={className}
       vehicle={
         <>
@@ -68,8 +72,9 @@ export function FreeShippingPerk({ className = "" }: { className?: string }) {
       }
     >
       <p className="mt-1.5 max-w-[16rem] text-sm leading-snug text-neutral-600 dark:text-neutral-300">
-        <span className="font-semibold text-neutral-900 dark:text-white">{thresholdTl}</span> ve üzeri tüm siparişlerinizde
-        kargo tamamen ücretsizdir.
+        {text.before}
+        <span className="font-semibold text-neutral-900 dark:text-white">{text.strong}</span>
+        {text.after}
       </p>
     </DeliveryPerk>
   );

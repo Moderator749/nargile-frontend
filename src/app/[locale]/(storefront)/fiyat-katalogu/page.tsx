@@ -1,10 +1,15 @@
 import type { Metadata } from "next";
 
 import { PriceCatalogPage } from "@/components/catalog/PriceCatalogPage";
+import { pageMessages } from "@/lib/i18n/messages/layout";
+import { getMessages } from "@/lib/i18n/server";
 import { PAGE_CONTAINER } from "@/lib/layout";
 
 // A customer's own printout: never in a search index.
-export const metadata: Metadata = { title: "Fiyat Kataloğu", robots: { index: false, follow: false } };
+export async function generateMetadata(): Promise<Metadata> {
+  const m = await getMessages(pageMessages);
+  return { title: m.priceCatalogTitle, robots: { index: false, follow: false } };
+}
 
 /** /fiyat-katalogu?k=<hand-off key> — opened by "Fiyat Kataloğu İndir" on the catalog page. */
 export default async function Page(props: PageProps<"/[locale]/fiyat-katalogu">) {

@@ -3,10 +3,13 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { FileDown, X } from "lucide-react";
 
+import { useLocale, useMessages } from "@/components/i18n/LocaleProvider";
+import { useLocalePath } from "@/components/i18n/navigation";
 import { isExportAccount } from "@/lib/exportAccount";
+import { INTL_LOCALE } from "@/lib/i18n/messages";
+import { catalogMessages } from "@/lib/i18n/messages/catalog";
 import {
   CATALOG_CHOICES,
-  CATALOG_GROUP_LABELS,
   PRICE_LIST_MAX,
   isB2BSegment,
   storeCatalogRequest,
@@ -36,6 +39,7 @@ export function PriceCatalogExport({
 }) {
   const user = useAuthStore((s) => s.user);
   const [open, setOpen] = useState(false);
+  const t = useMessages(catalogMessages).priceCatalog;
   const segment = user?.segment_code;
   if (!user || !isB2BSegment(segment) || isExportAccount(user)) return null;
 
@@ -47,7 +51,7 @@ export function PriceCatalogExport({
         disabled={products.length === 0}
         className="inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl border border-red-600 bg-red-600 px-3 text-[11px] font-bold uppercase tracking-wider text-white shadow-sm transition-colors duration-200 hover:border-red-500 hover:bg-red-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40"
       >
-        <FileDown className="h-3.5 w-3.5" aria-hidden /> Fiyat Kataloğu İndir
+        <FileDown className="h-3.5 w-3.5" aria-hidden /> {t.download}
       </button>
       {open && (
         <ExportDialog
@@ -77,6 +81,9 @@ function ExportDialog({
 }) {
   const titleId = useId();
   const panel = useRef<HTMLDivElement>(null);
+  const locale = useLocale();
+  const to = useLocalePath();
+  const t = useMessages(catalogMessages).priceCatalog;
   const [picked, setPicked] = useState<SegmentType | null>("pick" in choice ? choice.pick[0] : null);
   const groups = "fixed" in choice ? choice.fixed : picked ? [picked] : [];
   const count = Math.min(products.length, PRICE_LIST_MAX);
@@ -95,7 +102,8 @@ function ExportDialog({
       groups,
       collection,
     });
-    window.open(`/fiyat-katalogu?k=${key}`, "_blank", "noopener");
+    // The printout in the page's language.
+    window.open(to(`/fiyat-katalogu?k=${key}`), "_blank", "noopener");
     onClose();
   }
 
@@ -111,16 +119,16 @@ function ExportDialog({
       >
         <div className="flex items-start justify-between gap-4">
           <h2 id={titleId} className="text-lg font-semibold tracking-tight">
-            Fiyat kataloğu oluştur
+            {t.title}
           </h2>
-          <button type="button" onClick={onClose} aria-label="Kapat" className="rounded-lg p-1 text-muted-foreground hover:bg-foreground/[0.06]">
+          <button type="button" onClick={onClose} aria-label={t.close} className="rounded-lg p-1 text-muted-foreground hover:bg-foreground/[0.06]">
             <X className="h-4 w-4" aria-hidden />
           </button>
         </div>
 
         {"pick" in choice ? (
           <fieldset className="mt-4">
-            <legend className="text-sm text-muted-foreground">Hangi fiyat grubuna göre katalog oluşturulsun?</legend>
+            <legend className="text-sm text-muted-foreground">{t.whichGroup}</legend>
             <div className="mt-3 space-y-2">
               {choice.pick.map((g) => (
                 <label
@@ -137,22 +145,21 @@ function ExportDialog({
                     onChange={() => setPicked(g)}
                     className="h-4 w-4 accent-red-600"
                   />
-                  {CATALOG_GROUP_LABELS[g]} Fiyatları
+                  {t.groupPrices(g)}
                 </label>
               ))}
             </div>
           </fieldset>
         ) : (
           <p className="mt-4 rounded-xl bg-foreground/[0.04] px-4 py-3 text-sm leading-relaxed">
-            Kafe alış fiyatlarınızı ve müşterileriniz için Perakende satış fiyatlarını içeren kataloğunuz hazırlanacaktır.
+            {t.cafeFixed}
           </p>
         )}
 
         <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
-          Ekrandaki {count.toLocaleString("tr-TR")} ürün, gördüğünüz sırayla kataloğa eklenir.
-          {products.length > PRICE_LIST_MAX && ` Bir katalog en fazla ${PRICE_LIST_MAX} ürün alır; ilk ${PRICE_LIST_MAX} ürün eklenecek.`}
-          {hasMore && " Listede henüz yüklenmemiş ürünler var; onları da eklemek için önce “Daha fazla göster” ile yükleyin."}{" "}
-          Katalog yeni sekmede açılır; “PDF olarak kaydet” ile indirin.
+          {t.order(count.toLocaleString(INTL_LOCALE[locale]))}
+          {products.length > PRICE_LIST_MAX && t.overLimit(PRICE_LIST_MAX)}
+          {hasMore && t.notLoaded} {t.newTab}
         </p>
 
         <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
@@ -161,7 +168,7 @@ function ExportDialog({
             onClick={onClose}
             className="inline-flex h-10 items-center justify-center rounded-full px-4 text-sm font-medium ring-1 ring-inset ring-border hover:bg-foreground/[0.04]"
           >
-            Vazgeç
+            {t.cancel}
           </button>
           <button
             type="button"
@@ -169,7 +176,7 @@ function ExportDialog({
             disabled={groups.length === 0}
             className="inline-flex h-10 items-center justify-center gap-1.5 rounded-full bg-red-600 px-5 text-sm font-semibold text-white hover:bg-red-500 disabled:opacity-50"
           >
-            <FileDown className="h-4 w-4" aria-hidden /> Kataloğu oluştur
+            <FileDown className="h-4 w-4" aria-hidden /> {t.create}
           </button>
         </div>
       </div>

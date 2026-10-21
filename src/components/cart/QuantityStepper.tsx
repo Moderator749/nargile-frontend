@@ -3,6 +3,9 @@
 import { useRef, useState } from "react";
 import { Minus, Plus } from "lucide-react";
 
+import { useMessages } from "@/components/i18n/LocaleProvider";
+import { cartMessages } from "@/lib/i18n/messages/cart";
+
 interface QuantityStepperProps {
   value: number;
   onChange: (quantity: number) => void;
@@ -23,6 +26,7 @@ const stepClass =
  * field goes back to what it was; Escape undoes the typing.
  */
 export function QuantityStepper({ value, onChange, label, max }: QuantityStepperProps) {
+  const t = useMessages(cartMessages).stepper;
   const [draft, setDraft] = useState<string | null>(null);
   const before = useRef(value);
   const limit = max != null && max > 0 ? max : null;
@@ -44,7 +48,7 @@ export function QuantityStepper({ value, onChange, label, max }: QuantityStepper
           className={stepClass}
           onClick={() => onChange(limit !== null ? Math.min(value - 1, limit) : value - 1)}
           disabled={value <= 1}
-          aria-label={`${label}: adedi azalt`}
+          aria-label={t.decrease(label)}
         >
           <Minus className="h-4 w-4" aria-hidden />
         </button>
@@ -53,7 +57,7 @@ export function QuantityStepper({ value, onChange, label, max }: QuantityStepper
           inputMode="numeric"
           pattern="[0-9]*"
           autoComplete="off"
-          aria-label={`${label}: adet`}
+          aria-label={t.quantity(label)}
           aria-invalid={over || undefined}
           className={`h-9 w-16 bg-transparent border-x border-slate-300 dark:border-white/15 text-center text-sm font-medium tabular-nums focus:outline-none focus:ring-2 focus:ring-inset ${
             over ? "text-red-600 focus:ring-red-500/60 dark:text-red-400" : "focus:ring-red-500/40"
@@ -78,7 +82,7 @@ export function QuantityStepper({ value, onChange, label, max }: QuantityStepper
           className={stepClass}
           onClick={() => onChange(value + 1)}
           disabled={limit !== null && value >= limit}
-          aria-label={`${label}: adedi artır`}
+          aria-label={t.increase(label)}
         >
           <Plus className="h-4 w-4" aria-hidden />
         </button>
@@ -86,9 +90,9 @@ export function QuantityStepper({ value, onChange, label, max }: QuantityStepper
       {/* Under the field, without moving anything around it. */}
       <p
         aria-live="polite"
-        className="pointer-events-none absolute left-0 top-full mt-1 whitespace-nowrap text-[11px] font-medium text-red-600 dark:text-red-400"
+        className="pointer-events-none absolute start-0 top-full mt-1 whitespace-nowrap text-[11px] font-medium text-red-600 dark:text-red-400"
       >
-        {over ? `Stokta en fazla ${limit!.toLocaleString("tr-TR")} adet var` : ""}
+        {over ? t.maxStock(limit!) : ""}
       </p>
     </div>
   );

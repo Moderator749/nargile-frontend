@@ -6,6 +6,8 @@ import { InstagramIcon, YouTubeIcon } from "@/components/icons/SocialIcons";
 import { SmoothAnchor } from "@/components/home/SmoothAnchor";
 import { PERKS_PAGE } from "@/lib/bilgi";
 import type { PromoBox } from "@/lib/home";
+import { homeMessages } from "@/lib/i18n/messages/home";
+import { getMessages } from "@/lib/i18n/server";
 
 /**
  * The channels, in order; one without a link in /admin/promos is left out.
@@ -32,14 +34,13 @@ const CHANNELS: {
   },
 ];
 
-/** The advantages card's line under its title; the promo box has no field for it. */
-const ADVANTAGES_TEXT = "Sultan Nargile ile alışverişlerinizde toptan ve perakende ayrıcalıklarından yararlanın.";
-
 /**
  * The shop's own photographs (also on the advantage tiles), dark and red:
  * accessories, and an ornate set. Neither carries another brand's name, as the
  * Legend and Oduman shots do — the advantages card speaks for Sultan Nargile.
  * The set stands on the left of its frame, so it is mirrored to clear the words.
+ * In Arabic the words are at the right, so each photo is mirrored the other
+ * way round (the set no longer, the accessories now), and the veil with them.
  */
 const BACKDROPS = {
   channels: { src: "/images/avantaj-hero-3.jpg" },
@@ -61,15 +62,15 @@ const OVERLINE = "text-xs font-bold uppercase tracking-widest";
 const TITLE = "mt-1.5 text-balance text-xl font-extrabold leading-tight text-white";
 
 /**
- * The photograph behind a card, under a veil that is darkest on the left,
- * where the words are, and clears towards the subject on the right.
+ * The photograph behind a card, under a veil that is darkest at the start,
+ * where the words are, and clears towards the subject at the end.
  */
 function Backdrop({ src, flip, zoom }: { src: string; flip?: boolean; zoom?: boolean }) {
   return (
     <>
       {/* The mirror is on a wrapper: on the image itself the hover zoom would
           set the same `scale` and turn it back. */}
-      <span aria-hidden className={`absolute inset-0 -z-10 ${flip ? "-scale-x-100" : ""}`}>
+      <span aria-hidden className={`absolute inset-0 -z-10 ${flip ? "ltr:-scale-x-100" : "rtl:-scale-x-100"}`}>
         <Image
           src={src}
           alt=""
@@ -84,7 +85,7 @@ function Backdrop({ src, flip, zoom }: { src: string; flip?: boolean; zoom?: boo
           }`}
         />
       </span>
-      <span aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-r from-black/85 via-black/55 to-black/25" />
+      <span aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-r from-black/85 via-black/55 to-black/25 rtl:bg-gradient-to-l" />
     </>
   );
 }
@@ -116,10 +117,11 @@ function advantagesHref(href: string | null | undefined): string {
   return !link || /^\/?#avantajlar$/.test(link) ? PERKS_PAGE.href : link;
 }
 
-export function HeroAside({ box, className = "" }: { box?: PromoBox; className?: string }) {
+export async function HeroAside({ box, className = "" }: { box?: PromoBox; className?: string }) {
+  const t = await getMessages(homeMessages);
   const widget = box?.widget;
   // The admin types the dots into the eyebrow; the overline has none.
-  const eyebrow = box?.eyebrow.replace(/^[•·\s]+|[•·\s]+$/g, "") || "Ayrıcalıklar & Avantajlar";
+  const eyebrow = box?.eyebrow.replace(/^[•·\s]+|[•·\s]+$/g, "") || t.aside.advantagesEyebrow;
   const channels = CHANNELS.flatMap(({ key, ...channel }) => {
     const href = widget?.[`${key}_href`];
     return href ? [{ key, href, label: widget![`${key}_label`] || key, ...channel }] : [];
@@ -127,14 +129,14 @@ export function HeroAside({ box, className = "" }: { box?: PromoBox; className?:
 
   return (
     <aside
-      aria-label="Öne çıkanlar"
+      aria-label={t.highlights}
       className={`mt-4 grid min-w-0 gap-4 sm:grid-cols-2 lg:invisible lg:mt-0 lg:flex lg:h-0 lg:min-h-full lg:flex-col lg:overflow-hidden lg:opacity-0 lg:transition-[opacity,visibility] lg:duration-300 motion-reduce:transition-none lg:sidebar-closed:visible lg:sidebar-closed:opacity-100 ${className}`}
     >
       <div className={CARD}>
         <Backdrop {...BACKDROPS.channels} />
         <div>
-          <p className={`${OVERLINE} text-white/70`}>{box?.text || "Bizi takip edin"}</p>
-          <h2 className={TITLE}>Topluluğa Katılın</h2>
+          <p className={`${OVERLINE} text-white/70`}>{box?.text || t.followUs}</p>
+          <h2 className={TITLE}>{t.aside.channelsTitle}</h2>
         </div>
         {/* One under the other in the narrow column, where side by side the
             labels would be cut short. */}
@@ -150,7 +152,7 @@ export function HeroAside({ box, className = "" }: { box?: PromoBox; className?:
                 >
                   <Icon className={`h-4.5 w-4.5 shrink-0 transition-colors group-hover/channel:text-white ${glyph}`} />
                   <span className="truncate">{label}</span>
-                  <span className="sr-only">(yeni sekmede açılır)</span>
+                  <span className="sr-only">{t.newTab}</span>
                 </a>
               </li>
             ))}
@@ -165,13 +167,16 @@ export function HeroAside({ box, className = "" }: { box?: PromoBox; className?:
         <Backdrop {...BACKDROPS.advantages} zoom />
         <div>
           <p className={`${OVERLINE} text-red-400`}>{eyebrow}</p>
-          <h2 className={TITLE}>{box?.title || "Hacim büyür. Maliyet küçülür."}</h2>
-          <p className="mt-2 max-w-[22rem] text-sm leading-relaxed text-white/80 lg:text-[13px] lg:leading-snug">{ADVANTAGES_TEXT}</p>
+          <h2 className={TITLE}>{box?.title || t.aside.advantagesTitle}</h2>
+          <p className="mt-2 max-w-[22rem] text-sm leading-relaxed text-white/80 lg:text-[13px] lg:leading-snug">
+            {/* The line under the title; the promo box has no field for it. */}
+            {t.aside.advantagesText}
+          </p>
         </div>
         <span className="mt-4 inline-flex w-max items-center text-sm font-semibold text-red-400 transition-colors group-hover:text-red-300">
-          {widget?.anchor_label || "Avantajları keşfet"}
+          {widget?.anchor_label || t.aside.advantagesLink}
           <ArrowUpRight
-            className="ml-1 h-4 w-4 transition-transform motion-safe:group-hover:-translate-y-0.5 motion-safe:group-hover:translate-x-0.5"
+            className="ms-1 h-4 w-4 transition-transform rtl:-scale-x-100 motion-safe:group-hover:-translate-y-0.5 motion-safe:group-hover:translate-x-0.5 rtl:motion-safe:group-hover:-translate-x-0.5"
             aria-hidden
           />
         </span>

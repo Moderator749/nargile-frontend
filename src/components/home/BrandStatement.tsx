@@ -2,12 +2,13 @@
 
 import { useId, useState } from "react";
 
+import { useMessages } from "@/components/i18n/LocaleProvider";
+import { homeMessages } from "@/lib/i18n/messages/home";
+
 const PARAGRAPH = "text-sm leading-relaxed text-gray-600 md:text-base dark:text-neutral-400";
 
-/** The first sentence is shown; the rest waits behind "Devamını Oku". */
-const LEAD = "Nargile kültürünü modern mühendislik ve birinci sınıf materyallerle yeniden tanımlıyoruz.";
-const REST =
-  "Sadece bir donanım değil; estetik, performans ve uzun ömürlülüğü bir araya getiren premium bir deneyim sunuyoruz.";
+// The first sentence is shown (`statement.lead`); the rest (`statement.rest`)
+// waits behind "Devamını Oku".
 
 /**
  * "Sektörde Referans Noktası": the brand in a sentence under the hero row, on
@@ -23,15 +24,16 @@ export function BrandStatement() {
   const [open, setOpen] = useState(false);
   const headingId = useId();
   const moreId = useId();
+  const t = useMessages(homeMessages);
 
   return (
     <section aria-labelledby={headingId} className="flex w-full flex-col items-center gap-4 text-center">
       <h2 id={headingId} className="text-center text-2xl font-bold text-gray-900 dark:text-white">
-        Sektörde Referans Noktası
+        {t.statement.heading}
       </h2>
 
       <div className="w-full text-center">
-        <p className={PARAGRAPH}>{LEAD}</p>
+        <p className={PARAGRAPH}>{t.statement.lead}</p>
         <div
           id={moreId}
           inert={!open}
@@ -40,7 +42,7 @@ export function BrandStatement() {
           }`}
         >
           <div className="overflow-hidden">
-            <p className={`mt-2 ${PARAGRAPH}`}>{REST}</p>
+            <p className={`mt-2 ${PARAGRAPH}`}>{t.statement.rest}</p>
           </div>
         </div>
         <button
@@ -50,7 +52,7 @@ export function BrandStatement() {
           onClick={() => setOpen((value) => !value)}
           className="mx-auto mt-4 flex w-fit cursor-pointer items-center gap-1 text-sm font-medium text-red-600 transition-colors hover:text-red-700 focus-visible:rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 dark:text-red-400 dark:hover:text-red-300"
         >
-          {open ? "Daralt" : "Devamını Oku"}
+          {open ? t.readLess : t.readMore}
           <span aria-hidden>{open ? "↑" : "↓"}</span>
         </button>
       </div>

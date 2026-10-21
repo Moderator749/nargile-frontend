@@ -22,6 +22,9 @@ test("a pathname says its language", () => {
   assert.deepEqual(splitLocale("/en/catalog/luleler"), { locale: "en", path: "/catalog/luleler" });
   assert.deepEqual(splitLocale("/ar"), { locale: "ar", path: "/" });
   assert.deepEqual(splitLocale("/catalog"), { locale: "tr", path: "/catalog" });
+  // The proxy's internal Turkish address, as a prerendered page sees it.
+  assert.deepEqual(splitLocale("/tr/cart"), { locale: "tr", path: "/cart" });
+  assert.deepEqual(splitLocale("/tr"), { locale: "tr", path: "/" });
   // "/english-tea" is not English.
   assert.deepEqual(splitLocale("/english-tea"), { locale: "tr", path: "/english-tea" });
   assert.equal(isLocale("ar"), true);

@@ -3,19 +3,21 @@
 import { useState, type SubmitEvent } from "react";
 import { Mail, MessageSquare } from "lucide-react";
 
+import { useMessages } from "@/components/i18n/LocaleProvider";
 import Link from "@/components/i18n/Link";
 import { MIN_PASSWORD_LENGTH } from "@/components/auth/registrationDraft";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { confirmPasswordReset, requestPasswordReset } from "@/lib/authApi";
-import { getApiErrorMessage } from "@/lib/errors";
+import { getApiErrorMessage, translateApiDetail } from "@/lib/errors";
+import { passwordMessages } from "@/lib/i18n/messages/auth";
 
 type Channel = "email" | "sms";
 
-const CHANNELS: { id: Channel; label: string; Icon: typeof Mail }[] = [
-  { id: "email", label: "E-posta ile", Icon: Mail },
-  { id: "sms", label: "SMS ile", Icon: MessageSquare },
+const CHANNELS: { id: Channel; label: "byEmail" | "bySms"; Icon: typeof Mail }[] = [
+  { id: "email", label: "byEmail", Icon: Mail },
+  { id: "sms", label: "bySms", Icon: MessageSquare },
 ];
 
 /**
@@ -23,6 +25,7 @@ const CHANNELS: { id: Channel; label: string; Icon: typeof Mail }[] = [
  * six-digit code, entered here with the new password.
  */
 export function ForgotPasswordForm() {
+  const m = useMessages(passwordMessages);
   const [channel, setChannel] = useState<Channel>("email");
   const [identifier, setIdentifier] = useState("");
   const [sent, setSent] = useState<string | null>(null);
@@ -40,7 +43,7 @@ export function ForgotPasswordForm() {
     try {
       setSent(await requestPasswordReset(channel, identifier.trim()));
     } catch (err) {
-      setError(getApiErrorMessage(err, "İstek gönderilemedi, lütfen tekrar deneyin."));
+      setError(getApiErrorMessage(err, m.requestFailed));
     } finally {
       setBusy(false);
     }
@@ -48,13 +51,13 @@ export function ForgotPasswordForm() {
 
   async function confirm(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (password !== repeat) return setError("Şifreler aynı değil.");
+    if (password !== repeat) return setError(m.mismatch);
     setBusy(true);
     setError(null);
     try {
       setDone(await confirmPasswordReset({ phone: identifier.trim(), code: code.trim(), new_password: password }));
     } catch (err) {
-      setError(getApiErrorMessage(err, "Şifre değiştirilemedi."));
+      setError(getApiErrorMessage(err, m.changeFailed));
     } finally {
       setBusy(false);
     }
@@ -63,9 +66,9 @@ export function ForgotPasswordForm() {
   if (done) {
     return (
       <div className="space-y-4">
-        <Alert variant="success">{done}</Alert>
+        <Alert variant="success">{translateApiDetail(done)}</Alert>
         <Link href="/login" className="block text-center text-sm font-semibold text-red-600 hover:underline dark:text-red-400">
-          Giriş sayfasına dön →
+          {m.backToLogin} <span aria-hidden className="inline-block rtl:-scale-x-100">→</span>
         </Link>
       </div>
     );
@@ -74,10 +77,12 @@ export function ForgotPasswordForm() {
   if (sent && channel === "sms") {
     return (
       <form onSubmit={confirm} className="space-y-4">
-        <Alert variant="success">{sent} SMS ile gelen 6 haneli kodu girin.</Alert>
+        <Alert variant="success">
+          {translateApiDetail(sent)} {m.enterSmsCode}
+        </Alert>
         {error && <Alert variant="error">{error}</Alert>}
         <Input
-          label="SMS kodu"
+          label={m.smsCode}
           name="code"
           inputMode="numeric"
           autoComplete="one-time-code"
@@ -89,13 +94,13 @@ export function ForgotPasswordForm() {
           onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
           placeholder="123456"
         />
-        <Input label="Yeni şifre" type="password" name="new-password" autoComplete="new-password" minLength={MIN_PASSWORD_LENGTH} required value={password} onChange={(e) => setPassword(e.target.value)} hint={`En az ${MIN_PASSWORD_LENGTH} karakter.`} />
-        <Input label="Yeni şifre (tekrar)" type="password" name="repeat-password" autoComplete="new-password" minLength={MIN_PASSWORD_LENGTH} required value={repeat} onChange={(e) => setRepeat(e.target.value)} />
+        <Input label={m.newPassword} type="password" name="new-password" autoComplete="new-password" minLength={MIN_PASSWORD_LENGTH} required value={password} onChange={(e) => setPassword(e.target.value)} hint={m.minLength(MIN_PASSWORD_LENGTH)} />
+        <Input label={m.repeatPassword} type="password" name="repeat-password" autoComplete="new-password" minLength={MIN_PASSWORD_LENGTH} required value={repeat} onChange={(e) => setRepeat(e.target.value)} />
         <Button type="submit" loading={busy}>
-          Şifreyi değiştir
+          {m.change}
         </Button>
         <button type="button" onClick={() => setSent(null)} className="block w-full text-center text-sm text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-100">
-          Kod gelmedi mi? Tekrar gönder
+          {m.noCode}
         </button>
       </form>
     );
@@ -104,13 +109,10 @@ export function ForgotPasswordForm() {
   if (sent) {
     return (
       <div className="space-y-4">
-        <Alert variant="success">{sent}</Alert>
-        <p className="text-sm leading-6 text-slate-600 dark:text-zinc-400">
-          E-postadaki bağlantı 30 dakika geçerlidir ve bir kez kullanılabilir. Gelen kutunuzda göremezseniz istenmeyen
-          (spam) klasörüne de bakın.
-        </p>
+        <Alert variant="success">{translateApiDetail(sent)}</Alert>
+        <p className="text-sm leading-6 text-slate-600 dark:text-zinc-400">{m.emailSentHint}</p>
         <button type="button" onClick={() => setSent(null)} className="text-sm font-semibold text-red-600 hover:underline dark:text-red-400">
-          Tekrar gönder
+          {m.resend}
         </button>
       </div>
     );
@@ -119,7 +121,7 @@ export function ForgotPasswordForm() {
   return (
     <form onSubmit={request} className="space-y-4">
       {error && <Alert variant="error">{error}</Alert>}
-      <div role="radiogroup" aria-label="Yenileme yöntemi" className="grid grid-cols-2 gap-2">
+      <div role="radiogroup" aria-label={m.method} className="grid grid-cols-2 gap-2">
         {CHANNELS.map(({ id, label, Icon }) => (
           <button
             key={id}
@@ -136,38 +138,40 @@ export function ForgotPasswordForm() {
                 : "border-slate-300 text-slate-700 hover:bg-slate-50 dark:border-white/15 dark:text-zinc-300 dark:hover:bg-white/5"
             }`}
           >
-            <Icon className="h-4 w-4" aria-hidden /> {label}
+            <Icon className="h-4 w-4" aria-hidden /> {m[label]}
           </button>
         ))}
       </div>
       {channel === "email" ? (
         <Input
-          label="E-posta veya kullanıcı adı"
+          label={m.identifier}
           name="identifier"
           autoComplete="username"
           required
           autoFocus
           value={identifier}
           onChange={(e) => setIdentifier(e.target.value)}
-          placeholder="ornek@firma.com"
-          hint="Kayıtlıysanız şifre yenileme bağlantısı e-postanıza gelir."
+          placeholder={m.identifierPlaceholder}
+          hint={m.identifierHint}
         />
       ) : (
         <Input
-          label="Cep telefonu"
+          label={m.phone}
           name="phone"
           type="tel"
+          // Phone numbers read left to right on the Arabic page too.
+          dir="ltr"
           autoComplete="tel"
           required
           autoFocus
           value={identifier}
           onChange={(e) => setIdentifier(e.target.value)}
-          placeholder="0532 123 45 67"
-          hint="Hesabınızda kayıtlı cep telefonuna 6 haneli kod gelir."
+          placeholder={m.phonePlaceholder}
+          hint={m.phoneHint}
         />
       )}
       <Button type="submit" loading={busy}>
-        {channel === "email" ? "Bağlantı gönder" : "Kod gönder"}
+        {channel === "email" ? m.sendLink : m.sendCode}
       </Button>
     </form>
   );

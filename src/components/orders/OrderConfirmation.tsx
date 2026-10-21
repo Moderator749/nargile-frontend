@@ -4,11 +4,13 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import { CircleCheck, CircleX, Landmark, Loader2, UserCheck } from "lucide-react";
 
 import Link from "@/components/i18n/Link";
+import { useLocale, useMessages } from "@/components/i18n/LocaleProvider";
 import { BankAccountList, CopyButton } from "@/components/payment/BankAccounts";
 import { Alert } from "@/components/ui/Alert";
 import { countryName } from "@/lib/countries";
 import { getApiErrorMessage } from "@/lib/errors";
 import { formatMoney } from "@/lib/format";
+import { ordersMessages } from "@/lib/i18n/messages/orders";
 import { fetchBankAccounts, fetchOrder, orderNetTotal } from "@/lib/ordersApi";
 import { shippingOption } from "@/lib/shipping";
 import { useAuthHydrated } from "@/store/useHasHydrated";
@@ -39,6 +41,9 @@ const PAYMENT_POLLS = 20;
  * the page asks again every few seconds instead of guessing.
  */
 export function OrderConfirmation({ orderId }: { orderId: string }) {
+  const locale = useLocale();
+  const t = useMessages(ordersMessages).confirmation;
+  const notFound = t.notFound;
   const hydrated = useAuthHydrated();
   const token = useAuthStore((s) => s.token);
   const [order, setOrder] = useState<Order | null>(null);
@@ -63,10 +68,10 @@ export function OrderConfirmation({ orderId }: { orderId: string }) {
         if (o.payment_method === "BANK_TRANSFER") setAccounts(await fetchBankAccounts(controller.signal));
       })
       .catch((err: unknown) => {
-        if (!controller.signal.aborted) setError(getApiErrorMessage(err, "Sipariş bulunamadı."));
+        if (!controller.signal.aborted) setError(getApiErrorMessage(err, notFound));
       });
     return () => controller.abort();
-  }, [hydrated, token, orderId, framed]);
+  }, [hydrated, token, orderId, framed, notFound]);
 
   // Waiting for PayTR's word: ask again until it has come, or for a minute.
   const awaitingCard = order?.status === "AWAITING_PAYMENT";
@@ -93,7 +98,7 @@ export function OrderConfirmation({ orderId }: { orderId: string }) {
   if (hydrated && !token) {
     return (
       <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-16">
-        <Alert variant="error">Siparişi görmek için giriş yapın.</Alert>
+        <Alert variant="error">{t.signIn}</Alert>
       </main>
     );
   }
@@ -110,16 +115,11 @@ export function OrderConfirmation({ orderId }: { orderId: string }) {
   const transfer = order.payment_method === "BANK_TRANSFER";
   const card = order.payment_method === "CREDIT_CARD";
   const failed = order.status === "PAYMENT_FAILED";
-  const heading = !card
-    ? "Siparişiniz alındı"
-    : failed
-      ? "Ödeme tamamlanamadı"
-      : awaitingCard
-        ? "Ödemeniz doğrulanıyor"
-        : "Ödemeniz alındı";
+  const heading = !card ? t.received : failed ? t.failed : awaitingCard ? t.verifying : t.paid;
   const HeadIcon = failed ? CircleX : awaitingCard ? Loader2 : CircleCheck;
   const ownVan = order.shipping_method === "ISTANBUL_FREE";
-  const { Icon } = shippingOption(order.shipping_method);
+  const shipping = shippingOption(order.shipping_method, locale);
+  const { Icon } = shipping;
   const a = order.shipping_address;
 
   return (
@@ -136,28 +136,25 @@ export function OrderConfirmation({ orderId }: { orderId: string }) {
           {heading}
         </h1>
         <p className="mt-2 text-sm text-slate-600 dark:text-zinc-400">
-          Sipariş no: <span className="font-mono font-semibold text-slate-900 dark:text-zinc-100">{order.order_number}</span>
+          {t.orderNo} <span className="font-mono font-semibold text-slate-900 dark:text-zinc-100">{order.order_number}</span>
         </p>
       </div>
 
       {card && awaitingCard && (
         <p className="mt-6 text-center text-sm text-slate-600 dark:text-zinc-400" aria-live="polite">
-          {polls < PAYMENT_POLLS
-            ? "Ödeme kuruluşundan onay bekleniyor; bu birkaç saniye sürebilir."
-            : "Onay beklenenden uzun sürüyor. Sonucu Siparişlerim sayfasından takip edebilirsiniz; ödeme alınmadıysa sipariş kısa süre içinde otomatik olarak kapanır."}
+          {polls < PAYMENT_POLLS ? t.waiting : t.waitingLong}
         </p>
       )}
       {failed && (
         <div className="mt-8 space-y-4 text-center">
           <Alert variant="error">
-            {order.cancel_reason ?? "Kart ödemesi tamamlanamadı."} Kartınızdan çekim yapılmadı; ayrılan stok ve
-            kullandığınız puanlar iade edildi.
+            {order.cancel_reason ?? t.cardFailed} {t.refunded}
           </Alert>
           <Link
             href="/cart"
             className="inline-flex h-11 items-center justify-center rounded-lg bg-red-600 px-5 text-sm font-semibold text-white hover:bg-red-500"
           >
-            Sepete dön ve tekrar dene
+            {t.retry}
           </Link>
         </div>
       )}
@@ -165,26 +162,26 @@ export function OrderConfirmation({ orderId }: { orderId: string }) {
       {transfer && order.status === "AWAITING_TRANSFER" && (
         <section aria-labelledby="pay-heading" className="mt-10 rounded-2xl border border-amber-200 bg-amber-50/60 p-5 dark:border-amber-500/30 dark:bg-amber-500/5 sm:p-6">
           <h2 id="pay-heading" className="flex items-center gap-2 text-lg font-bold tracking-tight">
-            <Landmark className="h-5 w-5" aria-hidden /> Havale / EFT ile ödeme
+            <Landmark className="h-5 w-5" aria-hidden /> {t.transferHeading}
           </h2>
           <p className="mt-2 text-sm text-slate-700 dark:text-zinc-300">
-            <strong className="font-mono">{formatMoney(net)}</strong> tutarını aşağıdaki hesaplardan birine{" "}
-            {TRANSFER_DEADLINE_HOURS} saat içinde gönderin. Açıklamaya sipariş numaranızı yazın; ödemeniz onaylanınca
-            siparişiniz hazırlanır. Süre içinde ödenmeyen siparişler otomatik iptal edilir.
+            {t.transferBefore}
+            <strong className="font-mono">{formatMoney(net)}</strong>
+            {t.transferAfter(TRANSFER_DEADLINE_HOURS)}
           </p>
           <div className="mt-4 flex items-center justify-between gap-3 rounded-xl bg-white px-4 py-3 dark:bg-zinc-900">
             <div>
-              <p className="text-xs text-slate-500 dark:text-zinc-400">Açıklama</p>
+              <p className="text-xs text-slate-500 dark:text-zinc-400">{t.reference}</p>
               <p className="font-mono text-sm font-semibold">{order.order_number}</p>
             </div>
-            <CopyButton text={order.order_number} label="Sipariş numarasını" />
+            <CopyButton text={order.order_number} label={t.copyOrderNo} />
           </div>
 
           {accounts === null ? (
             <div className="mt-3 h-24 rounded-xl bg-white/60 motion-safe:animate-pulse dark:bg-white/5" aria-busy />
           ) : accounts.length === 0 ? (
             <div className="mt-3">
-              <Alert variant="error">Banka hesap bilgileri henüz tanımlanmadı. Ödeme için lütfen bizimle iletişime geçin.</Alert>
+              <Alert variant="error">{t.noAccounts}</Alert>
             </div>
           ) : (
             <div className="mt-3">
@@ -198,23 +195,15 @@ export function OrderConfirmation({ orderId }: { orderId: string }) {
         <h2 id="delivery-heading" className="flex items-center gap-2 text-lg font-bold tracking-tight">
           {/* The method's own name, so the page says what will actually happen. */}
           <Icon className="h-5 w-5" aria-hidden />
-          {shippingOption(order.shipping_method).title}
+          {shipping.title}
         </h2>
         {ownVan ? (
-          <p className="mt-2 text-sm text-emerald-800 dark:text-emerald-300">
-            İstanbul içi teslimat ücretsizdir; siparişiniz kendi aracımızla, teslimattan önce aranarak
-            getirilir.
-          </p>
+          <p className="mt-2 text-sm text-emerald-800 dark:text-emerald-300">{t.ownVan}</p>
         ) : order.shipping_payer === "RECEIVER" ? (
           // Carriage is never added to the order; the buyer accepted paying it on delivery.
-          <p className="mt-2 text-sm text-amber-800 dark:text-amber-200">
-            Karşı ödemeli gönderim: gönderim ücreti sipariş toplamınıza eklenmemiştir, teslimat sırasında kargo
-            görevlisine ödenecektir.
-          </p>
+          <p className="mt-2 text-sm text-amber-800 dark:text-amber-200">{t.receiverPays}</p>
         ) : (
-          <p className="mt-2 text-sm text-emerald-800 dark:text-emerald-300">
-            Gönderim ücreti tarafımızca karşılanmıştır; teslimatta ödeme yapmanız gerekmez.
-          </p>
+          <p className="mt-2 text-sm text-emerald-800 dark:text-emerald-300">{t.shopPays}</p>
         )}
         {/* "Şubeme istiyorum": the branch the goods were sent to, named so the
             firm can see which one this order was for. */}
@@ -225,35 +214,36 @@ export function OrderConfirmation({ orderId }: { orderId: string }) {
         )}
         {a && (
           <address className="mt-1 text-sm not-italic leading-6 text-slate-700 dark:text-zinc-300">
-            {a.full_name} · {a.phone}
+            {/* Left to right, so a "+49 …" number keeps its plus in front on an Arabic page. */}
+            {a.full_name} · <span dir="ltr">{a.phone}</span>
             <br />
             {a.line}
             <br />
             {[a.district, a.city].filter(Boolean).join(" / ")}
-            {a.country !== "TR" && <> · {countryName(a.country)}</>}
+            {a.country !== "TR" && <> · {countryName(a.country, locale)}</>}
           </address>
         )}
         {order.receiver_name && (
           <p className="mt-3 flex gap-2 rounded-xl bg-slate-50 px-3 py-2.5 text-xs leading-5 text-slate-600 dark:bg-white/5 dark:text-zinc-300">
             <UserCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
             <span>
-              Teslim alacak kişi: <strong className="font-semibold">{order.receiver_name}</strong> ·{" "}
-              {order.receiver_phone}
+              {t.receiver} <strong className="font-semibold">{order.receiver_name}</strong> ·{" "}
+              <span dir="ltr">{order.receiver_phone}</span>
             </span>
           </p>
         )}
         <dl className="mt-4 flex justify-between border-t border-slate-200 pt-4 text-base font-bold dark:border-white/10">
-          <dt>Toplam</dt>
+          <dt>{t.total}</dt>
           <dd className="font-mono">{formatMoney(net)}</dd>
         </dl>
       </section>
 
       <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
         <Link href="/orders" className="inline-flex h-11 items-center justify-center rounded-lg bg-slate-900 px-5 text-sm font-semibold text-white hover:bg-slate-700 dark:bg-white dark:text-zinc-900">
-          Siparişlerim
+          {t.myOrders}
         </Link>
         <Link href="/catalog" className="inline-flex h-11 items-center justify-center rounded-lg px-5 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50 dark:text-zinc-300 dark:ring-white/15 dark:hover:bg-white/5">
-          Alışverişe devam et
+          {t.continueShopping}
         </Link>
       </div>
     </main>
