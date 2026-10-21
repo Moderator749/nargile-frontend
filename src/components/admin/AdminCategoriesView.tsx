@@ -37,10 +37,13 @@ interface FormState {
   imageUrl: string | null;
   description: string;
   /** "Çeviriler": English and Arabic name and description; no name = not saved. */
-  translations: Record<TranslatedLocale, { name: string; description: string }>;
+  translations: Record<TranslatedLocale, { name: string; description: string; draft: boolean; source: string | null }>;
 }
 
-const NO_TRANSLATIONS = { en: { name: "", description: "" }, ar: { name: "", description: "" } };
+const NO_TRANSLATIONS = {
+  en: { name: "", description: "", draft: false, source: null },
+  ar: { name: "", description: "", draft: false, source: null },
+};
 const TRANSLATION_LABEL: Record<TranslatedLocale, string> = { en: "İngilizce (EN)", ar: "Arapça (AR)" };
 /** Rich text with no words in it is blank. */
 const blankHtml = (html: string) => !html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim();
@@ -111,8 +114,9 @@ export function AdminCategoriesView({ onChange }: { onChange?: () => void } = {}
       imageUrl: c.image_url ?? null,
       description: c.description ?? "",
       translations: {
-        en: { name: c.translations?.en?.name ?? "", description: c.translations?.en?.description ?? "" },
-        ar: { name: c.translations?.ar?.name ?? "", description: c.translations?.ar?.description ?? "" },
+        // A draft (Claude's) keeps its flag and source until "Onayla".
+        en: { name: c.translations?.en?.name ?? "", description: c.translations?.en?.description ?? "", draft: !!c.translations?.en?.draft, source: c.translations?.en?.source ?? null },
+        ar: { name: c.translations?.ar?.name ?? "", description: c.translations?.ar?.description ?? "", draft: !!c.translations?.ar?.draft, source: c.translations?.ar?.source ?? null },
       },
     });
     setResult(null);
@@ -145,6 +149,7 @@ export function AdminCategoriesView({ onChange }: { onChange?: () => void } = {}
             {
               name: form.translations[l].name.trim(),
               description: blankHtml(form.translations[l].description) ? null : form.translations[l].description.trim(),
+              ...(form.translations[l].draft ? { draft: true, source: form.translations[l].source } : {}),
             },
           ]),
       ),
@@ -296,6 +301,18 @@ export function AdminCategoriesView({ onChange }: { onChange?: () => void } = {}
             <div className="mt-3 space-y-4">
               {(["en", "ar"] as const).map((l) => (
                 <div key={l} className="space-y-2" dir={l === "ar" ? "rtl" : "ltr"} lang={l}>
+                  {form.translations[l].draft && (
+                    <div dir="ltr" lang="tr" className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+                      <span>{TRANSLATION_LABEL[l]}: Claude çevirisi — taslak, arama motorlarına kapalı.</span>
+                      <button
+                        type="button"
+                        onClick={() => set("translations", { ...form.translations, [l]: { ...form.translations[l], draft: false, source: null } })}
+                        className="rounded-full bg-amber-600 px-3 py-1 font-semibold text-white hover:bg-amber-500"
+                      >
+                        Onayla
+                      </button>
+                    </div>
+                  )}
                   <Input
                     label={`${TRANSLATION_LABEL[l]} — ad`}
                     value={form.translations[l].name}

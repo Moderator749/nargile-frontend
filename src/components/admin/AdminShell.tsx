@@ -10,6 +10,7 @@ import {
   FileSpreadsheet,
   FileText,
   House,
+  Languages,
   LayoutDashboard,
   Megaphone,
   MessagesSquare,
@@ -29,6 +30,8 @@ const NAV = [
   { href: "/admin", label: "Genel Bakış", icon: LayoutDashboard, exact: true },
   { href: "/admin/orders", label: "Siparişler", icon: ClipboardList },
   { href: "/admin/products", label: "Ürünler & Stok", icon: Boxes },
+  // Claude's English and Arabic drafts, waiting to be read and approved.
+  { href: "/admin/translations", label: "Çeviri Onayları", icon: Languages },
   { href: "/admin/customers", label: "Müşteriler", icon: Users },
   // The hub; its editors that keep pages of their own light it up too.
   {

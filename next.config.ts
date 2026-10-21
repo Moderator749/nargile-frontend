@@ -63,8 +63,9 @@ const RETIRED_CATEGORIES: Record<string, string> = {
 - The old store's (OpenCart) category address → where those products are now.
 - Measured, not guessed: each old category page was read and its products
 - looked up here; nearly all of each landed in the one category named. The
-- tobacco category is left out on purpose — it is not sold online, and its
-- address must not lead to anything that looks like a replacement.
+- herbal molasses shelf (/nargile-tutunu-markalari-ve-cesitleri, "Bitkisel
+- Ürün tatları") is left out: none of its products were brought over, and an
+- address leading to an empty "Bitkisel Ürünler" is no better than a 404.
  */
 const LEGACY_CATEGORIES: Record<string, string> = {
   "paslanmaz-celik-nargile-takimlari": "celik-takimlar",
@@ -86,13 +87,36 @@ const LEGACY_CATEGORIES: Record<string, string> = {
   "yedek-parca": "malzemeler",
   "okey-tavla-ve-iskambil-kartlari": "oyun-eglence",
   kampanyalar: "kampanyalar",
+  // Its WD Hookah sets are steel sets here (unpublished for now).
+  "wd-hookah-nargile-takimlari": "celik-takimlar",
+  // "Diğer" and its "Nargile Şerleri" held accessories, the latter none at all.
+  diger: "malzemeler",
+  "nargile-serleri": "malzemeler",
 };
 
-/** The old store's information pages → ours. */
+/**
+ * The old store also listed its accessory shelves under "Diğer"
+ * (/diger/kozlukler, /diger/nargile-komuru…): the same categories, one level
+ * down — every one of them is answered at both addresses.
+ */
+const LEGACY_PARENT = "diger";
+
+/** The old store's pages that were not categories, and its brand pages. */
+
 const LEGACY_PAGES: Record<string, string> = {
   "teslimat-ve-kargolama-bilgileri": "/bilgi/kargo-ve-teslimat",
   "sartlar-ve-kosullar": "/bilgi/uyelik-ve-kullanim-sartlari",
   "sikca-sorulan-sorular": "/sss",
+  // No page of their own here: the shop's story is the homepage's closing
+  // passage, the privacy terms are among the Bilgi documents.
+  hakkimizda: "/",
+  "gizlilik-sozlesmesi": "/bilgi",
+  // "İthal Nargile" was empty when the old store was read.
+  "ithal-nargile": "/catalog",
+  // Brand pages (manufacturers) → the brand's category.
+  "legend-hookah-nargile": "/catalog/legend",
+  "sultan-nargile": "/catalog/sultan",
+  "oduman%20nargile": "/catalog/oduman", // the old store's own spelling, with a space
 };
 
 const nextConfig: NextConfig = {
@@ -138,11 +162,16 @@ const nextConfig: NextConfig = {
       // The old store's addresses, so its links and its search results keep
       // landing on the same shelf when the domain moves here. (Its product
       // addresses are answered by src/proxy.ts, which asks the API.)
-      ...Object.entries(LEGACY_CATEGORIES).map(([from, to]) => ({
-        source: `/${from}`,
-        destination: `/catalog/${to}`,
-        statusCode: 301 as const,
-      })),
+      ...Object.entries(LEGACY_CATEGORIES).flatMap(([from, to]) =>
+        [`/${from}`, `/${LEGACY_PARENT}/${from}`].map((source) => ({
+          source,
+          destination: `/catalog/${to}`,
+          statusCode: 301 as const,
+        })),
+      ),
+      // The old store's sitemap files (sitemap-product-1.xml…), which search
+      // engines still hold: ours lists every language.
+      { source: "/sitemap-:file", destination: "/sitemap.xml", statusCode: 301 as const },
       ...Object.entries(LEGACY_PAGES).map(([from, to]) => ({
         source: `/${from}`,
         destination: to,

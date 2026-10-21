@@ -591,6 +591,19 @@ export async function adminGetHomepage(signal?: AbortSignal): Promise<HomepageSe
   return data;
 }
 
+/** A product or category whose English or Arabic Claude wrote and nobody has approved yet. */
+export interface TranslationDraftRow {
+  kind: "product" | "category";
+  id: string;
+  name: string;
+  languages: ("en" | "ar")[];
+}
+
+export async function adminTranslationDrafts(signal?: AbortSignal): Promise<TranslationDraftRow[]> {
+  const { data } = await api.get<TranslationDraftRow[]>("/admin/translations/drafts", { signal });
+  return data;
+}
+
 /** The homepage's translation memory (lib/homeTranslations): read publicly, written by an admin. */
 export async function adminGetHomeTranslations(signal?: AbortSignal): Promise<HomeTranslations> {
   const { data } = await api.get<HomeTranslations>("/home/translations", { signal });

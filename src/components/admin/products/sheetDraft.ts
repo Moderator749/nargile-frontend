@@ -132,12 +132,16 @@ export interface TranslationDraft {
   description: string;
   metaTitle: string;
   metaDescription: string;
+  /** Written by Claude, not yet approved: shown on /en and /ar, not indexed. */
+  draft: boolean;
+  /** The draft's source fingerprint, kept so a save does not have it rewritten. */
+  source: string | null;
 }
 
 export const TRANSLATED_LOCALES: TranslatedLocale[] = ["en", "ar"];
 export const LOCALE_LABEL: Record<TranslatedLocale, string> = { en: "İngilizce (EN)", ar: "Arapça (AR)" };
 
-const emptyTranslation = (): TranslationDraft => ({ name: "", description: "", metaTitle: "", metaDescription: "" });
+const emptyTranslation = (): TranslationDraft => ({ name: "", description: "", metaTitle: "", metaDescription: "", draft: false, source: null });
 
 /** Rich text with no words in it ("<p></p>", a lone <br>) is blank. */
 const blankHtml = (html: string) => !html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim();
@@ -303,7 +307,14 @@ export function draftFromSheet(sheet: SavedProductSheet): SheetDraft {
         return [
           l,
           t
-            ? { name: t.name, description: t.description ?? "", metaTitle: t.meta_title ?? "", metaDescription: t.meta_description ?? "" }
+            ? {
+                name: t.name,
+                description: t.description ?? "",
+                metaTitle: t.meta_title ?? "",
+                metaDescription: t.meta_description ?? "",
+                draft: !!t.draft,
+                source: t.source ?? null,
+              }
             : emptyTranslation(),
         ];
       }),
@@ -446,6 +457,8 @@ export function toPayload(draft: SheetDraft): ProductSheet {
             description: blankHtml(t.description) ? null : t.description.trim(),
             meta_title: t.metaTitle.trim() || null,
             meta_description: t.metaDescription.trim() || null,
+            // A draft stays one until "Onayla": saving the sheet approves nothing.
+            ...(t.draft ? { draft: true, source: t.source } : {}),
           },
         ];
       }),

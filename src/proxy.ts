@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
+import { OPENCART_CATEGORY_IDS, OPENCART_INFORMATION_IDS, OPENCART_PRODUCT_IDS, RETIRED_PRODUCTS } from "./lib/legacy/opencart";
+
 /*
  * Permanent (301) redirects to a product's one address, /product/<slug>:
  *
@@ -15,6 +17,15 @@ import { NextResponse, type NextRequest } from "next/server";
  *   category pages (/legend-hookah-nargile-takimlari/legend-hookah-celik-…).
  *   The category part names no product, so only the last segment is looked up;
  *   a third of the old product links indexed are in this form.
+ *
+ * - An old product the shop no longer sells here (unpublished, or never
+ *   brought over) goes to the same model if there is one, else the shelf it
+ *   belonged on (RETIRED_PRODUCTS, measured
+ *   from the old store's sitemap) — but only after the API was asked: a
+ *   product published again takes its address back by itself.
+ * - /index.php?route=…: the old store's addresses before its friendly URLs —
+ *   a product by its OpenCart id, a category by its path, a search, the
+ *   information pages, the home page (openCartRoute below).
  *
  * Anything the API does not know as a product goes on untouched (and ends at
  * the 404 page if nothing else answers it). When the API cannot answer at all
@@ -85,6 +96,59 @@ function moved(request: NextRequest, pathname: string) {
   return NextResponse.redirect(url, 301);
 }
 
+/** A 301 to an address of our own, the old query string dropped (it named the old page). */
+function movedTo(request: NextRequest, pathname: string, query?: Record<string, string>) {
+  const url = request.nextUrl.clone();
+  url.pathname = pathname;
+  url.search = query ? `?${new URLSearchParams(query)}` : "";
+  return NextResponse.redirect(url, 301);
+}
+
+/**
+ * An old product's address, by its OpenCart slug: its page here, else its
+ * shelf, else nothing known. `go` is how to send it: keeping the query string
+ * (utm_*…) for a friendly address, dropping it for /index.php?route=….
+ */
+async function legacyProduct(request: NextRequest, slug: string, go: (request: NextRequest, pathname: string) => NextResponse = moved) {
+  const current = await productSlug(slug);
+  if (current === UNAVAILABLE) return unavailable();
+  if (current) return go(request, `/product/${current}`);
+  const next = RETIRED_PRODUCTS[slug];
+  return next ? go(request, next) : null;
+}
+
+/**
+ * The old store's unfriendly addresses, /index.php?route=… (and /?route=…),
+ * each sent to its page here: products by OpenCart id, categories by the
+ * last id of their path, searches to the catalog search, information pages
+ * to Bilgi, the account and checkout to ours, anything else home. Never a
+ * 404: these are what an old bookmark or a crawler's oldest memory holds.
+ */
+async function openCartRoute(request: NextRequest) {
+  const params = request.nextUrl.searchParams;
+  const route = params.get("route") ?? "common/home";
+  if (route === "product/product") {
+    const slug = OPENCART_PRODUCT_IDS[params.get("product_id") ?? ""];
+    return (slug && (await legacyProduct(request, slug, (r, p) => movedTo(r, p)))) || movedTo(request, "/catalog");
+  }
+  if (route === "product/category") {
+    const id = (params.get("path") ?? "").split("_").pop() ?? "";
+    const category = OPENCART_CATEGORY_IDS[id];
+    return movedTo(request, category ? `/catalog/${category}` : "/catalog");
+  }
+  if (route === "product/search") {
+    const q = (params.get("search") ?? params.get("tag") ?? "").trim().slice(0, 100);
+    return movedTo(request, "/catalog", q ? { q } : undefined);
+  }
+  if (route.startsWith("product/")) return movedTo(request, "/catalog"); // special, manufacturer, compare
+  if (route === "information/information") return movedTo(request, OPENCART_INFORMATION_IDS[params.get("information_id") ?? ""] ?? "/bilgi");
+  if (route.startsWith("information/")) return movedTo(request, route === "information/contact" ? "/" : "/bilgi");
+  if (route.startsWith("checkout/")) return movedTo(request, "/cart");
+  if (route.startsWith("account/")) return movedTo(request, "/account");
+  if (route.startsWith("blog/") || route.startsWith("extension/blog")) return movedTo(request, "/blog");
+  return movedTo(request, "/");
+}
+
 /**
  * Legacy addresses that point at a product, answered with a 301 to its page:
  * /product/<uuid>, /product/<CAPITALS>, and — at the root only, the old store
@@ -112,9 +176,8 @@ async function productRedirect(request: NextRequest, path: string, prefix: strin
       (category === null || SLUG.test(category)) &&
       !FILE.test(slug) && SLUG.test(slug) && slug.length <= 255
     ) {
-      const current = await productSlug(slug);
-      if (current === UNAVAILABLE) return unavailable();
-      if (current) return moved(request, `/product/${current}`);
+      const found = await legacyProduct(request, slug);
+      if (found) return found;
     }
   }
   return null;
@@ -132,6 +195,8 @@ async function productRedirect(request: NextRequest, path: string, prefix: strin
  */
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  if (pathname === "/index.php" || (pathname === "/" && request.nextUrl.searchParams.has("route"))) return openCartRoute(request);
 
   if (pathname === "/tr" || pathname.startsWith("/tr/")) return moved(request, pathname.slice(3) || "/");
 

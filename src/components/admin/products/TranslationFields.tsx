@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check } from "lucide-react";
+import { Check, Sparkles } from "lucide-react";
 
 import { RichTextEditor } from "@/components/admin/RichTextEditor";
 import { SheetField, sheetInputClass } from "@/components/admin/products/SheetParts";
@@ -31,6 +31,10 @@ function Count({ value, max }: { value: string; max: number }) {
  * with no name is not saved, and its page shows the Turkish (kept out of the
  * index). Brand names and model codes stay as they are. Arabic is typed
  * right to left.
+ *
+ * A language Claude wrote (backend app/services/auto_translate) is a draft:
+ * the storefront shows it, search engines are told to skip it, until it is
+ * read here and approved ("Onayla", then the sheet's Kaydet).
  */
 export function TranslationFields({
   value,
@@ -59,7 +63,9 @@ export function TranslationFields({
             }`}
           >
             {LOCALE_LABEL[l]}
-            {value[l].name.trim() ? (
+            {value[l].draft ? (
+              <Sparkles className="h-3.5 w-3.5 text-amber-500" aria-label="taslak, onay bekliyor" />
+            ) : value[l].name.trim() ? (
               <Check className="h-3.5 w-3.5 text-emerald-600" aria-label="çevrildi" />
             ) : translationStarted(value[l]) ? (
               <span className="h-1.5 w-1.5 rounded-full bg-amber-500" aria-label="eksik" />
@@ -69,6 +75,21 @@ export function TranslationFields({
       </div>
 
       <div role="tabpanel" className="space-y-4" key={tab}>
+        {t.draft && (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+            <p className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 shrink-0" aria-hidden />
+              Claude çevirisi — taslak. Sayfada görünür ama arama motorlarına kapalıdır; okuyup gerekirse düzeltin, sonra onaylayın.
+            </p>
+            <button
+              type="button"
+              onClick={() => onChange(tab, { ...t, draft: false, source: null })}
+              className="inline-flex h-8 items-center gap-1.5 rounded-full bg-amber-600 px-3 text-xs font-semibold text-white hover:bg-amber-500"
+            >
+              <Check className="h-3.5 w-3.5" aria-hidden /> Onayla
+            </button>
+          </div>
+        )}
         <SheetField id={`sheet-${tab}-name`} label="Ürün Adı" hint="Boş bırakılırsa bu dilde çeviri kaydedilmez; sayfa Türkçe görünür ve dizine eklenmez.">
           <input
             id={`sheet-${tab}-name`}

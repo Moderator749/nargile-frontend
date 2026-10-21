@@ -261,8 +261,15 @@ export interface Brand {
 /** The languages a product or category is translated into besides Turkish. */
 export type TranslatedLocale = "en" | "ar";
 
-/** A product in one more language, as reviewed; blank fields fall back to Turkish. */
+/**
+ * A product in one more language; blank fields fall back to Turkish. A
+ * `draft` was written by Claude and awaits review: shown on the storefront,
+ * kept out of the index until an admin approves it ("Onayla").
+ */
 export interface ProductTranslation {
+  draft?: boolean;
+  /** For a draft: which Turkish it was written from (sent back unchanged). */
+  source?: string | null;
   name: string;
   description?: string | null;
   meta_title?: string | null;
@@ -270,6 +277,8 @@ export interface ProductTranslation {
 }
 
 export interface CategoryTranslation {
+  draft?: boolean;
+  source?: string | null;
   name: string;
   description?: string | null;
 }
