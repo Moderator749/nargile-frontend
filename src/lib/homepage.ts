@@ -34,8 +34,8 @@ export const SECTION_LABELS: Record<keyof HomeSections, { title: string; hint: s
   promos: { title: "Sektörde Referans Noktası", hint: "Kısa marka tanıtımı ve kataloğa bağlantı." },
   brands: { title: "Markalar Şeridi (alt)", hint: "Tanıtımın altındaki kayan marka adları; adlar “Markalar Şeridi” sekmesinde." },
   brand_showcase: { title: "Markalarımız", hint: "Marka başına bir ürün bandı." },
-  kozlukler: { title: "Közlükler", hint: "Koyu, közlü bant: öne çıkan közlük ve dört ürün; ısı yöneticileri ve aparatlar sekmeli." },
-  games: { title: "Oyun & Eğlence", hint: "Yeşil çuha bant: tavla, okey ve iskambil oyun kartları ile öne çıkan setler." },
+  kozlukler: { title: "Közlükler", hint: "Közlükler kategorisi ürün satırı (kaydırmalı)." },
+  games: { title: "Oyun & Eğlence", hint: "Tavla, okey ve iskambil ürün satırı (kaydırmalı)." },
   showcase: { title: "Premium Ürün Yelpazesi", hint: "Başlık ve altındaki kategori kutuları (bento)." },
   advantages: { title: "Ayrıcalıklar & Avantajlar", hint: "“Hacim büyür. Maliyet küçülür.” kartları." },
   about: { title: "Alt SEO Tanıtım Metni", hint: "Ana sayfanın sonundaki tanıtım metni; içeriği “Alt SEO Metni” sekmesinde." },
@@ -141,8 +141,8 @@ export const MOBILE_SECTION_LABELS: { key: HomeMobileSection; title: string; hin
   { key: "campaigns", title: "Mobilde Kampanya Kutularını Gizle", hint: "Fırsatların altındaki büyük kutu ve üç küçük kutu." },
   { key: "brand_statement", title: "Mobilde Marka Metnini Gizle", hint: "\"Sektörde Referans Noktası\" bölümü." },
   { key: "brand_showcase", title: "Mobilde Markalarımız'ı Gizle", hint: "Marka başına bir ürün bandı." },
-  { key: "kozlukler", title: "Mobilde Közlükler Bandını Gizle", hint: "Öne çıkan közlükler ve aparatlar." },
-  { key: "games", title: "Mobilde Oyun & Eğlence Bandını Gizle", hint: "Tavla, okey ve iskambil kartları." },
+  { key: "kozlukler", title: "Mobilde Közlükler Satırını Gizle", hint: "Közlükler ürün satırı." },
+  { key: "games", title: "Mobilde Oyun & Eğlence Satırını Gizle", hint: "Tavla, okey ve iskambil ürün satırı." },
   { key: "showcase", title: "Mobilde Premium Yelpazeyi Gizle", hint: "\"Premium Ürün Yelpazesi\" kategori galerisi." },
 ];
 

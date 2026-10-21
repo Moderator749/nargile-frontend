@@ -3,15 +3,14 @@ import type { Metadata } from "next";
 
 import { BrandStatement } from "@/components/home/BrandStatement";
 import { CatalogShowcase } from "@/components/home/CatalogShowcase";
+import { CategoryRow } from "@/components/home/CategoryRow";
 import { BrandShowcase } from "@/components/home/BrandShowcase";
 import { BrandTicker } from "@/components/home/BrandTicker";
 import { CampaignBanners } from "@/components/home/CampaignBanners";
 import { DealsFunnel } from "@/components/home/DealsFunnel";
 import { FeaturedProductsShowcase } from "@/components/home/FeaturedProductsShowcase";
 import { HeroAside } from "@/components/home/HeroAside";
-import { GamesShowcase } from "@/components/home/GamesShowcase";
 import { HeroSlider } from "@/components/home/HeroSlider";
-import { KozluklerShowcase } from "@/components/home/KozluklerShowcase";
 import { KumbaraShowcase } from "@/components/home/KumbaraShowcase";
 import { LuleShowcase } from "@/components/home/LuleShowcase";
 import { SeoIntro } from "@/components/home/SeoIntro";
@@ -22,7 +21,6 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { FEATURED_PRODUCTS_COUNT } from "@/lib/config";
 import { brandHref, organizationJsonLd, pageMetadata, productListJsonLd, websiteJsonLd } from "@/lib/seo";
 import { FALLBACK_SLIDE, heroPromo, meets, toHeroSlide, withDefaultImage } from "@/lib/home";
-import { GAMES_CATEGORY_SLUG, KOZLUK_CATEGORY_SLUG, gamesShowcase, kozlukShowcase } from "@/lib/homeShowcases";
 import {
   getBrands,
   getCategories,
@@ -68,14 +66,25 @@ const LULE_COUNT = 15;
 const KUMBARA_CATEGORY_SLUG = "marpuclar";
 const KUMBARA_COUNT = 15;
 
-/** "Közlükler" and "Oyun & Eğlence" read their whole category, up to this many. */
-const SHOWCASE_CATEGORY_MAX = 100;
+/** "Közlükler" and "Oyun & Eğlence": each its category as a standard product row. */
+const KOZLUK_CATEGORY_SLUG = "kozlukler";
+const GAMES_CATEGORY_SLUG = "oyun-eglence";
+const CATEGORY_ROW_COUNT = 15;
 
 type Picks = Record<(typeof PICK_KEYS)[number], CatalogProduct[]>;
 
 /** A product worth showing: one with a photo and a price to put under it. */
 const showable = (products: CatalogProduct[] | null, count = PICKS_COUNT) =>
   (products ?? []).filter((p) => p.image_url && p.variants.some((v) => v.price)).slice(0, count);
+
+/** One card per name: a category can list the same item in several sizes ("Alüminyum Közlük - Kapaksız" ×4). */
+function onePerName(products: CatalogProduct[] | null): CatalogProduct[] {
+  const seen = new Set<string>();
+  return (products ?? []).filter((p) => {
+    const name = p.name.trim().toLocaleLowerCase("tr");
+    return !seen.has(name) && !!seen.add(name);
+  });
+}
 
 /** The rows' items taken in turn: the first of each row, then the second of each… */
 function interleave<T>(rows: readonly T[][]): T[] {
@@ -208,13 +217,11 @@ export default async function HomePage() {
       // With room to spare, as the picks: some have no photo or no price.
       getPublicProducts(LULE_CATEGORY_SLUG, LULE_COUNT * 2),
       getPublicProducts(KUMBARA_CATEGORY_SLUG, KUMBARA_COUNT * 2),
-      // The two bands pick from their whole category (≈45 and ≈25 products),
-      // and are not asked for while they are switched off.
-      sections.kozlukler ? getPublicProducts(KOZLUK_CATEGORY_SLUG, SHOWCASE_CATEGORY_MAX) : null,
-      sections.games ? getPublicProducts(GAMES_CATEGORY_SLUG, SHOWCASE_CATEGORY_MAX) : null,
+      // With room for the repeated names and those without a photo or a
+      // price; not asked for while switched off.
+      sections.kozlukler ? getPublicProducts(KOZLUK_CATEGORY_SLUG, CATEGORY_ROW_COUNT * 4) : null,
+      sections.games ? getPublicProducts(GAMES_CATEGORY_SLUG, CATEGORY_ROW_COUNT * 4) : null,
     ]);
-  const kozlukBand = kozlukShowcase(kozlukProducts);
-  const gamesBand = gamesShowcase(gameProducts);
   const allCategories = categories ?? [];
   const sidebar = resolveNav(home.navigation.sidebar, allCategories, brands ?? []);
   const showcase = resolveShowcase(home.showcase.tiles, allCategories, brands ?? [], artwork);
@@ -346,12 +353,33 @@ export default async function HomePage() {
           ))}
         </section>,
       ),
-    // "Közlükler": the dark, ember-lit band — a featured piece beside four,
-    // devices and accessories as tabs. Nothing with an empty category.
-    kozlukler: () => kozlukBand && phones("kozlukler", <KozluklerShowcase data={kozlukBand} />),
-    // "Oyun & Eğlence": the green felt game table — tavla, okey and iskambil
-    // as a fanned hand of cards, the dearest sets under it.
-    games: () => gamesBand && phones("games", <GamesShowcase data={gamesBand} />),
+    // "Közlükler" and "Oyun & Eğlence": each its category as the standard
+    // product row. (The styled bands they once were are kept outside the
+    // project, in tasarım_yedek, for a campaign.) Nothing with an empty category.
+    kozlukler: () =>
+      phones(
+        "kozlukler",
+        <CategoryRow
+          headingId="kozlukler-baslik"
+          title="Közlükler"
+          subtitle="Isı yöneticileri, elekler ve lüle başlıkları: kömürü doğru ısıda tutan aparatlar"
+          products={showable(onePerName(kozlukProducts), CATEGORY_ROW_COUNT)}
+          categories={allCategories}
+          more={{ href: `/catalog/${KOZLUK_CATEGORY_SLUG}`, label: "Tüm Közlükleri Gör" }}
+        />,
+      ),
+    games: () =>
+      phones(
+        "games",
+        <CategoryRow
+          headingId="oyun-baslik"
+          title="Oyun & Eğlence"
+          subtitle="Tavla, okey ve iskambil: sohbetin en keyifli ortakları"
+          products={showable(onePerName(gameProducts), CATEGORY_ROW_COUNT)}
+          categories={allCategories}
+          more={{ href: `/catalog/${GAMES_CATEGORY_SLUG}`, label: "Tüm Oyunları Gör" }}
+        />,
+      ),
     // "Premium Ürün Yelpazesi": the catalog as a gallery (the category bento).
     showcase: () =>
       phones("showcase", <CatalogShowcase title={home.showcase.title} subtitle={home.showcase.subtitle} tiles={showcase} />),
