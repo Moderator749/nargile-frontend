@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import Script from "next/script";
 import "./globals.css";
 
 import { StoreHydration } from "@/components/StoreHydration";
@@ -59,14 +58,22 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       // The pre-paint scripts below set the theme class and data-auth before hydration.
       suppressHydrationWarning
     >
+      {/* Pre-paint: theme class, signed-in hint and sidebar state, set from
+          storage before anything is painted. Plain inline scripts in <head>,
+          which the browser runs as it parses them. Not `next/script`
+          `beforeInteractive`: Next 16 sends those as a queue entry after
+          <body> and runs them once its runtime has loaded — after the first
+          paint, so a visitor saw the light theme, then the dark, and the
+          category column slide shut (CLS over 1 on the homepage). The root
+          layout is a server component, so React renders these once into the
+          HTML and never re-runs them on the client; PrePaintFallback covers
+          the 404 rendered without this layout's HTML. */}
+      <head>
+        <script id="theme" dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+        <script id="auth-hint" dangerouslySetInnerHTML={{ __html: AUTH_HINT_SCRIPT }} />
+        <script id="sidebar-state" dangerouslySetInnerHTML={{ __html: SIDEBAR_SCRIPT }} />
+      </head>
       <body className="flex min-h-full flex-col bg-background font-sans text-foreground selection:bg-accent selection:text-white">
-        {/* Pre-paint: theme class, signed-in hint and sidebar state, set from
-            storage before anything renders. `beforeInteractive` puts them in the
-            initial HTML's <head>; a bare <script> element here would be rendered
-            again by React on the client (e.g. for a 404) and warn. */}
-        <Script id="theme" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
-        <Script id="auth-hint" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: AUTH_HINT_SCRIPT }} />
-        <Script id="sidebar-state" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: SIDEBAR_SCRIPT }} />
         <StoreHydration />
         {children}
       </body>
