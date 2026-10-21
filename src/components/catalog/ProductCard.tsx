@@ -35,11 +35,12 @@ interface ProductCardProps {
 // Shared by card and skeleton so both occupy identical space (0 CLS).
 //
 // The card fits itself to its own width, not the screen's (a container,
-// `@container`): two to a row on a phone it is ≈160–190px wide, and below
-// 13rem (208px) everything tightens — padding, type, the price row, the
-// badges — while the same card in a homepage row (70% of a phone's width)
-// or a desktop grid keeps its full size. The add button stays 44px either
-// way: it is a thumb's target.
+// `@container`). Below 18rem the price row takes two lines, the old price and
+// the discount under the price, which no longer fit beside it there. Below
+// 13rem (208px: two to a row on a phone, ≈160–190px) everything else tightens
+// too — padding, type, the badges — while the same card in a desktop grid
+// keeps its full size. The add button stays 44px either way: it is a thumb's
+// target.
 // The admin's "Birlikte Satılanlar" frame: a hairline border draws the card on
 // the white page (a shadow alone let it melt into it), and a lighter rule
 // under the photo parts it from the text. The photos' white backdrop still
@@ -290,13 +291,15 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
         </h3>
 
         {/* Fixed-height price row: switching public → segment prices never shifts layout.
-            On a narrow card it is two lines high, the old price and the
-            discount wrapping under the price rather than off the edge. */}
+            Below 18rem it is two lines high, the old price and the discount
+            under the price: "7.999,00 TL 8.500,00 TL −%6" no longer fits on
+            one line of a card that narrow (a homepage row's, a phone's), and
+            would lose the discount off its edge. */}
         <div className={`mt-3 @max-[13rem]:mt-2 ${publicPrices ? "public-price" : ""}`}>
-          <div className="flex h-6 items-baseline gap-2.5 overflow-hidden whitespace-nowrap font-mono tabular-nums @max-[13rem]:h-10 @max-[13rem]:flex-wrap @max-[13rem]:content-start @max-[13rem]:gap-x-1.5 @max-[13rem]:gap-y-0">
+          <div className="flex h-6 items-baseline gap-2.5 overflow-hidden whitespace-nowrap font-mono tabular-nums @max-[18rem]:h-10 @max-[18rem]:flex-wrap @max-[18rem]:content-start @max-[18rem]:gap-x-1.5 @max-[18rem]:gap-y-0">
             {price ? (
               <>
-                <span className="text-base font-medium tracking-tight text-foreground @max-[13rem]:basis-full @max-[13rem]:text-[15px]">{money.format(price)}</span>
+                <span className="text-base font-medium tracking-tight text-foreground @max-[18rem]:basis-full @max-[13rem]:text-[15px]">{money.format(price)}</span>
                 {hasDiscount && wasPrice && (
                   <span className="text-xs text-muted-foreground line-through @max-[13rem]:text-[11px]">{money.format(wasPrice)}</span>
                 )}
@@ -330,7 +333,7 @@ export function ProductCardSkeleton() {
           <div className={`h-3.5 w-11/12 ${bar}`} />
           <div className={`h-3.5 w-2/3 ${bar}`} />
         </div>
-        <div className="mt-3 @max-[13rem]:mt-2 @max-[13rem]:h-10">
+        <div className="mt-3 @max-[13rem]:mt-2 @max-[18rem]:h-10">
           <div className={`h-6 w-1/3 ${bar} @max-[13rem]:h-5 @max-[13rem]:w-1/2`} />
         </div>
       </div>

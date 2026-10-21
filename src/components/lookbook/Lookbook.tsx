@@ -45,9 +45,12 @@ export interface LookbookItem {
   lines: LookbookLine[];
 }
 
-const SYMBOL: Record<LookbookCurrency, string> = { TRY: "₺", USD: "$", EUR: "€" };
-const money = (n: number, c: LookbookCurrency) =>
-  `${SYMBOL[c]}${n.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const SYMBOL: Record<LookbookCurrency, string> = { TRY: "TL", USD: "$", EUR: "€" };
+/** "6.700,00 TL" (lira after the amount, as everywhere); "$24,41" and "€22,10" before it. */
+const money = (n: number, c: LookbookCurrency) => {
+  const amount = n.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return c === "TRY" ? `${amount}\u00a0${SYMBOL[c]}` : `${SYMBOL[c]}${amount}`;
+};
 const rate = (v: string | null) =>
   v === null ? null : Number(v).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 4 });
 

@@ -4,6 +4,7 @@ import { useState, type SubmitEvent } from "react";
 import Link from "next/link";
 import { Mail, MessageSquare } from "lucide-react";
 
+import { MIN_PASSWORD_LENGTH } from "@/components/auth/registrationDraft";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -88,8 +89,8 @@ export function ForgotPasswordForm() {
           onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
           placeholder="123456"
         />
-        <Input label="Yeni şifre" type="password" name="new-password" autoComplete="new-password" minLength={8} required value={password} onChange={(e) => setPassword(e.target.value)} hint="En az 8 karakter." />
-        <Input label="Yeni şifre (tekrar)" type="password" name="repeat-password" autoComplete="new-password" minLength={8} required value={repeat} onChange={(e) => setRepeat(e.target.value)} />
+        <Input label="Yeni şifre" type="password" name="new-password" autoComplete="new-password" minLength={MIN_PASSWORD_LENGTH} required value={password} onChange={(e) => setPassword(e.target.value)} hint={`En az ${MIN_PASSWORD_LENGTH} karakter.`} />
+        <Input label="Yeni şifre (tekrar)" type="password" name="repeat-password" autoComplete="new-password" minLength={MIN_PASSWORD_LENGTH} required value={repeat} onChange={(e) => setRepeat(e.target.value)} />
         <Button type="submit" loading={busy}>
           Şifreyi değiştir
         </Button>

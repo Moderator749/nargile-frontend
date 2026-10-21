@@ -20,7 +20,7 @@ export function loadExchangeRates(): Promise<ExchangeRates | null> {
 }
 
 /**
- * Formats a TRY amount in the display currency: "₺1.200,00", or "≈ $24,41"
+ * Formats a TRY amount in the display currency: "1.200,00 TL", or "≈ $24,41"
  * when converted. Falls back to TRY when rates are missing.
  */
 export function formatDisplayMoney(

@@ -148,7 +148,7 @@ export function leadingBrands(products: CatalogProduct[] | null | undefined, lim
   return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, limit).map(([name]) => name);
 }
 
-const SHOP_PROMISE = "Kafe, toptancı ve bayilere özel fiyatlar, ₺3.000 üzeri ücretsiz kargo.";
+const SHOP_PROMISE = "Kafe, toptancı ve bayilere özel fiyatlar, 3.000 TL üzeri ücretsiz kargo.";
 
 /** A category's description when it has no copy of its own: its name, its brands, the shop's offer. */
 export function categoryDescription(category: Category, products: CatalogProduct[] | null | undefined): string {

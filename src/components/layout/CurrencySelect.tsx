@@ -4,7 +4,8 @@ import { ChevronDown } from "lucide-react";
 
 import { DISPLAY_CURRENCIES, useCurrencyStore, type DisplayCurrency } from "@/store/useCurrencyStore";
 
-const SYMBOL: Record<DisplayCurrency, string> = { TRY: "₺ TRY", USD: "$ USD", EUR: "€ EUR" };
+// Lira as the shop writes it beside every price: "TL".
+const SYMBOL: Record<DisplayCurrency, string> = { TRY: "TL", USD: "$ USD", EUR: "€ EUR" };
 
 /** Display currency (TCMB rates, approximate). Checkout always charges TRY. */
 export function CurrencySelect() {

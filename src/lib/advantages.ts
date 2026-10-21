@@ -20,7 +20,7 @@ export type AdvantageItem = HomeAdvantageCard;
 /** The default cards, shown until the homepage editor saves its own. */
 export const ADVANTAGES: AdvantageItem[] = [
   {
-    badge: "₺3.000+",
+    badge: "3.000 TL+",
     title: "Ücretsiz Kargo & Hızlı Sevk",
     description: "3.000 TL ve üzeri tüm siparişlerinizde kargo tamamen ücretsizdir.",
     note: "Kömür siparişlerinde minimum 20 kg kuralı geçerlidir.",

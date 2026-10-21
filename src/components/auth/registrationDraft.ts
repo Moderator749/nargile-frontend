@@ -28,7 +28,8 @@ import type {
   StructuredAddress,
 } from "@/types";
 
-export const MIN_PASSWORD_LENGTH = 8;
+/** A customer's shortest password; mirrors CUSTOMER_PASSWORD_MIN (app/core/security.py). Admin accounts need 8, enforced by the server. */
+export const MIN_PASSWORD_LENGTH = 6;
 const EMAIL = /^[^@\s]+@[^@\s.]+(\.[^@\s.]+)+$/;
 const USERNAME = /^[A-Za-z0-9][A-Za-z0-9._-]{1,28}[A-Za-z0-9]$/;
 

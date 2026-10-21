@@ -2,8 +2,18 @@ import type { CurrencyType, DecimalString } from "@/types";
 
 const formatters = new Map<string, Intl.NumberFormat>();
 
-/** Formats a backend Decimal string or number, e.g. "1200.00" TRY → "₺1.200,00". */
+/** Lira amounts, Turkish grouping, always with kuruş: "6.700,00". */
+const TL_AMOUNT = new Intl.NumberFormat("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const TL_WHOLE = new Intl.NumberFormat("tr-TR", { maximumFractionDigits: 0 });
+/** "6.700,00 TL": the shop writes lira after the amount, never "₺6.700,00". Non-breaking, so "TL" never wraps alone. */
+const tl = (formatted: string) => `${formatted}\u00a0TL`;
+
+/**
+ * Formats a backend Decimal string or number: "1200.00" TRY → "1.200,00 TL".
+ * Another currency (the dollar or euro display) keeps its own sign: "$24,41".
+ */
 export function formatMoney(amount: DecimalString | number, currency: CurrencyType = "TRY"): string {
+  if (currency === "TRY") return tl(TL_AMOUNT.format(Number(amount)));
   let fmt = formatters.get(currency);
   if (!fmt) {
     fmt = new Intl.NumberFormat("tr-TR", { style: "currency", currency });
@@ -13,8 +23,8 @@ export function formatMoney(amount: DecimalString | number, currency: CurrencyTy
 }
 
 /**
- * The same, without the kuruş when there are none: "₺20.000" rather than
- * "₺20.000,00". For round figures the shop quotes as round figures — a free
+ * The same, without the kuruş when there are none: "20.000 TL" rather than
+ * "20.000,00 TL". For round figures the shop quotes as round figures — a free
  * delivery limit, a threshold on a card — where ",00" is just noise. An amount
  * with kuruş in it still shows them.
  */
@@ -24,6 +34,7 @@ export function formatMoneyCompact(
 ): string {
   const value = Number(amount);
   if (!Number.isInteger(value)) return formatMoney(value, currency);
+  if (currency === "TRY") return tl(TL_WHOLE.format(value));
   return new Intl.NumberFormat("tr-TR", {
     style: "currency",
     currency,
@@ -54,7 +65,7 @@ export function formatDateParts(iso: string): { date: string; time: string } {
  * number with at most two decimals.
  */
 export function parseDecimalInput(raw: string): string | null {
-  let s = raw.trim().replace(/\s|₺|%/g, "");
+  let s = raw.trim().replace(/\s|₺|TL|%/gi, "");
   if (!s) return null;
   const comma = s.lastIndexOf(",");
   const dot = s.lastIndexOf(".");

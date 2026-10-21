@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { convertVat, parseDecimalInput, tidyPriceInput } from "./format.ts";
+import { convertVat, formatMoney, formatMoneyCompact, parseDecimalInput, tidyPriceInput } from "./format.ts";
 
 test("a comma and a dot are both the decimal mark", () => {
   for (const [raw, want] of [
@@ -46,4 +46,15 @@ test("leaving a box tidies it", () => {
   assert.equal(tidyPriceInput("400,"), "400,00");
   assert.equal(tidyPriceInput("1.250"), "1250,00");
   assert.equal(tidyPriceInput("183,333"), "183,333");
+});
+
+test("lira is written after the amount, as TL", () => {
+  assert.equal(formatMoney("6700"), "6.700,00 TL");
+  assert.equal(formatMoney(1234567.5), "1.234.567,50 TL");
+  assert.equal(formatMoneyCompact("20000.00"), "20.000 TL");
+  assert.equal(formatMoneyCompact("199.90"), "199,90 TL");
+  // Another currency keeps its sign.
+  assert.match(formatMoney("24.41", "USD"), /^\$24,41$/);
+  // A price pasted back in with its TL still reads.
+  assert.equal(parseDecimalInput("6.700,00 TL"), "6700.00");
 });
