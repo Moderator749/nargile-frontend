@@ -46,32 +46,75 @@ import type { CatalogPrice, CatalogProduct, Category } from "@/types";
 /** Where the smoke rises from, as percentages across the card. */
 const SMOKE = [12, 38, 64, 86];
 
+/** The heading as brushed titanium, lit from one side: the dark themes' title. */
+const CHROME_TITLE = [
+  // Zinc at both ends, a white band through the middle, and the whole ramp two
+  // and a half times the width of the text so there is somewhere for it to
+  // travel. `inline-block` is what gives the background a box of its own.
+  "inline-block bg-[linear-gradient(110deg,#71717a_20%,#e4e4e7_40%,#ffffff_50%,#e4e4e7_60%,#71717a_80%)]",
+  "bg-[length:250%_100%] bg-clip-text text-transparent",
+  // The sweep itself: 4s, linear, and only for a visitor who has not asked
+  // for less motion.
+  "motion-safe:animate-chrome-sweep",
+  // One filter, two shadows: the dark one cuts the letters out of the backdrop
+  // behind them, the white one is the bloom off the metal. Two `drop-shadow-*`
+  // utilities would not stack — the second would replace the first.
+  "[filter:drop-shadow(0_1px_2px_rgba(0,0,0,0.6))_drop-shadow(0_0_18px_rgba(255,255,255,0.14))]",
+].join(" ");
+
+/** The arrows as dark glass over a dark band. */
+const DARK_ARROW =
+  "border-white/15 bg-black/50 text-white shadow-lg shadow-black/40 hover:bg-black/80 focus-visible:outline-white";
+
 /**
- * The band's backdrop, as a choice of two:
+ * The band's finish, as a choice of three. Everything that depends on the
+ * ground it sits on is here; the white cards and the red badges, prices and
+ * buttons are the same in all three.
  * - `crimson`: the original — near-black with two crimson washes (the old
- *   site's ruby glow), the grid at full strength.
- * - `zinc`: a neutral finish on trial — a dark zinc gradient, two faint
- *   white washes for depth, the grid barely there — so the white cards and
- *   the red badges, prices and buttons carry the colour on their own.
- * Going back is this one word (or reverting the commit that set it).
+ *   site's ruby glow), a white grid at 14%, smoke, the chrome title.
+ * - `zinc`: dark and neutral — a zinc gradient, two faint white washes, the
+ *   grid at 6%, lighter smoke, the chrome title.
+ * - `silver`: light and neutral, in use — a soft zinc-50 → zinc-100 → zinc-200
+ *   ground, a white glow from the top, a dark grid at 5%, no smoke, the title
+ *   and line in crisp dark type, the cards drawn by a light border and a
+ *   soft shadow, white arrows.
+ * Switching is this one word (or reverting the commit that set it).
  */
-const BACKDROPS = {
+const THEMES = {
   crimson: {
-    base: "bg-[#0a0a0c]",
+    base: "bg-[#0a0a0c] text-white",
     washes:
       "bg-[radial-gradient(ellipse_at_top_left,rgba(216,16,40,0.55),transparent_58%),radial-gradient(ellipse_at_bottom_right,rgba(150,10,30,0.5),transparent_60%)]",
-    grid: "opacity-[0.14]",
+    grid: "bg-[linear-gradient(to_right,#fff_1px,transparent_1px),linear-gradient(to_bottom,#fff_1px,transparent_1px)] opacity-[0.14]",
     smoke: "bg-white/10",
+    title: CHROME_TITLE,
+    subtitle: "text-white/70",
+    card: "border-white/20 shadow-xl",
+    arrow: DARK_ARROW,
   },
   zinc: {
-    base: "bg-gradient-to-b from-zinc-950 via-zinc-900 to-zinc-950",
+    base: "bg-gradient-to-b from-zinc-950 via-zinc-900 to-zinc-950 text-white",
     washes:
       "bg-[radial-gradient(ellipse_at_top_left,rgba(255,255,255,0.07),transparent_55%),radial-gradient(ellipse_at_bottom_right,rgba(161,161,170,0.08),transparent_60%)]",
-    grid: "opacity-[0.06]",
+    grid: "bg-[linear-gradient(to_right,#fff_1px,transparent_1px),linear-gradient(to_bottom,#fff_1px,transparent_1px)] opacity-[0.06]",
     smoke: "bg-white/[0.06]",
+    title: CHROME_TITLE,
+    subtitle: "text-white/70",
+    card: "border-white/20 shadow-xl",
+    arrow: DARK_ARROW,
+  },
+  silver: {
+    base: "bg-gradient-to-b from-zinc-50 via-zinc-100 to-zinc-200 text-zinc-900",
+    washes: "bg-[radial-gradient(ellipse_at_top,rgba(255,255,255,0.9),transparent_60%)]",
+    grid: "bg-[linear-gradient(to_right,#18181b_1px,transparent_1px),linear-gradient(to_bottom,#18181b_1px,transparent_1px)] opacity-[0.05]",
+    smoke: null,
+    title: "text-zinc-900",
+    subtitle: "text-zinc-600",
+    card: "border-zinc-200/80 shadow-md",
+    arrow: "border-zinc-200 bg-white/90 text-zinc-800 shadow-md hover:bg-white focus-visible:outline-zinc-900",
   },
 } as const;
-const BACKDROP = BACKDROPS.zinc;
+const THEME: (typeof THEMES)[keyof typeof THEMES] = THEMES.silver;
 /**
  * An endless cover flow: a snapping track with `--n` cards in focus — four on
  * a desktop, two from `sm`, one on a phone — each `--card` of the track wide
@@ -108,8 +151,9 @@ const SLIDE = [
   "data-[pos=left]:origin-right data-[pos=left]:scale-[0.85] data-[pos=left]:opacity-60",
   "data-[pos=right]:origin-left data-[pos=right]:scale-[0.85] data-[pos=right]:opacity-60",
 ].join(" ");
+/** An arrow's shape; its colours are the theme's (THEME.arrow). */
 const ARROW =
-  "absolute top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/50 text-white shadow-lg shadow-black/40 backdrop-blur-sm transition-colors duration-200 hover:bg-black/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white";
+  "absolute top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border backdrop-blur-sm transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2";
 
 /**
  * Marks each card `data-pos`: "focus" for every one the track shows whole,
@@ -198,7 +242,8 @@ const subscribeNothing = () => () => {};
  */
 const CARD = [
   "group relative flex h-full w-full min-w-0 flex-col justify-between overflow-hidden rounded-2xl",
-  "border border-white/20 bg-white shadow-xl",
+  // Its edge and shadow are the theme's (THEME.card).
+  "border bg-white",
   "transition-all duration-300 hover:border-red-400/60",
   "hover:shadow-[0_20px_45px_rgba(216,16,40,0.3)]",
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
@@ -336,20 +381,20 @@ export function DealsFunnel({ initialProducts, categories, title, subtitle }: De
     <section
       id="firsat-urunleri"
       aria-labelledby="deals-funnel-heading"
-      className={`relative isolate scroll-mt-[var(--header-height)] overflow-hidden py-12 text-white sm:py-16 ${BACKDROP.base}`}
+      className={`relative isolate scroll-mt-[var(--header-height)] overflow-hidden py-12 sm:py-16 ${THEME.base}`}
     >
-      {/* Background, edge to edge (BACKDROP): two washes, a diagonal sheen, a
+      {/* Background, edge to edge (THEME): the washes, a diagonal sheen, a
           grid masked to the middle, and smoke rising off the floor. */}
       <div className="pointer-events-none absolute inset-0" aria-hidden>
-        <div className={`absolute inset-0 ${BACKDROP.washes}`} />
+        <div className={`absolute inset-0 ${THEME.washes}`} />
         <div className="absolute inset-0 bg-[linear-gradient(115deg,transparent_40%,rgba(255,255,255,0.06)_50%,transparent_60%)]" />
         <div
-          className={`absolute inset-0 bg-[linear-gradient(to_right,#fff_1px,transparent_1px),linear-gradient(to_bottom,#fff_1px,transparent_1px)] bg-[size:52px_52px] ${BACKDROP.grid} [mask-image:radial-gradient(ellipse_at_center,#000,transparent_72%)]`}
+          className={`absolute inset-0 bg-[size:52px_52px] ${THEME.grid} [mask-image:radial-gradient(ellipse_at_center,#000,transparent_72%)]`}
         />
-        {SMOKE.map((left, index) => (
+        {THEME.smoke && SMOKE.map((left, index) => (
           <span
             key={left}
-            className={`absolute bottom-8 h-20 w-20 rounded-full blur-2xl motion-safe:animate-smoke motion-reduce:hidden ${BACKDROP.smoke}`}
+            className={`absolute bottom-8 h-20 w-20 rounded-full blur-2xl motion-safe:animate-smoke motion-reduce:hidden ${THEME.smoke}`}
             style={
               {
                 left: `${left}%`,
@@ -378,27 +423,14 @@ export function DealsFunnel({ initialProducts, categories, title, subtitle }: De
               // padding below give the tail somewhere to be.
               className={[
                 "whitespace-nowrap pb-1.5 text-xl font-semibold leading-tight tracking-tight sm:text-3xl lg:text-4xl",
-                // Brushed titanium, lit from one side: zinc at both ends, a
-                // white band through the middle, and the whole ramp two and a
-                // half times the width of the text so there is somewhere for
-                // it to travel. `inline-block` is what gives the background a
-                // box of its own to be positioned within.
-                "inline-block bg-[linear-gradient(110deg,#71717a_20%,#e4e4e7_40%,#ffffff_50%,#e4e4e7_60%,#71717a_80%)]",
-                "bg-[length:250%_100%] bg-clip-text text-transparent",
-                // The sweep itself: 4s, linear, and only for a visitor who has
-                // not asked for less motion.
-                "motion-safe:animate-chrome-sweep",
-                // One filter, two shadows: the dark one cuts the letters out
-                // of the backdrop behind them, the white one is the bloom off
-                // the metal. Two `drop-shadow-*` utilities would not stack —
-                // the second would replace the first.
-                "[filter:drop-shadow(0_1px_2px_rgba(0,0,0,0.6))_drop-shadow(0_0_18px_rgba(255,255,255,0.14))]",
+                // Chrome on the dark themes, crisp dark type on the light one.
+                THEME.title,
               ].join(" ")}
             >
               {title}
             </h2>
             {subtitle && (
-              <p className="mx-auto mt-1 max-w-lg text-[13px] leading-relaxed text-white/70">{subtitle}</p>
+              <p className={`mx-auto mt-1 max-w-lg text-[13px] leading-relaxed ${THEME.subtitle}`}>{subtitle}</p>
             )}
           </div>
         </div>
@@ -415,7 +447,7 @@ export function DealsFunnel({ initialProducts, categories, title, subtitle }: De
                 data-direction={direction}
                 onClick={slide}
                 aria-label={direction === -1 ? "Önceki fırsatlar" : "Sonraki fırsatlar"}
-                className={`${ARROW} ${direction === -1 ? "left-2" : "right-2"}`}
+                className={`${ARROW} ${THEME.arrow} ${direction === -1 ? "left-2" : "right-2"}`}
               >
                 {direction === -1 ? (
                   <ChevronLeft className="h-5 w-5" aria-hidden />
@@ -442,7 +474,7 @@ export function DealsFunnel({ initialProducts, categories, title, subtitle }: De
                 // The copies are there to be seen, not read twice or tabbed
                 // through: the real deals are the list.
                 <li key={`${copy}-${product.id}`} aria-hidden={copy !== home || undefined} className={SLIDE}>
-                  <Link href={productHref(product)} tabIndex={copy !== home ? -1 : undefined} className={CARD}>
+                  <Link href={productHref(product)} tabIndex={copy !== home ? -1 : undefined} className={`${CARD} ${THEME.card}`}>
                     {/* The photo's canvas: flush to the card's top and sides,
                         and the same white as the card, so there is no seam to
                         find. The photos are opaque JPEGs shot on white, which is
