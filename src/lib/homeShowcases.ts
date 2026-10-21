@@ -77,12 +77,15 @@ export function kozlukShowcase(products: CatalogProduct[] | null): KozlukShowcas
 /**
  * The games, as the shop sorts them: each a search inside the category. Matched
  * on the name lowercased the Turkish way — `/iskambil/i` misses "İskambil",
- * whose dotted capital is not an "I".
+ * whose dotted capital is not an "I". `accessories` are the words of what is
+ * sold for a game but is not one (loose tavla pieces, dice, an okey rack):
+ * the card counts, shows and prices the boards and sets only, so "en uygun"
+ * is the cheapest set, not ₺220 of pieces. Its search still finds them.
  */
 const GAMES = [
-  { key: "tavla", label: "Tavla", match: "tavla", suit: "♠", tagline: "Sedef, ceviz, masif" },
-  { key: "okey", label: "Okey", match: "okey", suit: "♥", tagline: "Ahşap, çantalı, klasik" },
-  { key: "iskambil", label: "İskambil", match: "iskambil", suit: "♣", tagline: "Plastik, çift deste" },
+  { key: "tavla", label: "Tavla", match: "tavla", accessories: ["pulu", "pul ", "zarı", "zar "], suit: "♠", tagline: "Sedef, ceviz, masif" },
+  { key: "okey", label: "Okey", match: "okey", accessories: ["ıstaka", "yedek"], suit: "♥", tagline: "Ahşap, çantalı, klasik" },
+  { key: "iskambil", label: "İskambil", match: "iskambil", accessories: [], suit: "♣", tagline: "Plastik, çift deste" },
 ] as const;
 
 export interface GameGroup {
@@ -90,6 +93,7 @@ export interface GameGroup {
   label: string;
   suit: string;
   tagline: string;
+  /** Boards and sets, accessories left out. */
   count: number;
   /** Its card's photograph: the group's showpiece. */
   cover: CatalogProduct;
@@ -106,10 +110,14 @@ export interface GamesShowcaseData {
 
 export function gamesShowcase(products: CatalogProduct[] | null): GamesShowcaseData | null {
   const all = showable(products);
-  const games = GAMES.flatMap(({ key, label, match, suit, tagline }) => {
-    const group = all.filter((p) => p.name.toLocaleLowerCase("tr").includes(match)).sort((a, b) => priceOf(b) - priceOf(a));
-    return group.length > 0
-      ? [{ key, label, suit, tagline, count: group.length, cover: group[0], cheapest: group[group.length - 1] }]
+  const games = GAMES.flatMap(({ key, label, match, accessories, suit, tagline }) => {
+    const named = (p: CatalogProduct) => `${p.name.toLocaleLowerCase("tr")} `;
+    const group = all.filter((p) => named(p).includes(match)).sort((a, b) => priceOf(b) - priceOf(a));
+    const sets = group.filter((p) => !accessories.some((word) => named(p).includes(word)));
+    // Only accessories in it: they are what the game has, so they stand in.
+    const shown = sets.length > 0 ? sets : group;
+    return shown.length > 0
+      ? [{ key, label, suit, tagline, count: shown.length, cover: shown[0], cheapest: shown[shown.length - 1] }]
       : [];
   });
   if (games.length === 0) return null;
