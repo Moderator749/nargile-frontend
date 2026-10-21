@@ -28,7 +28,7 @@ export const BILGI_DOCUMENTS_EN: BilgiDocument[] = [
       { type: "h2", text: "1. PARTIES AND SCOPE" },
       {
         type: "p",
-        text: 'All users who visit this website ([Your Website Address]), become members of it or use the services on the site are deemed to have read, understood and accepted in advance all the provisions of these "Terms of Use". If you do not accept these terms, please stop using the site.',
+        text: 'All users who visit this website (nargilemalzemesi.com), become members of it or use the services on the site are deemed to have read, understood and accepted in advance all the provisions of these "Terms of Use". If you do not accept these terms, please stop using the site.',
       },
       { type: "h2", text: "2. AGE RESTRICTION AND LEGAL WARNING" },
       {

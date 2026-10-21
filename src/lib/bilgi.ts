@@ -6,6 +6,9 @@
  * published as it was given, so a correction belongs in the source document
  * and then here, never here alone. Only the structure was read from Word —
  * numbered section titles become headings, Word lists stay lists.
+ * (October 2026, approved by the shop: the "[Sitenizin Adresi]" placeholder
+ * became nargilemalzemesi.com, and "Kurunması", "HAK AND" and "ÜYELİ" were
+ * corrected — the Word files should carry the same.)
  *
  * The English and Arabic copies (lib/content/bilgi.en, bilgi.ar) are courtesy
  * translations of these, block for block under the same slugs, each opening
@@ -52,7 +55,7 @@ export const BILGI_DOCUMENTS: BilgiDocument[] = [
   {
     slug: "uyelik-ve-kullanim-sartlari",
     title: "Üyelik ve Kullanım Şartları",
-    sourceTitle: "ÜYELİ ve KULLANIM ŞARTLARI",
+    sourceTitle: "ÜYELİK ve KULLANIM ŞARTLARI",
     description:
       "Sultan Nargile üyelik ve kullanım şartları: yaş sınırı, telif hakları, hesap güvenliği, fiyatlandırma ve sorumluluğun sınırlandırılması.",
     blocks: [
@@ -62,7 +65,7 @@ export const BILGI_DOCUMENTS: BilgiDocument[] = [
       },
       {
         type: "p",
-        text: 'Bu internet sitesini ([Sitenizin Adresi]) ziyaret eden, üye olan veya sitedeki hizmetlerden yararlanan tüm kullanıcılar, işbu "Kullanım Şartları"nda yer alan tüm maddeleri peşinen okumuş, anlamış ve onaylamış sayılır. Eğer bu şartları kabul etmiyorsanız, lütfen siteyi kullanmayı sonlandırınız.',
+        text: 'Bu internet sitesini (nargilemalzemesi.com) ziyaret eden, üye olan veya sitedeki hizmetlerden yararlanan tüm kullanıcılar, işbu "Kullanım Şartları"nda yer alan tüm maddeleri peşinen okumuş, anlamış ve onaylamış sayılır. Eğer bu şartları kabul etmiyorsanız, lütfen siteyi kullanmayı sonlandırınız.',
       },
       {
         type: "h2",
@@ -193,7 +196,7 @@ export const BILGI_DOCUMENTS: BilgiDocument[] = [
       },
       {
         type: "p",
-        text: "İşbu Sözleşme'nin konusu, Alıcı'nın Satıcı'ya ait internet sitesi üzerinden elektronik ortamda siparişini verdiği, nitelikleri ve satış fiyatı belirtilen ürünün satışı ve teslimi ile ilgili olarak 6502 sayılı Tüketicinin Kurunması Hakkında Kanun ve Mesafeli Sözleşmeler Yönetmeliği hükümleri uyarınca tarafların hak ve yükümlülüklerinin saptanmasıdır.",
+        text: "İşbu Sözleşme'nin konusu, Alıcı'nın Satıcı'ya ait internet sitesi üzerinden elektronik ortamda siparişini verdiği, nitelikleri ve satış fiyatı belirtilen ürünün satışı ve teslimi ile ilgili olarak 6502 sayılı Tüketicinin Korunması Hakkında Kanun ve Mesafeli Sözleşmeler Yönetmeliği hükümleri uyarınca tarafların hak ve yükümlülüklerinin saptanmasıdır.",
       },
       {
         type: "h2",
@@ -229,7 +232,7 @@ export const BILGI_DOCUMENTS: BilgiDocument[] = [
       },
       {
         type: "h2",
-        text: "5. TARAFLARIN HAK AND YÜKÜMLÜLÜKLERİ",
+        text: "5. TARAFLARIN HAK VE YÜKÜMLÜLÜKLERİ",
       },
       {
         type: "p",
