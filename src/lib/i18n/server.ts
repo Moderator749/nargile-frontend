@@ -6,6 +6,7 @@ import { locale as rootLocale } from "next/root-params";
 
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { DEFAULT_LOCALE, isLocale, type Locale } from "@/lib/i18n/config";
+import type { Messages } from "@/lib/i18n/messages";
 
 /**
  * The page's language; Turkish where there is no [locale] segment to read —
@@ -18,6 +19,11 @@ export async function getLocale(): Promise<Locale> {
   } catch {
     return DEFAULT_LOCALE;
   }
+}
+
+/** One area's words (lib/i18n/messages) in the page's language. */
+export async function getMessages<T>(messages: Messages<T>): Promise<T> {
+  return messages[await getLocale()];
 }
 
 /** The page's language and its words. */
