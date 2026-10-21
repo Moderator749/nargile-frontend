@@ -39,7 +39,7 @@ export function SultanPuanShowcase({ showcase, categories }: { showcase: Showcas
       call="Kazanan Siz Olun!"
       products={showcase.products}
       categories={categories}
-      // Light grey, as "Fırsatları Kaçırma"; the Kumbara band keeps the gold.
+      // Light grey, as "Fırsatları Kaçırma" and the Kumbara band.
       tone="silver"
     />
   );

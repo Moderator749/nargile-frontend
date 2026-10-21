@@ -33,11 +33,12 @@ const ARROW =
  * The band's ground and the type that sits on it, as two tones. The title,
  * the call, the coins and the cards are the same in both.
  * - `gold`: a warm gold behind the header, fading to white as the cards
- *   begin; gold-brown lines and arrows. The Kumbara band.
- * - `silver`: a soft zinc-50 → zinc-100 ground under the whole band, no
- *   yellow at all; neutral lines and arrows, and the white cards lifted off
- *   the grey by a soft shadow. The SultanPuan band, matching the light
- *   "Fırsatları Kaçırma".
+ *   begin; gold-brown lines and arrows. Kept for a campaign; no band uses it.
+ * - `silver`: a vertical grey gradient — a soft zinc-100 at the top, held
+ *   through the middle, settling into a slightly deeper zinc-200 at the foot
+ *   — no yellow at all; neutral lines and arrows, and the white cards lifted
+ *   off the grey by a soft shadow. Both bands, SultanPuan and Kumbara,
+ *   matching the light "Fırsatları Kaçırma".
  */
 const TONES = {
   gold: {
@@ -50,7 +51,7 @@ const TONES = {
     card: "",
   },
   silver: {
-    band: "bg-gradient-to-b from-zinc-50 to-zinc-100 dark:from-white/[0.03] dark:to-transparent",
+    band: "bg-gradient-to-b from-zinc-100 via-zinc-100/90 to-zinc-200/80 dark:from-white/[0.04] dark:via-white/[0.02] dark:to-transparent",
     subtitle: "text-zinc-600 dark:text-zinc-300",
     note: "text-zinc-700 dark:text-zinc-300",
     count: "text-zinc-500 dark:text-zinc-400",

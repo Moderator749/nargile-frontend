@@ -10,8 +10,8 @@ const whole = new Intl.NumberFormat("tr-TR", { maximumFractionDigits: 0 });
 
 /**
  * "Kumbara 20.000 TL": the annual Sultan Puan bonus (formerly Kumbarapuan)
- * as its own gold band, the SultanPuan band's twin (`GoldShowcase`), over the
- * Marpuçlar category.
+ * as its own band, the SultanPuan band's twin (`GoldShowcase`, in its light
+ * grey tone), over the Marpuçlar category.
  *
  * The target and the bonus are the live ones from "Parametreler": the target
  * is `annual_spend_threshold`, and the "%5" is the bonus points' worth as a
@@ -41,6 +41,8 @@ export function KumbaraShowcase({ products, categories }: { products: CatalogPro
       call="Birikim Yapın!"
       products={products}
       categories={categories}
+      // Light grey, as "Fırsatları Kaçırma" and the SultanPuan band.
+      tone="silver"
     />
   );
 }
