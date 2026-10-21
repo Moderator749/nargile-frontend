@@ -45,6 +45,33 @@ import type { CatalogPrice, CatalogProduct, Category } from "@/types";
 
 /** Where the smoke rises from, as percentages across the card. */
 const SMOKE = [12, 38, 64, 86];
+
+/**
+ * The band's backdrop, as a choice of two:
+ * - `crimson`: the original — near-black with two crimson washes (the old
+ *   site's ruby glow), the grid at full strength.
+ * - `zinc`: a neutral finish on trial — a dark zinc gradient, two faint
+ *   white washes for depth, the grid barely there — so the white cards and
+ *   the red badges, prices and buttons carry the colour on their own.
+ * Going back is this one word (or reverting the commit that set it).
+ */
+const BACKDROPS = {
+  crimson: {
+    base: "bg-[#0a0a0c]",
+    washes:
+      "bg-[radial-gradient(ellipse_at_top_left,rgba(216,16,40,0.55),transparent_58%),radial-gradient(ellipse_at_bottom_right,rgba(150,10,30,0.5),transparent_60%)]",
+    grid: "opacity-[0.14]",
+    smoke: "bg-white/10",
+  },
+  zinc: {
+    base: "bg-gradient-to-b from-zinc-950 via-zinc-900 to-zinc-950",
+    washes:
+      "bg-[radial-gradient(ellipse_at_top_left,rgba(255,255,255,0.07),transparent_55%),radial-gradient(ellipse_at_bottom_right,rgba(161,161,170,0.08),transparent_60%)]",
+    grid: "opacity-[0.06]",
+    smoke: "bg-white/[0.06]",
+  },
+} as const;
+const BACKDROP = BACKDROPS.zinc;
 /**
  * An endless cover flow: a snapping track with `--n` cards in focus — four on
  * a desktop, two from `sm`, one on a phone — each `--card` of the track wide
@@ -309,18 +336,20 @@ export function DealsFunnel({ initialProducts, categories, title, subtitle }: De
     <section
       id="firsat-urunleri"
       aria-labelledby="deals-funnel-heading"
-      className="relative isolate scroll-mt-[var(--header-height)] overflow-hidden bg-[#0a0a0c] py-12 text-white sm:py-16"
+      className={`relative isolate scroll-mt-[var(--header-height)] overflow-hidden py-12 text-white sm:py-16 ${BACKDROP.base}`}
     >
-      {/* Background, edge to edge: two washes, a diagonal sheen, a grid
-          masked to the middle, and smoke rising off the floor. */}
+      {/* Background, edge to edge (BACKDROP): two washes, a diagonal sheen, a
+          grid masked to the middle, and smoke rising off the floor. */}
       <div className="pointer-events-none absolute inset-0" aria-hidden>
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(216,16,40,0.55),transparent_58%),radial-gradient(ellipse_at_bottom_right,rgba(150,10,30,0.5),transparent_60%)]" />
+        <div className={`absolute inset-0 ${BACKDROP.washes}`} />
         <div className="absolute inset-0 bg-[linear-gradient(115deg,transparent_40%,rgba(255,255,255,0.06)_50%,transparent_60%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#fff_1px,transparent_1px),linear-gradient(to_bottom,#fff_1px,transparent_1px)] bg-[size:52px_52px] opacity-[0.14] [mask-image:radial-gradient(ellipse_at_center,#000,transparent_72%)]" />
+        <div
+          className={`absolute inset-0 bg-[linear-gradient(to_right,#fff_1px,transparent_1px),linear-gradient(to_bottom,#fff_1px,transparent_1px)] bg-[size:52px_52px] ${BACKDROP.grid} [mask-image:radial-gradient(ellipse_at_center,#000,transparent_72%)]`}
+        />
         {SMOKE.map((left, index) => (
           <span
             key={left}
-            className="absolute bottom-8 h-20 w-20 rounded-full bg-white/10 blur-2xl motion-safe:animate-smoke motion-reduce:hidden"
+            className={`absolute bottom-8 h-20 w-20 rounded-full blur-2xl motion-safe:animate-smoke motion-reduce:hidden ${BACKDROP.smoke}`}
             style={
               {
                 left: `${left}%`,
@@ -360,7 +389,7 @@ export function DealsFunnel({ initialProducts, categories, title, subtitle }: De
                 // not asked for less motion.
                 "motion-safe:animate-chrome-sweep",
                 // One filter, two shadows: the dark one cuts the letters out
-                // of the crimson behind them, the white one is the bloom off
+                // of the backdrop behind them, the white one is the bloom off
                 // the metal. Two `drop-shadow-*` utilities would not stack —
                 // the second would replace the first.
                 "[filter:drop-shadow(0_1px_2px_rgba(0,0,0,0.6))_drop-shadow(0_0_18px_rgba(255,255,255,0.14))]",
