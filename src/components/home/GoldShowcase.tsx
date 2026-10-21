@@ -4,7 +4,7 @@ import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { ProductCard } from "@/components/catalog/ProductCard";
-import { Coin } from "@/components/home/AdvantagesSection";
+import { GoldCoinBadge } from "@/components/home/GoldCoinBadge";
 import { useOwnPrices } from "@/hooks/useOwnPrices";
 import { PAGE_CONTAINER } from "@/lib/layout";
 import { retailPerks } from "@/lib/perks";
@@ -157,7 +157,7 @@ export function GoldShowcase({
             <p className="text-base font-extrabold tracking-tight text-black md:text-lg dark:text-white">
               {call}
             </p>
-            <Coin />
+            <GoldCoinBadge />
           </div>
         </div>
 

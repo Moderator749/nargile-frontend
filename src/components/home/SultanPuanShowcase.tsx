@@ -1,6 +1,6 @@
 "use client";
 
-import { FIGURE, GOLD } from "@/components/home/AdvantagesSection";
+import { FIGURE, GOLD } from "@/components/home/GoldCoinBadge";
 import { GoldShowcase } from "@/components/home/GoldShowcase";
 import type { Category, SultanPuanShowcase as Showcase } from "@/types";
 

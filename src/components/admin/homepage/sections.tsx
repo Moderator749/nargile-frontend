@@ -22,7 +22,6 @@ import type {
   Brand,
   Category,
   Homepage,
-  HomeAdvantageCard,
   HomeFooterColumn,
   HomeSections,
   HomeShowcaseTile,
@@ -45,7 +44,9 @@ export function SectionsTab({
   return (
     <Panel title="Bölümler" hint="Her anahtar anında kaydedilir ve mağazada hemen uygulanır.">
       <ul className="divide-y divide-slate-200 dark:divide-white/10">
-        {(Object.keys(SECTION_LABELS) as (keyof HomeSections)[]).map((key) => (
+        {/* "advantages" is left out: its grid ("Hacim büyür. Maliyet küçülür.")
+            is no longer on any page, so its switch would change nothing. */}
+        {(Object.keys(SECTION_LABELS) as (keyof HomeSections)[]).filter((key) => key !== "advantages").map((key) => (
           <li key={key} className="flex items-center justify-between gap-4 py-3.5 first:pt-0 last:pb-0">
             <div>
               <p id={`section-${key}`} className="text-sm font-semibold">
@@ -295,81 +296,6 @@ export function ShowcaseTab({
                 value={tile.image}
                 onChange={(image) => update({ image })}
                 hint="Boş: kategoriden otomatik."
-              />
-            </div>
-          )}
-        />
-      </Panel>
-    </div>
-  );
-}
-
-// ── Ayrıcalıklar & Avantajlar ────────────────────────────────────────────────
-
-export function AdvantagesTab({ value, set }: { value: Homepage["advantages"]; set: Set<"advantages"> }) {
-  return (
-    <div className="space-y-6">
-      <Panel title="Başlık" hint="Ana sayfada ve kategori sayfalarının altında aynı kartlar gösterilir.">
-        <TextField
-          label="Kırmızı etiket"
-          value={value.eyebrow}
-          max={60}
-          onChange={(eyebrow) => set({ ...value, eyebrow })}
-        />
-        <TextField label="Başlık" value={value.title} max={80} onChange={(title) => set({ ...value, title })} />
-        <TextArea
-          label="Alt metin"
-          value={value.subtitle}
-          max={240}
-          rows={2}
-          onChange={(subtitle) => set({ ...value, subtitle })}
-        />
-      </Panel>
-      <Panel
-        title="Kartlar"
-        hint="Ücretsiz kargo, ciro ve havale oranları ödeme adımının uyguladığı kurallardır; metni değiştirmek kuralı değiştirmez."
-      >
-        <ListEditor
-          items={value.cards}
-          onChange={(cards) => set({ ...value, cards })}
-          blank={(): HomeAdvantageCard => ({
-            badge: "",
-            title: "Yeni avantaj",
-            description: "",
-            note: "",
-            icon: "badge-check",
-            image: null,
-          })}
-          max={12}
-          addLabel="Kart ekle"
-          itemLabel={(c) => c.title}
-          render={(card, update) => (
-            <div className="grid gap-3 lg:grid-cols-[1fr_16rem]">
-              <div className="space-y-3">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <TextField
-                    label="Kırmızı rozet"
-                    value={card.badge}
-                    max={30}
-                    onChange={(badge) => update({ badge })}
-                  />
-                  <TextField label="Başlık" value={card.title} max={80} onChange={(title) => update({ title })} />
-                </div>
-                <TextArea
-                  label="Açıklama"
-                  value={card.description}
-                  max={240}
-                  rows={2}
-                  onChange={(description) => update({ description })}
-                />
-                <TextField label="Dipnot" value={card.note} max={200} onChange={(note) => update({ note })} />
-                <IconSelect value={card.icon} onChange={(icon) => update({ icon })} />
-              </div>
-              <ImageField
-                label="Görsel"
-                value={card.image}
-                onChange={(image) => update({ image })}
-                hint="Dikey (4:5) fotoğraf en iyisi."
               />
             </div>
           )}

@@ -1,11 +1,12 @@
-import { BILGI_DOCUMENTS, bilgiHref } from "@/lib/bilgi";
+import { BILGI_DOCUMENTS, PERKS_PAGE, bilgiHref } from "@/lib/bilgi";
 import { ARTICLES, BLOG_HREF, articleHref } from "@/lib/blog";
 import { FAQ, FAQ_HREF } from "@/lib/faq";
 import { brandCanonical } from "@/lib/seo";
-import { getBrands, getCategories, getPublicProducts } from "@/lib/server/catalog";
+import { getBrands, getCategories, getPublicProducts, getStoreParameters } from "@/lib/server/catalog";
 import { getHomepage } from "@/lib/server/homepage";
 import { DEFAULT_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
-import type { Category } from "@/types";
+import { formatRate } from "@/lib/storeParameters";
+import type { Category, ParameterTier, StoreParameters } from "@/types";
 
 /*
  * /llms.txt (https://llmstxt.org): the shop in one Markdown page for AI
@@ -13,19 +14,58 @@ import type { Category } from "@/types";
  * catalogue lives, which brands it carries and the rules a buyer asks about.
  *
  * Built from the same data as the pages (categories and brands from the API,
- * the advantages and contact details from "Ana Sayfa Düzenleme", the FAQ and
- * the information pages from the code), so it never says what the site does
- * not. Regenerated hourly, like the sitemap.
+ * the shopping rules from "Parametreler" — what checkout applies — the
+ * contact details from "Ana Sayfa Düzenleme", the FAQ and the information
+ * pages from the code), so it never says what the site does not. The rules
+ * are read fresh, so the file is built per request.
  */
 
-export const revalidate = 3600;
+// Per request: the rules are read fresh (getStoreParameters), never cached.
+export const revalidate = 0;
 
 const url = (href: string) => `${SITE_URL}${href}`;
+
+/** "3000.00" → "3.000 TL". */
+const tl = (amount: string | number) => `${Number(amount).toLocaleString("tr-TR", { maximumFractionDigits: 2 })} TL`;
+
+/** A ladder as "30.000 TL üzeri %5, 50.000 TL üzeri %8"; empty without a rung that gives anything. */
+const ladder = (tiers: ParameterTier[]) =>
+  tiers
+    .filter((t) => Number(t.rate) > 0)
+    .sort((a, b) => Number(a.threshold) - Number(b.threshold))
+    .map((t) => `${tl(t.threshold)} ve üzeri ${formatRate(t.rate)}`)
+    .join(", ");
+
+/** The retail shopping rules, as "Ayrıcalıklar ve Avantajlar" states them. */
+function shoppingRules(params: StoreParameters): string[] {
+  const rules = [`Ücretsiz kargo: ${tl(params.free_shipping_threshold)} ve üzeri perakende siparişlerde.`];
+  const volume = ladder(params.volume_tiers);
+  if (volume) rules.push(`Sepet indirimi: ${volume} (sepet tutarına göre, ödeme adımında otomatik).`);
+  const transfer = ladder(params.bank_transfer_tiers);
+  if (transfer) rules.push(`Havale/EFT indirimi: ${transfer}.`);
+  const { loyalty } = params;
+  if (loyalty.enabled && Number(loyalty.base_rate) > 0) {
+    rules.push(`SultanPuan: ${tl(loyalty.band_min)} – ${tl(loyalty.band_max)} arası siparişlerde ${formatRate(loyalty.base_rate)} puan.`);
+    if (loyalty.annual_bonus_points > 0) {
+      const counted = Number(loyalty.annual_order_ceiling) > 0 ? `${tl(loyalty.annual_order_ceiling)} altındaki siparişlerin` : "Siparişlerin";
+      rules.push(
+        `KumbaraPuan: ${counted} son ${loyalty.annual_period_days} gündeki toplamı ${tl(loyalty.annual_spend_threshold)}'ye ulaşınca ${loyalty.annual_bonus_points.toLocaleString("tr-TR")} puan.`,
+      );
+    }
+  }
+  rules.push("İstanbul içi aynı gün kurye teslimatı (10:00 – 20:00).");
+  return rules;
+}
 /** One line of Markdown: no line breaks, no stray link syntax. */
 const line = (text: string) => text.replace(/\s+/g, " ").replace(/[[\]]/g, "").trim();
 
 export async function GET() {
-  const [categories, brands, home] = await Promise.all([getCategories(), getBrands(), getHomepage()]);
+  const [categories, brands, home, params] = await Promise.all([
+    getCategories(),
+    getBrands(),
+    getHomepage(),
+    getStoreParameters(),
+  ]);
   const stocked = (categories ?? []).filter((c) => (c.product_count ?? 0) > 0);
   const topLevel = stocked.filter((c) => c.parent_id === null);
   const childrenOf = (parent: Category) => stocked.filter((c) => c.parent_id === parent.id);
@@ -84,17 +124,13 @@ export async function GET() {
     out.push("## Markalar", "", ...brandLinks.map((b) => `- [${line(b.name)}](${url(b.href)})`), "");
   }
 
-  // Title and description only: the card's note is fine print for the
-  // "Devamını oku" dialog, not a rule to summarise.
-  const advantages = home.advantages.cards.filter((c) => c.title.trim() && c.description.trim());
-  if (advantages.length > 0) {
-    out.push(
-      "## Alışveriş koşulları",
-      "",
-      ...advantages.map((c) => `- ${line(c.title)}: ${line(c.description)}`),
-      "",
-    );
-  }
+  out.push(
+    "## Alışveriş koşulları",
+    "",
+    ...shoppingRules(params).map((rule) => `- ${rule}`),
+    `- Tümü ve ayrıntıları: [${PERKS_PAGE.title}](${url(PERKS_PAGE.href)})`,
+    "",
+  );
 
   out.push(
     "## Politikalar ve bilgi sayfaları",

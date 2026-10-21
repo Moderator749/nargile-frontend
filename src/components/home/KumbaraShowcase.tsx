@@ -1,6 +1,6 @@
 "use client";
 
-import { FIGURE, GOLD } from "@/components/home/AdvantagesSection";
+import { FIGURE, GOLD } from "@/components/home/GoldCoinBadge";
 import { GoldShowcase } from "@/components/home/GoldShowcase";
 import { useStoreParameters } from "@/hooks/useStoreParameters";
 import { formatRate } from "@/lib/storeParameters";
