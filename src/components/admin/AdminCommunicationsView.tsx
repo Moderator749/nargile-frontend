@@ -1,17 +1,21 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { FlaskConical, History, Mail, MessageSquare, RefreshCw, Send } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Eye, EyeOff, FlaskConical, History, Mail, MessageSquare, RefreshCw, Send, Settings2 } from "lucide-react";
 
 import { AdminPageHeader, panelClass } from "@/components/admin/AdminShell";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
+import { Switch } from "@/components/ui/Switch";
 import {
   adminAudienceCounts,
   adminCommunicationDrivers,
   adminCreateCampaign,
+  adminGetSmsSettings,
   adminListCampaigns,
   adminNotificationLogs,
+  adminSaveSmsSettings,
+  adminSendTestSms,
 } from "@/lib/adminApi";
 import { getApiErrorMessage } from "@/lib/errors";
 import { formatDate } from "@/lib/format";
@@ -23,9 +27,12 @@ import type {
   CommunicationDrivers,
   MessageChannel,
   NotificationLogEntry,
+  OrderSmsEvent,
+  SmsSettings,
+  SmsTemplate,
 } from "@/types";
 
-type Tab = MessageChannel | "history";
+type Tab = MessageChannel | "history" | "settings";
 
 // Mirrors the server's bounds (`app/schemas/communication.py`).
 const SMS_MAX = 918;
@@ -51,7 +58,13 @@ const STATUS: Record<Campaign["status"], { text: string; className: string }> = 
   done: { text: "Tamamlandı", className: "bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/30" },
   failed: { text: "Başarısız", className: "bg-red-50 text-red-700 ring-red-200 dark:bg-red-500/10 dark:text-red-300 dark:ring-red-500/30" },
 };
-const PURPOSE: Record<string, string> = { campaign: "Kampanya", password_reset: "Şifre yenileme" };
+const PURPOSE: Record<string, string> = {
+  campaign: "Kampanya",
+  password_reset: "Şifre yenileme",
+  order_placed: "Sipariş alındı",
+  order_shipped: "Kargoya verildi",
+  sms_test: "Test SMS",
+};
 
 /** One per line, or separated by commas / semicolons. */
 const splitRecipients = (raw: string) =>
@@ -538,6 +551,358 @@ function HistoryView({ reloadKey }: { reloadKey: number }) {
   );
 }
 
+
+// ── SMS Ayarları ─────────────────────────────────────────────────────────────
+
+/** Netgsm sender names (başlık) are at most 11 characters; mirrors the server. */
+const HEADER_MAX = 11;
+const TEMPLATE_MAX = 480;
+
+const ORDER_MESSAGES: { event: OrderSmsEvent; title: string; hint: string }[] = [
+  {
+    event: "order_placed",
+    title: "Sipariş alındı",
+    hint: "Havale ve teklif siparişlerinde sipariş verilince; kartla ödemede ödeme onaylanınca gönderilir.",
+  },
+  { event: "order_shipped", title: "Kargoya verildi", hint: "Sipariş “Kargola” ile kargoya verilince gönderilir." },
+];
+
+/** What each placeholder means, and what the preview fills it with. */
+const PLACEHOLDER_INFO: Record<string, { label: string; sample: string }> = {
+  Name: { label: "Ad soyad", sample: "Ahmet Yılmaz" },
+  OrderNo: { label: "Sipariş no", sample: "ORD-20261021143000-A1B2C3" },
+  Tracking: { label: "Takip no", sample: "112233445566" },
+  Carrier: { label: "Kargo firması", sample: "Yurtiçi Kargo" },
+};
+
+const preview = (text: string) =>
+  text.replace(/\{(\w+)\}/g, (whole, name: string) => PLACEHOLDER_INFO[name]?.sample ?? whole);
+
+function TemplateEditor({
+  event,
+  title,
+  hint,
+  value,
+  placeholders,
+  onChange,
+}: {
+  event: OrderSmsEvent;
+  title: string;
+  hint: string;
+  value: SmsTemplate;
+  placeholders: string[];
+  onChange: (value: SmsTemplate) => void;
+}) {
+  const area = useRef<HTMLTextAreaElement>(null);
+  const filled = preview(value.text);
+
+  // A placeholder goes in where the cursor is (at the end without one).
+  const insert = (name: string) => {
+    const el = area.current;
+    const token = `{${name}}`;
+    const start = el?.selectionStart ?? value.text.length;
+    const end = el?.selectionEnd ?? value.text.length;
+    onChange({ ...value, text: value.text.slice(0, start) + token + value.text.slice(end) });
+    requestAnimationFrame(() => {
+      el?.focus();
+      el?.setSelectionRange(start + token.length, start + token.length);
+    });
+  };
+
+  return (
+    <div className="rounded-xl border border-slate-200 p-4 dark:border-white/10">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p id={`sms-${event}`} className="text-sm font-semibold text-slate-900 dark:text-white">
+            {title}
+          </p>
+          <p id={`sms-${event}-hint`} className="text-xs text-slate-500 dark:text-zinc-400">
+            {hint}
+          </p>
+        </div>
+        <Switch
+          checked={value.enabled}
+          onChange={(enabled) => onChange({ ...value, enabled })}
+          labelledBy={`sms-${event}`}
+          describedBy={`sms-${event}-hint`}
+        />
+      </div>
+      <textarea
+        ref={area}
+        value={value.text}
+        maxLength={TEMPLATE_MAX}
+        rows={3}
+        aria-labelledby={`sms-${event}`}
+        onChange={(e) => onChange({ ...value, text: e.target.value })}
+        className={`${fieldClass} mt-3 py-2.5 ${value.enabled ? "" : "opacity-60"}`}
+      />
+      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+        <span className="text-xs text-slate-500 dark:text-zinc-400">Ekle:</span>
+        {placeholders.map((name) => (
+          <button
+            key={name}
+            type="button"
+            onClick={() => insert(name)}
+            title={PLACEHOLDER_INFO[name]?.label}
+            className="rounded-full bg-slate-100 px-2.5 py-1 font-mono text-[11px] text-slate-700 transition-colors hover:bg-red-50 hover:text-red-700 dark:bg-white/10 dark:text-zinc-200 dark:hover:bg-red-500/15 dark:hover:text-red-300"
+          >
+            {`{${name}}`}
+          </button>
+        ))}
+      </div>
+      {/* Transactional: no campaign opt-out line is added to these. */}
+      <SmsCounter text={filled} optOut="" />
+      <p className="mt-2 rounded-lg bg-slate-50 px-3 py-2 text-xs leading-relaxed text-slate-600 dark:bg-white/5 dark:text-zinc-300">
+        <span className="font-semibold">Önizleme: </span>
+        {filled || "—"}
+      </p>
+    </div>
+  );
+}
+
+/**
+ * "SMS Ayarları": the Netgsm account the order messages (and every other SMS)
+ * go out with, and the texts of "Sipariş alındı" and "Kargoya verildi". A
+ * field left blank uses the server's .env; the password is write-only.
+ */
+function SmsSettingsPanel({ onSaved }: { onSaved: () => void }) {
+  const [saved, setSaved] = useState<SmsSettings | null>(null);
+  const [usercode, setUsercode] = useState("");
+  const [header, setHeader] = useState("");
+  const [password, setPassword] = useState("");
+  const [clearPassword, setClearPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [templates, setTemplates] = useState<Record<OrderSmsEvent, SmsTemplate> | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [result, setResult] = useState<{ kind: "success" | "error"; text: string } | null>(null);
+  const [testPhone, setTestPhone] = useState("");
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<{ kind: "success" | "error"; text: string } | null>(null);
+
+  const adopt = (s: SmsSettings) => {
+    setSaved(s);
+    setUsercode(s.usercode);
+    setHeader(s.header);
+    setPassword("");
+    setClearPassword(false);
+    setTemplates({ order_placed: s.order_placed, order_shipped: s.order_shipped });
+  };
+
+  useEffect(() => {
+    const controller = new AbortController();
+    adminGetSmsSettings(controller.signal)
+      .then(adopt)
+      .catch((err: unknown) => {
+        if (!controller.signal.aborted) setLoadError(getApiErrorMessage(err, "SMS ayarları yüklenemedi."));
+      });
+    return () => controller.abort();
+  }, []);
+
+  if (loadError) return <Alert variant="error">{loadError}</Alert>;
+  if (!saved || !templates) return <p className="text-sm text-slate-500 dark:text-zinc-400">Yükleniyor…</p>;
+
+  const live = saved.provider === "netgsm";
+  const passwordPlaceholder = clearPassword
+    ? "Kayıtlı şifre silinecek"
+    : saved.password_set
+      ? "•••••••• kayıtlı — değiştirmek için yazın"
+      : saved.env_password_set
+        ? "Sunucudaki (.env) şifre kullanılıyor"
+        : "Netgsm API şifresi";
+
+  async function save() {
+    if (!templates) return;
+    setSaving(true);
+    setResult(null);
+    try {
+      const next = await adminSaveSmsSettings({
+        usercode,
+        header,
+        password: password || null,
+        clear_password: clearPassword && !password,
+        order_placed: templates.order_placed,
+        order_shipped: templates.order_shipped,
+      });
+      adopt(next);
+      setResult({ kind: "success", text: "SMS ayarları kaydedildi." });
+      onSaved();
+    } catch (err) {
+      setResult({ kind: "error", text: getApiErrorMessage(err, "SMS ayarları kaydedilemedi.") });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function sendTest() {
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const r = await adminSendTestSms(testPhone);
+      setTestResult(
+        r.ok
+          ? { kind: "success", text: r.provider === "mock" ? "Test modu: SMS gönderilmedi, yalnızca kayda yazıldı." : "Test SMS’i gönderildi." }
+          : { kind: "error", text: `Gönderilemedi: ${r.error ?? "bilinmeyen hata"}` },
+      );
+    } catch (err) {
+      setTestResult({ kind: "error", text: getApiErrorMessage(err, "Test SMS’i gönderilemedi.") });
+    } finally {
+      setTesting(false);
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <section className={`${panelClass} p-5 sm:p-6`}>
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-base font-semibold text-slate-900 dark:text-white">Netgsm Hesabı</h2>
+            <p className={hintClass}>Boş bırakılan alan sunucudaki (.env) değeri kullanır. Şifre şifrelenerek saklanır ve bir daha gösterilmez.</p>
+          </div>
+          <span
+            className={`rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${
+              live
+                ? "bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/30"
+                : "bg-amber-50 text-amber-800 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-200 dark:ring-amber-500/30"
+            }`}
+          >
+            {live ? "Canlı: Netgsm" : "Test modu: SMS gönderilmiyor"}
+          </span>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <label className="block">
+            <span className={labelClass}>Kullanıcı kodu</span>
+            <input
+              value={usercode}
+              onChange={(e) => setUsercode(e.target.value.replace(/\D/g, ""))}
+              inputMode="numeric"
+              autoComplete="off"
+              maxLength={32}
+              placeholder={saved.env_usercode ? `Sunucudan: ${saved.env_usercode}` : "8503089065"}
+              className={`${fieldClass} mt-1.5 h-11`}
+            />
+            <span className={`${hintClass} block`}>Abone numarası ya da alt kullanıcı kodu.</span>
+          </label>
+          <div>
+            <label htmlFor="netgsm-password" className={labelClass}>
+              Şifre
+            </label>
+            <div className="relative mt-1.5">
+              <input
+                id="netgsm-password"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setClearPassword(false);
+                }}
+                autoComplete="new-password"
+                maxLength={128}
+                placeholder={passwordPlaceholder}
+                className={`${fieldClass} h-11 pr-11`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? "Şifreyi gizle" : "Şifreyi göster"}
+                className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200"
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" aria-hidden /> : <Eye className="h-4 w-4" aria-hidden />}
+              </button>
+            </div>
+            <span className={`${hintClass} flex flex-wrap gap-x-2`}>
+              API yetkili alt kullanıcının şifresi.
+              {saved.password_set && !password && (
+                <button
+                  type="button"
+                  onClick={() => setClearPassword((v) => !v)}
+                  className="font-medium text-red-600 hover:underline dark:text-red-400"
+                >
+                  {clearPassword ? "Silmekten vazgeç" : "Kayıtlı şifreyi sil"}
+                </button>
+              )}
+            </span>
+          </div>
+          <label className="block">
+            <span className={labelClass}>Başlık (gönderici adı)</span>
+            <input
+              value={header}
+              onChange={(e) => setHeader(e.target.value)}
+              autoComplete="off"
+              maxLength={HEADER_MAX}
+              placeholder={saved.env_header ? `Sunucudan: ${saved.env_header}` : "NARGILEMLZ"}
+              className={`${fieldClass} mt-1.5 h-11`}
+            />
+            <span className={`${hintClass} block`}>Netgsm’de onaylı başlık, en fazla {HEADER_MAX} karakter.</span>
+          </label>
+        </div>
+      </section>
+
+      <section className={`${panelClass} p-5 sm:p-6`}>
+        <h2 className="text-base font-semibold text-slate-900 dark:text-white">Sipariş Mesajları</h2>
+        <p className={`${hintClass} mb-4`}>
+          Müşterinin hesabındaki cep telefonuna (yoksa teslimat adresindekine) gider. Süslü parantezli alanlar her siparişte
+          doldurulur.
+        </p>
+        <div className="grid gap-4 lg:grid-cols-2">
+          {ORDER_MESSAGES.map(({ event, title, hint }) => (
+            <TemplateEditor
+              key={event}
+              event={event}
+              title={title}
+              hint={hint}
+              value={templates[event]}
+              placeholders={saved.placeholders[event]}
+              onChange={(value) => setTemplates({ ...templates, [event]: value })}
+            />
+          ))}
+        </div>
+        {result && (
+          <div className="mt-4">
+            <Alert variant={result.kind}>{result.text}</Alert>
+          </div>
+        )}
+        <div className="mt-4 flex justify-end">
+          <Button type="button" onClick={() => void save()} loading={saving} className="sm:w-48!">
+            Kaydet
+          </Button>
+        </div>
+      </section>
+
+      <section className={`${panelClass} p-5 sm:p-6`}>
+        <h2 className="text-base font-semibold text-slate-900 dark:text-white">Test SMS</h2>
+        <p className={`${hintClass} mb-3`}>Kayıtlı ayarlarla tek bir SMS gönderir; önce kaydedin.</p>
+        <form
+          className="flex flex-col gap-3 sm:flex-row"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void sendTest();
+          }}
+        >
+          <input
+            value={testPhone}
+            onChange={(e) => setTestPhone(e.target.value)}
+            type="tel"
+            inputMode="tel"
+            autoComplete="off"
+            placeholder="05XX XXX XX XX"
+            aria-label="Test SMS’inin gideceği numara"
+            className={`${fieldClass} h-11 sm:max-w-xs`}
+          />
+          <Button type="submit" variant="secondary" loading={testing} disabled={testPhone.trim().length < 10} className="sm:w-48!">
+            Test SMS Gönder
+          </Button>
+        </form>
+        {testResult && (
+          <div className="mt-3">
+            <Alert variant={testResult.kind}>{testResult.text}</Alert>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
 /**
  * "İletişim & Bildirimler": bulk SMS and e-mail to customers who agreed to
  * campaign messages, and the log of everything sent (password codes too).
@@ -548,6 +913,10 @@ export function AdminCommunicationsView() {
   const [reloadKey, setReloadKey] = useState(0);
   const sent = useCallback(() => setReloadKey((n) => n + 1), []);
 
+  const [driversKey, setDriversKey] = useState(0);
+  // Saving "SMS Ayarları" can change the SMS driver: read it again.
+  const settingsSaved = useCallback(() => setDriversKey((n) => n + 1), []);
+
   useEffect(() => {
     const controller = new AbortController();
     adminCommunicationDrivers(controller.signal)
@@ -556,7 +925,7 @@ export function AdminCommunicationsView() {
         // Non-critical: the test-mode note just does not show.
       });
     return () => controller.abort();
-  }, []);
+  }, [driversKey]);
 
   const mock = drivers ? [drivers.sms === "mock" && "SMS", drivers.email === "mock" && "e-posta"].filter(Boolean) : [];
 
@@ -571,8 +940,8 @@ export function AdminCommunicationsView() {
           <FlaskConical className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
           <span>
             <strong>Test modu ({mock.join(" ve ")}):</strong> sağlayıcı ayarlanmadığı için bu kanaldaki iletiler gerçekte
-            gönderilmez; sunucu kaydına ve aşağıdaki geçmişe “Test” olarak yazılır. Canlıya almak için sunucunun .env
-            dosyasına sağlayıcı bilgilerini girin.
+            gönderilmez; sunucu kaydına ve aşağıdaki geçmişe “Test” olarak yazılır. SMS’i canlıya almak için “SMS
+            Ayarları” sekmesine Netgsm hesabını girin; e-posta için sunucunun .env dosyasına sağlayıcı bilgilerini.
           </span>
         </p>
       )}
@@ -586,8 +955,13 @@ export function AdminCommunicationsView() {
         <TabButton id="history" active={tab === "history"} onClick={setTab} Icon={History}>
           Geçmiş
         </TabButton>
+        <TabButton id="settings" active={tab === "settings"} onClick={setTab} Icon={Settings2}>
+          SMS Ayarları
+        </TabButton>
       </div>
-      {tab === "history" ? (
+      {tab === "settings" ? (
+        <SmsSettingsPanel onSaved={settingsSaved} />
+      ) : tab === "history" ? (
         <HistoryView reloadKey={reloadKey} />
       ) : (
         <Composer key={tab} channel={tab} drivers={drivers} onSent={sent} />

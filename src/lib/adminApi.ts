@@ -16,6 +16,9 @@ import type {
   Campaign,
   CampaignCreate,
   CommunicationDrivers,
+  SmsSettings,
+  SmsSettingsWrite,
+  SmsTestResult,
   MessageChannel,
   NotificationLogEntry,
   AdminNote,
@@ -191,6 +194,21 @@ export async function adminUpdateBannerPreset(id: number, body: BannerPresetWrit
 
 export async function adminDeleteBannerPreset(id: number): Promise<void> {
   await api.delete(`/admin/banner-presets/${id}`);
+}
+
+export async function adminGetSmsSettings(signal?: AbortSignal): Promise<SmsSettings> {
+  const { data } = await api.get<SmsSettings>("/admin/communications/sms-settings", { signal });
+  return data;
+}
+
+export async function adminSaveSmsSettings(body: SmsSettingsWrite): Promise<SmsSettings> {
+  const { data } = await api.put<SmsSettings>("/admin/communications/sms-settings", body);
+  return data;
+}
+
+export async function adminSendTestSms(phone: string): Promise<SmsTestResult> {
+  const { data } = await api.post<SmsTestResult>("/admin/communications/sms-settings/test", { phone });
+  return data;
 }
 
 export async function adminCommunicationDrivers(signal?: AbortSignal): Promise<CommunicationDrivers> {

@@ -768,6 +768,47 @@ export interface CommunicationDrivers {
   sms_opt_out_text: string;
 }
 
+// ── SMS Ayarları (mirrors app/schemas/communication.py) ──────────────────────
+
+export type OrderSmsEvent = "order_placed" | "order_shipped";
+
+export interface SmsTemplate {
+  enabled: boolean;
+  text: string;
+}
+
+export interface SmsSettings {
+  usercode: string;
+  header: string;
+  /** The password itself never comes back. */
+  password_set: boolean;
+  /** What the server's .env supplies for a field left blank here. */
+  env_usercode: string;
+  env_header: string;
+  env_password_set: boolean;
+  /** The driver that sends now: "netgsm", or "mock" when nothing leaves. */
+  provider: string;
+  order_placed: SmsTemplate;
+  order_shipped: SmsTemplate;
+  placeholders: Record<OrderSmsEvent, string[]>;
+}
+
+export interface SmsSettingsWrite {
+  usercode: string;
+  header: string;
+  /** Omitted / null keeps the stored password. */
+  password?: string | null;
+  clear_password?: boolean;
+  order_placed: SmsTemplate;
+  order_shipped: SmsTemplate;
+}
+
+export interface SmsTestResult {
+  ok: boolean;
+  provider: string;
+  error: string | null;
+}
+
 /** A note in the admin's "Not Defteri"; only its author sees it. */
 export interface AdminNote {
   id: number;
