@@ -1449,6 +1449,8 @@ export interface HomeSections {
   promos: boolean;
   brands: boolean;
   brand_showcase: boolean;
+  kozlukler: boolean;
+  games: boolean;
   showcase: boolean;
   /** Retired: the "Hacim büyür" grid is on no page now. */
   advantages: boolean;
@@ -1469,6 +1471,8 @@ export type HomeBlock =
   | "promos"
   | "brands"
   | "brand_showcase"
+  | "kozlukler"
+  | "games"
   | "showcase"
   | "about";
 
@@ -1559,6 +1563,8 @@ export type HomeMobileSection =
   | "campaigns"
   | "brand_statement"
   | "brand_showcase"
+  | "kozlukler"
+  | "games"
   | "showcase";
 
 export interface HomeMobile {

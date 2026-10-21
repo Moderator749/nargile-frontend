@@ -9,7 +9,9 @@ import { CampaignBanners } from "@/components/home/CampaignBanners";
 import { DealsFunnel } from "@/components/home/DealsFunnel";
 import { FeaturedProductsShowcase } from "@/components/home/FeaturedProductsShowcase";
 import { HeroAside } from "@/components/home/HeroAside";
+import { GamesShowcase } from "@/components/home/GamesShowcase";
 import { HeroSlider } from "@/components/home/HeroSlider";
+import { KozluklerShowcase } from "@/components/home/KozluklerShowcase";
 import { KumbaraShowcase } from "@/components/home/KumbaraShowcase";
 import { LuleShowcase } from "@/components/home/LuleShowcase";
 import { SeoIntro } from "@/components/home/SeoIntro";
@@ -20,6 +22,7 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { FEATURED_PRODUCTS_COUNT } from "@/lib/config";
 import { brandHref, organizationJsonLd, pageMetadata, productListJsonLd, websiteJsonLd } from "@/lib/seo";
 import { FALLBACK_SLIDE, heroPromo, meets, toHeroSlide, withDefaultImage } from "@/lib/home";
+import { GAMES_CATEGORY_SLUG, KOZLUK_CATEGORY_SLUG, gamesShowcase, kozlukShowcase } from "@/lib/homeShowcases";
 import {
   getBrands,
   getCategories,
@@ -64,6 +67,9 @@ const LULE_COUNT = 15;
 /** "Kumbara 20.000 TL": this category's products, in the band above the deals. */
 const KUMBARA_CATEGORY_SLUG = "marpuclar";
 const KUMBARA_COUNT = 15;
+
+/** "Közlükler" and "Oyun & Eğlence" read their whole category, up to this many. */
+const SHOWCASE_CATEGORY_MAX = 100;
 
 type Picks = Record<(typeof PICK_KEYS)[number], CatalogProduct[]>;
 
@@ -173,8 +179,10 @@ export default async function HomePage() {
   // What to show and what it says: "Ana Sayfa Düzenleme" (/admin/homepage).
   const home = await getHomepage();
   const { sections } = home;
-  const [categories, featured, flashSales, brands, content, artwork, bestsellers, newest, brandRows, sultanPuan, lules, marpuclar] =
-    await Promise.all([
+  const [
+    categories, featured, flashSales, brands, content, artwork, bestsellers, newest, brandRows, sultanPuan, lules, marpuclar,
+    kozlukProducts, gameProducts,
+  ] = await Promise.all([
       getCategories(),
       getPublicProducts(FEATURED_CATEGORY_SLUG, FEATURED_PRODUCTS_COUNT),
       getFlashSaleProducts(),
@@ -200,7 +208,13 @@ export default async function HomePage() {
       // With room to spare, as the picks: some have no photo or no price.
       getPublicProducts(LULE_CATEGORY_SLUG, LULE_COUNT * 2),
       getPublicProducts(KUMBARA_CATEGORY_SLUG, KUMBARA_COUNT * 2),
+      // The two bands pick from their whole category (≈45 and ≈25 products),
+      // and are not asked for while they are switched off.
+      sections.kozlukler ? getPublicProducts(KOZLUK_CATEGORY_SLUG, SHOWCASE_CATEGORY_MAX) : null,
+      sections.games ? getPublicProducts(GAMES_CATEGORY_SLUG, SHOWCASE_CATEGORY_MAX) : null,
     ]);
+  const kozlukBand = kozlukShowcase(kozlukProducts);
+  const gamesBand = gamesShowcase(gameProducts);
   const allCategories = categories ?? [];
   const sidebar = resolveNav(home.navigation.sidebar, allCategories, brands ?? []);
   const showcase = resolveShowcase(home.showcase.tiles, allCategories, brands ?? [], artwork);
@@ -332,6 +346,12 @@ export default async function HomePage() {
           ))}
         </section>,
       ),
+    // "Közlükler": the dark, ember-lit band — a featured piece beside four,
+    // devices and accessories as tabs. Nothing with an empty category.
+    kozlukler: () => kozlukBand && phones("kozlukler", <KozluklerShowcase data={kozlukBand} />),
+    // "Oyun & Eğlence": the green felt game table — tavla, okey and iskambil
+    // as a fanned hand of cards, the dearest sets under it.
+    games: () => gamesBand && phones("games", <GamesShowcase data={gamesBand} />),
     // "Premium Ürün Yelpazesi": the catalog as a gallery (the category bento).
     showcase: () =>
       phones("showcase", <CatalogShowcase title={home.showcase.title} subtitle={home.showcase.subtitle} tiles={showcase} />),

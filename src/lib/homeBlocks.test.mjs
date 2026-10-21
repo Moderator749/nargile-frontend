@@ -21,12 +21,12 @@ test("unknown and repeated entries are dropped", () => {
   assert.equal(new Set(order).size, HOME_BLOCKS.length);
 });
 
-test("a section the saved order lacks goes back after the one it follows by default", () => {
-  // Saved before "kumbara" existed, with the deals moved to the top.
-  const saved = HOME_BLOCKS.filter((id) => id !== "kumbara" && id !== "deals");
-  const order = resolveBlockOrder(["deals", ...saved]);
-  assert.equal(order[0], "deals");
-  assert.equal(order[order.indexOf("sultanpuan") + 1], "kumbara");
-  // The first by default goes first when it is missing.
-  assert.equal(resolveBlockOrder(HOME_BLOCKS.slice(1))[0], "perks");
+test("sections the saved order lacks go straight before the one they precede by default", () => {
+  // Saved before "kozlukler" and "games" existed, the bento moved to the top.
+  const saved = HOME_BLOCKS.filter((id) => id !== "kozlukler" && id !== "games" && id !== "showcase");
+  const order = resolveBlockOrder(["showcase", ...saved]);
+  assert.deepEqual(order.slice(0, 3), ["kozlukler", "games", "showcase"]);
+  assert.equal(order.length, HOME_BLOCKS.length);
+  // The last by default goes last when it is missing.
+  assert.equal(resolveBlockOrder(HOME_BLOCKS.slice(0, -1)).at(-1), "about");
 });
