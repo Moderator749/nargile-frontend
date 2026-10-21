@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 
 import { CatalogScreen } from "@/components/catalog/CatalogScreen";
 import { brandCanonical, brandDescription, brandHref, pageMetadata } from "@/lib/seo";
-import { getBrands, getCategories, getPublicProducts } from "@/lib/server/catalog";
+import { getBrands, getCategories, getPublicProducts, required } from "@/lib/server/catalog";
 
 // A day, as the catalog (CATALOG_REVALIDATE); admin edits refresh it immediately.
 export const revalidate = 86400;
@@ -19,8 +19,9 @@ export async function generateStaticParams() {
  * always showed — so a brand page and a search for it never disagree.
  */
 async function load(slug: string) {
-  const brands = await getBrands();
-  const brand = brands?.find((b) => b.slug === slug && b.is_active) ?? null;
+  // Throws when the API is down, so an outage is never a 404.
+  const brands = required(await getBrands(), "/brands");
+  const brand = brands.find((b) => b.slug === slug && b.is_active) ?? null;
   const products = brand ? await getPublicProducts(undefined, undefined, 0, brand.search_term) : null;
   return { brands, brand, products };
 }
@@ -57,7 +58,7 @@ export default async function BrandPage(props: PageProps<"/marka/[slug]">) {
       categories={categories ?? []}
       activeCategory={null}
       products={products}
-      brands={brands ?? []}
+      brands={brands}
       brand={brand}
     />
   );

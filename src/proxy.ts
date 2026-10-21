@@ -17,8 +17,11 @@ import { NextResponse, type NextRequest } from "next/server";
  *   a third of the old product links indexed are in this form.
  *
  * Anything the API does not know as a product goes on untouched (and ends at
- * the 404 page if nothing else answers it). Kept free of the app's own modules:
- * proxy code is built and run apart from the pages.
+ * the 404 page if nothing else answers it). When the API cannot answer at all
+ * (down, slow, a 5xx), such an address gets a 503 instead: whether it is an
+ * old product link cannot be told, and a 404 would tell search engines the
+ * page is gone. Kept free of the app's own modules: proxy code is built and
+ * run apart from the pages.
  */
 
 /** The API itself, as src/lib/config.ts calls it on the server. */
@@ -34,19 +37,46 @@ const ROUTES = new Set([
   "kargo-takip", "login", "marka", "orders", "product", "register", "sifre-yenile", "sifremi-unuttum", "sss", "opengraph-image",
 ]);
 
-/** The slug of the published product this id or old address names; null when there is none. */
-async function productSlug(ref: string): Promise<string | null> {
+/** The API did not answer the lookup. */
+const UNAVAILABLE = Symbol("unavailable");
+
+/**
+ * The slug of the published product this id or old address names; null when
+ * the API says there is none, UNAVAILABLE when it could not say.
+ */
+async function productSlug(ref: string): Promise<string | null | typeof UNAVAILABLE> {
   try {
     const res = await fetch(`${API_URL}/products/${encodeURIComponent(ref)}`, {
       signal: AbortSignal.timeout(3000),
     });
-    if (!res.ok) return null;
+    if (res.status === 404) return null;
+    if (!res.ok) return UNAVAILABLE;
     const { slug } = (await res.json()) as { slug?: string };
     return slug || null;
   } catch {
-    // API down or slow: let the page answer (it redirects too, with a 308).
-    return null;
+    return UNAVAILABLE;
   }
+}
+
+/** The page for an address the API could not look up: retry, or go home. */
+const UNAVAILABLE_PAGE = `<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex"><title>Geçici bir sorun | Nargile Malzemesi</title>
+<style>body{margin:0;min-height:100vh;display:grid;place-items:center;font-family:system-ui,sans-serif;background:#fff;color:#171717;text-align:center;padding:16px;box-sizing:border-box}
+p{color:#737373;max-width:28rem;margin:12px auto 0;line-height:1.5}a{display:inline-block;margin:24px 6px 0;padding:12px 24px;border-radius:999px;font-weight:600;text-decoration:none}
+.retry{background:#dc2626;color:#fff}.home{color:#171717;box-shadow:inset 0 0 0 1px #e5e5e5}
+@media (prefers-color-scheme:dark){body{background:#000;color:#fafafa}p{color:#a3a3a3}.home{color:#fafafa;box-shadow:inset 0 0 0 1px #404040}}</style></head>
+<body><main><strong style="color:#dc2626;font-size:12px;letter-spacing:.25em">NARGİLE MALZEMESİ</strong>
+<h1 style="margin:8px 0 0;font-size:28px">Sayfa şu anda yüklenemedi</h1>
+<p>Bağlantıda kısa süreli bir sorun yaşadık. Birkaç saniye sonra yeniden deneyebilir ya da alışverişe ana sayfadan devam edebilirsiniz.</p>
+<a class="retry" href="">Tekrar Dene</a><a class="home" href="/">Ana sayfaya dön</a></main></body></html>`;
+
+/** 503 with Retry-After: search engines come back later instead of dropping the address. */
+function unavailable() {
+  return new NextResponse(UNAVAILABLE_PAGE, {
+    status: 503,
+    headers: { "Content-Type": "text/html; charset=utf-8", "Retry-After": "120", "Cache-Control": "no-store" },
+  });
 }
 
 function moved(request: NextRequest, pathname: string) {
@@ -60,6 +90,7 @@ export async function proxy(request: NextRequest) {
 
   if (segments.length === 2 && segments[0] === "product" && UUID.test(segments[1])) {
     const slug = await productSlug(segments[1]);
+    if (slug === UNAVAILABLE) return unavailable();
     if (slug) return moved(request, `/product/${slug}`);
   } else if (segments.length === 2 && segments[0] === "product" && segments[1] !== segments[1].toLowerCase()) {
     // Slugs are lowercase: a link typed in capitals has one address too.
@@ -76,6 +107,7 @@ export async function proxy(request: NextRequest) {
       !FILE.test(slug) && SLUG.test(slug) && slug.length <= 255
     ) {
       const current = await productSlug(slug);
+      if (current === UNAVAILABLE) return unavailable();
       if (current) return moved(request, `/product/${current}`);
     }
   }

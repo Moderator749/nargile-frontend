@@ -74,7 +74,7 @@ export default async function ProductPage(props: PageProps<"/product/[slug]">) {
   if (!product) notFound();
   // Asked by id (a link from before slugs) or in other letter case: one
   // address per product. src/proxy.ts answers an id with a 301 before this
-  // renders; this is the fallback when it could not reach the API.
+  // renders (a 503 when it cannot reach the API); this is the fallback.
   if (product.slug !== slug) permanentRedirect(productHref(product));
 
   // Internal links under the product: its category's other products, and the

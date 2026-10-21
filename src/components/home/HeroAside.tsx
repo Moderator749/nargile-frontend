@@ -75,6 +75,10 @@ function Backdrop({ src, flip, zoom }: { src: string; flip?: boolean; zoom?: boo
           alt=""
           fill
           sizes="(min-width: 1280px) 420px, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+          // On screen with the hero from the first paint, so not left for the
+          // lazy loader; no preload either, which would compete with the
+          // hero's own (the page's LCP).
+          loading="eager"
           className={`object-cover ${flip ? "object-left" : "object-right"} ${
             zoom ? "transition-transform duration-700 ease-out motion-safe:group-hover:scale-105" : ""
           }`}

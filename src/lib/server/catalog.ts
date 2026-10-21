@@ -38,17 +38,59 @@ async function getJson<T>(path: string): Promise<T | null> {
   }
 }
 
+/**
+ * The API could not answer — unreachable, timed out, or a 5xx — which is not
+ * the same as "there is no such thing". Thrown rather than read as a 404: on a
+ * background regeneration the last good copy of the page stays in the cache
+ * (a 404 would replace it for a day), and an uncached page answers with a 500
+ * and app/(storefront)/error.tsx, which search engines treat as temporary.
+ */
+export class BackendUnavailableError extends Error {
+  constructor(what: string, options?: ErrorOptions) {
+    super(`Catalog API unavailable: ${what}`, options);
+    this.name = "BackendUnavailableError";
+  }
+}
+
+/**
+ * A read a page decides a 404 on: the body, null only when the API says 404,
+ * and BackendUnavailableError for anything else that is not an answer.
+ */
+async function getJsonOrNotFound<T>(path: string): Promise<T | null> {
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}${path}`, {
+      next: { revalidate: CATALOG_REVALIDATE, tags: ["catalog"] },
+    });
+  } catch (cause) {
+    throw new BackendUnavailableError(path, { cause });
+  }
+  if (res.status === 404) return null;
+  if (!res.ok) throw new BackendUnavailableError(`${path} answered ${res.status}`);
+  return (await res.json()) as T;
+}
+
+/**
+ * A list a page decides a 404 on (the category or brand it names is not in
+ * it). Lists never 404, so null from `getJson` means the API did not answer.
+ */
+export function required<T>(list: T | null, what: string): T {
+  if (list === null) throw new BackendUnavailableError(what);
+  return list;
+}
+
 export function getCategories(): Promise<Category[] | null> {
   return getJson<Category[]>("/categories");
 }
 
 /**
  * The visible category a slug names now — its own, or one the admin has since
- * replaced (then the answer carries the new slug). Null when there is none.
+ * replaced (then the answer carries the new slug). Null when there is none;
+ * throws BackendUnavailableError when the API cannot say.
  */
 export function getCategoryBySlug(slug: string): Promise<Category | null> {
   if (slug.length > 180 || !/^[a-z0-9-]+$/i.test(slug)) return Promise.resolve(null);
-  return getJson<Category>(`/categories/by-slug/${encodeURIComponent(slug)}`);
+  return getJsonOrNotFound<Category>(`/categories/by-slug/${encodeURIComponent(slug)}`);
 }
 
 export function getPublicProducts(
@@ -149,11 +191,14 @@ export async function getTileArtwork(tile: { slug?: string | null; search?: stri
 /** A product's address segment: its slug (the old store's dotted spellings included) or its id. */
 const PRODUCT_REF = /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[a-z0-9]+(?:[.-][a-z0-9]+)*)$/i;
 
-/** One product (anonymous RETAIL view) for its detail page, by slug or id; null if missing or the API is down. */
+/**
+ * One product (anonymous RETAIL view) for its detail page, by slug or id; null
+ * when the API says there is none, BackendUnavailableError when it cannot say.
+ */
 export function getProduct(ref: string): Promise<CatalogProductDetail | null> {
   // Nothing that could not be a slug or an id goes to the API.
   if (ref.length > 255 || !PRODUCT_REF.test(ref)) return Promise.resolve(null);
-  return getJson<CatalogProductDetail>(`/products/${encodeURIComponent(ref)}`);
+  return getJsonOrNotFound<CatalogProductDetail>(`/products/${encodeURIComponent(ref)}`);
 }
 
 /**

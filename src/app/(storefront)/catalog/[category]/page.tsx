@@ -3,7 +3,7 @@ import { notFound, permanentRedirect } from "next/navigation";
 
 import { CatalogScreen } from "@/components/catalog/CatalogScreen";
 import { hasCategoryCopy, categoryCopy } from "@/lib/categories";
-import { getBrands, getCategories, getCategoryBySlug, getPublicProducts } from "@/lib/server/catalog";
+import { getBrands, getCategories, getCategoryBySlug, getPublicProducts, required } from "@/lib/server/catalog";
 import { categoryDescription, metaDescription, pageMetadata } from "@/lib/seo";
 
 // A day, as the catalog (CATALOG_REVALIDATE); admin edits refresh it immediately.
@@ -15,9 +15,10 @@ export async function generateStaticParams() {
   return categories.map((c) => ({ category: c.slug }));
 }
 
+/** The category this slug names; throws when the API is down, so an outage is never a 404. */
 async function findCategory(slug: string) {
-  const categories = await getCategories();
-  return { categories, category: categories?.find((c) => c.slug === slug) ?? null };
+  const categories = required(await getCategories(), "/categories");
+  return { categories, category: categories.find((c) => c.slug === slug) ?? null };
 }
 
 export async function generateMetadata(props: PageProps<"/catalog/[category]">): Promise<Metadata> {
@@ -54,16 +55,15 @@ export default async function CategoryPage(props: PageProps<"/catalog/[category]
     getPublicProducts(slug),
     getBrands(),
   ]);
-  // Only 404 when the category list loaded and the slug isn't in it; if the API is
-  // down we can't tell, so render the shell and let the client retry. A slug
-  // the admin has since changed leads on to the category's current address.
-  if (categories && !category) {
+  // A slug the admin has since changed leads on to the category's current
+  // address; one the API does not know at all is a 404.
+  if (!category) {
     const renamed = await getCategoryBySlug(slug);
     if (renamed && renamed.slug !== slug) permanentRedirect(`/catalog/${renamed.slug}`);
     notFound();
   }
 
-  const name = category?.name ?? "Kategori";
+  const name = category.name;
   return (
     <CatalogScreen
       title={name}
@@ -72,14 +72,14 @@ export default async function CategoryPage(props: PageProps<"/catalog/[category]
         { name: "Ana Sayfa", href: "/" },
         { name, href: `/catalog/${slug}` },
       ]}
-      categories={categories ?? []}
-      activeCategory={category ?? { id: -1, name, slug, parent_id: null }}
+      categories={categories}
+      activeCategory={category}
       products={products}
       brands={brands ?? []}
       // The admin's introduction, else the shop's written copy where it has
       // one (the meta description's generated fallback is for search
       // results, not the page). Long text is clamped, all of it in the HTML.
-      intro={category?.description || (hasCategoryCopy(slug) ? categoryCopy(slug).description : null)}
+      intro={category.description || (hasCategoryCopy(slug) ? categoryCopy(slug).description : null)}
     />
   );
 }

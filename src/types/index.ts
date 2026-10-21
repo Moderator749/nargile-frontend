@@ -156,8 +156,6 @@ export interface User {
   loyalty_balance?: number;
 }
 
-export const B2B_SEGMENTS: readonly SegmentType[] = ["WHOLESALE", "DEALER"];
-
 /** Whoever the invoice is made out to — the account's own firm, or another one. */
 export interface CompanyIdentityInput {
   /** Required when an individual asks for a corporate invoice; set from the account type otherwise. */

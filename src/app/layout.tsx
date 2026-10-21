@@ -1,23 +1,12 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 import { StoreHydration } from "@/components/StoreHydration";
 import { AUTH_HINT_SCRIPT } from "@/lib/auth";
+import { geistMono, geistSans } from "@/lib/fonts";
 import { SIDEBAR_SCRIPT } from "@/lib/sidebar";
 import { DEFAULT_DESCRIPTION, INDEXING_ALLOWED, SITE_NAME, SITE_URL } from "@/lib/site";
 import { THEME_SCRIPT } from "@/lib/theme";
-
-// latin-ext carries Turkish ğ, ş, ı, İ — without it they fall back to another font.
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin", "latin-ext"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin", "latin-ext"],
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
