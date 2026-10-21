@@ -904,7 +904,7 @@ function SmsSettingsPanel({ onSaved }: { onSaved: () => void }) {
 }
 
 /**
- * "İletişim & Bildirimler": bulk SMS and e-mail to customers who agreed to
+ * "SMS & Mail": bulk SMS and e-mail to customers who agreed to
  * campaign messages, and the log of everything sent (password codes too).
  */
 export function AdminCommunicationsView() {
@@ -932,7 +932,7 @@ export function AdminCommunicationsView() {
   return (
     <>
       <AdminPageHeader
-        title="İletişim & Bildirimler"
+        title="SMS & Mail"
         description="Kampanya iletisine izin vermiş müşterilere toplu SMS ve e-posta gönderin; gönderilen her iletiyi (şifre yenileme kodları dahil) kayıtta görün."
       />
       {mock.length > 0 && (

@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 import type { Metadata } from "next";
 
 import { BrandStatement } from "@/components/home/BrandStatement";
@@ -37,7 +37,7 @@ import { resolveNav } from "@/lib/storefrontNav";
 import { DEFAULT_DESCRIPTION, SITE_NAME } from "@/lib/site";
 import { PAGE_CONTAINER } from "@/lib/layout";
 import { displayVariant } from "@/lib/variants";
-import type { CatalogProduct, HomeMobileSection } from "@/types";
+import type { CatalogProduct, HomeBlock, HomeMobileSection } from "@/types";
 
 // Rendered per request so a flash sale that starts or ends is reflected at once
 // (its countdowns and the slides that depend on one). Catalog fetches keep their
@@ -248,6 +248,97 @@ export default async function HomePage() {
       : showable(await getPublicProducts(undefined, PICKS_COUNT * 4), PICKS_COUNT * 4);
   const picks = fillPicks(lists, spare);
 
+  // The homepage's sections between the hero and the footer, by id. The page
+  // shows them in `home.order` (the admin's, else lib/homeBlocks' default), so
+  // each is whole on its own: no section counts on its neighbour.
+  const blocks: Record<HomeBlock, () => ReactNode> = {
+    // The payment advantages as a quiet bar, no boxes.
+    perks: () => phones("perks", <StorePerks />),
+    // The brand ticker on its own. Decorative: a screen reader hears the list
+    // once, in the other ticker ("brands").
+    brands_top: () =>
+      phones("brand_ticker", <BrandTicker brands={home.brands.items} decorative className="pb-2 pt-4 sm:pt-5" />),
+    // "Sizin İçin Seçtiklerimiz": two tabbed product lists in one row that
+    // slides sideways.
+    picks: () => <FeaturedProductsShowcase lists={picks} categories={allCategories} />,
+    // "Lüle Alırken Kararsız Kalacaksınız", with the courier perk.
+    lules: () =>
+      phones(
+        "lules",
+        <LuleShowcase
+          products={showable(lules, LULE_COUNT)}
+          categories={allCategories}
+          categoryHref={`/catalog/${LULE_CATEGORY_SLUG}`}
+        />,
+      ),
+    // "%10 SultanPuan": the loyalty card and the products whose price alone
+    // earns it. Nothing while the programme is off or no product is priced in
+    // its band.
+    sultanpuan: () =>
+      sultanPuan && phones("sultanpuan", <SultanPuanShowcase showcase={sultanPuan} categories={allCategories} />),
+    // "Kumbara 20.000 TL": the annual bonus, over the Marpuçlar. Nothing while
+    // the bonus is off or the category is empty.
+    kumbara: () =>
+      phones("kumbara", <KumbaraShowcase products={showable(marpuclar, KUMBARA_COUNT)} categories={allCategories} />),
+    // "Fırsatları Kaçırma": the page's only deals section, a dark band. It
+    // renders nothing when none are running.
+    deals: () => (
+      <DealsFunnel initialProducts={deals} categories={allCategories} title={home.deals.title} subtitle={home.deals.subtitle} />
+    ),
+    // The campaign boxes: the big one and the mini bento (placeholder art
+    // until the shop's photos).
+    campaigns: () => phones("campaigns", <CampaignBanners />),
+    // "Sektörde Referans Noktası", on a white band of its own.
+    promos: () =>
+      phones(
+        "brand_statement",
+        <div className="bg-white dark:bg-transparent">
+          <div className={`${PAGE_CONTAINER} pt-2 pb-6`}>
+            <BrandStatement />
+          </div>
+        </div>,
+      ),
+    // The brand ticker. No heading — the names are the content.
+    brands: () => phones("brand_ticker", <BrandTicker brands={home.brands.items} />),
+    // "Markalarımız": one heading over a band per brand, alternating sides.
+    brand_showcase: () =>
+      brandRows.some((row) => row.length > 0) &&
+      phones(
+        "brand_showcase",
+        <section aria-labelledby="markalarimiz-baslik">
+          <h2
+            id="markalarimiz-baslik"
+            className="pt-12 text-center text-3xl font-extrabold text-gray-900 md:text-4xl dark:text-white"
+          >
+            Markalarımız
+          </h2>
+          {/* The red rule under the heading, as "Premium Ürün Yelpazesi" has. */}
+          <span aria-hidden className="mx-auto mt-4 mb-8 block h-1.5 w-14 rounded-full bg-red-600" />
+          {BRAND_SHOWCASES.map(({ slug, brandName, logo, description }, i) => (
+            <BrandShowcase
+              key={slug}
+              categories={allCategories}
+              brandName={brandName}
+              logoSrc={logo.src}
+              logoWidth={logo.width}
+              logoHeight={logo.height}
+              logoDisplayWidth={"displayWidth" in logo ? logo.displayWidth : undefined}
+              logoFrameRatio={"frameRatio" in logo ? logo.frameRatio : undefined}
+              description={description}
+              brandLink={brandHref(slug)}
+              products={brandRows[i]}
+              reverseLayout={i % 2 === 1}
+            />
+          ))}
+        </section>,
+      ),
+    // "Premium Ürün Yelpazesi": the catalog as a gallery (the category bento).
+    showcase: () =>
+      phones("showcase", <CatalogShowcase title={home.showcase.title} subtitle={home.showcase.subtitle} tiles={showcase} />),
+    // The shop in a few plain paragraphs ("Alt SEO Metni").
+    about: () => <SeoIntro copy={home.seo_intro} />,
+  };
+
   return (
     <>
       {/* Follows the visitor's theme; the slider and advantage tiles are always dark,
@@ -295,119 +386,10 @@ export default async function HomePage() {
           </div>
         )}
 
-        {/* Module 6: the payment advantages as a quiet bar, no boxes, straight
-            under the hero row and over the picks. */}
-        {phones("perks", <StorePerks />)}
-
-        {/* Module 6½: the brand ticker again, on its own under the perks bar
-            (the statement keeps its own copy near the foot). Decorative: a
-            screen reader hears the list once, there. */}
-        {sections.brands &&
-          phones("brand_ticker", <BrandTicker brands={home.brands.items} decorative className="pb-2 pt-4 sm:pt-5" />)}
-
-        {/* Module 9b: "Sizin İçin Seçtiklerimiz", two tabbed product lists, on
-            the perks bar's white, then "Lüle Alırken Kararsız Kalacaksınız" on the
-            same white: each one row that slides sideways. */}
-        <FeaturedProductsShowcase lists={picks} categories={allCategories} />
-        {phones(
-          "lules",
-          <LuleShowcase
-            products={showable(lules, LULE_COUNT)}
-            categories={allCategories}
-            categoryHref={`/catalog/${LULE_CATEGORY_SLUG}`}
-          />,
-        )}
-
-        {/* Module 9b½: "%10 SultanPuan" — the loyalty card and the products
-            whose price alone earns it, on the same white, before the dark
-            deals band. Nothing while the programme is off or no product is
-            priced in its band. */}
-        {sultanPuan && phones("sultanpuan", <SultanPuanShowcase showcase={sultanPuan} categories={allCategories} />)}
-
-        {/* Module 9b¾: "Kumbara 20.000 TL" — the annual bonus as the SultanPuan
-            band's twin, over the Marpuçlar, between it and the deals. Nothing
-            while the bonus is off or the category is empty. */}
-        {phones("kumbara", <KumbaraShowcase products={showable(marpuclar, KUMBARA_COUNT)} categories={allCategories} />)}
-
-        {/* Module 9c: "Fırsatları Kaçırma" — the deals, and the page's only
-            deals section, its dark band straight after the white of the picks.
-            It renders nothing when none are running. */}
-        {sections.deals && (
-          <DealsFunnel
-            initialProducts={deals}
-            categories={allCategories}
-            title={home.deals.title}
-            subtitle={home.deals.subtitle}
-          />
-        )}
-
-        {/* Module 9c½: two campaign boxes under the deals (placeholder art
-            until the shop's photos). */}
-        {phones("campaigns", <CampaignBanners />)}
-
-        {/* Module 9c¾: "Sektörde Referans Noktası", under the campaign boxes,
-            with the brand ticker under it, over "Markalarımız". */}
-        {sections.promos &&
-          phones(
-            "brand_statement",
-            // On the campaign boxes' white, carried on: the band's own padding, not
-            // a margin on the grey; the boxes already end with room under them.
-            <div className="bg-white dark:bg-transparent">
-              <div className={`${PAGE_CONTAINER} pt-2 pb-6`}>
-                <BrandStatement />
-              </div>
-            </div>,
-          )}
-
-        {/* Module 9c⅞: the brand ticker under the statement. No heading — the
-            names are the content. */}
-        {sections.brands && phones("brand_ticker", <BrandTicker brands={home.brands.items} />)}
-
-        {/* Module 9d: "Markalarımız", one heading over a band per brand,
-            alternating sides, just above the gallery. */}
-        {brandRows.some((row) => row.length > 0) &&
-          phones(
-            "brand_showcase",
-            <section aria-labelledby="markalarimiz-baslik">
-              <h2
-                id="markalarimiz-baslik"
-                className="pt-12 text-center text-3xl font-extrabold text-gray-900 md:text-4xl dark:text-white"
-              >
-                Markalarımız
-              </h2>
-              {/* The red rule under the heading, as "Premium Ürün Yelpazesi" has. */}
-              <span aria-hidden className="mx-auto mt-4 mb-8 block h-1.5 w-14 rounded-full bg-red-600" />
-              {BRAND_SHOWCASES.map(({ slug, brandName, logo, description }, i) => (
-                <BrandShowcase
-                  key={slug}
-                  categories={allCategories}
-                  brandName={brandName}
-                  logoSrc={logo.src}
-                  logoWidth={logo.width}
-                  logoHeight={logo.height}
-                  logoDisplayWidth={"displayWidth" in logo ? logo.displayWidth : undefined}
-                  logoFrameRatio={"frameRatio" in logo ? logo.frameRatio : undefined}
-                  description={description}
-                  brandLink={brandHref(slug)}
-                  products={brandRows[i]}
-                  reverseLayout={i % 2 === 1}
-                />
-              ))}
-            </section>,
-          )}
-
-        {/* Module 10: the catalog as a gallery, in place of the old
-            "Öne çıkanlar" carousel. */}
-        {sections.showcase &&
-          phones(
-            "showcase",
-            <CatalogShowcase title={home.showcase.title} subtitle={home.showcase.subtitle} tiles={showcase} />,
-          )}
-
-
-        {/* Module 12: the close before the footer — the shop in a few plain
-            paragraphs (still switched by "Hakkımızda" in Ana Sayfa Düzenleme). */}
-        {sections.about && <SeoIntro copy={home.seo_intro} />}
+        {/* Everything between the hero and the footer, in the order set in
+            "Ana Sayfa Düzenleme › Bölümler" (lib/homeBlocks), each behind its
+            own switch there. */}
+        {home.order.map((id) => sections[id] && <Fragment key={id}>{blocks[id]()}</Fragment>)}
       </main>
     </>
   );

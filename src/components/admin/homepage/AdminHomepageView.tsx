@@ -24,9 +24,9 @@ import { adminGetHomepage, adminListBrands, adminSaveHomepage } from "@/lib/admi
 import { fetchCategories } from "@/lib/catalogApi";
 import { getApiErrorMessage } from "@/lib/errors";
 import { brokenCategoryLink } from "@/lib/catalogLinks";
-import { DEFAULT_HOMEPAGE, resolveHomepage } from "@/lib/homepage";
+import { DEFAULT_HOMEPAGE, SECTION_LABELS, resolveHomepage } from "@/lib/homepage";
 import { refreshStorefront } from "@/lib/revalidate";
-import type { Brand, Category, Homepage, HomeSections } from "@/types";
+import type { Brand, Category, HomeBlock, Homepage, HomeSections } from "@/types";
 
 type TabKey =
   | "sections"
@@ -140,7 +140,7 @@ export function AdminHomepageView() {
   const [tab, setTab] = useState<TabKey>(requested ?? "sections");
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [toggling, setToggling] = useState<keyof HomeSections | null>(null);
+  const [toggling, setToggling] = useState<keyof HomeSections | "order" | null>(null);
   const [result, setResult] = useState<{ kind: "success" | "error"; text: string } | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -199,9 +199,27 @@ export function AdminHomepageView() {
     try {
       const stored = await persist({ ...saved, sections: { ...saved.sections, [key]: on } });
       setDoc((d) => (d ? { ...d, sections: stored.sections } : d));
-      setResult({ kind: "success", text: `“${TABS.find((t) => t.section === key)?.label ?? key}” ${on ? "gösteriliyor" : "gizlendi"}.` });
+      setResult({ kind: "success", text: `“${SECTION_LABELS[key].title}” ${on ? "gösteriliyor" : "gizlendi"}.` });
     } catch (err) {
       setResult({ kind: "error", text: saveError(err) });
+    } finally {
+      setToggling(null);
+    }
+  }
+
+  /** A new order saves on its own too, on top of what is saved; false when it could not. */
+  async function reorder(order: HomeBlock[]): Promise<boolean> {
+    if (!saved) return false;
+    setToggling("order");
+    setResult(null);
+    try {
+      const stored = await persist({ ...saved, order });
+      setDoc((d) => (d ? { ...d, order: stored.order } : d));
+      setResult({ kind: "success", text: "Bölüm sırası kaydedildi; ana sayfa bu sırayla gösteriliyor." });
+      return true;
+    } catch (err) {
+      setResult({ kind: "error", text: saveError(err) });
+      return false;
     } finally {
       setToggling(null);
     }
@@ -288,7 +306,15 @@ export function AdminHomepageView() {
           )}
 
           <div role="tabpanel" aria-label={current.label}>
-            {tab === "sections" && <SectionsTab sections={saved.sections} busy={toggling} onToggle={(k, on) => void toggle(k, on)} />}
+            {tab === "sections" && (
+              <SectionsTab
+                sections={saved.sections}
+                order={saved.order}
+                busy={toggling}
+                onToggle={(k, on) => void toggle(k, on)}
+                onReorder={reorder}
+              />
+            )}
             {tab === "catalog" && <AdminCategoriesView onChange={reloadCategories} />}
             {tab === "navigation" && (
               <NavigationTab

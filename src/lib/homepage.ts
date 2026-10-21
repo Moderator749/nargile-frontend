@@ -11,6 +11,7 @@
  */
 
 import { ADVANTAGES } from "@/lib/advantages";
+import { HOME_BLOCKS, resolveBlockOrder } from "@/lib/homeBlocks";
 import { BILGI_DOCUMENTS, PERKS_PAGE, bilgiHref } from "@/lib/bilgi";
 import { BLOG_HREF } from "@/lib/blog";
 import { EMAIL, PHONE, WHATSAPP_HREF } from "@/lib/contact";
@@ -21,11 +22,19 @@ import { SIDEBAR_NAV, TOP_NAV } from "@/lib/storefrontNav";
 import type { Homepage, HomeMobileSection, HomeSections, HomeSeoIntro } from "@/types";
 
 export const SECTION_LABELS: Record<keyof HomeSections, { title: string; hint: string }> = {
-  hero: { title: "Hero Slider & Sol Kategori Menüsü", hint: "Sayfanın üstündeki kayan bant ve yanındaki kategori sütunu." },
-  promos: { title: "Sektörde Referans Noktası (slider altı)", hint: "Slider'ın altındaki kısa marka tanıtımı ve kataloğa bağlantı." },
+  hero: { title: "Hero Slider & Sol Kategori Menüsü", hint: "Sayfanın üstündeki kayan bant ve yanındaki kategori sütunu. Hep en üstte." },
+  perks: { title: "Avantaj Çubuğu", hint: "Taksit, sepette indirim ve havale indirimi satırı." },
+  brands_top: { title: "Markalar Şeridi (üst)", hint: "Avantaj çubuğunun altındaki kayan marka adları." },
+  picks: { title: "Sizin İçin Seçtiklerimiz", hint: "Çok satanlar ve yeni gelenler sekmeli ürün satırı." },
+  lules: { title: "Lüle Alırken Kararsız Kalacaksınız", hint: "Lüle ürün satırı ve kurye ayrıcalığı." },
+  sultanpuan: { title: "SultanPuan Bandı", hint: "%10 SultanPuan kartı ve ürünleri; program kapalıyken görünmez." },
+  kumbara: { title: "Kumbara 20.000 TL", hint: "Yıllık bonus kartı ve marpuçlar; bonus kapalıyken görünmez." },
   deals: { title: "Fırsatları Kaçırma", hint: "Kırmızı fırsat vitrini; aktif fırsat olsa bile gizlenir." },
-  brands: { title: "Markalar Şeridi", hint: "Kayan marka adlarının olduğu kapsül." },
-  showcase: { title: "Premium Ürün Yelpazesi", hint: "Başlık ve altındaki büyük kategori kutuları." },
+  campaigns: { title: "Kampanya Kutuları", hint: "Büyük fırsat kutusu ve yanındaki üç küçük kutu (mini bento)." },
+  promos: { title: "Sektörde Referans Noktası", hint: "Kısa marka tanıtımı ve kataloğa bağlantı." },
+  brands: { title: "Markalar Şeridi (alt)", hint: "Tanıtımın altındaki kayan marka adları; adlar “Markalar Şeridi” sekmesinde." },
+  brand_showcase: { title: "Markalarımız", hint: "Marka başına bir ürün bandı." },
+  showcase: { title: "Premium Ürün Yelpazesi", hint: "Başlık ve altındaki kategori kutuları (bento)." },
   advantages: { title: "Ayrıcalıklar & Avantajlar", hint: "“Hacim büyür. Maliyet küçülür.” kartları." },
   about: { title: "Alt SEO Tanıtım Metni", hint: "Ana sayfanın sonundaki tanıtım metni; içeriği “Alt SEO Metni” sekmesinde." },
   footer: { title: "Footer (Alt Bilgi)", hint: "İletişim kartları, dört kolon ve yasal uyarı. Tüm sayfalarda." },
@@ -43,14 +52,23 @@ export const DEFAULT_SEO_INTRO: HomeSeoIntro = {
 export const DEFAULT_HOMEPAGE: Homepage = {
   sections: {
     hero: true,
-    promos: true,
+    perks: true,
+    brands_top: true,
+    picks: true,
+    lules: true,
+    sultanpuan: true,
+    kumbara: true,
     deals: true,
+    campaigns: true,
+    promos: true,
     brands: true,
+    brand_showcase: true,
     showcase: true,
     advantages: true,
     about: true,
     footer: true,
   },
+  order: [...HOME_BLOCKS],
   navigation: { top: TOP_NAV, sidebar: SIDEBAR_NAV },
   deals: {
     title: "FIRSATLARI KAÇIRMA",
@@ -125,7 +143,14 @@ export const MOBILE_SECTION_LABELS: { key: HomeMobileSection; title: string; hin
 /** The saved sections over the defaults: a saved section wins whole. */
 export function resolveHomepage(saved: Partial<Homepage> | null | undefined): Homepage {
   const merged: Homepage = { ...DEFAULT_HOMEPAGE, ...(saved ?? {}) };
-  // Switches are merged one by one, so a switch added later defaults to on.
-  merged.sections = { ...DEFAULT_HOMEPAGE.sections, ...(saved?.sections ?? {}) };
+  // Switches are merged one by one, so a switch added later defaults to on —
+  // but for the top brand ticker, which "brands" switched before it had its own.
+  merged.sections = {
+    ...DEFAULT_HOMEPAGE.sections,
+    brands_top: saved?.sections?.brands ?? true,
+    ...(saved?.sections ?? {}),
+  };
+  // A section the saved order does not name takes its default place.
+  merged.order = resolveBlockOrder(saved?.order);
   return merged;
 }

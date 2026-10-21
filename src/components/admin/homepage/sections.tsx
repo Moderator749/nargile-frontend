@@ -1,10 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import {
+  closestCenter,
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type Announcements,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import axios from "axios";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRight, GalleryHorizontal, LayoutGrid, Loader2, Smartphone, Tags, Timer } from "lucide-react";
+import { ArrowUpRight, GalleryHorizontal, GripVertical, LayoutGrid, Loader2, Lock, RotateCcw, Smartphone, Tags, Timer } from "lucide-react";
 
 import { adminSelectClass } from "@/components/admin/ContentEditor";
 import { CategoryMenuEditor } from "@/components/admin/homepage/CategoryMenuEditor";
@@ -22,12 +34,14 @@ import { Switch } from "@/components/ui/Switch";
 import { adminHeroSlides } from "@/lib/adminApi";
 import { getApiErrorMessage } from "@/lib/errors";
 import { canOptimiseImage } from "@/lib/home";
+import { HOME_BLOCKS } from "@/lib/homeBlocks";
 import { DEFAULT_SEO_INTRO, MOBILE_SECTION_LABELS, SECTION_LABELS } from "@/lib/homepage";
 import { navHref } from "@/lib/storefrontNav";
 import type {
   Brand,
   Category,
   HeroSlideContent,
+  HomeBlock,
   Homepage,
   HomeFooterColumn,
   HomeSections,
@@ -37,47 +51,198 @@ import type {
 
 type Set<K extends keyof Homepage> = (value: Homepage[K]) => void;
 
-// ── Bölümler: the master switches ────────────────────────────────────────────
+// ── Bölümler: the master switches, and the order ─────────────────────────────
 
-export function SectionsTab({
-  sections,
+type SectionsBusy = keyof HomeSections | "order" | null;
+
+/** One section's row: its handle (or lock), its place, its name, its switch. */
+function SectionRow({
+  id,
+  place,
+  on,
   busy,
   onToggle,
+  handle,
 }: {
-  sections: HomeSections;
-  busy: keyof HomeSections | null;
+  id: keyof HomeSections;
+  place: number | null;
+  on: boolean;
+  busy: boolean;
   onToggle: (key: keyof HomeSections, on: boolean) => void;
+  /** The drag handle; a pinned section shows a lock instead. */
+  handle: ReactNode;
 }) {
   return (
-    <Panel title="Bölümler" hint="Her anahtar anında kaydedilir ve mağazada hemen uygulanır.">
-      <ul className="divide-y divide-slate-200 dark:divide-white/10">
-        {/* "advantages" is left out: its grid ("Hacim büyür. Maliyet küçülür.")
-            is no longer on any page, so its switch would change nothing. */}
-        {(Object.keys(SECTION_LABELS) as (keyof HomeSections)[]).filter((key) => key !== "advantages").map((key) => (
-          <li key={key} className="flex items-center justify-between gap-4 py-3.5 first:pt-0 last:pb-0">
-            <div>
-              <p id={`section-${key}`} className="text-sm font-semibold">
-                {SECTION_LABELS[key].title}
-                {!sections[key] && (
-                  <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:bg-white/10 dark:text-zinc-400">
-                    Gizli
-                  </span>
-                )}
-              </p>
-              <p id={`section-${key}-hint`} className="text-xs text-slate-500 dark:text-zinc-400">
-                {SECTION_LABELS[key].hint}
-              </p>
-            </div>
-            <Switch
-              checked={sections[key]}
-              onChange={(on) => onToggle(key, on)}
-              labelledBy={`section-${key}`}
-              describedBy={`section-${key}-hint`}
-              disabled={busy !== null}
-            />
-          </li>
-        ))}
-      </ul>
+    <div className="flex items-center gap-3 py-3">
+      {handle}
+      <span className="w-5 shrink-0 text-right font-mono text-xs text-slate-400 tabular-nums dark:text-zinc-500">
+        {place ?? ""}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p id={`section-${id}`} className="text-sm font-semibold">
+          {SECTION_LABELS[id].title}
+          {!on && (
+            <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:bg-white/10 dark:text-zinc-400">
+              Gizli
+            </span>
+          )}
+        </p>
+        <p id={`section-${id}-hint`} className="text-xs text-slate-500 dark:text-zinc-400">
+          {SECTION_LABELS[id].hint}
+        </p>
+      </div>
+      <Switch
+        checked={on}
+        onChange={(next) => onToggle(id, next)}
+        labelledBy={`section-${id}`}
+        describedBy={`section-${id}-hint`}
+        disabled={busy}
+      />
+    </div>
+  );
+}
+
+function Pinned({ title }: { title: string }) {
+  return (
+    <span title={title} className="flex h-9 w-9 shrink-0 items-center justify-center text-slate-300 dark:text-zinc-600">
+      <Lock className="h-4 w-4" aria-hidden />
+      <span className="sr-only">{title}</span>
+    </span>
+  );
+}
+
+function SortableSection(props: Omit<Parameters<typeof SectionRow>[0], "handle"> & { id: HomeBlock; disabled: boolean }) {
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({
+    id: props.id,
+    disabled: props.disabled,
+  });
+  return (
+    <li
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      className={`relative bg-white dark:bg-zinc-900 ${isDragging ? "z-10 rounded-xl shadow-lg ring-1 ring-slate-200 dark:ring-white/10" : ""}`}
+    >
+      <SectionRow
+        {...props}
+        handle={
+          <button
+            ref={setActivatorNodeRef}
+            type="button"
+            {...attributes}
+            {...listeners}
+            aria-label={`Taşı: ${SECTION_LABELS[props.id].title}`}
+            className="flex h-9 w-9 shrink-0 cursor-grab touch-none items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-2 focus-visible:outline-red-500 active:cursor-grabbing disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-white/10 dark:hover:text-zinc-200"
+          >
+            <GripVertical className="h-4 w-4" aria-hidden />
+          </button>
+        }
+      />
+    </li>
+  );
+}
+
+/**
+ * "Bölümler": every section of the homepage, in the order the storefront
+ * shows it, each with its switch. The hero stays first and the footer last
+ * (the hero holds the page's heading and the category column; the footer is
+ * every page's); everything between them moves by its handle — with the
+ * mouse, a finger, or the keyboard (space, the arrows, space). A switch or a
+ * move saves at once, as the switches always have.
+ */
+export function SectionsTab({
+  sections,
+  order,
+  busy,
+  onToggle,
+  onReorder,
+}: {
+  sections: HomeSections;
+  order: HomeBlock[];
+  busy: SectionsBusy;
+  onToggle: (key: keyof HomeSections, on: boolean) => void;
+  /** Saves an order; false when it could not, and the list goes back. */
+  onReorder: (order: HomeBlock[]) => Promise<boolean>;
+}) {
+  // Moved on screen at once, saved behind it; a newly saved order replaces it.
+  const [items, setItems] = useState(order);
+  const [shown, setShown] = useState(order);
+  if (order !== shown) {
+    setShown(order);
+    setItems(order);
+  }
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+  const isDefault = items.every((id, i) => id === HOME_BLOCKS[i]);
+
+  async function move(next: HomeBlock[]) {
+    setItems(next);
+    if (!(await onReorder(next))) setItems(order);
+  }
+
+  function onDragEnd({ active, over }: DragEndEvent) {
+    if (!over || active.id === over.id) return;
+    const from = items.indexOf(active.id as HomeBlock);
+    const to = items.indexOf(over.id as HomeBlock);
+    void move(arrayMove(items, from, to));
+  }
+
+  const announcements: Announcements = {
+    onDragStart: ({ active }) => `${SECTION_LABELS[active.id as HomeBlock].title} tutuldu.`,
+    onDragOver: ({ active, over }) =>
+      over ? `${SECTION_LABELS[active.id as HomeBlock].title}, ${items.indexOf(over.id as HomeBlock) + 2}. sırada.` : "",
+    onDragEnd: ({ active, over }) =>
+      over ? `${SECTION_LABELS[active.id as HomeBlock].title} ${items.indexOf(over.id as HomeBlock) + 2}. sıraya bırakıldı.` : "",
+    onDragCancel: ({ active }) => `${SECTION_LABELS[active.id as HomeBlock].title} yerinde kaldı.`,
+  };
+
+  return (
+    <Panel
+      title="Bölümler"
+      hint="Tutamaçtan sürükleyerek sıralayın (klavyeyle: boşluk, oklar, boşluk). Her anahtar ve her taşıma anında kaydedilir ve mağazada hemen uygulanır."
+      action={
+        <button
+          type="button"
+          disabled={isDefault || busy !== null}
+          onClick={() => void move([...HOME_BLOCKS])}
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-900 disabled:pointer-events-none disabled:opacity-40 dark:text-zinc-400 dark:hover:text-white"
+        >
+          <RotateCcw className="h-3.5 w-3.5" aria-hidden /> Varsayılan sıraya döndür
+        </button>
+      }
+    >
+      <div className="divide-y divide-slate-200 dark:divide-white/10">
+        <SectionRow id="hero" place={1} on={sections.hero} busy={busy !== null} onToggle={onToggle} handle={<Pinned title="Hep en üstte" />} />
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={onDragEnd}
+          accessibility={{
+            announcements,
+            screenReaderInstructions: {
+              draggable: "Taşımak için boşluk tuşuna basın, okla yer değiştirin, bırakmak için yeniden boşluğa basın; vazgeçmek için Escape.",
+            },
+          }}
+        >
+          <SortableContext items={items} strategy={verticalListSortingStrategy}>
+            <ul className="divide-y divide-slate-200 dark:divide-white/10">
+              {items.map((id, i) => (
+                <SortableSection
+                  key={id}
+                  id={id}
+                  place={i + 2}
+                  on={sections[id]}
+                  busy={busy !== null}
+                  disabled={busy !== null}
+                  onToggle={onToggle}
+                />
+              ))}
+            </ul>
+          </SortableContext>
+        </DndContext>
+        <SectionRow id="footer" place={null} on={sections.footer} busy={busy !== null} onToggle={onToggle} handle={<Pinned title="Hep en altta (tüm sayfalarda)" />} />
+      </div>
     </Panel>
   );
 }

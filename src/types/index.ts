@@ -709,7 +709,7 @@ export type MessageChannel = "email" | "sms";
 /** "all", a segment code, or "manual" (addresses typed in). */
 export type CampaignAudience = "all" | "RETAIL" | "CAFE" | "WHOLESALE" | "DEALER" | "manual";
 
-/** A bulk e-mail / SMS from "İletişim & Bildirimler". */
+/** A bulk e-mail / SMS from "SMS & Mail". */
 export interface Campaign {
   id: number;
   channel: MessageChannel;
@@ -1437,14 +1437,40 @@ export type HomeIconKey =
 
 export interface HomeSections {
   hero: boolean;
-  promos: boolean;
+  perks: boolean;
+  brands_top: boolean;
+  picks: boolean;
+  lules: boolean;
+  sultanpuan: boolean;
+  kumbara: boolean;
   deals: boolean;
+  campaigns: boolean;
+  /** "Sektörde Referans Noktası" (the key is older than the section). */
+  promos: boolean;
   brands: boolean;
+  brand_showcase: boolean;
   showcase: boolean;
+  /** Retired: the "Hacim büyür" grid is on no page now. */
   advantages: boolean;
   about: boolean;
   footer: boolean;
 }
+
+/** A homepage section the admin can move ("Bölümler"); see lib/homeBlocks. */
+export type HomeBlock =
+  | "perks"
+  | "brands_top"
+  | "picks"
+  | "lules"
+  | "sultanpuan"
+  | "kumbara"
+  | "deals"
+  | "campaigns"
+  | "promos"
+  | "brands"
+  | "brand_showcase"
+  | "showcase"
+  | "about";
 
 /** A menu entry: a category (`slug`), a brand, or a link of its own; else a search for its label. */
 export interface HomeNavItem {
@@ -1508,6 +1534,8 @@ export interface HomeFooter {
 
 export interface Homepage {
   sections: HomeSections;
+  /** The sections' order between the hero and the footer. */
+  order: HomeBlock[];
   navigation: { top: HomeNavItem[]; sidebar: HomeNavItem[] };
   deals: { title: string; subtitle: string };
   brands: { items: string[] };

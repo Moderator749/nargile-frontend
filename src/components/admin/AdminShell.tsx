@@ -40,7 +40,7 @@ const NAV = [
   // The special-day strip and the landing popup.
   { href: "/admin/banner", label: "Duyurular", icon: Megaphone },
   // Bulk SMS / e-mail and the log of everything sent.
-  { href: "/admin/communications", label: "İletişim & Bildirimler", icon: MessagesSquare },
+  { href: "/admin/communications", label: "SMS & Mail", icon: MessagesSquare },
   // Every threshold the checkout applies, the İstanbul delivery limit included
   // (the old "Teslimat Ayarları" page, /admin/settings, redirects here).
   { href: "/admin/parameters", label: "Parametreler", icon: SlidersHorizontal },
