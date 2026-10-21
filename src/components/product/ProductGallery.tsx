@@ -2,9 +2,10 @@
 
 import { useState, type ReactNode } from "react";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight, Play } from "lucide-react";
+import { ChevronLeft, ChevronRight, Expand, Play } from "lucide-react";
 
 import { ProductImage } from "@/components/catalog/ProductImage";
+import { ProductLightbox } from "@/components/product/ProductLightbox";
 import { youtubeEmbed, youtubeId, youtubeThumbnail } from "@/lib/youtube";
 
 type Slide = { kind: "image"; src: string } | { kind: "video"; id: string };
@@ -21,6 +22,10 @@ const arrowClass =
  *
  * Every slide sits in the same fixed-aspect frame, so moving between them (or
  * swapping the poster for the player) shifts nothing.
+ *
+ * A photo opens full screen, zoomable (ProductLightbox), from a click
+ * anywhere on it or the expand button in its corner; the lightbox has every
+ * photo, and the gallery follows to the one it was closed on.
  */
 export function ProductGallery({
   images,
@@ -47,6 +52,9 @@ export function ProductGallery({
   ];
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
+  // The photo the lightbox is open on; null while it is closed.
+  const [lightbox, setLightbox] = useState<number | null>(null);
+  const photos = images ?? [];
 
   if (slides.length === 0) return <div className={frameClass}>{fallback}</div>;
 
@@ -102,6 +110,26 @@ export function ProductGallery({
           )}
         </div>
 
+        {/* A photo opens full screen from anywhere on it (photos come first
+            among the slides, so the slide's index is the photo's); the expand
+            button in the corner says so. Outside the dimmed media, under the
+            arrows. */}
+        {current.kind === "image" && (
+          <button
+            type="button"
+            onClick={() => setLightbox(index)}
+            aria-label="Görseli büyüt"
+            className="group/zoom absolute inset-0 cursor-zoom-in rounded-3xl focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-accent"
+          >
+            <span
+              aria-hidden
+              className="absolute bottom-3 right-3 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-zinc-900 shadow-md ring-1 ring-inset ring-black/[0.06] backdrop-blur transition-transform duration-200 motion-safe:group-hover/zoom:scale-110"
+            >
+              <Expand className="h-4 w-4" />
+            </span>
+          </button>
+        )}
+
         {slides.length > 1 && (
           <>
             <button type="button" onClick={() => go(index - 1)} aria-label="Önceki görsel" className={`${arrowClass} left-3`}>
@@ -113,6 +141,18 @@ export function ProductGallery({
           </>
         )}
       </div>
+
+      {lightbox !== null && photos.length > 0 && (
+        <ProductLightbox
+          images={photos}
+          alt={alt}
+          start={lightbox}
+          onClose={(last) => {
+            setLightbox(null);
+            setIndex(last);
+          }}
+        />
+      )}
 
       {slides.length > 1 && (
         <ul className="mt-3 flex flex-wrap gap-2" aria-label="Ürün görselleri">
