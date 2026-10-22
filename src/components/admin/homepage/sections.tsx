@@ -16,7 +16,7 @@ import { CSS } from "@dnd-kit/utilities";
 import axios from "axios";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRight, GalleryHorizontal, GripVertical, LayoutGrid, Loader2, Lock, RotateCcw, Smartphone, Tags, Timer } from "lucide-react";
+import { ArrowUpRight, GalleryHorizontal, GripVertical, LayoutGrid, Loader2, Lock, Pencil, RotateCcw, Smartphone, Tags, Timer } from "lucide-react";
 
 import { adminSelectClass } from "@/components/admin/ContentEditor";
 import { CategoryMenuEditor } from "@/components/admin/homepage/CategoryMenuEditor";
@@ -55,13 +55,15 @@ type Set<K extends keyof Homepage> = (value: Homepage[K]) => void;
 
 type SectionsBusy = keyof HomeSections | "order" | null;
 
-/** One section's row: its handle (or lock), its place, its name, its switch. */
+/** One section's row: its handle (or lock), its place, its name, its settings, its switch. */
 function SectionRow({
   id,
   place,
   on,
   busy,
   onToggle,
+  onEdit,
+  changed,
   handle,
 }: {
   id: keyof HomeSections;
@@ -69,6 +71,10 @@ function SectionRow({
   on: boolean;
   busy: boolean;
   onToggle: (key: keyof HomeSections, on: boolean) => void;
+  /** Opens the section's settings; absent for a section with nothing to set. */
+  onEdit?: () => void;
+  /** Its settings have edits not saved yet. */
+  changed?: boolean;
   /** The drag handle; a pinned section shows a lock instead. */
   handle: ReactNode;
 }) {
@@ -86,11 +92,30 @@ function SectionRow({
               Gizli
             </span>
           )}
+          {changed && (
+            <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">
+              Kaydedilmedi
+            </span>
+          )}
         </p>
         <p id={`section-${id}-hint`} className="text-xs text-slate-500 dark:text-zinc-400">
           {SECTION_LABELS[id].hint}
         </p>
       </div>
+      {onEdit ? (
+        <button
+          type="button"
+          onClick={onEdit}
+          aria-label={`Düzenle: ${SECTION_LABELS[id].title}`}
+          title="Bölümün ayarları"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-red-500 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-white"
+        >
+          <Pencil className="h-4 w-4" aria-hidden />
+        </button>
+      ) : (
+        // Keeps the switches in one column.
+        <span className="w-9 shrink-0" aria-hidden />
+      )}
       <Switch
         checked={on}
         onChange={(next) => onToggle(id, next)}
@@ -111,10 +136,10 @@ function Pinned({ title }: { title: string }) {
   );
 }
 
-function SortableSection(props: Omit<Parameters<typeof SectionRow>[0], "handle"> & { id: HomeBlock; disabled: boolean }) {
+function SortableSection({ disabled, ...props }: Omit<Parameters<typeof SectionRow>[0], "handle"> & { id: HomeBlock; disabled: boolean }) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({
     id: props.id,
-    disabled: props.disabled,
+    disabled,
   });
   return (
     <li
@@ -147,7 +172,8 @@ function SortableSection(props: Omit<Parameters<typeof SectionRow>[0], "handle">
  * (the hero holds the page's heading and the category column; the footer is
  * every page's); everything between them moves by its handle — with the
  * mouse, a finger, or the keyboard (space, the arrows, space). A switch or a
- * move saves at once, as the switches always have.
+ * move saves at once, as the switches always have. A section with settings
+ * of its own has a pencil beside its switch, which opens them (`onEdit`).
  */
 export function SectionsTab({
   sections,
@@ -155,6 +181,8 @@ export function SectionsTab({
   busy,
   onToggle,
   onReorder,
+  onEdit,
+  changed,
 }: {
   sections: HomeSections;
   order: HomeBlock[];
@@ -162,6 +190,10 @@ export function SectionsTab({
   onToggle: (key: keyof HomeSections, on: boolean) => void;
   /** Saves an order; false when it could not, and the list goes back. */
   onReorder: (order: HomeBlock[]) => Promise<boolean>;
+  /** The settings opener of each section that has some. */
+  onEdit: (key: keyof HomeSections) => (() => void) | undefined;
+  /** Whether a section's settings have unsaved edits. */
+  changed: (key: keyof HomeSections) => boolean;
 }) {
   // Moved on screen at once, saved behind it; a newly saved order replaces it.
   const [items, setItems] = useState(order);
@@ -200,7 +232,7 @@ export function SectionsTab({
   return (
     <Panel
       title="Bölümler"
-      hint="Tutamaçtan sürükleyerek sıralayın (klavyeyle: boşluk, oklar, boşluk). Her anahtar ve her taşıma anında kaydedilir ve mağazada hemen uygulanır."
+      hint="Tutamaçtan sürükleyerek sıralayın (klavyeyle: boşluk, oklar, boşluk); kalemle bölümün ayarlarını açın. Her anahtar ve her taşıma anında kaydedilir ve mağazada hemen uygulanır."
       action={
         <button
           type="button"
@@ -213,7 +245,16 @@ export function SectionsTab({
       }
     >
       <div className="divide-y divide-slate-200 dark:divide-white/10">
-        <SectionRow id="hero" place={1} on={sections.hero} busy={busy !== null} onToggle={onToggle} handle={<Pinned title="Hep en üstte" />} />
+        <SectionRow
+          id="hero"
+          place={1}
+          on={sections.hero}
+          busy={busy !== null}
+          onToggle={onToggle}
+          onEdit={onEdit("hero")}
+          changed={changed("hero")}
+          handle={<Pinned title="Hep en üstte" />}
+        />
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -236,12 +277,23 @@ export function SectionsTab({
                   busy={busy !== null}
                   disabled={busy !== null}
                   onToggle={onToggle}
+                  onEdit={onEdit(id)}
+                  changed={changed(id)}
                 />
               ))}
             </ul>
           </SortableContext>
         </DndContext>
-        <SectionRow id="footer" place={null} on={sections.footer} busy={busy !== null} onToggle={onToggle} handle={<Pinned title="Hep en altta (tüm sayfalarda)" />} />
+        <SectionRow
+          id="footer"
+          place={null}
+          on={sections.footer}
+          busy={busy !== null}
+          onToggle={onToggle}
+          onEdit={onEdit("footer")}
+          changed={changed("footer")}
+          handle={<Pinned title="Hep en altta (tüm sayfalarda)" />}
+        />
       </div>
     </Panel>
   );
@@ -261,7 +313,7 @@ export function NavigationTab({
   brands: Brand[];
 }) {
   return (
-    <div className="grid items-start gap-6 xl:grid-cols-2">
+    <div className="grid items-start gap-6 @4xl:grid-cols-2">
       <Panel
         title="Sol Kategori"
         hint="Slider’ın yanındaki dikey kategori sütunu (kategori sayfalarında da). En fazla 30."
@@ -296,7 +348,7 @@ const editorLink =
 
 export function HeroTab() {
   return (
-    <div className="grid gap-4 md:grid-cols-2">
+    <div className="grid gap-4 @2xl:grid-cols-2">
       <Link href="/admin/hero" className={editorLink}>
         <GalleryHorizontal className="mt-0.5 h-6 w-6 shrink-0 text-red-600" aria-hidden />
         <span>
@@ -434,7 +486,7 @@ export function ShowcaseTab({
           addLabel="Kutu ekle"
           itemLabel={(t) => `${t.label}${t.wide ? " · geniş" : ""}`}
           render={(tile, update) => (
-            <div className="grid gap-3 lg:grid-cols-[1fr_16rem]">
+            <div className="grid gap-3 @2xl:grid-cols-[1fr_16rem]">
               <div className="space-y-3">
                 <div className="grid gap-3 sm:grid-cols-2">
                   <TextField label="Başlık" value={tile.label} max={80} onChange={(label) => update({ label })} />
@@ -595,7 +647,7 @@ export function FooterTab({ value, set }: { value: Homepage["footer"]; set: Set<
   const patch = (p: Partial<Homepage["footer"]>) => set({ ...value, ...p });
   return (
     <div className="space-y-6">
-      <div className="grid gap-6 xl:grid-cols-2">
+      <div className="grid gap-6 @4xl:grid-cols-2">
         <Panel title="Marka & iletişim" hint="Telefon, e-posta ve WhatsApp üstteki üç iletişim kartında da kullanılır.">
           <div className="grid gap-3 sm:grid-cols-2">
             <TextField
@@ -674,7 +726,7 @@ export function FooterTab({ value, set }: { value: Homepage["footer"]; set: Set<
         />
       </Panel>
 
-      <div className="grid gap-6 xl:grid-cols-3">
+      <div className="grid gap-6 @5xl:grid-cols-3">
         <FooterColumnEditor title="Blog kolonu" column={value.blog} onChange={(blog) => patch({ blog })} withCta />
         <FooterColumnEditor
           title="Bilgi Sayfaları kolonu"
@@ -753,7 +805,7 @@ export function MobileTab({ value, set }: { value: Homepage["mobile"]; set: Set<
     });
 
   return (
-    <div className="grid items-start gap-6 xl:grid-cols-2">
+    <div className="grid items-start gap-6 @4xl:grid-cols-2">
       <Panel
         title="Mobil Hero Görselleri"
         hint="Telefonda (768px altı) slaytın geniş fotoğrafı yerine gösterilir. Telefonda slayt yaklaşık 2:3 oranındadır: 2:3 (ör. 1080×1620 px) ya da 4:5 dikey fotoğraf yükleyin, kenarlardan kırpılarak doldurur. Boş bırakılan slayt, geniş fotoğrafını kırparak kullanır."

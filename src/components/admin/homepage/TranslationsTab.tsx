@@ -126,7 +126,7 @@ export function TranslationsTab({ doc }: { doc: Homepage }) {
         {shown.map((text) => {
           const rows = Math.min(8, Math.max(1, Math.ceil(text.length / 70)));
           return (
-            <li key={text} className="grid gap-3 p-4 lg:grid-cols-3">
+            <li key={text} className="grid gap-3 p-4 @3xl:grid-cols-3">
               <p className="whitespace-pre-line text-sm text-slate-800 dark:text-zinc-200">{text}</p>
               {LANGS.map(({ key, label }) => (
                 <label key={key} className="block">

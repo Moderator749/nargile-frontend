@@ -32,13 +32,13 @@ export const SECTION_LABELS: Record<keyof HomeSections, { title: string; hint: s
   deals: { title: "Fırsatları Kaçırma", hint: "Kırmızı fırsat vitrini; aktif fırsat olsa bile gizlenir." },
   campaigns: { title: "Kampanya Kutuları", hint: "Büyük fırsat kutusu ve yanındaki üç küçük kutu (mini bento)." },
   promos: { title: "Sektörde Referans Noktası", hint: "Kısa marka tanıtımı ve kataloğa bağlantı." },
-  brands: { title: "Markalar Şeridi (alt)", hint: "Tanıtımın altındaki kayan marka adları; adlar “Markalar Şeridi” sekmesinde." },
+  brands: { title: "Markalar Şeridi (alt)", hint: "Tanıtımın altındaki kayan marka adları; üst şeritle aynı adlar." },
   brand_showcase: { title: "Markalarımız", hint: "Marka başına bir ürün bandı." },
   kozlukler: { title: "Közlükler", hint: "Közlükler kategorisi ürün satırı (kaydırmalı)." },
   games: { title: "Oyun & Eğlence", hint: "Tavla, okey ve iskambil ürün satırı (kaydırmalı)." },
   showcase: { title: "Premium Ürün Yelpazesi", hint: "Başlık ve altındaki kategori kutuları (bento)." },
   advantages: { title: "Ayrıcalıklar & Avantajlar", hint: "“Hacim büyür. Maliyet küçülür.” kartları." },
-  about: { title: "Alt SEO Tanıtım Metni", hint: "Ana sayfanın sonundaki tanıtım metni; içeriği “Alt SEO Metni” sekmesinde." },
+  about: { title: "Alt SEO Tanıtım Metni", hint: "Ana sayfanın ve kategori sayfalarının sonundaki tanıtım metni." },
   footer: { title: "Footer (Alt Bilgi)", hint: "İletişim kartları, dört kolon ve yasal uyarı. Tüm sayfalarda." },
 };
 

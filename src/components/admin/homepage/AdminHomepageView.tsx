@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
-import { useSearchParams } from "next/navigation";
-import { ExternalLink, Loader2, RotateCcw, Save } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { ExternalLink, FolderTree, Languages, Loader2, RotateCcw, Save, Smartphone } from "lucide-react";
 
 import { AdminCategoriesView } from "@/components/admin/AdminCategoriesView";
 import { AdminPageHeader } from "@/components/admin/AdminShell";
@@ -21,6 +21,7 @@ import {
   ShowcaseTab,
 } from "@/components/admin/homepage/sections";
 import { Alert } from "@/components/ui/Alert";
+import { Drawer } from "@/components/ui/Drawer";
 import { adminGetHomepage, adminListBrands, adminSaveHomepage } from "@/lib/adminApi";
 import { fetchCategories } from "@/lib/catalogApi";
 import { getApiErrorMessage } from "@/lib/errors";
@@ -29,43 +30,67 @@ import { DEFAULT_HOMEPAGE, SECTION_LABELS, resolveHomepage } from "@/lib/homepag
 import { refreshStorefront } from "@/lib/revalidate";
 import type { Brand, Category, HomeBlock, Homepage, HomeSections } from "@/types";
 
-type TabKey =
-  | "sections"
-  | "catalog"
-  | "navigation"
-  | "hero"
-  | "deals"
-  | "brands"
-  | "showcase"
-  | "seo"
-  | "footer"
-  | "mobile"
-  | "translations";
+type EditorKey = "hero" | "deals" | "brands" | "showcase" | "seo" | "footer" | "mobile" | "catalog" | "translations";
+
+/**
+ * Each editor the drawer opens: what it is called, the part of the document
+ * it edits (none for those that save on their own), and the switches of the
+ * sections it feeds, for the "hidden" note.
+ */
+const EDITORS: Record<
+  EditorKey,
+  { title: string; hint: string; doc?: keyof Homepage; sections?: (keyof HomeSections)[]; size: "md" | "lg" }
+> = {
+  hero: {
+    title: "Hero Slider & Kategori Menüleri",
+    hint: "Slaytlar ve kutular kendi sayfalarında; slider’ın yanındaki ve üstündeki menüler burada.",
+    doc: "navigation",
+    sections: ["hero"],
+    size: "lg",
+  },
+  deals: { title: "Fırsatları Kaçırma", hint: "Fırsat vitrininin başlığı ve alt metni.", doc: "deals", sections: ["deals"], size: "md" },
+  brands: {
+    title: "Markalar Şeridi",
+    hint: "Üst ve alt şerit aynı adları kaydırır.",
+    doc: "brands",
+    sections: ["brands_top", "brands"],
+    size: "md",
+  },
+  showcase: { title: "Premium Ürün Yelpazesi", hint: "Başlık ve kategori kutuları.", doc: "showcase", sections: ["showcase"], size: "md" },
+  // The homepage switch for this passage is the one still called "about".
+  seo: { title: "Alt SEO Metni", hint: "Ana sayfayı ve kategori sayfalarını kapatan tanıtım metni.", doc: "seo_intro", sections: ["about"], size: "md" },
+  footer: { title: "Footer", hint: "İletişim, kolonlar ve sosyal medya; tüm sayfalarda.", doc: "footer", sections: ["footer"], size: "lg" },
+  mobile: { title: "Mobil Yönetim", hint: "Telefonda (768px altı) farklı görünenler.", doc: "mobile", size: "lg" },
+  catalog: { title: "Katalog Kategorileri", hint: "Her değişiklik kendi kaydedilir.", size: "lg" },
+  // The homepage texts in English and Arabic; saves on its own.
+  translations: { title: "Çeviriler (EN/AR)", hint: "Ana sayfa metinlerinin İngilizcesi ve Arapçası; kendi kaydedilir.", size: "lg" },
+};
+
+/** The pencil on a section's row opens these; a section missing here has nothing to set. */
+const SECTION_EDITOR: Partial<Record<keyof HomeSections, EditorKey>> = {
+  hero: "hero",
+  deals: "deals",
+  brands_top: "brands",
+  brands: "brands",
+  showcase: "showcase",
+  about: "seo",
+  footer: "footer",
+};
+
+/** Page-wide editors, above the list of sections. */
+const PAGE_EDITORS: { key: EditorKey; Icon: typeof Smartphone }[] = [
+  { key: "mobile", Icon: Smartphone },
+  { key: "catalog", Icon: FolderTree },
+  { key: "translations", Icon: Languages },
+];
 
 /** Deep links (/admin/homepage?tab=katalog-kategorileri), e.g. from the retired /admin/categories. */
-const TAB_PARAM: Record<string, TabKey> = {
+const TAB_PARAM: Record<string, EditorKey> = {
   "katalog-kategorileri": "catalog",
-  "kategori-duzenle": "navigation",
+  "kategori-duzenle": "hero",
   "mobil-yonetim": "mobile",
   ceviriler: "translations",
 };
-
-/** Each tab, and the part of the document it edits (none for the two that link out). */
-const TABS: { key: TabKey; label: string; doc?: keyof Homepage; section?: keyof HomeSections }[] = [
-  { key: "sections", label: "Bölümler" },
-  { key: "mobile", label: "Mobil Yönetim", doc: "mobile" },
-  { key: "catalog", label: "Katalog Kategorileri" },
-  { key: "navigation", label: "Kategori Düzenle", doc: "navigation" },
-  { key: "hero", label: "Hero & Kutular", section: "hero" },
-  { key: "deals", label: "Fırsatlar", doc: "deals", section: "deals" },
-  { key: "brands", label: "Markalar Şeridi", doc: "brands", section: "brands" },
-  { key: "showcase", label: "Premium Yelpaze", doc: "showcase", section: "showcase" },
-  // The homepage switch for this passage is the one still called "about".
-  { key: "seo", label: "Alt SEO Metni", doc: "seo_intro", section: "about" },
-  { key: "footer", label: "Footer", doc: "footer", section: "footer" },
-  // The texts above in English and Arabic; saves on its own.
-  { key: "translations", label: "Çeviriler (EN/AR)" },
-];
 
 const KEYS = Object.keys(DEFAULT_HOMEPAGE) as (keyof Homepage)[];
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
@@ -136,13 +161,19 @@ function checkLinks(doc: Homepage, categories: Category[]): string | null {
   return null;
 }
 
-/** Admin: "Ana Sayfa Düzenleme" — switches and copy for the homepage, menus and footer. */
+/**
+ * Admin: "Ana Sayfa Düzenleme" — the homepage's sections in order, each with
+ * its switch, and a pencil that opens its settings in a drawer; the page-wide
+ * settings (phones, catalog categories, translations) open the same way.
+ * Switches and moves save at once; the drawer's edits wait for "Kaydet".
+ */
 export function AdminHomepageView() {
   const [saved, setSaved] = useState<Homepage | null>(null);
   const [doc, setDoc] = useState<Homepage | null>(null);
-  // Open on the tab a link asked for, else the switches.
+  // Open on the editor a link asked for, else on the list.
+  const router = useRouter();
   const requested = TAB_PARAM[useSearchParams().get("tab") ?? ""];
-  const [tab, setTab] = useState<TabKey>(requested ?? "sections");
+  const [editing, setEditing] = useState<EditorKey | null>(requested ?? null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [toggling, setToggling] = useState<keyof HomeSections | "order" | null>(null);
@@ -247,14 +278,56 @@ export function AdminHomepageView() {
     }
   }
 
-  const current = TABS.find((t) => t.key === tab)!;
   const set = <K extends keyof Homepage>(key: K) => (value: Homepage[K]) => setDoc((d) => (d ? { ...d, [key]: value } : d));
+  const changedDoc = (key: keyof Homepage | undefined) => !!key && !!doc && !!saved && !same(doc[key], saved[key]);
+
+  function open(key: EditorKey) {
+    setResult(null);
+    setEditing(key);
+  }
+
+  /** Closing keeps the edits: they stay marked on the row and in the save bar until saved. */
+  function close() {
+    setEditing(null);
+    if (requested) router.replace("/admin/homepage", { scroll: false });
+  }
+
+  function editor(key: EditorKey, doc: Homepage, saved: Homepage) {
+    switch (key) {
+      case "hero":
+        return (
+          <div className="space-y-6">
+            <HeroTab />
+            <NavigationTab value={doc.navigation} set={set("navigation")} categories={categories} brands={brands} />
+          </div>
+        );
+      case "deals":
+        return <DealsTab value={doc.deals} set={set("deals")} />;
+      case "brands":
+        return <BrandsTab value={doc.brands} set={set("brands")} />;
+      case "showcase":
+        return <ShowcaseTab value={doc.showcase} set={set("showcase")} categories={categories} brands={brands} />;
+      case "seo":
+        return <SeoIntroTab value={doc.seo_intro} set={set("seo_intro")} />;
+      case "footer":
+        return <FooterTab value={doc.footer} set={set("footer")} />;
+      case "mobile":
+        return <MobileTab value={doc.mobile} set={set("mobile")} />;
+      case "catalog":
+        return <AdminCategoriesView onChange={reloadCategories} />;
+      case "translations":
+        return <TranslationsTab doc={saved} />;
+    }
+  }
+
+  const current = editing ? EDITORS[editing] : null;
+  const resultAlert = result && <Alert variant={result.kind}>{result.text}</Alert>;
 
   return (
     <>
       <AdminPageHeader
         title="Ana Sayfa Düzenleme"
-        description="Ana sayfanın bölümlerini açıp kapatın; menüleri, metinleri, görselleri ve footer’ı düzenleyin. Kaydedilen her şey mağazada hemen yayına girer."
+        description="Ana sayfanın bölümlerini sıralayın, açıp kapatın ve kalemle ayarlarını düzenleyin. Kaydedilen her şey mağazada hemen yayına girer."
         actions={
           <a
             href="/"
@@ -273,117 +346,179 @@ export function AdminHomepageView() {
         !loadError && <div className="h-96 rounded-2xl bg-slate-100 motion-safe:animate-pulse dark:bg-white/5" aria-busy />
       ) : (
         <div className="pb-24">
-          <div role="tablist" aria-label="Ana sayfa bölümleri" className="mb-6 flex gap-1 overflow-x-auto pb-1 [scrollbar-width:none]">
-            {TABS.map((t) => {
-              const active = t.key === tab;
-              const hidden = t.section && !saved.sections[t.section];
-              const changed = t.doc && !same(doc[t.doc], saved[t.doc]);
-              return (
-                <button
-                  key={t.key}
-                  type="button"
-                  role="tab"
-                  aria-selected={active}
-                  onClick={() => setTab(t.key)}
-                  className={`relative shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                    active
-                      ? "bg-red-600 text-white"
-                      : "text-slate-600 hover:bg-slate-100 dark:text-zinc-300 dark:hover:bg-white/5"
-                  } ${hidden && !active ? "opacity-50" : ""}`}
-                >
-                  {t.label}
-                  {changed && <span className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-amber-400 align-middle" aria-label="kaydedilmemiş" />}
-                </button>
-              );
-            })}
-          </div>
-
-          {result && (
-            <div className="mb-4">
-              <Alert variant={result.kind}>{result.text}</Alert>
-            </div>
-          )}
-
-          {current.section && !saved.sections[current.section] && (
-            <p className="mb-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
-              Bu bölüm şu an mağazada gizli. Düzenleyebilirsiniz; “Bölümler” sekmesinden açınca görünür.
-            </p>
-          )}
-
-          <div role="tabpanel" aria-label={current.label}>
-            {tab === "sections" && (
-              <SectionsTab
-                sections={saved.sections}
-                order={saved.order}
-                busy={toggling}
-                onToggle={(k, on) => void toggle(k, on)}
-                onReorder={reorder}
-              />
-            )}
-            {tab === "catalog" && <AdminCategoriesView onChange={reloadCategories} />}
-            {tab === "navigation" && (
-              <NavigationTab
-                value={doc.navigation}
-                set={set("navigation")}
-                categories={categories}
-                brands={brands}
-              />
-            )}
-            {tab === "hero" && <HeroTab />}
-            {tab === "deals" && <DealsTab value={doc.deals} set={set("deals")} />}
-            {tab === "brands" && <BrandsTab value={doc.brands} set={set("brands")} />}
-            {tab === "showcase" && <ShowcaseTab value={doc.showcase} set={set("showcase")} categories={categories} brands={brands} />}
-            {tab === "seo" && <SeoIntroTab value={doc.seo_intro} set={set("seo_intro")} />}
-            {tab === "footer" && <FooterTab value={doc.footer} set={set("footer")} />}
-            {tab === "mobile" && <MobileTab value={doc.mobile} set={set("mobile")} />}
-            {tab === "translations" && <TranslationsTab doc={saved} />}
-          </div>
-
-          {current.doc && (
-            <div className="mt-4 flex justify-end">
+          <div className="mb-4 flex flex-wrap gap-2">
+            {PAGE_EDITORS.map(({ key, Icon }) => (
               <button
+                key={key}
                 type="button"
-                disabled={same(doc[current.doc], DEFAULT_HOMEPAGE[current.doc])}
-                onClick={() => {
-                  const key = current.doc!;
-                  setDoc((d) => (d ? { ...d, [key]: DEFAULT_HOMEPAGE[key] } : d));
-                }}
-                className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-900 disabled:pointer-events-none disabled:opacity-40 dark:text-zinc-400 dark:hover:text-white"
+                onClick={() => open(key)}
+                className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition-colors hover:border-red-400/60 hover:text-slate-900 dark:border-white/10 dark:bg-zinc-900/60 dark:text-zinc-300 dark:hover:text-white"
               >
-                <RotateCcw className="h-3.5 w-3.5" aria-hidden /> Bu bölümü varsayılana döndür
+                <Icon className="h-4 w-4 text-red-600" aria-hidden />
+                {EDITORS[key].title}
+                {changedDoc(EDITORS[key].doc) && (
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-400" aria-label="kaydedilmemiş" />
+                )}
               </button>
-            </div>
-          )}
+            ))}
+          </div>
 
-          {/* The save bar: always reachable, and loud only when there is something to save.
-              Katalog Kategorileri saves each change itself, so it shows only
-              if other tabs have unsaved edits. */}
-          <div className={`${tab === "catalog" && !dirty ? "hidden" : ""} fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/90 backdrop-blur-md dark:border-white/10 dark:bg-zinc-950/90`}>
+          {!editing && resultAlert && <div className="mb-4">{resultAlert}</div>}
+
+          <SectionsTab
+            sections={saved.sections}
+            order={saved.order}
+            busy={toggling}
+            onToggle={(k, on) => void toggle(k, on)}
+            onReorder={reorder}
+            onEdit={(k) => {
+              const key = SECTION_EDITOR[k];
+              return key ? () => open(key) : undefined;
+            }}
+            changed={(k) => {
+              const key = SECTION_EDITOR[k];
+              return !!key && changedDoc(EDITORS[key].doc);
+            }}
+          />
+
+          <Drawer
+            open={!!current}
+            onClose={close}
+            title={current?.title ?? ""}
+            description={current?.hint}
+            size={current?.size}
+            footer={
+              current?.doc ? (
+                <DrawerActions
+                  changed={changedDoc(current.doc)}
+                  dirty={dirty}
+                  saving={saving}
+                  isDefault={same(doc[current.doc], DEFAULT_HOMEPAGE[current.doc])}
+                  onReset={() => {
+                    const key = current.doc!;
+                    setDoc((d) => (d ? { ...d, [key]: DEFAULT_HOMEPAGE[key] } : d));
+                  }}
+                  onDiscard={() => {
+                    const key = current.doc!;
+                    setDoc((d) => (d ? { ...d, [key]: saved[key] } : d));
+                  }}
+                  onClose={close}
+                  onSave={() => void save()}
+                />
+              ) : (
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={close}
+                    className="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-zinc-300 dark:hover:bg-white/5"
+                  >
+                    Kapat
+                  </button>
+                </div>
+              )
+            }
+          >
+            {editing && current && (
+              <div className="space-y-4">
+                {resultAlert}
+                {current.sections?.every((k) => !saved.sections[k]) && (
+                  <p className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+                    Bu bölüm şu an mağazada gizli. Düzenleyebilirsiniz; listedeki anahtarıyla açınca görünür.
+                  </p>
+                )}
+                {editor(editing, doc, saved)}
+              </div>
+            )}
+          </Drawer>
+
+          {/* Edits left unsaved when a drawer closed: the way to save them stays in reach. */}
+          <div className={`${dirty && !editing ? "" : "hidden"} fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/90 backdrop-blur-md dark:border-white/10 dark:bg-zinc-950/90`}>
             <div className="mx-auto flex max-w-7xl items-center justify-end gap-3 px-4 py-3 sm:px-6">
-              <p className="mr-auto text-xs text-slate-500 dark:text-zinc-400">
-                {dirty ? "Kaydedilmemiş değişiklikler var." : "Tüm değişiklikler kaydedildi."}
-              </p>
+              <p className="mr-auto text-xs text-slate-500 dark:text-zinc-400">Kaydedilmemiş değişiklikler var.</p>
               <button
                 type="button"
-                disabled={!dirty || saving}
+                disabled={saving}
                 onClick={() => setDoc(saved)}
                 className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 disabled:opacity-40 dark:text-zinc-300 dark:hover:bg-white/5"
               >
                 Vazgeç
               </button>
-              <button
-                type="button"
-                disabled={!dirty || saving}
-                onClick={() => void save()}
-                className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-red-500 disabled:opacity-40"
-              >
-                {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Save className="h-4 w-4" aria-hidden />}
-                Kaydet
-              </button>
+              <SaveButton saving={saving} disabled={saving} onClick={() => void save()} />
             </div>
           </div>
         </div>
       )}
     </>
+  );
+}
+
+function SaveButton({ saving, disabled, onClick }: { saving: boolean; disabled: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-red-500 disabled:opacity-40"
+    >
+      {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Save className="h-4 w-4" aria-hidden />}
+      Kaydet
+    </button>
+  );
+}
+
+/** A drawer's footer: back to the default, drop this section's edits, close, save everything unsaved. */
+function DrawerActions({
+  changed,
+  dirty,
+  saving,
+  isDefault,
+  onReset,
+  onDiscard,
+  onClose,
+  onSave,
+}: {
+  /** This section has unsaved edits. */
+  changed: boolean;
+  /** Anything has. */
+  dirty: boolean;
+  saving: boolean;
+  isDefault: boolean;
+  onReset: () => void;
+  onDiscard: () => void;
+  onClose: () => void;
+  onSave: () => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+      <button
+        type="button"
+        disabled={isDefault || saving}
+        onClick={onReset}
+        className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-900 disabled:pointer-events-none disabled:opacity-40 dark:text-zinc-400 dark:hover:text-white"
+      >
+        <RotateCcw className="h-3.5 w-3.5" aria-hidden /> Varsayılana döndür
+      </button>
+      <p className="me-auto text-xs text-slate-500 dark:text-zinc-400">
+        {changed ? "Kaydedilmemiş değişiklikler var." : dirty ? "Başka bölümlerde kaydedilmemiş değişiklikler var." : "Kaydedildi."}
+      </p>
+      {changed && (
+        <button
+          type="button"
+          disabled={saving}
+          onClick={onDiscard}
+          className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 disabled:opacity-40 dark:text-zinc-300 dark:hover:bg-white/5"
+        >
+          Vazgeç
+        </button>
+      )}
+      <button
+        type="button"
+        onClick={onClose}
+        className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-zinc-300 dark:hover:bg-white/5"
+      >
+        Kapat
+      </button>
+      <SaveButton saving={saving} disabled={!dirty || saving} onClick={onSave} />
+    </div>
   );
 }

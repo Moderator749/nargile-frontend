@@ -222,7 +222,7 @@ export function AdminCategoriesView({ onChange }: { onChange?: () => void } = {}
         (/catalog/…) buradan gelir. Bir grup sayfası, alt kategorilerindeki ürünleri de listeler.
       </p>
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_24rem]">
+      <div className="grid gap-6 @4xl:grid-cols-[1fr_24rem]">
         <section aria-labelledby="tree-heading" className={`${panelClass} p-5 sm:p-6`}>
           <div className="flex items-center justify-between gap-3">
             <h2 id="tree-heading" className="flex items-center gap-2 text-sm font-semibold">
