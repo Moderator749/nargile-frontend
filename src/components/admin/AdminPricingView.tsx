@@ -49,19 +49,20 @@ function draftFrom(r: PricingRecord): SheetDraft {
       ...newColumn(c.label, (c.segment as PricingSegment | null) ?? ""),
       percent: typed(c.percent),
       desired: typed(c.desired),
-      erp: typed(c.erp_percent ?? null),
+      erpPrice: typed(c.erp_price ?? null),
     })),
     retailPercent: typed(s.retail.percent),
     vatRate: typed(s.retail.vat_rate),
     retailDesired: typed(s.retail.desired),
-    retailErp: typed(s.retail.erp_percent ?? null),
+    retailErpPrice: typed(s.retail.erp_price ?? null),
+    appliedPercent: typed(s.applied_percent ?? null),
     // A row keeps its extras; the ones it did not fill (or an older row's) start empty.
     extras: [
       ...(s.extras ?? []).map((c) => ({
         ...newColumn(c.label),
         percent: typed(c.percent),
         desired: typed(c.desired),
-        erp: typed(c.erp_percent ?? null),
+        erpPrice: typed(c.erp_price ?? null),
       })),
       ...defaultExtras().slice(s.extras?.length ?? 0),
     ],

@@ -32,8 +32,8 @@ export interface ColumnDraft {
   segment: PricingSegment | "";
   percent: string;
   desired: string;
-  /** "Uygulanacak oran (%)" (green): its "ERP fiyatı", unless typed (`desired`), is the calculated price plus this. */
-  erp: string;
+  /** "ERP fiyatı" (blue): a base price typed in place of the calculated one for the "uygulanacak fiyat". */
+  erpPrice: string;
 }
 
 export interface SheetDraft {
@@ -46,7 +46,9 @@ export interface SheetDraft {
   retailPercent: string;
   vatRate: string;
   retailDesired: string;
-  retailErp: string;
+  retailErpPrice: string;
+  /** "Uygulanacak oran (%)": added to every column's base (ERP fiyatı, else calculated) for its price. */
+  appliedPercent: string;
   /** Between the classes and retail, each a branch off the last class as retail is (after VAT); for reference, never sent to the site. */
   extras: ColumnDraft[];
   usdRate: string;
@@ -61,7 +63,7 @@ export const newColumn = (label = "", segment: PricingSegment | "" = ""): Column
   segment,
   percent: "",
   desired: "",
-  erp: "",
+  erpPrice: "",
 });
 
 /** The price before retail every sheet starts with; renamed in its header. */
@@ -78,7 +80,8 @@ export const emptySheet = (vatMode: VatMode = "EXCL"): SheetDraft => ({
   retailPercent: "",
   vatRate: "20",
   retailDesired: "",
-  retailErp: "",
+  retailErpPrice: "",
+  appliedPercent: "",
   extras: defaultExtras(),
   usdRate: "",
   eurRate: "",
@@ -107,7 +110,7 @@ const dec = (raw: string, places = 4) => {
 };
 
 /** A column's typed figures as numbers, for the arithmetic. */
-const typedOf = (c: ColumnDraft) => ({ percent: num(c.percent), desired: num(c.desired), erp: num(c.erp) });
+const typedOf = (c: ColumnDraft) => ({ percent: num(c.percent), desired: num(c.desired), erpPrice: num(c.erpPrice) });
 
 const SYMBOL: Record<PricingCurrency, string> = { TRY: "₺", USD: "$", EUR: "€" };
 const fmt = (n: number | null, currency: PricingCurrency) =>
@@ -240,7 +243,13 @@ export function PricingCalculator({
     cost: num(d.cost),
     columns: d.columns.map(typedOf),
     extras: d.extras.map(typedOf),
-    retail: { percent: num(d.retailPercent), desired: num(d.retailDesired), erp: num(d.retailErp), vatRate: num(d.vatRate) },
+    retail: {
+      percent: num(d.retailPercent),
+      desired: num(d.retailDesired),
+      erpPrice: num(d.retailErpPrice),
+      vatRate: num(d.vatRate),
+    },
+    appliedPercent: num(d.appliedPercent),
     vatMode: d.vatMode,
     currency: d.currency,
     usdRate: num(d.usdRate),
@@ -262,9 +271,11 @@ export function PricingCalculator({
           ? "Her sütunun kâr oranını girin (0 da olabilir)."
           : strayExtra
             ? "Özel fiyata önce kâr oranını girin (boşsa kaydedilmez)."
-            : [...d.columns, ...d.extras].some((c) => c.erp.trim() && num(c.erp) === null) ||
-                (d.retailErp.trim() && num(d.retailErp) === null)
-              ? "Uygulanacak oranları sayı olarak girin (ya da boş bırakın)."
+            : [...d.columns, ...d.extras].some((c) => c.erpPrice.trim() && !(num(c.erpPrice)! > 0)) ||
+                (d.retailErpPrice.trim() && !(num(d.retailErpPrice)! > 0))
+              ? "ERP fiyatlarını sayı olarak girin (ya da boş bırakın)."
+              : d.appliedPercent.trim() && num(d.appliedPercent) === null
+                ? "Uygulanacak oranı sayı olarak girin (ya da boş bırakın)."
               : num(d.vatRate) === null
                 ? "Perakende için KDV oranını girin."
                 : new Set(used).size !== used.length
@@ -281,20 +292,21 @@ export function PricingCalculator({
       segment: c.segment || null,
       percent: dec(c.percent)!,
       desired: dec(c.desired, 2),
-      erp_percent: dec(c.erp),
+      erp_price: dec(c.erpPrice, 2),
     })),
     retail: {
       percent: dec(d.retailPercent)!,
       vat_rate: dec(d.vatRate, 2)!,
       desired: dec(d.retailDesired, 2),
-      erp_percent: dec(d.retailErp),
+      erp_price: dec(d.retailErpPrice, 2),
     },
     extras: sentExtras.map((c) => ({
       label: c.label.trim(),
       percent: dec(c.percent)!,
       desired: dec(c.desired, 2),
-      erp_percent: dec(c.erp),
+      erp_price: dec(c.erpPrice, 2),
     })),
+    applied_percent: dec(d.appliedPercent),
     usd_rate: foreign ? dec(d.usdRate) : null,
     eur_rate: foreign ? dec(d.eurRate) : null,
     final_try: foreign ? dec(d.finalTry, 2) : null,
@@ -529,40 +541,86 @@ export function PricingCalculator({
               )}
             </tr>
 
-            {/* Row 4: the price each column sends, "ERP fiyatı": typed, or the
-                calculated price plus the rate below. */}
+            {/* Row 4: "ERP fiyatı", a base price the admin may type per column,
+                in place of the calculated one. Empty unless typed. */}
             <tr>
               <th scope="row" className={`${td} ${headFill} px-2 text-left ${headText} text-sky-800 dark:text-sky-300`}>
                 ERP fiyatı
               </th>
               <td className={`${td} bg-slate-50 dark:bg-zinc-900`} />
+              {d.columns.map((c) => (
+                <ErpCell
+                  key={c.key}
+                  label={`${c.label || "Sütun"} ERP fiyatı`}
+                  value={c.erpPrice}
+                  onChange={(erpPrice) => setColumn(c.key, { erpPrice })}
+                />
+              ))}
+              {d.extras.map((c) => (
+                <ErpCell
+                  key={c.key}
+                  label={`${c.label || "Özel fiyat"} ERP fiyatı (KDV dahil)`}
+                  value={c.erpPrice}
+                  onChange={(erpPrice) => setExtra(c.key, { erpPrice })}
+                />
+              ))}
+              <ErpCell
+                label="Perakende ERP fiyatı (KDV dahil)"
+                value={d.retailErpPrice}
+                onChange={(retailErpPrice) => set({ retailErpPrice })}
+              />
+              {foreign && <td className={`${td} bg-slate-50 dark:bg-zinc-900`} />}
+            </tr>
+
+            {/* Row 5: the rate, under the cost, and the prices to apply: each
+                column's ERP fiyatı (else its calculated price) plus the rate,
+                unless a price is typed over it. */}
+            <tr>
+              <th scope="row" className={`${td} ${headFill} px-2 text-left ${headText} text-emerald-800 dark:text-emerald-300`}>
+                Uygulanacak oran (%)
+              </th>
+              <td className={`${td} ${clip} ${greenFill} p-0`}>
+                <span className="flex h-8 items-center ps-1.5">
+                  <span className="text-[10px] font-bold text-emerald-800/70 dark:text-emerald-300/70" aria-hidden>
+                    %
+                  </span>
+                  <input
+                    inputMode="decimal"
+                    value={d.appliedPercent}
+                    onChange={(e) => set({ appliedPercent: e.target.value })}
+                    placeholder="0"
+                    aria-label="Uygulanacak oran (%)"
+                    className={`${cellInput} font-semibold`}
+                  />
+                </span>
+              </td>
               {d.columns.map((c, i) => (
                 <PriceCell
                   key={c.key}
-                  label={`${c.label || "Sütun"} ERP fiyatı`}
+                  label={`${c.label || "Sütun"} uygulanacak fiyat`}
                   value={c.desired}
                   auto={calc.columns[i].auto}
                   currency={d.currency}
-                  onChange={(desired) => setColumn(c.key, { desired, erp: "" })}
+                  onChange={(desired) => setColumn(c.key, { desired })}
                 />
               ))}
               {d.extras.map((c, i) => (
                 <PriceCell
                   key={c.key}
-                  label={`${c.label || "Özel fiyat"} ERP fiyatı (KDV dahil)`}
+                  label={`${c.label || "Özel fiyat"} uygulanacak fiyat (KDV dahil)`}
                   value={c.desired}
                   auto={calc.extras[i].auto}
                   currency={d.currency}
-                  onChange={(desired) => setExtra(c.key, { desired, erp: "" })}
+                  onChange={(desired) => setExtra(c.key, { desired })}
                   strong
                 />
               ))}
               <PriceCell
-                label="Perakende ERP fiyatı (KDV dahil)"
+                label="Perakende uygulanacak fiyat (KDV dahil)"
                 value={d.retailDesired}
                 auto={calc.retail.auto}
                 currency={d.currency}
-                onChange={(retailDesired) => set({ retailDesired, retailErp: "" })}
+                onChange={(retailDesired) => set({ retailDesired })}
                 strong
               />
               {foreign && (
@@ -577,40 +635,6 @@ export function PricingCalculator({
                   />
                 </td>
               )}
-            </tr>
-
-            {/* Row 5: the rate on each calculated price that makes the ERP fiyatı
-                above; a typed price shows the rate it comes to. */}
-            <tr>
-              <th scope="row" className={`${td} ${headFill} px-2 text-left ${headText} text-emerald-800 dark:text-emerald-300`}>
-                Uygulanacak oran (%)
-              </th>
-              <td className={`${td} bg-slate-50 dark:bg-zinc-900`} />
-              {d.columns.map((c, i) => (
-                <RateCell
-                  key={c.key}
-                  label={`${c.label || "Sütun"} uygulanacak oran (%)`}
-                  value={c.erp}
-                  implied={impliedRate(c.desired, calc.columns[i].computed)}
-                  onChange={(erp) => setColumn(c.key, { erp, desired: "" })}
-                />
-              ))}
-              {d.extras.map((c, i) => (
-                <RateCell
-                  key={c.key}
-                  label={`${c.label || "Özel fiyat"} uygulanacak oran (%)`}
-                  value={c.erp}
-                  implied={impliedRate(c.desired, calc.extras[i].computed)}
-                  onChange={(erp) => setExtra(c.key, { erp, desired: "" })}
-                />
-              ))}
-              <RateCell
-                label="Perakende uygulanacak oran (%)"
-                value={d.retailErp}
-                implied={impliedRate(d.retailDesired, calc.retail.computed)}
-                onChange={(retailErp) => set({ retailErp, retailDesired: "" })}
-              />
-              {foreign && <td className={`${td} bg-slate-50 dark:bg-zinc-900`} />}
             </tr>
           </tbody>
         </table>
@@ -668,11 +692,11 @@ export function PricingCalculator({
         </div>
       </div>
       <p className="mt-2 text-[11px] leading-4 text-slate-500 dark:text-zinc-400">
-        Turuncu satır kendi formül zinciriyle hesaplanır: bayi → toptan → kafe → özel fiyat → perakende. Mavi satır (ERP
-        fiyatı) siteye gönderilen fiyattır: yeşil satıra yazdığınız oran hesaplanan fiyata eklenerek kendiliğinden
-        dolar (oran boşsa ya da 0 ise hesaplanan fiyatın kendisidir). Mavi satıra doğrudan fiyat da yazabilirsiniz; o
-        zaman yeşil satır o fiyatın hesaplanana göre oranını gösterir. Ne oran ne yazılan fiyat zinciri değiştirir. Özel
-        fiyat ve perakende KDV dahildir:{" "}
+        Turuncu satır kendi formül zinciriyle hesaplanır: bayi → toptan → kafe → özel fiyat → perakende. Mavi satıra
+        (ERP fiyatı) isterseniz sütun için bir taban fiyat yazın. Yeşil satır siteye gönderilen fiyattır: ERP fiyatına —
+        boşsa hesaplanan fiyata — maliyetin altındaki uygulanacak oran eklenerek kendiliğinden dolar (oran boşsa ya da 0
+        ise tabanın kendisidir). Yeşil satıra fiyat yazarsanız (ör. 199,90) o fiyat geçerli olur. Hiçbiri zinciri
+        değiştirmez. Özel fiyat ve perakende KDV dahildir:{" "}
         {d.vatMode === "EXCL"
           ? "maliyet KDV hariç olduğundan KDV perakende adımında eklenir."
           : "maliyet zaten KDV dahil olduğundan perakendeye ayrıca KDV eklenmez; KDV oranı fiyatların KDV hariç karşılığı için kullanılır."}{" "}
@@ -693,7 +717,7 @@ export function PricingCalculator({
           title={dialog === "apply" ? "Dosyaya kaydet ve siteye uygula" : "Dosyaya kaydet"}
           note={
             dialog === "apply"
-              ? `“${d.code.trim()}” kodlu ürünün fiyatları bu satırla değiştirilecek: müşteri grubu seçilmiş her sütun ve perakende, ürünün tüm renklerinde (mavi satırdaki ERP fiyatı). Satır seçtiğiniz dosyaya da kaydedilir.`
+              ? `“${d.code.trim()}” kodlu ürünün fiyatları bu satırla değiştirilecek: müşteri grubu seçilmiş her sütun ve perakende, ürünün tüm renklerinde (yeşil satırdaki uygulanacak fiyat). Satır seçtiğiniz dosyaya da kaydedilir.`
               : undefined
           }
           confirmLabel={dialog === "apply" ? "Kaydet ve uygula" : "Kaydet"}
@@ -706,52 +730,24 @@ export function PricingCalculator({
   );
 }
 
-/**
- * The rate a typed price comes to on the calculated one, "5,85" — shown in
- * the green cell when the price, not the rate, was typed. Null otherwise.
- */
-function impliedRate(desired: string, computed: number | null): string | null {
-  const price = num(desired);
-  if (price === null || !computed) return null;
-  const rate = ((price - computed) / computed) * 100;
-  return rate.toLocaleString("tr-TR", { maximumFractionDigits: 2 });
-}
-
-/** A green "uygulanacak oran": the percent typed into the cell itself, or the one a typed price comes to. */
-function RateCell({
-  label,
-  value,
-  implied,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  implied: string | null;
-  onChange: (value: string) => void;
-}) {
+/** A blue "ERP fiyatı": a base price typed by hand, empty until it is. */
+function ErpCell({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
   return (
-    <td className={`${td} ${clip} ${greenFill} p-0`}>
-      <span className="flex h-8 items-center ps-1.5">
-        <span className="text-[10px] font-bold text-emerald-800/70 dark:text-emerald-300/70" aria-hidden>
-          %
-        </span>
-        <input
-          inputMode="decimal"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={implied ?? "0"}
-          title={implied ? "Yazılan ERP fiyatının oranı; oran yazarsanız fiyat ondan hesaplanır" : undefined}
-          aria-label={label}
-          className={`${implied ? priceInput : cellInput} font-semibold`}
-        />
-      </span>
+    <td className={`${td} ${clip} ${blueFill} p-0`}>
+      <input
+        inputMode="decimal"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        aria-label={label}
+        className={`${cellInput} font-semibold`}
+      />
     </td>
   );
 }
 
 /**
- * A blue "ERP fiyatı", the price the column sends: the calculated price plus
- * the column's rate stands in it on its own; a price typed over it wins.
+ * A green "uygulanacak fiyat", the price the column sends: its base plus the
+ * rate stands in it on its own; a price typed over it wins.
  */
 function PriceCell({
   label,
@@ -770,7 +766,7 @@ function PriceCell({
 }) {
   const shown = auto === null ? "" : auto.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   return (
-    <td className={`${td} ${clip} ${blueFill} p-0`}>
+    <td className={`${td} ${clip} ${greenFill} p-0`}>
       <input
         inputMode="decimal"
         value={value}
