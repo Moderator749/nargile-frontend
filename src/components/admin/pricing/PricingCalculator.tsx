@@ -32,6 +32,8 @@ export interface ColumnDraft {
   segment: PricingSegment | "";
   percent: string;
   desired: string;
+  /** "ERP Fiyatı (%)": its "uygulanacak fiyat", unless typed, is the calculated price plus this. */
+  erp: string;
 }
 
 export interface SheetDraft {
@@ -44,10 +46,9 @@ export interface SheetDraft {
   retailPercent: string;
   vatRate: string;
   retailDesired: string;
+  retailErp: string;
   /** Between the classes and retail, each a branch off the last class as retail is (after VAT); for reference, never sent to the site. */
   extras: ColumnDraft[];
-  /** "ERP Fiyatı (%)": each calculated price plus this, shown under it. */
-  erpPercent: string;
   usdRate: string;
   eurRate: string;
   finalTry: string;
@@ -60,6 +61,7 @@ export const newColumn = (label = "", segment: PricingSegment | "" = ""): Column
   segment,
   percent: "",
   desired: "",
+  erp: "",
 });
 
 /** The price before retail every sheet starts with; renamed in its header. */
@@ -76,8 +78,8 @@ export const emptySheet = (vatMode: VatMode = "EXCL"): SheetDraft => ({
   retailPercent: "",
   vatRate: "20",
   retailDesired: "",
+  retailErp: "",
   extras: defaultExtras(),
-  erpPercent: "",
   usdRate: "",
   eurRate: "",
   finalTry: "",
@@ -104,6 +106,9 @@ const dec = (raw: string, places = 4) => {
   return n === null ? null : String(Number(n.toFixed(places)));
 };
 
+/** A column's typed figures as numbers, for the arithmetic. */
+const typedOf = (c: ColumnDraft) => ({ percent: num(c.percent), desired: num(c.desired), erp: num(c.erp) });
+
 const SYMBOL: Record<PricingCurrency, string> = { TRY: "₺", USD: "$", EUR: "€" };
 const fmt = (n: number | null, currency: PricingCurrency) =>
   n === null
@@ -128,8 +133,11 @@ const headText = "text-[10px] font-bold uppercase leading-tight tracking-wide te
 /** Bayi, Toptan, Kafe and Özel Fiyat: with the cost and retail, the six boxes that always fit. */
 const STANDARD_STEPS = 4;
 /** An input that is the cell itself, as in a spreadsheet. */
-const cellInput =
-  "block h-8 w-full border-0 bg-transparent px-1.5 text-center font-mono text-sm tabular-nums text-slate-900 placeholder:font-sans placeholder:text-[11px] placeholder:text-slate-400 focus:outline-2 focus:-outline-offset-2 focus:outline-red-500 dark:text-zinc-100";
+const cellBase =
+  "block h-8 w-full border-0 bg-transparent px-1.5 text-center font-mono text-sm tabular-nums text-slate-900 focus:outline-2 focus:-outline-offset-2 focus:outline-red-500 dark:text-zinc-100";
+const cellInput = `${cellBase} placeholder:font-sans placeholder:text-[11px] placeholder:text-slate-400`;
+/** A green "uygulanacak fiyat": its automatic figure stands in the cell, as its own value, until one is typed. */
+const priceInput = `${cellBase} placeholder:text-slate-900 dark:placeholder:text-zinc-100`;
 const smallSelect =
   "block h-6 w-full rounded border border-slate-300 bg-white px-1 text-[10px] font-semibold text-slate-700 focus:border-red-500 focus:outline-none dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-200";
 
@@ -230,10 +238,9 @@ export function PricingCalculator({
 
   const calc = computeSheet({
     cost: num(d.cost),
-    columns: d.columns.map((c) => ({ percent: num(c.percent), desired: num(c.desired) })),
-    extras: d.extras.map((c) => ({ percent: num(c.percent), desired: num(c.desired) })),
-    retail: { percent: num(d.retailPercent), desired: num(d.retailDesired), vatRate: num(d.vatRate) },
-    erpPercent: num(d.erpPercent),
+    columns: d.columns.map(typedOf),
+    extras: d.extras.map(typedOf),
+    retail: { percent: num(d.retailPercent), desired: num(d.retailDesired), erp: num(d.retailErp), vatRate: num(d.vatRate) },
     vatMode: d.vatMode,
     currency: d.currency,
     usdRate: num(d.usdRate),
@@ -255,8 +262,9 @@ export function PricingCalculator({
           ? "Her sütunun kâr oranını girin (0 da olabilir)."
           : strayExtra
             ? "Özel fiyata önce kâr oranını girin (boşsa kaydedilmez)."
-            : d.erpPercent.trim() && num(d.erpPercent) === null
-              ? "ERP oranını sayı olarak girin (ya da boş bırakın)."
+            : [...d.columns, ...d.extras].some((c) => c.erp.trim() && num(c.erp) === null) ||
+                (d.retailErp.trim() && num(d.retailErp) === null)
+              ? "ERP oranlarını sayı olarak girin (ya da boş bırakın)."
               : num(d.vatRate) === null
                 ? "Perakende için KDV oranını girin."
                 : new Set(used).size !== used.length
@@ -273,10 +281,20 @@ export function PricingCalculator({
       segment: c.segment || null,
       percent: dec(c.percent)!,
       desired: dec(c.desired, 2),
+      erp_percent: dec(c.erp),
     })),
-    retail: { percent: dec(d.retailPercent)!, vat_rate: dec(d.vatRate, 2)!, desired: dec(d.retailDesired, 2) },
-    extras: sentExtras.map((c) => ({ label: c.label.trim(), percent: dec(c.percent)!, desired: dec(c.desired, 2) })),
-    erp_percent: dec(d.erpPercent),
+    retail: {
+      percent: dec(d.retailPercent)!,
+      vat_rate: dec(d.vatRate, 2)!,
+      desired: dec(d.retailDesired, 2),
+      erp_percent: dec(d.retailErp),
+    },
+    extras: sentExtras.map((c) => ({
+      label: c.label.trim(),
+      percent: dec(c.percent)!,
+      desired: dec(c.desired, 2),
+      erp_percent: dec(c.erp),
+    })),
     usd_rate: foreign ? dec(d.usdRate) : null,
     eur_rate: foreign ? dec(d.eurRate) : null,
     final_try: foreign ? dec(d.finalTry, 2) : null,
@@ -511,20 +529,19 @@ export function PricingCalculator({
               )}
             </tr>
 
-            {/* Row 4: each calculated price plus the ERP percent. */}
+            {/* Row 4: each column's ERP percent, added to its calculated price below. */}
             <tr>
-              <th scope="row" className={`${td} ${headFill} px-2 py-1 text-left align-top`}>
-                <span className={`${headText} text-sky-800 dark:text-sky-300`}>ERP Fiyatı (%)</span>
-                <PercentBadge label="ERP fiyatı oranı" value={d.erpPercent} onChange={(erpPercent) => set({ erpPercent })} />
+              <th scope="row" className={`${td} ${headFill} px-2 text-left ${headText} text-sky-800 dark:text-sky-300`}>
+                ERP Fiyatı (%)
               </th>
               <td className={`${td} bg-slate-50 dark:bg-zinc-900`} />
-              {d.columns.map((c, i) => (
-                <ErpCell key={c.key} label={c.label || "Sütun"} value={calc.columns[i].erp} currency={d.currency} />
+              {d.columns.map((c) => (
+                <ErpCell key={c.key} label={c.label || "Sütun"} value={c.erp} onChange={(erp) => setColumn(c.key, { erp })} />
               ))}
-              {d.extras.map((c, i) => (
-                <ErpCell key={c.key} label={c.label || "Özel fiyat"} value={calc.extras[i].erp} currency={d.currency} />
+              {d.extras.map((c) => (
+                <ErpCell key={c.key} label={c.label || "Özel fiyat"} value={c.erp} onChange={(erp) => setExtra(c.key, { erp })} />
               ))}
-              <ErpCell label="Perakende" value={calc.retail.erp} currency={d.currency} />
+              <ErpCell label="Perakende" value={d.retailErp} onChange={(retailErp) => set({ retailErp })} />
               {foreign && <td className={`${td} bg-slate-50 dark:bg-zinc-900`} />}
             </tr>
 
@@ -534,40 +551,35 @@ export function PricingCalculator({
                 Uygulanacak fiyat
               </th>
               <td className={`${td} bg-slate-50 dark:bg-zinc-900`} />
-              {d.columns.map((c) => (
-                <td key={c.key} className={`${td} ${clip} ${greenFill} p-0`}>
-                  <input
-                    inputMode="decimal"
-                    value={c.desired}
-                    onChange={(e) => setColumn(c.key, { desired: e.target.value })}
-                    placeholder="hesaplanan"
-                    aria-label={`${c.label || "Sütun"} uygulanacak fiyat`}
-                    className={cellInput}
-                  />
-                </td>
-              ))}
-              {d.extras.map((c) => (
-                <td key={c.key} className={`${td} ${clip} ${greenFill} p-0`}>
-                  <input
-                    inputMode="decimal"
-                    value={c.desired}
-                    onChange={(e) => setExtra(c.key, { desired: e.target.value })}
-                    placeholder="hesaplanan"
-                    aria-label={`${c.label || "Özel fiyat"} uygulanacak fiyat (KDV dahil)`}
-                    className={`${cellInput} font-semibold`}
-                  />
-                </td>
-              ))}
-              <td className={`${td} ${clip} ${greenFill} p-0`}>
-                <input
-                  inputMode="decimal"
-                  value={d.retailDesired}
-                  onChange={(e) => set({ retailDesired: e.target.value })}
-                  placeholder="raf fiyatı"
-                  aria-label="Perakende uygulanacak fiyat (KDV dahil)"
-                  className={`${cellInput} font-semibold`}
+              {d.columns.map((c, i) => (
+                <PriceCell
+                  key={c.key}
+                  label={`${c.label || "Sütun"} uygulanacak fiyat`}
+                  value={c.desired}
+                  auto={calc.columns[i].auto}
+                  currency={d.currency}
+                  onChange={(desired) => setColumn(c.key, { desired })}
                 />
-              </td>
+              ))}
+              {d.extras.map((c, i) => (
+                <PriceCell
+                  key={c.key}
+                  label={`${c.label || "Özel fiyat"} uygulanacak fiyat (KDV dahil)`}
+                  value={c.desired}
+                  auto={calc.extras[i].auto}
+                  currency={d.currency}
+                  onChange={(desired) => setExtra(c.key, { desired })}
+                  strong
+                />
+              ))}
+              <PriceCell
+                label="Perakende uygulanacak fiyat (KDV dahil)"
+                value={d.retailDesired}
+                auto={calc.retail.auto}
+                currency={d.currency}
+                onChange={(retailDesired) => set({ retailDesired })}
+                strong
+              />
               {foreign && (
                 <td className={`${td} ${clip} bg-red-50 p-0 dark:bg-red-500/10`}>
                   <input
@@ -637,14 +649,16 @@ export function PricingCalculator({
         </div>
       </div>
       <p className="mt-2 text-[11px] leading-4 text-slate-500 dark:text-zinc-400">
-        Turuncu satır kendi formül zinciriyle hesaplanır; yeşil satıra yazdığınız fiyat zinciri değiştirmez, o sütunda
-        siteye gönderilen fiyat olur (boşsa hesaplanan). Mavi satır, ERP oranı girilince her hesaplanan fiyatın o
-        oran eklenmiş hâlidir (yalnızca bilgi). Özel fiyat ve perakende KDV dahildir; ikisi de son fiyat sınıfının
-        (kafe) üzerine ayrı ayrı hesaplanır, biri diğerini etkilemez:{" "}
+        Turuncu satır kendi formül zinciriyle hesaplanır: bayi → toptan → kafe → özel fiyat → perakende. Mavi satır o
+        sütunun ERP oranıdır: yeşil satır (siteye gönderilen fiyat) hesaplanan fiyata bu oran eklenerek kendiliğinden
+        dolar; boşsa ya da 0 ise hesaplanan fiyatın kendisidir. Yeşil satıra fiyat yazarsanız o fiyat geçerli olur. Ne
+        ERP oranı ne yazılan fiyat zinciri değiştirir. Özel fiyat ve perakende KDV dahildir:{" "}
         {d.vatMode === "EXCL"
           ? "maliyet KDV hariç olduğundan KDV perakende adımında eklenir."
           : "maliyet zaten KDV dahil olduğundan perakendeye ayrıca KDV eklenmez; KDV oranı fiyatların KDV hariç karşılığı için kullanılır."}{" "}
-        Özel fiyat isteğe bağlıdır (kâr oranı boşsa kaydedilmez), dosyaya kaydedilir ama siteye yazılmaz.
+        Perakende, özel fiyatın KDV’siz adımının üzerine hesaplanır (KDV bir kez eklenir). Özel fiyat isteğe bağlıdır
+        (kâr oranı boşsa kaydedilmez ve perakende kafe fiyatının üzerine hesaplanır), dosyaya kaydedilir ama siteye
+        yazılmaz.
       </p>
 
       {result && (
@@ -672,13 +686,58 @@ export function PricingCalculator({
   );
 }
 
-/** A calculated price plus the sheet's ERP percent ("—" until there is one). */
-function ErpCell({ label, value, currency }: { label: string; value: number | null; currency: PricingCurrency }) {
+/** A column's ERP percent, typed into the blue cell itself. */
+function ErpCell({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
   return (
-    <td className={`${td} ${clip} ${blueFill} px-1 text-center font-mono text-[13px] font-semibold tabular-nums`}>
-      <span className="block truncate" title={fmt(value, currency)} aria-label={`${label} ERP fiyatı`}>
-        {fmt(value, currency)}
+    <td className={`${td} ${clip} ${blueFill} p-0`}>
+      <span className="flex h-8 items-center ps-1.5">
+        <span className="text-[10px] font-bold text-sky-700/70 dark:text-sky-300/70" aria-hidden>
+          %
+        </span>
+        <input
+          inputMode="decimal"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="0"
+          aria-label={`${label} ERP oranı (%)`}
+          className={`${cellInput} font-semibold`}
+        />
       </span>
+    </td>
+  );
+}
+
+/**
+ * A green "uygulanacak fiyat": the calculated price plus the column's ERP
+ * percent stands in it on its own; a price typed over it wins.
+ */
+function PriceCell({
+  label,
+  value,
+  auto,
+  currency,
+  onChange,
+  strong,
+}: {
+  label: string;
+  value: string;
+  auto: number | null;
+  currency: PricingCurrency;
+  onChange: (value: string) => void;
+  strong?: boolean;
+}) {
+  const shown = auto === null ? "" : auto.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return (
+    <td className={`${td} ${clip} ${greenFill} p-0`}>
+      <input
+        inputMode="decimal"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={shown || "—"}
+        title={value ? undefined : auto === null ? undefined : `${fmt(auto, currency)} — yazarak değiştirebilirsiniz`}
+        aria-label={label}
+        className={`${priceInput} ${strong ? "font-semibold" : ""}`}
+      />
     </td>
   );
 }
