@@ -1,12 +1,8 @@
 "use client";
 
-import { useId } from "react";
+import { Maximize2, RotateCcw } from "lucide-react";
 
-import { adminSelectClass } from "@/components/admin/ContentEditor";
-import { HERO_FONT_PX } from "@/components/home/HeroSlideView";
-import type { HeroFontSize } from "@/types";
-
-const SIZES = Object.entries(HERO_FONT_PX) as [HeroFontSize, number][];
+import { heroTextPx } from "@/components/home/HeroSlideView";
 
 /** The two colours most photos need, a click away. */
 const PRESETS = [
@@ -17,9 +13,10 @@ const PRESETS = [
 const HEX = /^#[0-9a-fA-F]{6}$/;
 
 /**
- * A slide text's size and colour, under its field: "Varsayılan" keeps the
- * slide's own (as every slide had before), a size is its pixels on the widest
- * slider (smaller on a phone), a colour is any #rrggbb.
+ * A slide text's size and colour, under its field. The size is set on the
+ * preview, by dragging the selected text's red corner; here it is read out,
+ * with the way back to the slide's own. "Varsayılan" keeps the slide's own
+ * colour (as every slide had before); a colour is any #rrggbb.
  */
 export function TextStyleFields({
   label,
@@ -30,32 +27,36 @@ export function TextStyleFields({
 }: {
   /** The text's name, for the controls' accessible names ("Başlık"). */
   label: string;
-  size: HeroFontSize | null | undefined;
+  /** Px on the widest slider; a name of the editor's first version is read as its px. */
+  size: number | string | null | undefined;
   color: string | null | undefined;
-  onSize: (size: HeroFontSize | null) => void;
+  /** Only ever back to the slide's own (null): sizes are set by dragging. */
+  onSize: (size: null) => void;
   onColor: (color: string | null) => void;
 }) {
-  const id = useId();
+  const px = heroTextPx(size);
   const hex = color ?? "";
   return (
     <div className="-mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-600 dark:text-zinc-400">
-      <label htmlFor={`${id}-size`} className="flex items-center gap-2">
-        Boyut
-        <select
-          id={`${id}-size`}
-          value={size ?? ""}
-          onChange={(e) => onSize((e.target.value || null) as HeroFontSize | null)}
-          aria-label={`${label} yazı boyutu`}
-          className={`${adminSelectClass} h-8 w-auto py-0 text-xs`}
-        >
-          <option value="">Varsayılan</option>
-          {SIZES.map(([key, px]) => (
-            <option key={key} value={key}>
-              {key.toUpperCase()} · {px}px
-            </option>
-          ))}
-        </select>
-      </label>
+      <span className="flex items-center gap-2" aria-live="polite">
+        <Maximize2 className="h-3.5 w-3.5 text-slate-400" aria-hidden />
+        Boyut:{" "}
+        <span className="font-mono font-medium tabular-nums text-slate-800 dark:text-zinc-200">
+          {px ? `${px}px` : "Varsayılan"}
+        </span>
+        {px ? (
+          <button
+            type="button"
+            onClick={() => onSize(null)}
+            aria-label={`${label} boyutunu varsayılana döndür`}
+            className="inline-flex items-center gap-1 text-slate-500 hover:text-slate-900 dark:hover:text-white"
+          >
+            <RotateCcw className="h-3 w-3" aria-hidden /> Sıfırla
+          </button>
+        ) : (
+          <span className="text-slate-400">— önizlemede yazıyı seçip kırmızı köşesinden sürükleyin</span>
+        )}
+      </span>
       <span className="flex items-center gap-2" role="group" aria-label={`${label} rengi`}>
         Renk
         <button

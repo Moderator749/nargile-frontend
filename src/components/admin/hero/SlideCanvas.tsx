@@ -1,10 +1,10 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, type HTMLAttributes, type KeyboardEvent, type PointerEvent } from "react";
 import { AlignCenter, AlignLeft, AlignRight, Move, RotateCcw } from "lucide-react";
 
 import { useDragLayout } from "@/components/admin/useDragLayout";
-import { HERO_FRAME, HeroBackdrop, HeroSlideView } from "@/components/home/HeroSlideView";
+import { HERO_DEFAULT_PX, HERO_FRAME, HeroBackdrop, HeroSlideView, heroTextPx } from "@/components/home/HeroSlideView";
 import type { HeroSlide } from "@/lib/home";
 import type { HeroPart, HeroSlideWrite, HeroTextAlign } from "@/types";
 
@@ -22,6 +22,24 @@ const PARTS: { part: HeroPart; label: string }[] = [
 ];
 
 export const rangeClass = "h-2 w-full cursor-pointer accent-red-600";
+
+type SlideText = "eyebrow" | "title" | "subtitle";
+const TEXT_LABEL: Record<SlideText, string> = { eyebrow: "Üst etiket", title: "Başlık", subtitle: "Alt metin" };
+const MIN_PX = 8;
+const MAX_PX = 160;
+const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n));
+
+/**
+ * How far the photo reaches past the stage, in px, on each axis: what one
+ * full sweep of its focal point (0 → 100 %) moves it by. Object-fit cover
+ * fills the stage on one axis and overflows on the other; the zoom adds to both.
+ */
+function overflowOf(img: HTMLImageElement | null, stage: DOMRect, zoom: number): { x: number; y: number } {
+  if (!img?.naturalWidth || !img.naturalHeight) return { x: 0, y: 0 };
+  const cover = Math.max(stage.width / img.naturalWidth, stage.height / img.naturalHeight);
+  const z = zoom / 100;
+  return { x: img.naturalWidth * cover * z - stage.width, y: img.naturalHeight * cover * z - stage.height };
+}
 
 /** The form as the storefront's slide, so the canvas renders exactly what will ship. */
 function previewSlide(v: HeroSlideWrite, image: string | null): HeroSlide {
@@ -70,6 +88,86 @@ export function SlideCanvas({
 
   const slide = previewSlide(v, image);
 
+  // ── Drag a text's corner: its size follows the drag ─────────────────────────
+  const resizing = useRef<{ part: SlideText; from: number; height: number; x: number; y: number } | null>(null);
+  const pxOf = (part: SlideText) => heroTextPx(v.font_sizes?.[part]) ?? HERO_DEFAULT_PX[part];
+  const setPx = (part: SlideText, px: number) =>
+    set({ font_sizes: { ...(v.font_sizes ?? {}), [part]: Math.round(clamp(px, MIN_PX, MAX_PX)) } });
+
+  const resize = (part: SlideText): HTMLAttributes<HTMLElement> => ({
+    role: "slider",
+    tabIndex: 0,
+    "aria-label": `${TEXT_LABEL[part]} boyutu — köşeden sürükleyin ya da oklarla değiştirin`,
+    "aria-valuemin": MIN_PX,
+    "aria-valuemax": MAX_PX,
+    "aria-valuenow": pxOf(part),
+    "aria-valuetext": `${pxOf(part)} piksel`,
+    onPointerDown: (e: PointerEvent<HTMLElement>) => {
+      if (e.button !== 0) return;
+      // The handle sits on the text: the text's own drag (move) must not start.
+      e.stopPropagation();
+      e.preventDefault();
+      const text = e.currentTarget.parentElement;
+      resizing.current = { part, from: pxOf(part), height: text?.getBoundingClientRect().height || 1, x: e.clientX, y: e.clientY };
+      e.currentTarget.setPointerCapture(e.pointerId);
+    },
+    onPointerMove: (e: PointerEvent<HTMLElement>) => {
+      const r = resizing.current;
+      if (!r) return;
+      // Down and outward grows it, up and inward shrinks it: the text's
+      // height scales with its size, so the drag's distance is the ratio.
+      const outward = (e.clientX - r.x) * (getComputedStyle(e.currentTarget).direction === "rtl" ? -1 : 1);
+      const grow = (outward + (e.clientY - r.y)) / 2;
+      setPx(r.part, (r.from * (r.height + grow)) / r.height);
+    },
+    onPointerUp: (e: PointerEvent<HTMLElement>) => {
+      resizing.current = null;
+      if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
+    },
+    onKeyDown: (e: KeyboardEvent<HTMLElement>) => {
+      const step = { ArrowUp: 1, ArrowRight: 1, ArrowDown: -1, ArrowLeft: -1 }[e.key];
+      if (!step) return;
+      e.preventDefault();
+      e.stopPropagation(); // not the text's own arrow-key move
+      setPx(part, pxOf(part) + step * (e.shiftKey ? 4 : 1));
+    },
+  });
+
+  // ── Drag the photo: its focal point follows ─────────────────────────────────
+  const panning = useRef<{ x: number; y: number; focus: { x: number; y: number }; reach: { x: number; y: number } } | null>(null);
+  const pan: HTMLAttributes<HTMLDivElement> = {
+    onPointerDown: (e) => {
+      // A text, a button or a handle has its own drag; the photo is everything else.
+      if (!image || e.button !== 0 || (e.target as HTMLElement).closest("[data-part],[data-resize]")) return;
+      e.preventDefault();
+      const stage = e.currentTarget.getBoundingClientRect();
+      panning.current = {
+        x: e.clientX,
+        y: e.clientY,
+        focus: { x: v.image_focus_x, y: v.image_focus_y },
+        reach: overflowOf(e.currentTarget.querySelector("img"), stage, v.image_zoom),
+      };
+      setSelected(null);
+      e.currentTarget.setPointerCapture(e.pointerId);
+    },
+    onPointerMove: (e) => {
+      const p = panning.current;
+      if (!p) return;
+      // Dragging the photo right shows more of its left: the focal point moves the other way.
+      const along = (moved: number, reach: number, from: number) =>
+        reach > 1 ? Math.round(clamp(from - (moved / reach) * 100, 0, 100)) : from;
+      set({
+        image_focus_x: along(e.clientX - p.x, p.reach.x, p.focus.x),
+        image_focus_y: along(e.clientY - p.y, p.reach.y, p.focus.y),
+      });
+    },
+    onPointerUp: (e) => {
+      panning.current = null;
+      if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
+    },
+  };
+  pan.onPointerCancel = pan.onPointerUp;
+
   return (
     <fieldset className="space-y-4 rounded-xl border border-slate-200 p-4 dark:border-white/10">
       <legend className="px-1 text-sm font-medium text-slate-700 dark:text-zinc-300">Yerleşim & görsel kırpma</legend>
@@ -97,7 +195,8 @@ export function SlideCanvas({
           })}
         </div>
         <p className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-zinc-400">
-          <Move className="h-3.5 w-3.5" aria-hidden /> Öğeleri sürükleyin; seçiliyken ok tuşlarıyla ince ayar (Shift: hızlı).
+          <Move className="h-3.5 w-3.5" aria-hidden /> Yazıları sürükleyerek taşıyın; seçili yazıyı kırmızı köşesinden
+          sürükleyerek büyütüp küçültün; fotoğrafı boş yerinden sürükleyerek kaydırın.
         </p>
         <button
           type="button"
@@ -118,7 +217,9 @@ export function SlideCanvas({
         <HeroSlideView
           slide={slide}
           heading="div"
-          editor={{ selected, bind }}
+          editor={{ selected, bind, resize }}
+          wrapperProps={pan}
+          className={image ? "cursor-move touch-none" : ""}
         >
           {/* Where the slide's own controls sit, so nothing is dropped under them. */}
           {v.layout && (

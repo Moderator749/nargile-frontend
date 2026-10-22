@@ -1136,14 +1136,17 @@ export interface AdminFlashSaleWrite {
 /** Content shown only while something exists (e.g. a live flash sale). */
 export type ContentRequirement = "flash_sales";
 
-/** A slide text's size, by Tailwind's names: sm 14px … 7xl 72px on the widest slider. */
+/** The named sizes the editor's first version saved (sm 14px … 7xl 72px); read as their pixels. */
 export type HeroFontSize = "sm" | "base" | "lg" | "xl" | "2xl" | "3xl" | "4xl" | "5xl" | "6xl" | "7xl";
 
-/** Per text; one left out (null) keeps the slide's own. */
+/**
+ * Per text, its size in px on the widest slider (8–160), set by dragging the
+ * text's corner in the editor; one left out (null) keeps the slide's own.
+ */
 export interface HeroTextSizes {
-  eyebrow?: HeroFontSize | null;
-  title?: HeroFontSize | null;
-  subtitle?: HeroFontSize | null;
+  eyebrow?: number | null;
+  title?: number | null;
+  subtitle?: number | null;
 }
 
 /** Per text, "#rrggbb"; one left out (null) keeps the slide's own. */

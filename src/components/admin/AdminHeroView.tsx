@@ -51,7 +51,7 @@ function SlideTextArea({
 }
 
 /** A size or colour for one text, the rest kept; null when none is left. */
-function withOne<T extends HeroTextSizes | HeroTextColors>(all: T | null, text: SlideText, value: string | null): T | null {
+function withOne<T extends HeroTextSizes | HeroTextColors>(all: T | null, text: SlideText, value: string | number | null): T | null {
   const next = { ...(all ?? {}), [text]: value } as T;
   return Object.values(next).some(Boolean) ? next : null;
 }

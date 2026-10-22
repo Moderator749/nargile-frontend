@@ -90,7 +90,7 @@ function ArtDirectedImage({
   );
 }
 
-/** The sizes the admin can give a text, in px on the widest slider (≈952px). */
+/** The named sizes of the editor's first version, as px on the widest slider (≈952px). */
 export const HERO_FONT_PX: Record<HeroFontSize, number> = {
   sm: 14,
   base: 16,
@@ -105,18 +105,30 @@ export const HERO_FONT_PX: Record<HeroFontSize, number> = {
 };
 const WIDEST = 9.52; // px per cqw on the widest slider
 
+/** Each text's own size on the widest slider, where the admin has set none: what a resize starts from. */
+export const HERO_DEFAULT_PX = { eyebrow: 11, title: 72, subtitle: 18 } as const;
+
+/** A stored size as px: a number as it is, a name of the first version as the px it stood for. */
+export const heroTextPx = (size: number | string | null | undefined): number | null =>
+  typeof size === "number" ? size : size ? (HERO_FONT_PX[size as HeroFontSize] ?? null) : null;
+
 /**
  * A text the admin sized: its size on the widest slider, shrinking with the
  * slide (`cqw`) down to half of it (12px at least) on a phone. On a stage
  * with placed parts it is exactly the stage's fraction from `lg`, like
  * every other size there, so the admin's preview stays a scale model.
  */
-function sized(size: HeroFontSize | null | undefined, placed: boolean): { className: string; style: CSSProperties } | null {
-  if (!size) return null;
-  const px = HERO_FONT_PX[size];
+function sized(size: number | string | null | undefined, placed: boolean): { className: string; style: CSSProperties } | null {
+  const px = heroTextPx(size);
+  if (!px) return null;
   return {
     className: `text-[length:clamp(var(--fs-min),var(--fs-cqw),var(--fs))] ${placed ? "lg:text-[length:var(--fs-cqw)]" : ""}`,
-    style: { "--fs": `${px}px`, "--fs-cqw": `${(px / WIDEST).toFixed(3)}cqw`, "--fs-min": `${Math.max(12, px / 2)}px` } as CSSProperties,
+    style: {
+      "--fs": `${px}px`,
+      "--fs-cqw": `${(px / WIDEST).toFixed(4)}cqw`,
+      // Never under half its size on a phone, nor under 12px — unless it is smaller still.
+      "--fs-min": `${Math.min(px, Math.max(12, px / 2))}px`,
+    } as CSSProperties,
   };
 }
 
@@ -127,6 +139,20 @@ export interface HeroEditorBinding {
   /** Event handlers and a11y props that make a part draggable. */
   bind: (part: HeroPart) => HTMLAttributes<HTMLElement>;
   selected: HeroPart | null;
+  /** The corner handle that resizes a selected text, by dragging. */
+  resize?: (part: "eyebrow" | "title" | "subtitle") => HTMLAttributes<HTMLElement>;
+}
+
+/** A selected text's resize handle in the editor: its bottom corner, at the text's trailing end. */
+function ResizeHandle({ editor, part }: { editor?: HeroEditorBinding; part: "eyebrow" | "title" | "subtitle" }) {
+  if (!editor?.resize || editor.selected !== part) return null;
+  return (
+    <span
+      {...editor.resize(part)}
+      data-resize={part}
+      className="absolute -end-2 -bottom-2 z-10 h-4 w-4 cursor-nwse-resize touch-none rounded-sm border-2 border-white bg-red-500 shadow focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white rtl:cursor-nesw-resize"
+    />
+  );
 }
 
 export function HeroSlideView({
@@ -158,7 +184,7 @@ export function HeroSlideView({
   const part = (name: HeroPart, own: string, style?: CSSProperties) => {
     const bound = editor?.bind(name) ?? {};
     const editing = editor
-      ? `cursor-grab touch-none select-none outline-dashed outline-1 outline-offset-4 active:cursor-grabbing ${
+      ? `relative cursor-grab touch-none select-none outline-dashed outline-1 outline-offset-4 active:cursor-grabbing ${
           editor.selected === name ? "outline-2 outline-red-500" : "outline-white/40 hover:outline-white/80"
         }`
       : "";
@@ -240,6 +266,7 @@ export function HeroSlideView({
         )}
       >
         {slide.eyebrow}
+        <ResizeHandle editor={editor} part="eyebrow" />
       </p>
 
       <Heading className={`mt-5 max-w-4xl ${placed ? "lg:contents" : ""} ${textShadow}`}>
@@ -261,6 +288,7 @@ export function HeroSlideView({
           )}
         >
           {slide.title}
+          <ResizeHandle editor={editor} part="title" />
         </span>
         <span
           {...part(
@@ -272,6 +300,7 @@ export function HeroSlideView({
           )}
         >
           {slide.subtitle}
+          <ResizeHandle editor={editor} part="subtitle" />
         </span>
       </Heading>
 

@@ -68,8 +68,9 @@ export function useDragLayout<P extends string>({
   function onPointerDown(part: P, e: PointerEvent<HTMLElement>) {
     if (e.button !== 0 || !frame.current) return;
     e.preventDefault();
+    // The layout changes on the first move, not here: a click only selects
+    // (so the centred stack stays one until a part is actually moved).
     const start = current();
-    if (start !== layout) setLayout(start);
     drag.current = { part, px: e.clientX, py: e.clientY, start, rect: frame.current.getBoundingClientRect() };
     setSelected(part);
     e.currentTarget.setPointerCapture(e.pointerId);
