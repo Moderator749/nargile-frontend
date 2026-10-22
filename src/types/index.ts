@@ -1118,7 +1118,8 @@ export interface AdminFlashSale {
   sale_price_incl_tax: DecimalString;
   regular_price_incl_tax: DecimalString | null;
   starts_at: ISODateTime;
-  ends_at: ISODateTime;
+  /** None: no deadline (runs until switched off). */
+  ends_at: ISODateTime | null;
   is_active: boolean;
   is_live: boolean;
 }
@@ -1127,7 +1128,7 @@ export interface AdminFlashSaleWrite {
   sku: string;
   sale_price_incl_tax: DecimalString;
   starts_at: ISODateTime;
-  ends_at: ISODateTime;
+  ends_at: ISODateTime | null;
   is_active: boolean;
 }
 

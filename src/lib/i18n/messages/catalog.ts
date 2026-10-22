@@ -29,11 +29,15 @@ export const catalogMessages = defineMessages({
     segments: TR_SEGMENT,
     filters: {
       showCategories: "Kategorileri Göster",
+      view: "Görünüm",
+      viewTwo: "Yan yana iki ürün",
+      viewOne: "Tek sütun, büyük kart",
       widenPage: "Sayfayı Genişlet",
       priceRange: "Fiyat Aralığı",
       minPrice: "En düşük fiyat",
       maxPrice: "En yüksek fiyat",
       inStock: "Stokta Olanlar",
+      inStockShort: "Stokta",
       sort: "Sırala",
       sortOptions: {
         recommended: "Önerilen",
@@ -131,11 +135,15 @@ export const catalogMessages = defineMessages({
     segments: EN_SEGMENT,
     filters: {
       showCategories: "Show Categories",
+      view: "View",
+      viewTwo: "Two products per row",
+      viewOne: "One per row, large cards",
       widenPage: "Expand Page",
       priceRange: "Price Range",
       minPrice: "Minimum price",
       maxPrice: "Maximum price",
       inStock: "In Stock Only",
+      inStockShort: "In stock",
       sort: "Sort",
       sortOptions: {
         recommended: "Recommended",
@@ -228,12 +236,16 @@ export const catalogMessages = defineMessages({
     breadcrumb: "مسار التنقل",
     segments: AR_SEGMENT,
     filters: {
+      view: "طريقة العرض",
+      viewTwo: "منتجان في كل صف",
+      viewOne: "منتج واحد في كل صف ببطاقة كبيرة",
       showCategories: "إظهار الأقسام",
       widenPage: "توسيع الصفحة",
       priceRange: "نطاق السعر",
       minPrice: "أدنى سعر",
       maxPrice: "أعلى سعر",
       inStock: "المتوفر فقط",
+      inStockShort: "متوفر",
       sort: "ترتيب",
       sortOptions: {
         recommended: "المقترح",

@@ -10,6 +10,7 @@ import { PriceCatalogExport } from "@/components/catalog/PriceCatalogExport";
 import { isExportAccount } from "@/lib/exportAccount";
 import { isB2BSegment } from "@/lib/priceList";
 import { CatalogFilterBar } from "@/components/catalog/CatalogFilterBar";
+import { useCatalogDensity } from "@/lib/catalogView";
 import { ProductCard, ProductCardSkeleton } from "@/components/catalog/ProductCard";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
@@ -126,6 +127,9 @@ function CatalogGrid({
   const filtered = shown.length === 0 && catalog.products.length > 0;
 
   const patch = (next: Partial<CatalogFilters>) => setFilters((f) => ({ ...f, ...next }));
+  // A phone's two-or-one choice (the filter bar's switch); wider screens keep their columns.
+  const density = useCatalogDensity();
+  const grid = `${gridClass} ${density === "one" ? "max-md:grid-cols-1" : ""}`;
   const collection = brand ? brand.name : searched ? t.searchCollection(searched) : (activeCategory?.name ?? t.allProducts);
 
   return (
@@ -158,7 +162,7 @@ function CatalogGrid({
       </div>
 
       {catalog.loading ? (
-        <div className={gridClass} aria-busy aria-label={t.loading}>
+        <div className={grid} aria-busy aria-label={t.loading}>
           {Array.from({ length: 8 }, (_, i) => (
             <ProductCardSkeleton key={i} />
           ))}
@@ -196,7 +200,7 @@ function CatalogGrid({
       ) : (
         <>
           <ul
-            className={`${gridClass} transition-opacity duration-200 ${catalog.refreshing ? "opacity-60" : ""}`}
+            className={`${grid} transition-opacity duration-200 ${catalog.refreshing ? "opacity-60" : ""}`}
             aria-busy={catalog.refreshing}
           >
             {shown.map((product, i) => (

@@ -1,14 +1,16 @@
 "use client";
 
 import { useId, useSyncExternalStore, type ReactNode } from "react";
-import { Check, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { Check, LayoutGrid, PanelLeftClose, PanelLeftOpen, Square } from "lucide-react";
 
 import { useMessages } from "@/components/i18n/LocaleProvider";
 import { SORT_OPTIONS, type CatalogFilters, type SortKey } from "@/lib/catalogFilters";
+import { setCatalogDensity, useCatalogDensity } from "@/lib/catalogView";
 import { catalogMessages } from "@/lib/i18n/messages/catalog";
 import { isSidebarCollapsed, setSidebarCollapsed, subscribeSidebar } from "@/lib/sidebar";
 
-const LABEL = "text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400";
+// On a phone the bar is one compact row, so its labels are for screen readers only.
+const LABEL = "text-[11px] font-bold uppercase tracking-wider text-neutral-500 max-md:sr-only dark:text-neutral-400";
 // One height for every control in the bar: the price boxes, the stock pill,
 // the sort and the catalogue button (PriceCatalogExport) are all h-9.
 const FIELD = [
@@ -29,7 +31,12 @@ interface CatalogFilterBarProps {
 /**
  * One row, three controls: price range, stock, sort — and, for a B2B account,
  * the catalogue button at the far right. One line on a desktop (from xl, where
- * the column beside the category sidebar has the room); narrower screens wrap.
+ * the column beside the category sidebar has the room); a tablet wraps.
+ *
+ * On a phone it is a compact strip instead, held under the header as the grid
+ * scrolls: one line edge to edge (the labels for screen readers only), sliding
+ * sideways if an account's extra button does not fit, and ending in the
+ * grid's two-or-one switch (`DensityToggle`).
  *
  * Everything here narrows what is already on screen (see `lib/catalogFilters`),
  * so the controls are plain inputs rather than links: there is no URL behind
@@ -61,6 +68,42 @@ function SidebarToggle() {
   );
 }
 
+/**
+ * A phone's grid: two products to a row (the default) or one, full width.
+ * Remembered in this browser (lib/catalogView). Phones only: wider screens
+ * have their own columns.
+ */
+function DensityToggle() {
+  const density = useCatalogDensity();
+  const t = useMessages(catalogMessages).filters;
+  const option = (value: "two" | "one", label: string, Icon: typeof LayoutGrid) => (
+    <button
+      type="button"
+      onClick={() => setCatalogDensity(value)}
+      aria-pressed={density === value}
+      aria-label={label}
+      title={label}
+      className={`flex h-7 w-6 items-center justify-center rounded-lg transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent ${
+        density === value
+          ? "bg-white text-red-600 shadow-sm dark:bg-neutral-700 dark:text-red-400"
+          : "text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200"
+      }`}
+    >
+      <Icon className="h-4 w-4" aria-hidden />
+    </button>
+  );
+  return (
+    <div
+      role="group"
+      aria-label={t.view}
+      className="flex h-9 shrink-0 items-center gap-0.5 rounded-xl border border-neutral-200 bg-neutral-100 p-0.5 md:hidden dark:border-neutral-700 dark:bg-neutral-800"
+    >
+      {option("two", t.viewTwo, LayoutGrid)}
+      {option("one", t.viewOne, Square)}
+    </div>
+  );
+}
+
 export function CatalogFilterBar({ value, onChange, bounds, trailing }: CatalogFilterBarProps) {
   const minId = useId();
   const maxId = useId();
@@ -68,8 +111,17 @@ export function CatalogFilterBar({ value, onChange, bounds, trailing }: CatalogF
   const t = useMessages(catalogMessages).filters;
 
   return (
-    <div className="mb-8 flex w-full flex-wrap items-center justify-between gap-2 rounded-2xl border border-neutral-200/80 bg-white p-3 shadow-sm sm:p-4 dark:border-neutral-800 dark:bg-neutral-900">
-      <div className="flex shrink-0 items-center gap-2">
+    <div
+      className={[
+        "flex w-full items-center gap-1.5 md:gap-2 border-neutral-200/80 bg-white dark:border-neutral-800 dark:bg-neutral-900",
+        // Tablet and up: the rounded box it has always been.
+        "md:mb-8 md:flex-wrap md:justify-between md:rounded-2xl md:border md:p-4 md:shadow-sm",
+        // Phone: a strip held under the header (--header-height, set by the
+        // Navbar), edge to edge across the page's padding, one line.
+        "max-md:sticky max-md:top-[var(--header-height,4rem)] max-md:z-30 max-md:mb-4 max-md:-mx-4 max-md:w-auto max-md:flex-nowrap max-md:overflow-x-auto max-md:border-b max-md:bg-white/95 max-md:px-4 max-md:py-2 max-md:shadow-[0_6px_12px_-10px_rgb(0_0_0/0.35)] max-md:backdrop-blur-md max-md:[scrollbar-width:none] sm:max-md:-mx-6 sm:max-md:px-6 dark:max-md:bg-neutral-900/95",
+      ].join(" ")}
+    >
+      <div className="flex shrink-0 items-center gap-1 md:gap-2">
         <SidebarToggle />
         <span className={`${LABEL} whitespace-nowrap`} id={`${minId}-label`}>
           {t.priceRange}
@@ -84,7 +136,7 @@ export function CatalogFilterBar({ value, onChange, bounds, trailing }: CatalogF
           value={value.min}
           onChange={(e) => onChange({ min: e.target.value })}
           placeholder={bounds ? String(bounds.min) : "0"}
-          className={`${FIELD} w-16 text-center`}
+          className={`${FIELD} w-10 text-center max-md:px-0.5 md:w-16`}
         />
         <span aria-hidden className="text-xs font-bold text-neutral-400">
           –
@@ -99,7 +151,7 @@ export function CatalogFilterBar({ value, onChange, bounds, trailing }: CatalogF
           value={value.max}
           onChange={(e) => onChange({ max: e.target.value })}
           placeholder={bounds ? String(bounds.max) : "1000"}
-          className={`${FIELD} w-16 text-center`}
+          className={`${FIELD} w-10 text-center max-md:px-0.5 md:w-16`}
         />
       </div>
 
@@ -109,27 +161,31 @@ export function CatalogFilterBar({ value, onChange, bounds, trailing }: CatalogF
         type="button"
         aria-pressed={value.inStock}
         onClick={() => onChange({ inStock: !value.inStock })}
-        className={`flex h-9 shrink-0 select-none items-center gap-2 whitespace-nowrap rounded-xl border px-3 text-[11px] font-bold uppercase tracking-wider transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+        className={`flex h-9 shrink-0 select-none items-center gap-1.5 whitespace-nowrap rounded-xl border px-2 text-[11px] md:gap-2 md:px-3 font-bold uppercase tracking-wider transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
           value.inStock
             ? "border-red-600 bg-red-600 text-white shadow-sm"
             : "border-neutral-200 bg-neutral-50 text-neutral-700 hover:border-red-400/50 hover:text-red-600 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
         }`}
       >
+        {/* On a phone the pill's own red says it is on; the box needs the room. */}
         <span
           aria-hidden
-          className={`flex h-4 w-4 items-center justify-center rounded-md border transition-colors duration-200 ${
+          className={`flex h-4 w-4 items-center justify-center rounded-md border transition-colors duration-200 max-md:hidden ${
             value.inStock ? "border-white/70 bg-white/20" : "border-neutral-300 dark:border-neutral-600"
           }`}
         >
           {value.inStock && <Check className="h-3 w-3" strokeWidth={3} />}
         </span>
-        {t.inStock}
+        <span className="md:hidden">{t.inStockShort}</span>
+        <span className="max-md:hidden">{t.inStock}</span>
       </button>
 
       {/* With something beside the sort (the catalogue button) the group may
           wrap under the rest; it stays in the far corner (the left in Arabic) when it does.
           Without it, the bar keeps its three-way spacing. */}
-      <div className={`flex flex-wrap items-center justify-end gap-2 xl:flex-nowrap ${trailing ? "ms-auto" : ""}`}>
+      <div
+        className={`flex items-center justify-end gap-2 max-md:min-w-[4.5rem] max-md:flex-1 md:shrink-0 md:flex-wrap xl:flex-nowrap ${trailing ? "md:ms-auto" : ""}`}
+      >
         <label className={`${LABEL} whitespace-nowrap`} htmlFor={sortId}>
           {t.sort}
         </label>
@@ -137,7 +193,7 @@ export function CatalogFilterBar({ value, onChange, bounds, trailing }: CatalogF
           id={sortId}
           value={value.sort}
           onChange={(e) => onChange({ sort: e.target.value as SortKey })}
-          className={`${FIELD} w-36 cursor-pointer pe-8`}
+          className={`${FIELD} cursor-pointer pe-8 max-md:w-full max-md:min-w-0 max-md:px-2 max-md:pe-6 max-md:text-[11px] md:w-36`}
         >
           {SORT_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
@@ -147,6 +203,7 @@ export function CatalogFilterBar({ value, onChange, bounds, trailing }: CatalogF
         </select>
         {trailing}
       </div>
+      <DensityToggle />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useLayoutEffect, useRef, useSyncExternalStore } from "react";
-import { ArrowLeft, ChevronDown, LayoutGrid, X } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronRight, LayoutGrid, X } from "lucide-react";
 
 import { usePagePath } from "@/components/i18n/navigation";
 import { useLocale, useT } from "@/components/i18n/LocaleProvider";
@@ -20,9 +20,14 @@ import { useCategoryDrawer } from "@/store/useCategoryDrawer";
  * on (below `lg`). Opened from the menu bar's "KATEGORİLER" on a tablet and
  * from the header's menu button on a phone, so it is drawn on every page —
  * /cart too, where the menu bar itself steps aside.
+ *
+ * On a phone the menu bar is not shown at all, so its links (`links`: "Fırsat
+ * Ürünleri", "Nargile Kömürleri"…) head the drawer instead: a phone has the one
+ * menu, behind the header's button.
  */
-function CategoryDrawer({ categories }: { categories: ResolvedNav[] }) {
+function CategoryDrawer({ categories, links = [] }: { categories: ResolvedNav[]; links?: ResolvedNav[] }) {
   const t = useT();
+  const locale = useLocale();
   const open = useCategoryDrawer((s) => s.open);
   const setOpen = useCategoryDrawer((s) => s.setOpen);
   const dialog = useRef<HTMLDialogElement>(null);
@@ -61,6 +66,26 @@ function CategoryDrawer({ categories }: { categories: ResolvedNav[] }) {
           <X className="h-4 w-4" aria-hidden />
         </button>
       </div>
+      {links.length > 0 && (
+        <nav aria-label={t.nav.mainMenu} className="border-b-4 border-border md:hidden">
+          <ul>
+            {links.map(({ label, href, accent }) => (
+              <li key={`${href}-${label}`} className="border-b border-border last:border-0">
+                <Link
+                  href={href}
+                  onClick={() => setOpen(false)}
+                  className={`flex items-center justify-between gap-2 px-3 py-3 text-[13px] font-semibold uppercase tracking-wide transition-colors hover:bg-foreground/[0.04] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent ${
+                    accent ? "text-red-700 dark:text-red-400" : "text-foreground"
+                  }`}
+                >
+                  <span className="min-w-0 truncate">{navLabel(label, locale)}</span>
+                  <ChevronRight className="h-3.5 w-3.5 shrink-0 text-gray-400 rtl:rotate-180 dark:text-neutral-500" aria-hidden />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )}
       <Suspense fallback={null}>
         <CategoryList items={categories} onNavigate={() => setOpen(false)} />
       </Suspense>
@@ -128,20 +153,22 @@ export function TopNav({ categories, links }: { categories: ResolvedNav[]; links
             {t.nav.continueShopping}
           </Link>
         </div>
-        <CategoryDrawer categories={categories} />
+        <CategoryDrawer categories={categories} links={links} />
       </nav>
     );
   }
 
   // A band under the white logo row in the category column's grey, framing
-  // the page with it; a hairline between the two rows.
+  // the page with it; a hairline between the two rows. Not on a phone: there
+  // its links are in the menu drawer (the header's button), one menu, and the
+  // page starts right under the search.
   return (
-    <nav aria-label={t.nav.mainMenu} className="border-t border-gray-200 bg-background dark:border-border">
+    <nav aria-label={t.nav.mainMenu} className="bg-background md:border-t md:border-gray-200 dark:md:border-border">
       {/* The gap after the red button is the category column's end margin,
           not a gap of its own choosing: 16rem of button plus 1.5rem of gap is
           what puts the first link on the hero's left edge, exactly as the
           column below puts the hero there. */}
-      <div className={`${PAGE_CONTAINER} flex items-center gap-3 py-2 lg:gap-6`}>
+      <div className={`${PAGE_CONTAINER} hidden items-center gap-3 py-2 md:flex lg:gap-6`}>
         {/* The column's header cell, and the button that gives up its width. */}
         <button
           type="button"
@@ -218,7 +245,7 @@ export function TopNav({ categories, links }: { categories: ResolvedNav[]; links
         </ul>
       </div>
 
-      <CategoryDrawer categories={categories} />
+      <CategoryDrawer categories={categories} links={links} />
     </nav>
   );
 }

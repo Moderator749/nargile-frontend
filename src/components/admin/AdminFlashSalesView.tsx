@@ -52,7 +52,7 @@ function emptyForm(): FormState {
 
 function status(sale: AdminFlashSale, now: number | null) {
   if (!sale.is_active) return { text: "Kapalı", className: "bg-slate-100 text-slate-500 dark:bg-white/5 dark:text-zinc-400" };
-  if (now !== null && Date.parse(sale.ends_at) <= now)
+  if (now !== null && sale.ends_at && Date.parse(sale.ends_at) <= now)
     return { text: "Süresi doldu", className: "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300" };
   if (now !== null && Date.parse(sale.starts_at) > now)
     return { text: "Planlandı", className: "bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300" };
@@ -91,9 +91,9 @@ export function AdminFlashSalesView() {
     ? "Ürün kodunu (SKU) girin."
     : !price || Number(price) <= 0
       ? "Geçerli bir kampanya fiyatı girin (ör. 1.249,90)."
-      : !startsAt || !endsAt
-        ? "Başlangıç ve bitiş zamanını seçin."
-        : Date.parse(endsAt) <= Date.parse(startsAt)
+      : !startsAt
+        ? "Başlangıç zamanını seçin."
+        : endsAt && Date.parse(endsAt) <= Date.parse(startsAt)
           ? "Bitiş, başlangıçtan sonra olmalı."
           : null;
 
@@ -117,17 +117,21 @@ export function AdminFlashSalesView() {
 
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (saving || problem || !price || !startsAt || !endsAt) return;
+    if (saving || problem || !price || !startsAt) return;
     setSaving(true);
     setResult(null);
-    const body = { sku: form.sku.trim(), sale_price_incl_tax: price, starts_at: startsAt, ends_at: endsAt, is_active: form.active };
+    // No end: the offer runs until it is switched off (or its stock runs out).
+    const body = { sku: form.sku.trim(), sale_price_incl_tax: price, starts_at: startsAt, ends_at: endsAt || null, is_active: form.active };
     try {
       const saved = editing ? await adminUpdateFlashSale(editing.id, body) : await adminCreateFlashSale(body);
       setSales((list) => [saved, ...(list ?? []).filter((s) => s.id !== saved.id)]);
       void refreshStorefront(); // catalog listings show the sale too
       setEditing(null);
       setForm(emptyForm());
-      setResult({ kind: "success", text: `Kaydedildi: ${saved.product_name}. Sepette bu fiyat bitiş zamanına kadar uygulanır.` });
+      setResult({
+        kind: "success",
+        text: `Kaydedildi: ${saved.product_name}. Sepette bu fiyat ${saved.ends_at ? "bitiş zamanına kadar" : "kapatılana kadar"} uygulanır.`,
+      });
     } catch (err) {
       setResult({ kind: "error", text: getApiErrorMessage(err, "Fırsat ürünü kaydedilemedi.") });
     } finally {
@@ -192,7 +196,12 @@ export function AdminFlashSalesView() {
             onChange={(e) => set("starts", e.target.value)}
           />
           <div className="space-y-2">
-            <Input label="Bitiş" type="datetime-local" value={form.ends} onChange={(e) => set("ends", e.target.value)} />
+            <Input
+              label="Bitiş (boş: süresiz)"
+              type="datetime-local"
+              value={form.ends}
+              onChange={(e) => set("ends", e.target.value)}
+            />
             <div className="flex flex-wrap gap-2">
               {DURATIONS.map((d) => (
                 <button
@@ -273,7 +282,7 @@ export function AdminFlashSalesView() {
                     )}
                   </div>
                   <p className="text-xs text-slate-500 dark:text-zinc-400">
-                    {formatDate(sale.starts_at)} → {formatDate(sale.ends_at)}
+                    {formatDate(sale.starts_at)} → {sale.ends_at ? formatDate(sale.ends_at) : "süresiz"}
                   </p>
                   <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${st.className}`}>{st.text}</span>
                   <div className="flex gap-1">
