@@ -44,8 +44,10 @@ export interface SheetDraft {
   retailPercent: string;
   vatRate: string;
   retailDesired: string;
-  /** After retail, each worked out as retail is (after VAT); for reference, never sent to the site. */
+  /** Between the classes and retail, each a branch off the last class as retail is (after VAT); for reference, never sent to the site. */
   extras: ColumnDraft[];
+  /** "ERP Fiyatı (%)": each calculated price plus this, shown under it. */
+  erpPercent: string;
   usdRate: string;
   eurRate: string;
   finalTry: string;
@@ -60,7 +62,7 @@ export const newColumn = (label = "", segment: PricingSegment | "" = ""): Column
   desired: "",
 });
 
-/** The price after retail every sheet starts with; renamed in its header. */
+/** The price before retail every sheet starts with; renamed in its header. */
 export const EXTRA_LABELS = ["Özel Fiyat"];
 export const defaultExtras = () => EXTRA_LABELS.map((label) => newColumn(label));
 
@@ -75,6 +77,7 @@ export const emptySheet = (vatMode: VatMode = "EXCL"): SheetDraft => ({
   vatRate: "20",
   retailDesired: "",
   extras: defaultExtras(),
+  erpPercent: "",
   usdRate: "",
   eurRate: "",
   finalTry: "",
@@ -119,8 +122,10 @@ const clip = "overflow-hidden";
 const headFill = "bg-[#F2F2F2] dark:bg-zinc-800";
 const orangeFill = "bg-[#FCE4D6] text-orange-950 dark:bg-orange-500/15 dark:text-orange-100";
 const greenFill = "bg-[#E2EFDA] dark:bg-emerald-500/15";
+/** The ERP row under the formula row: Excel's light blue. */
+const blueFill = "bg-[#DDEBF7] text-sky-950 dark:bg-sky-500/15 dark:text-sky-100";
 const headText = "text-[10px] font-bold uppercase leading-tight tracking-wide text-slate-700 dark:text-zinc-200";
-/** Bayi, Toptan, Kafe and the one after retail: with the cost and retail, the six boxes that always fit. */
+/** Bayi, Toptan, Kafe and Özel Fiyat: with the cost and retail, the six boxes that always fit. */
 const STANDARD_STEPS = 4;
 /** An input that is the cell itself, as in a spreadsheet. */
 const cellInput =
@@ -204,6 +209,7 @@ export function PricingCalculator({
   };
   const setColumn = (key: number, patch: Partial<ColumnDraft>) =>
     set({ columns: d.columns.map((c) => (c.key === key ? { ...c, ...patch } : c)) });
+  const addColumn = () => set({ columns: [...d.columns, newColumn()] });
   const setExtra = (key: number, patch: Partial<ColumnDraft>) =>
     set({ extras: d.extras.map((c) => (c.key === key ? { ...c, ...patch } : c)) });
 
@@ -225,8 +231,9 @@ export function PricingCalculator({
   const calc = computeSheet({
     cost: num(d.cost),
     columns: d.columns.map((c) => ({ percent: num(c.percent), desired: num(c.desired) })),
-    retail: { percent: num(d.retailPercent), desired: num(d.retailDesired), vatRate: num(d.vatRate) },
     extras: d.extras.map((c) => ({ percent: num(c.percent), desired: num(c.desired) })),
+    retail: { percent: num(d.retailPercent), desired: num(d.retailDesired), vatRate: num(d.vatRate) },
+    erpPercent: num(d.erpPercent),
     vatMode: d.vatMode,
     currency: d.currency,
     usdRate: num(d.usdRate),
@@ -235,11 +242,10 @@ export function PricingCalculator({
 
   // What the server takes; null with the reason when the sheet is not complete.
   const used = d.columns.map((c) => c.segment).filter(Boolean);
-  // The extras are optional: those filled in from the left are sent, an
-  // empty one and everything after it are not (each builds on the one before).
-  const firstEmpty = d.extras.findIndex((c) => num(c.percent) === null);
-  const sentExtras = firstEmpty === -1 ? d.extras : d.extras.slice(0, firstEmpty);
-  const strayExtra = d.extras.slice(sentExtras.length).some((c) => c.percent.trim() || c.desired.trim());
+  // The extras are optional and independent: one with a percent is sent, one
+  // without is not — unless something was typed in it that would be lost.
+  const sentExtras = d.extras.filter((c) => num(c.percent) !== null);
+  const strayExtra = d.extras.some((c) => num(c.percent) === null && (c.percent.trim() || c.desired.trim()));
   const problem =
     num(d.cost) === null || num(d.cost)! <= 0
       ? "Maliyeti girin."
@@ -249,11 +255,13 @@ export function PricingCalculator({
           ? "Her sütunun kâr oranını girin (0 da olabilir)."
           : strayExtra
             ? "Özel fiyata önce kâr oranını girin (boşsa kaydedilmez)."
-            : num(d.vatRate) === null
-              ? "Perakende için KDV oranını girin."
-              : new Set(used).size !== used.length
-                ? "Bir müşteri grubu yalnızca bir sütuna bağlanabilir."
-                : null;
+            : d.erpPercent.trim() && num(d.erpPercent) === null
+              ? "ERP oranını sayı olarak girin (ya da boş bırakın)."
+              : num(d.vatRate) === null
+                ? "Perakende için KDV oranını girin."
+                : new Set(used).size !== used.length
+                  ? "Bir müşteri grubu yalnızca bir sütuna bağlanabilir."
+                  : null;
   const payload = (): PricingSheetInput => ({
     product_code: d.code.trim(),
     product_name: d.name.trim(),
@@ -268,6 +276,7 @@ export function PricingCalculator({
     })),
     retail: { percent: dec(d.retailPercent)!, vat_rate: dec(d.vatRate, 2)!, desired: dec(d.retailDesired, 2) },
     extras: sentExtras.map((c) => ({ label: c.label.trim(), percent: dec(c.percent)!, desired: dec(c.desired, 2) })),
+    erp_percent: dec(d.erpPercent),
     usd_rate: foreign ? dec(d.usdRate) : null,
     eur_rate: foreign ? dec(d.eurRate) : null,
     final_try: foreign ? dec(d.finalTry, 2) : null,
@@ -312,7 +321,7 @@ export function PricingCalculator({
 
   // On a before-VAT sheet, the orange retail cell says how it got there.
   const vatShown = d.vatMode === "EXCL" && calc.retailBeforeVat !== null && calc.retail.computed !== null;
-  // Label, cost, then a "+" and a step per column, "+", retail, a "+" and a step per extra, (TL).
+  // Label, cost, then a "+" and a step per column, a "+" and a step per extra, "+", retail, (TL).
   const span = 2 + d.columns.length * 2 + 2 + d.extras.length * 2 + (foreign ? 1 : 0);
   const steps = d.columns.length + d.extras.length;
 
@@ -344,14 +353,14 @@ export function PricingCalculator({
                 <col />
               </Fragment>
             ))}
-            <col className="w-5" />
-            <col />
             {d.extras.map((c) => (
               <Fragment key={c.key}>
                 <col className="w-5" />
                 <col />
               </Fragment>
             ))}
+            <col className="w-5" />
+            <col />
             {foreign && <col />}
           </colgroup>
           <tbody>
@@ -408,14 +417,25 @@ export function PricingCalculator({
                   onRemove={() => set({ columns: d.columns.filter((x) => x.key !== c.key) })}
                 />
               ))}
-              <StepPlus rowSpan={3} onAdd={() => set({ columns: [...d.columns, newColumn()] })} disabled={d.columns.length >= 12} />
+              {d.extras.map((c, i) => (
+                <ExtraHead
+                  key={c.key}
+                  column={c}
+                  onChange={(patch) => setExtra(c.key, patch)}
+                  // The "+" right after the classes adds one, wherever retail is.
+                  onAdd={i === 0 ? addColumn : undefined}
+                  addDisabled={d.columns.length >= 12}
+                />
+              ))}
+              <StepPlus
+                rowSpan={4}
+                onAdd={d.extras.length === 0 ? addColumn : undefined}
+                disabled={d.columns.length >= 12}
+              />
               <th scope="col" className={`${td} ${clip} px-1.5 py-1.5 text-left align-top`}>
                 <span className={`${headText} text-red-700 dark:text-red-300`}>KDV dahil perakende fiyat</span>
                 <PercentBadge label="Perakende kâr oranı" value={d.retailPercent} onChange={(retailPercent) => set({ retailPercent })} />
               </th>
-              {d.extras.map((c) => (
-                <ExtraHead key={c.key} column={c} onChange={(patch) => setExtra(c.key, patch)} />
-              ))}
               {foreign && (
                 <th scope="col" className={`${td} ${clip} px-1.5 py-1.5 text-left align-top`}>
                   <span className={headText}>TL fiyat</span>
@@ -452,20 +472,6 @@ export function PricingCalculator({
                   </span>
                 </td>
               ))}
-              <td className={`${td} ${clip} ${orangeFill} px-1 py-0.5 text-center`}>
-                <span
-                  className="block truncate font-mono text-[13px] font-bold tabular-nums"
-                  title={fmt(calc.retail.computed, d.currency)}
-                  aria-label="Perakende hesaplanan fiyat (KDV dahil)"
-                >
-                  {fmt(calc.retail.computed, d.currency)}
-                </span>
-                {vatShown && (
-                  <span className="block truncate font-mono text-[9px] leading-3 text-orange-800/80 dark:text-orange-200/70">
-                    {fmt(calc.retailBeforeVat, d.currency)} + %{d.vatRate.trim() || "0"} KDV
-                  </span>
-                )}
-              </td>
               {d.extras.map((c, i) => (
                 <td key={c.key} className={`${td} ${clip} ${orangeFill} px-1 py-0.5 text-center`}>
                   <span
@@ -482,6 +488,20 @@ export function PricingCalculator({
                   )}
                 </td>
               ))}
+              <td className={`${td} ${clip} ${orangeFill} px-1 py-0.5 text-center`}>
+                <span
+                  className="block truncate font-mono text-[13px] font-bold tabular-nums"
+                  title={fmt(calc.retail.computed, d.currency)}
+                  aria-label="Perakende hesaplanan fiyat (KDV dahil)"
+                >
+                  {fmt(calc.retail.computed, d.currency)}
+                </span>
+                {vatShown && (
+                  <span className="block truncate font-mono text-[9px] leading-3 text-orange-800/80 dark:text-orange-200/70">
+                    {fmt(calc.retailBeforeVat, d.currency)} + %{d.vatRate.trim() || "0"} KDV
+                  </span>
+                )}
+              </td>
               {foreign && (
                 <td className={`${td} ${clip} ${orangeFill} px-1 text-center font-mono text-[13px] font-semibold tabular-nums`}>
                   <span className="block truncate" title={fmt(calc.tryPrice, "TRY")} aria-label="TL fiyat">
@@ -491,7 +511,24 @@ export function PricingCalculator({
               )}
             </tr>
 
-            {/* Row 4: the prices to apply. */}
+            {/* Row 4: each calculated price plus the ERP percent. */}
+            <tr>
+              <th scope="row" className={`${td} ${headFill} px-2 py-1 text-left align-top`}>
+                <span className={`${headText} text-sky-800 dark:text-sky-300`}>ERP Fiyatı (%)</span>
+                <PercentBadge label="ERP fiyatı oranı" value={d.erpPercent} onChange={(erpPercent) => set({ erpPercent })} />
+              </th>
+              <td className={`${td} bg-slate-50 dark:bg-zinc-900`} />
+              {d.columns.map((c, i) => (
+                <ErpCell key={c.key} label={c.label || "Sütun"} value={calc.columns[i].erp} currency={d.currency} />
+              ))}
+              {d.extras.map((c, i) => (
+                <ErpCell key={c.key} label={c.label || "Özel fiyat"} value={calc.extras[i].erp} currency={d.currency} />
+              ))}
+              <ErpCell label="Perakende" value={calc.retail.erp} currency={d.currency} />
+              {foreign && <td className={`${td} bg-slate-50 dark:bg-zinc-900`} />}
+            </tr>
+
+            {/* Row 5: the prices to apply. */}
             <tr>
               <th scope="row" className={`${td} ${headFill} px-2 text-left ${headText} text-emerald-800 dark:text-emerald-300`}>
                 Uygulanacak fiyat
@@ -509,16 +546,6 @@ export function PricingCalculator({
                   />
                 </td>
               ))}
-              <td className={`${td} ${clip} ${greenFill} p-0`}>
-                <input
-                  inputMode="decimal"
-                  value={d.retailDesired}
-                  onChange={(e) => set({ retailDesired: e.target.value })}
-                  placeholder="raf fiyatı"
-                  aria-label="Perakende uygulanacak fiyat (KDV dahil)"
-                  className={`${cellInput} font-semibold`}
-                />
-              </td>
               {d.extras.map((c) => (
                 <td key={c.key} className={`${td} ${clip} ${greenFill} p-0`}>
                   <input
@@ -531,6 +558,16 @@ export function PricingCalculator({
                   />
                 </td>
               ))}
+              <td className={`${td} ${clip} ${greenFill} p-0`}>
+                <input
+                  inputMode="decimal"
+                  value={d.retailDesired}
+                  onChange={(e) => set({ retailDesired: e.target.value })}
+                  placeholder="raf fiyatı"
+                  aria-label="Perakende uygulanacak fiyat (KDV dahil)"
+                  className={`${cellInput} font-semibold`}
+                />
+              </td>
               {foreign && (
                 <td className={`${td} ${clip} bg-red-50 p-0 dark:bg-red-500/10`}>
                   <input
@@ -601,12 +638,13 @@ export function PricingCalculator({
       </div>
       <p className="mt-2 text-[11px] leading-4 text-slate-500 dark:text-zinc-400">
         Turuncu satır kendi formül zinciriyle hesaplanır; yeşil satıra yazdığınız fiyat zinciri değiştirmez, o sütunda
-        siteye gönderilen fiyat olur (boşsa hesaplanan). Perakende ve özel fiyat KDV dahildir:{" "}
+        siteye gönderilen fiyat olur (boşsa hesaplanan). Mavi satır, ERP oranı girilince her hesaplanan fiyatın o
+        oran eklenmiş hâlidir (yalnızca bilgi). Özel fiyat ve perakende KDV dahildir; ikisi de son fiyat sınıfının
+        (kafe) üzerine ayrı ayrı hesaplanır, biri diğerini etkilemez:{" "}
         {d.vatMode === "EXCL"
           ? "maliyet KDV hariç olduğundan KDV perakende adımında eklenir."
           : "maliyet zaten KDV dahil olduğundan perakendeye ayrıca KDV eklenmez; KDV oranı fiyatların KDV hariç karşılığı için kullanılır."}{" "}
-        Özel fiyat zinciri perakendenin KDV’siz adımından sürdürür (KDV bir kez eklenir); isteğe bağlıdır (kâr oranı
-        boşsa kaydedilmez), dosyaya kaydedilir ama siteye yazılmaz.
+        Özel fiyat isteğe bağlıdır (kâr oranı boşsa kaydedilmez), dosyaya kaydedilir ama siteye yazılmaz.
       </p>
 
       {result && (
@@ -634,14 +672,35 @@ export function PricingCalculator({
   );
 }
 
+/** A calculated price plus the sheet's ERP percent ("—" until there is one). */
+function ErpCell({ label, value, currency }: { label: string; value: number | null; currency: PricingCurrency }) {
+  return (
+    <td className={`${td} ${clip} ${blueFill} px-1 text-center font-mono text-[13px] font-semibold tabular-nums`}>
+      <span className="block truncate" title={fmt(value, currency)} aria-label={`${label} ERP fiyatı`}>
+        {fmt(value, currency)}
+      </span>
+    </td>
+  );
+}
+
 /**
- * A price after retail ("Özel Fiyat 1"), preceded by its "(+)": its name, to
+ * A price before retail ("Özel Fiyat"), preceded by its "(+)": its name, to
  * rename, and its percent — as retail's header, after VAT, for reference only.
  */
-function ExtraHead({ column: c, onChange }: { column: ColumnDraft; onChange: (patch: Partial<ColumnDraft>) => void }) {
+function ExtraHead({
+  column: c,
+  onChange,
+  onAdd,
+  addDisabled,
+}: {
+  column: ColumnDraft;
+  onChange: (patch: Partial<ColumnDraft>) => void;
+  onAdd?: () => void;
+  addDisabled?: boolean;
+}) {
   return (
     <>
-      <StepPlus rowSpan={3} />
+      <StepPlus rowSpan={4} onAdd={onAdd} disabled={addDisabled} />
       <th scope="col" className={`${td} ${clip} px-1.5 py-1.5 text-left align-top`}>
         <input
           value={c.label}
@@ -669,8 +728,8 @@ function ColumnHead({
 }) {
   return (
     <>
-      {/* Its "+" spans the header, formula and price rows. */}
-      <StepPlus rowSpan={3} />
+      {/* Its "+" spans the header, formula, ERP and price rows. */}
+      <StepPlus rowSpan={4} />
       <th scope="col" className={`${td} ${clip} px-1.5 py-1.5 text-left align-top`}>
         <span className="flex items-start gap-0.5">
           <input

@@ -53,6 +53,7 @@ function draftFrom(r: PricingRecord): SheetDraft {
     retailPercent: typed(s.retail.percent),
     vatRate: typed(s.retail.vat_rate),
     retailDesired: typed(s.retail.desired),
+    erpPercent: typed(s.erp_percent ?? null),
     // A row keeps its extras; the ones it did not fill (or an older row's) start empty.
     extras: [
       ...(s.extras ?? []).map((c) => ({ ...newColumn(c.label), percent: typed(c.percent), desired: typed(c.desired) })),

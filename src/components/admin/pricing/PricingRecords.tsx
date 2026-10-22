@@ -129,8 +129,8 @@ export function PricingRecords({
               {[
                 { label: "Maliyet", price: s.cost, kind: "cost" as const },
                 ...s.columns.map((col) => ({ label: col.label, price: col.price, kind: "plain" as const })),
-                { label: "Perakende", price: s.retail.price, kind: "retail" as const },
                 ...(s.extras ?? []).map((extra) => ({ label: extra.label, price: extra.price, kind: "plain" as const })),
+                { label: "Perakende", price: s.retail.price, kind: "retail" as const },
               ].map((cell, i) => (
                 <div
                   key={i}
