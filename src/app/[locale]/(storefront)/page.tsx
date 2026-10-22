@@ -240,10 +240,12 @@ export default async function HomePage() {
     .map((slide, index) => ({ slide, index }))
     .filter(({ slide }) => meets(slide.requires, has))
     .map(({ slide, index }) => withDefaultImage(toHeroSlide(slide), index))
-    // A portrait photo for phones, from "Mobil Yönetim", by the slide's id.
+    // A portrait photo for phones: the slide's own (/admin/hero, "Mobil"), else
+    // one an older "Mobil Yönetim" kept for it by the slide's id.
     .map((slide) => ({
       ...slide,
-      mobileImage: home.mobile.hero_images.find((entry) => String(entry.slide_id) === slide.id)?.image ?? null,
+      mobileImage:
+        slide.mobileImage ?? home.mobile.hero_images.find((entry) => String(entry.slide_id) === slide.id)?.image ?? null,
     }));
   const slides = cmsSlides.length > 0 ? cmsSlides : [FALLBACK_SLIDE];
 

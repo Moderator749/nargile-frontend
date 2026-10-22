@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { AlignCenter, AlignLeft, AlignRight, Monitor, Move, RotateCcw, Smartphone } from "lucide-react";
 
 import type { MobilePreviewState, PreviewMessage } from "@/components/admin/hero/MobileSlidePreview";
+import { ImageField } from "@/components/admin/homepage/fields";
 import { HERO_PARTS, mobileBg, presentParts, previewSlide, useHeroCanvas, type HeroDevice } from "@/components/admin/hero/useHeroCanvas";
 import { HERO_FRAME, HeroBackdrop, HeroSlideView } from "@/components/home/HeroSlideView";
+import { Input } from "@/components/ui/Input";
 import type { HeroLayout, HeroSlideWrite, HeroTextAlign } from "@/types";
 
 const ALIGNMENTS: { value: HeroTextAlign; label: string; Icon: typeof AlignLeft }[] = [
@@ -39,20 +40,21 @@ const pill = (active: boolean) =>
  * the storefront's phone styles apply). In either, drag a text to place it,
  * drag a selected text's red corner to size it, drag the photo to move its
  * focal point. Each view edits its own design only: a phone's positions,
- * sizes and crop are kept apart from the wide screen's.
+ * sizes, crop and photo are kept apart from the wide screen's. Under the
+ * canvas, the view's own photo: the wide one's address, or a phone's portrait
+ * photo (uploaded or by address), shown on the phone the moment it is set.
  */
 export function SlideCanvas({
   value: v,
   set,
   image,
-  mobileImage = null,
 }: {
   value: HeroSlideWrite;
   set: (patch: Partial<HeroSlideWrite>) => void;
+  /** The wide photo as it shows: the uploaded file, else the address typed. */
   image: string | null;
-  /** The slide's portrait photo for phones ("Mobil Yönetim"), if it has one. */
-  mobileImage?: string | null;
 }) {
+  const mobileImage = v.mobile_image?.trim() || null;
   const [device, setDevice] = useState<HeroDevice>("desktop");
   const mobile = device === "mobile";
   const frame = useRef<HTMLDivElement>(null);
@@ -170,18 +172,33 @@ export function SlideCanvas({
         ))}
       </ul>
       <p className="text-[11px] text-slate-500 dark:text-zinc-400">
-        {mobile ? (
-          <>
-            Telefonda slayt 4:5 oranında gösterilir. Telefona özel dikey fotoğraf{" "}
-            <Link href="/admin/homepage?tab=mobil-yonetim" className="font-medium text-red-600 hover:underline dark:text-red-400">
-              Ana Sayfa Düzenleme › Mobil Yönetim
-            </Link>
-            ’den yüklenir{mobileImage ? " (bu slaytta var)" : "; yoksa geniş fotoğraf kırpılarak kullanılır"}.
-          </>
-        ) : (
-          "Serbest konumlar geniş ekranlarda (1024px ve üzeri) uygulanır; tablette öğeler okunaklı kalması için ortalı dizilir. Telefonun kendi tasarımı “Mobil” görünümündedir."
-        )}
+        {mobile
+          ? "Telefonda (768px altı) slayt 4:5 oranında gösterilir; mobil görsel yoksa geniş fotoğraf kırpılarak kullanılır."
+          : "Serbest konumlar geniş ekranlarda (1024px ve üzeri) uygulanır; tablette öğeler okunaklı kalması için ortalı dizilir. Telefonun kendi tasarımı “Mobil” görünümündedir."}
       </p>
+
+      {/* The view's own photo. */}
+      {mobile ? (
+        <ImageField
+          label="Mobil görsel (dikey)"
+          value={v.mobile_image}
+          onChange={(mobile_image) => set({ mobile_image })}
+          hint={
+            image
+              ? "Yalnızca telefonda, geniş fotoğrafın yerine gösterilir. 4:5 (ör. 1080×1350 px) dikey bir fotoğraf yükleyin; yukarıdaki telefonda hemen görünür."
+              : "Önce masaüstü görselini ekleyin: mobil görsel, slaytın fotoğrafı olduğunda telefonda onun yerine gösterilir."
+          }
+        />
+      ) : (
+        <Input
+          label="Masaüstü görseli URL (isteğe bağlı)"
+          value={v.image_url ?? ""}
+          maxLength={500}
+          onChange={(e) => set({ image_url: e.target.value || null })}
+          placeholder="https://…/kampanya.jpg"
+          hint="Ya da formun altındaki “Görsel yükle” alanından dosya yükleyin (yüklenen dosya önce gelir). Koyu katman açıkken fotoğrafın üzerine %30 karartma gelir."
+        />
+      )}
 
       <div className="grid gap-4 sm:grid-cols-3">
         {(

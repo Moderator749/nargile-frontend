@@ -56,18 +56,28 @@ export function MobileSlidePreview() {
     window.addEventListener("pointerup", release);
     window.addEventListener("pointercancel", release);
     post({ source: "hero-preview", type: "ready" });
-    // The editor sizes the iframe to the slide.
-    const observer = new ResizeObserver(() =>
-      post({ source: "hero-preview", type: "height", height: Math.ceil(document.documentElement.getBoundingClientRect().height) }),
-    );
-    observer.observe(document.body);
     return () => {
       window.removeEventListener("message", onMessage);
       window.removeEventListener("pointerup", release);
       window.removeEventListener("pointercancel", release);
-      observer.disconnect();
     };
   }, []);
+
+  // The editor sizes the iframe to the slide itself (not the page, which is
+  // as tall as the iframe: that would never shrink).
+  const shown = !!state;
+  useEffect(() => {
+    const el = frame.current;
+    if (!shown || !el) return;
+    const observer = new ResizeObserver(() =>
+      window.parent.postMessage(
+        { source: "hero-preview", type: "height", height: Math.ceil(el.getBoundingClientRect().height) } satisfies PreviewMessage,
+        window.location.origin,
+      ),
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [shown]);
 
   const set = (patch: Partial<HeroSlideWrite>) => {
     setState((s) => (s ? { ...s, value: { ...s.value, ...patch } } : s));
@@ -127,6 +137,7 @@ const EMPTY: HeroSlideWrite = {
   mobile_layout: null,
   mobile_font_sizes: null,
   mobile_bg_position: null,
+  mobile_image: null,
   is_active: true,
   sort_order: 0,
 };

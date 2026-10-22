@@ -135,7 +135,7 @@ const EDITORS: Record<
   // The homepage switch for this passage is the one still called "about".
   seo: { title: "Alt SEO Metni", hint: "Ana sayfayı ve kategori sayfalarını kapatan tanıtım metni.", doc: "seo_intro", sections: ["about"], size: "md" },
   footer: { title: "Footer", hint: "İletişim, kolonlar ve sosyal medya; tüm sayfalarda.", doc: "footer", sections: ["footer"], size: "lg" },
-  mobile: { title: "Mobil Yönetim", hint: "Telefonda (768px altı) farklı görünenler.", doc: "mobile", size: "lg" },
+  mobile: { title: "Mobil Yönetim", hint: "Telefonda (768px altı) gizlenecek bölümler.", doc: "mobile", size: "md" },
   catalog: { title: "Katalog Kategorileri", hint: "Her değişiklik kendi kaydedilir.", size: "lg" },
   // The homepage texts in English and Arabic; saves on its own.
   translations: { title: "Çeviriler (EN/AR)", hint: "Ana sayfa metinlerinin İngilizcesi ve Arapçası; kendi kaydedilir.", size: "lg" },

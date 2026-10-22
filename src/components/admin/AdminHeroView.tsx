@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useId } from "react";
 
 import { ContentEditor, adminSelectClass, isImageUrl, isSiteOrHttpsLink } from "@/components/admin/ContentEditor";
 import { SlideCanvas } from "@/components/admin/hero/SlideCanvas";
 import { TextStyleFields } from "@/components/admin/hero/TextStyleFields";
 import { Input } from "@/components/ui/Input";
 import { Switch } from "@/components/ui/Switch";
-import { adminGetHomepage, adminHeroSlides } from "@/lib/adminApi";
+import { adminHeroSlides } from "@/lib/adminApi";
 import type { HeroSlideContent, HeroSlideWrite, HeroTextColors, HeroTextSizes } from "@/types";
 
 type SlideText = "eyebrow" | "title" | "subtitle";
@@ -77,6 +77,7 @@ const blank = (): HeroSlideWrite => ({
   mobile_layout: null,
   mobile_font_sizes: null,
   mobile_bg_position: null,
+  mobile_image: null,
   is_active: true,
   sort_order: 100,
 });
@@ -102,6 +103,7 @@ const toWrite = (s: HeroSlideContent): HeroSlideWrite => ({
   mobile_layout: s.mobile_layout ?? null,
   mobile_font_sizes: s.mobile_font_sizes ?? null,
   mobile_bg_position: s.mobile_bg_position ?? null,
+  mobile_image: s.mobile_image ?? null,
   is_active: s.is_active,
   sort_order: s.sort_order,
 });
@@ -114,21 +116,13 @@ function validate(v: HeroSlideWrite): string | null {
   if (!!v.guest_cta_label?.trim() !== !!v.guest_cta_href?.trim()) return "Misafir butonu için hem metin hem bağlantı girin.";
   if (v.guest_cta_href?.trim() && !isSiteOrHttpsLink(v.guest_cta_href)) return "Misafir butonu bağlantısı geçersiz.";
   if (v.image_url?.trim() && !isImageUrl(v.image_url)) return "Görsel URL'si https:// ile başlamalı, boşluk/tırnak içermemeli.";
+  if (v.mobile_image?.trim() && !v.mobile_image.startsWith("/") && !isImageUrl(v.mobile_image))
+    return "Mobil görsel, / ile başlayan bir yol ya da https:// adresi olmalı.";
   return null;
 }
 
 /** Admin: homepage hero slider (Module 5). */
 export function AdminHeroView() {
-  // Each slide's portrait photo for phones ("Mobil Yönetim"), for the canvas's "Mobil" view.
-  const [mobileImages, setMobileImages] = useState<Record<number, string>>({});
-  useEffect(() => {
-    const controller = new AbortController();
-    adminGetHomepage(controller.signal)
-      .then((res) => setMobileImages(Object.fromEntries((res.data.mobile?.hero_images ?? []).map((e) => [e.slide_id, e.image]))))
-      .catch(() => {});
-    return () => controller.abort();
-  }, []);
-
   return (
     <ContentEditor
       title="Hero Slider"
@@ -194,14 +188,6 @@ export function AdminHeroView() {
               placeholder="/login?next=/catalog"
             />
           </div>
-          <Input
-            label="Arka plan görseli URL (isteğe bağlı)"
-            value={v.image_url ?? ""}
-            maxLength={500}
-            onChange={(e) => set({ image_url: e.target.value || null })}
-            placeholder="https://…/kampanya.jpg"
-            hint="Koyu katman açıkken fotoğrafın üzerine %30 karartma gelir; kapatınca fotoğraf olduğu gibi görünür."
-          />
           <div className="flex items-center justify-between gap-4 rounded-xl border border-slate-200 px-4 py-3 dark:border-white/10">
             <div>
               <p id="slide-overlay" className="text-sm font-medium text-slate-700 dark:text-zinc-300">
@@ -218,12 +204,7 @@ export function AdminHeroView() {
               describedBy="slide-overlay-hint"
             />
           </div>
-          <SlideCanvas
-            value={v}
-            set={set}
-            image={current?.image ?? v.image_url}
-            mobileImage={current ? (mobileImages[current.id] ?? null) : null}
-          />
+          <SlideCanvas value={v} set={set} image={current?.image ?? v.image_url} />
           <div className="space-y-1.5">
             <label htmlFor="slide-requires" className="block text-sm font-medium text-slate-700 dark:text-zinc-300">
               Gösterim koşulu

@@ -1200,6 +1200,8 @@ export interface HeroSlideContent {
   mobile_layout: HeroLayout | null;
   mobile_font_sizes: HeroTextSizes | null;
   mobile_bg_position: HeroBgPosition | null;
+  /** The portrait photo phones show in place of the wide one; null: the wide one, cropped. */
+  mobile_image: string | null;
   is_active: boolean;
   sort_order: number;
 }

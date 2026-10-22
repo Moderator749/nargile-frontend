@@ -60,6 +60,7 @@ export const toHeroSlide = (s: HeroSlideContent): HeroSlide => ({
   cta: s.cta_label.trim() && s.cta_href ? { label: s.cta_label, href: s.cta_href } : undefined,
   guestCta: s.guest_cta_label && s.guest_cta_href ? { label: s.guest_cta_label, href: s.guest_cta_href } : undefined,
   image: s.image,
+  mobileImage: s.mobile_image ?? null,
   align: s.text_align ?? "center",
   focus: { x: s.image_focus_x ?? 50, y: s.image_focus_y ?? 50 },
   zoom: s.image_zoom ?? 100,

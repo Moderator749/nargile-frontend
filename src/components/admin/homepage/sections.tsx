@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import {
   closestCenter,
   DndContext,
@@ -13,10 +13,8 @@ import {
 } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import axios from "axios";
-import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRight, GalleryHorizontal, GripVertical, LayoutGrid, Loader2, Lock, Pencil, RotateCcw, Smartphone, Tags, Timer } from "lucide-react";
+import { ArrowUpRight, GalleryHorizontal, GripVertical, LayoutGrid, Lock, Pencil, RotateCcw, Tags, Timer } from "lucide-react";
 
 import { adminSelectClass } from "@/components/admin/ContentEditor";
 import { CategoryMenuEditor } from "@/components/admin/homepage/CategoryMenuEditor";
@@ -31,16 +29,12 @@ import {
   TextField,
 } from "@/components/admin/homepage/fields";
 import { Switch } from "@/components/ui/Switch";
-import { adminHeroSlides } from "@/lib/adminApi";
-import { getApiErrorMessage } from "@/lib/errors";
-import { canOptimiseImage } from "@/lib/home";
 import { HOME_BLOCKS } from "@/lib/homeBlocks";
 import { DEFAULT_SEO_INTRO, MOBILE_SECTION_LABELS, SECTION_LABELS } from "@/lib/homepage";
 import { navHref } from "@/lib/storefrontNav";
 import type {
   Brand,
   Category,
-  HeroSlideContent,
   HomeBlock,
   Homepage,
   HomeFooterColumn,
@@ -765,38 +759,12 @@ export function FooterTab({ value, set }: { value: Homepage["footer"]; set: Set<
 // ── Mobil Yönetim ────────────────────────────────────────────────────────────
 
 /**
- * What a phone shows differently: a portrait photo per hero slide, in place of
- * its wide one below `md`, and the sections a phone can go without. Saved with
- * the rest of the document ("Kaydet"), like every tab but "Bölümler".
- *
- * The slides are read from /admin/hero for their titles and wide photos; a
- * photo is kept by the slide's id, so reordering or editing a slide keeps it,
- * and an entry whose slide has since been deleted is dropped on the next edit.
+ * "Mobil Yönetim": the sections a phone can go without (hidden below `md`
+ * only). Saved with the rest of the document ("Kaydet"), like every editor
+ * but "Bölümler". A hero slide's phone photo and design are its own, in
+ * /admin/hero's "Mobil" view.
  */
 export function MobileTab({ value, set }: { value: Homepage["mobile"]; set: Set<"mobile"> }) {
-  const [slides, setSlides] = useState<HeroSlideContent[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    adminHeroSlides
-      .list(controller.signal)
-      .then((rows) => setSlides([...rows].sort((a, b) => a.sort_order - b.sort_order)))
-      .catch((err: unknown) => {
-        if (!axios.isCancel(err)) setError(getApiErrorMessage(err, "Slaytlar yüklenemedi."));
-      });
-    return () => controller.abort();
-  }, []);
-
-  const imageOf = (id: number) => value.hero_images.find((entry) => entry.slide_id === id)?.image ?? null;
-  const setImage = (id: number, image: string | null) => {
-    const live = new Set(slides?.map((s) => s.id));
-    const rest = value.hero_images.filter((entry) => entry.slide_id !== id && live.has(entry.slide_id));
-    set({
-      ...value,
-      hero_images: (image ? [...rest, { slide_id: id, image }] : rest).sort((a, b) => a.slide_id - b.slide_id),
-    });
-  };
   // Kept in page order, whatever order they were switched in.
   const setHidden = (key: Homepage["mobile"]["hidden"][number], hide: boolean) =>
     set({
@@ -805,65 +773,14 @@ export function MobileTab({ value, set }: { value: Homepage["mobile"]; set: Set<
     });
 
   return (
-    <div className="grid items-start gap-6 @4xl:grid-cols-2">
-      <Panel
-        title="Mobil Hero Görselleri"
-        hint="Telefonda (768px altı) slaytın geniş fotoğrafı yerine gösterilir. Telefonda slayt yaklaşık 2:3 oranındadır: 2:3 (ör. 1080×1620 px) ya da 4:5 dikey fotoğraf yükleyin, kenarlardan kırpılarak doldurur. Boş bırakılan slayt, geniş fotoğrafını kırparak kullanır."
-      >
-        {error ? (
-          <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
-        ) : slides === null ? (
-          <p className="flex items-center gap-2 text-sm text-slate-500 dark:text-zinc-400">
-            <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Slaytlar yükleniyor…
-          </p>
-        ) : slides.length === 0 ? (
-          <p className="text-sm text-slate-500 dark:text-zinc-400">
-            Henüz slayt yok. Slaytlar{" "}
-            <Link href="/admin/hero" className="font-medium text-red-600 hover:underline dark:text-red-400">
-              Hero Slider
-            </Link>{" "}
-            sayfasından eklenir.
-          </p>
-        ) : (
-          <ul className="space-y-4">
-            {slides.map((slide) => (
-              <li key={slide.id} className="rounded-xl border border-slate-200 p-4 dark:border-white/10">
-                <div className="mb-3 flex items-center gap-3">
-                  <span className="relative block h-10 w-16 shrink-0 overflow-hidden rounded-md bg-slate-100 dark:bg-white/5">
-                    {slide.image && (
-                      <Image
-                        src={slide.image}
-                        alt=""
-                        fill
-                        sizes="64px"
-                        unoptimized={!canOptimiseImage(slide.image)}
-                        className="object-cover"
-                      />
-                    )}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold">{slide.title.replace(/\s+/g, " ").trim() || slide.eyebrow || "Yalnızca görsel"}</p>
-                    <p className="text-xs text-slate-500 dark:text-zinc-400">
-                      {slide.is_active ? "Soldaki: masaüstü fotoğrafı" : "Pasif slayt"}
-                      {imageOf(slide.id) && (
-                        <span className="ml-2 inline-flex items-center gap-1 font-medium text-emerald-600 dark:text-emerald-400">
-                          <Smartphone className="h-3 w-3" aria-hidden /> Mobil görsel var
-                        </span>
-                      )}
-                    </p>
-                  </div>
-                </div>
-                <ImageField
-                  label="Mobil görsel (dikey)"
-                  value={imageOf(slide.id)}
-                  onChange={(image) => setImage(slide.id, image)}
-                />
-              </li>
-            ))}
-          </ul>
-        )}
-      </Panel>
-
+    <div className="space-y-6">
+      <p className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs text-slate-600 dark:border-white/10 dark:bg-zinc-900/60 dark:text-zinc-400">
+        Slaytların telefon görseli ve yerleşimi artık{" "}
+        <Link href="/admin/hero" className="font-medium text-red-600 hover:underline dark:text-red-400">
+          Hero Slider
+        </Link>{" "}
+        sayfasında, her slaytın “Mobil” görünümünde düzenlenir.
+      </p>
       <Panel
         title="Mobilde Gizlenecek Bölümler"
         hint="Yalnızca telefonda (768px altı) gizlenir; tablet ve masaüstü değişmez. “Kaydet” ile uygulanır."
