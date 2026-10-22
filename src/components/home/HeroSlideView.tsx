@@ -57,15 +57,14 @@ function ArtDirectedImage({
   wide,
   tall,
   alt,
-  focus,
-  zoom,
+  crop,
   eager,
 }: {
   wide: string;
   tall: string;
   alt: string;
-  focus: { x: number; y: number };
-  zoom: number;
+  /** The crop's CSS variables: the wide screen's and the phone's (`cropVars`). */
+  crop: CSSProperties;
   eager: boolean;
 }) {
   const { props: wideProps } = getImageProps({ src: wide, alt, fill: true, sizes: WIDE_SIZES, unoptimized: !canOptimiseImage(wide) });
@@ -83,8 +82,8 @@ function ArtDirectedImage({
         {...tallProps}
         loading={eager ? "eager" : "lazy"}
         fetchPriority={eager ? "high" : undefined}
-        className="pointer-events-none -z-20 object-cover object-center md:origin-(--focus) md:object-(--focus) md:scale-(--zoom)"
-        style={{ ...tallProps.style, "--focus": `${focus.x}% ${focus.y}%`, "--zoom": zoom / 100 } as CSSProperties}
+        className={`pointer-events-none -z-20 object-cover ${CROP}`}
+        style={{ ...tallProps.style, ...crop }}
       />
     </picture>
   );
@@ -134,6 +133,41 @@ function sized(size: number | string | null | undefined, placed: boolean): { cla
 
 /** A part placed on the stage: centred on its point, as wide as its content. */
 const PLACED = "lg:absolute lg:left-(--x) lg:top-(--y) lg:m-0 lg:w-max lg:-translate-x-1/2 lg:-translate-y-1/2";
+/** The same on a phone's own stage (below `md`), at the phone's own point. */
+const PLACED_MOBILE =
+  "max-md:absolute max-md:left-(--mx) max-md:top-(--my) max-md:m-0 max-md:w-max max-md:max-w-[90cqw] max-md:-translate-x-1/2 max-md:-translate-y-1/2";
+
+/**
+ * The photo's crop: a phone's (`--mfocus`, `--mzoom`) below `md`, the wide
+ * screen's from it — the focal point stays put as the zoom pushes in on it.
+ */
+const CROP = "origin-(--mfocus) object-(--mfocus) scale-(--mzoom) md:origin-(--focus) md:object-(--focus) md:scale-(--zoom)";
+
+/** A phone's text sizes are px on a 375px-wide stage, scaling with the phone. */
+const PHONE = 3.75; // px per cqw on a 375px stage
+
+/** Each text's own size on a phone, where the admin has set none: what a mobile resize starts from. */
+export const HERO_MOBILE_DEFAULT_PX = { eyebrow: 11, title: 36, subtitle: 16 } as const;
+
+/** A text the admin sized for phones: its own size below `md`, whatever the wide screen's. */
+function mobileSized(size: number | string | null | undefined): { className: string; style: CSSProperties } | null {
+  const px = heroTextPx(size);
+  if (!px) return null;
+  return { className: "max-md:text-[length:var(--mfs)]", style: { "--mfs": `${(px / PHONE).toFixed(4)}cqw` } as CSSProperties };
+}
+
+/** The crop's variables for a slide: the wide screen's, and a phone's (its own, else what a phone always showed). */
+function cropVars(slide: HeroSlide): CSSProperties {
+  const bg = slide.mobile?.bg;
+  // A portrait photo for phones was shown centred and whole; the wide one, cropped as on the wide screen.
+  const phone = bg ?? (slide.mobileImage ? { x: 50, y: 50, zoom: 100 } : { ...slide.focus, zoom: slide.zoom });
+  return {
+    "--focus": `${slide.focus.x}% ${slide.focus.y}%`,
+    "--zoom": slide.zoom / 100,
+    "--mfocus": `${phone.x}% ${phone.y}%`,
+    "--mzoom": phone.zoom / 100,
+  } as CSSProperties;
+}
 
 export interface HeroEditorBinding {
   /** Event handlers and a11y props that make a part draggable. */
@@ -176,9 +210,15 @@ export function HeroSlideView({
   children?: ReactNode;
 }) {
   const placed = slide.layout !== null;
+  // A phone's own positions (below `md`): the slide becomes a 4:5 stage there.
+  const mobileLayout = slide.mobile?.layout ?? null;
+  const mplaced = mobileLayout !== null;
   const Heading = heading;
-  const at = (part: HeroPart): CSSProperties | undefined =>
-    slide.layout ? ({ "--x": `${slide.layout[part].x}%`, "--y": `${slide.layout[part].y}%` } as CSSProperties) : undefined;
+  const at = (part: HeroPart): CSSProperties =>
+    ({
+      ...(slide.layout ? { "--x": `${slide.layout[part].x}%`, "--y": `${slide.layout[part].y}%` } : {}),
+      ...(mobileLayout ? { "--mx": `${mobileLayout[part].x}%`, "--my": `${mobileLayout[part].y}%` } : {}),
+    }) as CSSProperties;
 
   /** The positioning, the editor's handles, and a part's own classes and style, together. */
   const part = (name: HeroPart, own: string, style?: CSSProperties) => {
@@ -188,7 +228,12 @@ export function HeroSlideView({
           editor.selected === name ? "outline-2 outline-red-500" : "outline-white/40 hover:outline-white/80"
         }`
       : "";
-    return { ...bound, "data-part": name, style: { ...at(name), ...style }, className: `${placed ? PLACED : ""} ${own} ${editing}` };
+    return {
+      ...bound,
+      "data-part": name,
+      style: { ...at(name), ...style },
+      className: `${placed ? PLACED : ""} ${mplaced ? PLACED_MOBILE : ""} ${own} ${editing}`,
+    };
   };
 
   const textShadow = slide.image ? "[text-shadow:0_2px_24px_rgb(0_0_0/0.45)]" : "";
@@ -197,6 +242,11 @@ export function HeroSlideView({
     eyebrow: sized(slide.sizes?.eyebrow, placed),
     title: sized(slide.sizes?.title, placed),
     subtitle: sized(slide.sizes?.subtitle, placed),
+  };
+  const msize = {
+    eyebrow: mobileSized(slide.mobile?.sizes?.eyebrow),
+    title: mobileSized(slide.mobile?.sizes?.title),
+    subtitle: mobileSized(slide.mobile?.sizes?.subtitle),
   };
   const color = (text: "eyebrow" | "title" | "subtitle"): CSSProperties =>
     slide.colors?.[text] ? { color: slide.colors[text]! } : {};
@@ -213,12 +263,13 @@ export function HeroSlideView({
   return (
     <div
       {...wrapperProps}
-      className={`@container relative isolate flex flex-col justify-center px-6 pb-24 pt-20 sm:px-12 sm:pb-28 sm:pt-24 ${ALIGN[slide.align].block} ${
-        placed ? "lg:block lg:aspect-video lg:p-0" : ""
-      } ${
+      className={`@container relative isolate flex flex-col justify-center ${
+        // A phone's own positions make its slide a stage of its own, unpadded.
+        mplaced ? "max-md:block md:px-12 md:pb-28 md:pt-24" : "px-6 pb-24 pt-20 sm:px-12 sm:pb-28 sm:pt-24"
+      } ${ALIGN[slide.align].block} ${placed ? "lg:block lg:aspect-video lg:p-0" : ""} ${
         // A portrait photo for phones gets a portrait slide to show it in (and,
-        // in the slider's stack, so do the slides beside it).
-        slide.image && slide.mobileImage ? "max-md:aspect-[4/5]" : ""
+        // in the slider's stack, so do the slides beside it); so does a phone's own layout.
+        mplaced || (slide.image && slide.mobileImage) ? "max-md:aspect-[4/5]" : ""
       } ${bare ? "min-h-[22rem] sm:min-h-[26rem] lg:min-h-[30rem]" : ""} ${className}`}
     >
       {slide.image && (
@@ -228,8 +279,7 @@ export function HeroSlideView({
               wide={slide.image}
               tall={slide.mobileImage}
               alt={alt}
-              focus={slide.focus}
-              zoom={slide.zoom}
+              crop={cropVars(slide)}
               eager={preloadImage}
             />
           ) : (
@@ -242,13 +292,9 @@ export function HeroSlideView({
               preload={preloadImage}
               unoptimized={!canOptimiseImage(slide.image)}
               sizes={WIDE_SIZES}
-              className="pointer-events-none -z-20 object-cover"
-              // The admin's crop: the focal point stays put as the zoom pushes in on it.
-              style={{
-                objectPosition: `${slide.focus.x}% ${slide.focus.y}%`,
-                transform: slide.zoom > 100 ? `scale(${slide.zoom / 100})` : undefined,
-                transformOrigin: `${slide.focus.x}% ${slide.focus.y}%`,
-              }}
+              // The admin's crop, a phone's and the wide screen's.
+              className={`pointer-events-none -z-20 object-cover ${CROP}`}
+              style={cropVars(slide)}
             />
           )}
           {/* A light wash keeps white text legible while the photo stays vivid; the
@@ -269,8 +315,8 @@ export function HeroSlideView({
             "eyebrow",
             `font-medium uppercase tracking-[0.35em] lg:max-w-[90cqw] ${
               size.eyebrow ? size.eyebrow.className : `text-[11px] ${placed ? "lg:text-[1.1555cqw]" : ""}`
-            } ${slide.image ? "text-white/80 [text-shadow:0_1px_8px_rgb(0_0_0/0.5)]" : "text-zinc-500"}`,
-            { ...size.eyebrow?.style, ...color("eyebrow") },
+            } ${msize.eyebrow?.className ?? ""} ${slide.image ? "text-white/80 [text-shadow:0_1px_8px_rgb(0_0_0/0.5)]" : "text-zinc-500"}`,
+            { ...size.eyebrow?.style, ...msize.eyebrow?.style, ...color("eyebrow") },
           )}
         >
           {slide.eyebrow}
@@ -279,7 +325,9 @@ export function HeroSlideView({
       )}
 
       {(has.title || has.subtitle) && (
-        <TextBlock className={`${has.eyebrow ? "mt-5" : ""} max-w-4xl ${placed ? "lg:contents" : ""} ${textShadow}`}>
+        <TextBlock
+          className={`${has.eyebrow ? "mt-5" : ""} max-w-4xl ${placed ? "lg:contents" : ""} ${mplaced ? "max-md:contents" : ""} ${textShadow}`}
+        >
           {/* Over a photo the title is solid white: the silver gradient would fade
               into it. A colour the admin chose replaces either. Line breaks kept. */}
           {has.title && (
@@ -287,15 +335,17 @@ export function HeroSlideView({
               {...part(
                 "title",
                 `block whitespace-pre-line text-balance pb-2 font-semibold leading-[1.04] tracking-tighter ${
-                  size.title ? size.title.className : `text-4xl sm:text-6xl lg:text-7xl ${placed ? "lg:text-[7.563cqw]" : ""}`
-                } ${placed ? `lg:max-w-[90cqw] lg:pb-[0.84cqw] ${textShadow}` : ""} ${
+                  size.title
+                    ? size.title.className
+                    : `${msize.title ? "md:text-6xl" : "text-4xl sm:text-6xl"} lg:text-7xl ${placed ? "lg:text-[7.563cqw]" : ""}`
+                } ${msize.title?.className ?? ""} ${placed ? `lg:max-w-[90cqw] lg:pb-[0.84cqw] ${textShadow}` : ""} ${
                   slide.colors?.title
                     ? ""
                     : slide.image
                       ? "text-white"
                       : "bg-gradient-to-b from-white via-zinc-200 to-zinc-500 bg-clip-text text-transparent"
                 }`,
-                { ...size.title?.style, ...color("title") },
+                { ...size.title?.style, ...msize.title?.style, ...color("title") },
               )}
             >
               {slide.title}
@@ -307,9 +357,11 @@ export function HeroSlideView({
               {...part(
                 "subtitle",
                 `${has.title ? "mt-5" : ""} block whitespace-pre-line text-balance font-light tracking-tight ${
-                  size.subtitle ? size.subtitle.className : `text-base sm:text-lg ${placed ? "lg:text-[1.891cqw]" : ""}`
-                } ${placed ? `lg:max-w-[70cqw] lg:leading-[1.5556] ${textShadow}` : ""} ${slide.image ? "text-white/85" : "text-zinc-400"}`,
-                { ...size.subtitle?.style, ...color("subtitle") },
+                  size.subtitle
+                    ? size.subtitle.className
+                    : `${msize.subtitle ? "md:text-lg" : "text-base sm:text-lg"} ${placed ? "lg:text-[1.891cqw]" : ""}`
+                } ${msize.subtitle?.className ?? ""} ${placed ? `lg:max-w-[70cqw] lg:leading-[1.5556] ${textShadow}` : ""} ${slide.image ? "text-white/85" : "text-zinc-400"}`,
+                { ...size.subtitle?.style, ...msize.subtitle?.style, ...color("subtitle") },
               )}
             >
               {slide.subtitle}

@@ -23,18 +23,24 @@ export function TextStyleFields({
   size,
   color,
   onSize,
+  mobileSize,
+  onMobileSize,
   onColor,
 }: {
   /** The text's name, for the controls' accessible names ("Başlık"). */
   label: string;
   /** Px on the widest slider; a name of the editor's first version is read as its px. */
   size: number | string | null | undefined;
+  /** A phone's own size, set in the canvas's "Mobil" view. */
+  mobileSize?: number | string | null;
   color: string | null | undefined;
   /** Only ever back to the slide's own (null): sizes are set by dragging. */
   onSize: (size: null) => void;
+  onMobileSize?: (size: null) => void;
   onColor: (color: string | null) => void;
 }) {
   const px = heroTextPx(size);
+  const mobilePx = heroTextPx(mobileSize);
   const hex = color ?? "";
   return (
     <div className="-mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-600 dark:text-zinc-400">
@@ -56,6 +62,21 @@ export function TextStyleFields({
         ) : (
           <span className="text-slate-400">— önizlemede yazıyı seçip kırmızı köşesinden sürükleyin</span>
         )}
+        {mobilePx ? (
+          <>
+            <span className="text-slate-300 dark:text-zinc-600">·</span>
+            Mobil:{" "}
+            <span className="font-mono font-medium tabular-nums text-slate-800 dark:text-zinc-200">{mobilePx}px</span>
+            <button
+              type="button"
+              onClick={() => onMobileSize?.(null)}
+              aria-label={`${label} mobil boyutunu varsayılana döndür`}
+              className="inline-flex items-center gap-1 text-slate-500 hover:text-slate-900 dark:hover:text-white"
+            >
+              <RotateCcw className="h-3 w-3" aria-hidden /> Sıfırla
+            </button>
+          </>
+        ) : null}
       </span>
       <span className="flex items-center gap-2" role="group" aria-label={`${label} rengi`}>
         Renk

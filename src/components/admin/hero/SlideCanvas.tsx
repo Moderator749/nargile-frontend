@@ -1,12 +1,13 @@
 "use client";
 
-import { useRef, type HTMLAttributes, type KeyboardEvent, type PointerEvent } from "react";
-import { AlignCenter, AlignLeft, AlignRight, Move, RotateCcw } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { AlignCenter, AlignLeft, AlignRight, Monitor, Move, RotateCcw, Smartphone } from "lucide-react";
 
-import { useDragLayout } from "@/components/admin/useDragLayout";
-import { HERO_DEFAULT_PX, HERO_FRAME, HeroBackdrop, HeroSlideView, heroTextPx } from "@/components/home/HeroSlideView";
-import type { HeroSlide } from "@/lib/home";
-import type { HeroPart, HeroSlideWrite, HeroTextAlign } from "@/types";
+import type { MobilePreviewState, PreviewMessage } from "@/components/admin/hero/MobileSlidePreview";
+import { HERO_PARTS, mobileBg, presentParts, previewSlide, useHeroCanvas, type HeroDevice } from "@/components/admin/hero/useHeroCanvas";
+import { HERO_FRAME, HeroBackdrop, HeroSlideView } from "@/components/home/HeroSlideView";
+import type { HeroLayout, HeroSlideWrite, HeroTextAlign } from "@/types";
 
 const ALIGNMENTS: { value: HeroTextAlign; label: string; Icon: typeof AlignLeft }[] = [
   { value: "left", label: "Sola", Icon: AlignLeft },
@@ -14,267 +15,281 @@ const ALIGNMENTS: { value: HeroTextAlign; label: string; Icon: typeof AlignLeft 
   { value: "right", label: "Sağa", Icon: AlignRight },
 ];
 
-const PARTS: { part: HeroPart; label: string }[] = [
-  { part: "eyebrow", label: "Üst etiket" },
-  { part: "title", label: "Başlık" },
-  { part: "subtitle", label: "Alt metin" },
-  { part: "button", label: "Buton" },
+const DEVICES: { value: HeroDevice; label: string; Icon: typeof Monitor }[] = [
+  { value: "desktop", label: "Masaüstü", Icon: Monitor },
+  { value: "mobile", label: "Mobil", Icon: Smartphone },
 ];
 
 export const rangeClass = "h-2 w-full cursor-pointer accent-red-600";
 
-type SlideText = "eyebrow" | "title" | "subtitle";
-const TEXT_LABEL: Record<SlideText, string> = { eyebrow: "Üst etiket", title: "Başlık", subtitle: "Alt metin" };
-const MIN_PX = 8;
-const MAX_PX = 160;
-const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n));
+/** A phone's width for the "Mobil" view: the storefront's phone styles apply below 768px. */
+const PHONE_WIDTH = 375;
 
-/**
- * How far the photo reaches past the stage, in px, on each axis: what one
- * full sweep of its focal point (0 → 100 %) moves it by. Object-fit cover
- * fills the stage on one axis and overflows on the other; the zoom adds to both.
- */
-function overflowOf(img: HTMLImageElement | null, stage: DOMRect, zoom: number): { x: number; y: number } {
-  if (!img?.naturalWidth || !img.naturalHeight) return { x: 0, y: 0 };
-  const cover = Math.max(stage.width / img.naturalWidth, stage.height / img.naturalHeight);
-  const z = zoom / 100;
-  return { x: img.naturalWidth * cover * z - stage.width, y: img.naturalHeight * cover * z - stage.height };
-}
-
-/** The form as the storefront's slide, so the canvas renders exactly what will ship. */
-function previewSlide(v: HeroSlideWrite, image: string | null): HeroSlide {
-  return {
-    id: "preview",
-    // As the storefront: an empty text is not there, so there is nothing of it to drag.
-    eyebrow: v.eyebrow,
-    title: v.title,
-    subtitle: v.subtitle,
-    // As the storefront: no button text, no button.
-    cta: v.cta_label.trim() ? { label: v.cta_label, href: v.cta_href || "/" } : undefined,
-    guestCta: v.guest_cta_label && v.guest_cta_href ? { label: v.guest_cta_label, href: v.guest_cta_href } : undefined,
-    image: image || null,
-    align: v.text_align,
-    focus: { x: v.image_focus_x, y: v.image_focus_y },
-    zoom: v.image_zoom,
-    layout: v.layout,
-    overlay: v.enable_overlay,
-    sizes: v.font_sizes,
-    colors: v.text_colors,
-  };
-}
+const pill = (active: boolean) =>
+  `inline-flex items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
+    active
+      ? "border-red-500 bg-red-50 text-red-700 dark:bg-red-500/15 dark:text-red-300"
+      : "border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-white/10 dark:text-zinc-300 dark:hover:bg-white/5"
+  }`;
 
 /**
  * "Yerleşim & görsel kırpma": the slide on a live canvas — the storefront's own
- * slide component at the storefront's own proportions — with its four parts
- * draggable. Positions are kept in % of the slide, so a part dropped here is
- * where it renders on the homepage at any wide screen.
+ * slide component — in two views. "Masaüstü" is the wide screen at the
+ * storefront's own proportions; "Mobil" is a phone (an iframe a phone wide, so
+ * the storefront's phone styles apply). In either, drag a text to place it,
+ * drag a selected text's red corner to size it, drag the photo to move its
+ * focal point. Each view edits its own design only: a phone's positions,
+ * sizes and crop are kept apart from the wide screen's.
  */
 export function SlideCanvas({
   value: v,
   set,
   image,
+  mobileImage = null,
 }: {
   value: HeroSlideWrite;
   set: (patch: Partial<HeroSlideWrite>) => void;
   image: string | null;
+  /** The slide's portrait photo for phones ("Mobil Yönetim"), if it has one. */
+  mobileImage?: string | null;
 }) {
+  const [device, setDevice] = useState<HeroDevice>("desktop");
+  const mobile = device === "mobile";
   const frame = useRef<HTMLDivElement>(null);
-  const { bind, selected, setSelected } = useDragLayout<HeroPart>({
-    frame,
-    parts: PARTS.map((p) => p.part),
-    layout: v.layout,
-    setLayout: (layout) => set({ layout }),
-    labels: Object.fromEntries(PARTS.map((p) => [p.part, p.label])) as Record<HeroPart, string>,
-  });
+  const desktop = useHeroCanvas({ v, set, image, hasMobileImage: !!mobileImage, device: "desktop", frame });
+  const present = presentParts(v);
 
-  const slide = previewSlide(v, image);
-  /** The parts this slide has: an empty text, or no button, is not on the slide. */
-  const present: Record<HeroPart, boolean> = {
-    eyebrow: !!v.eyebrow.trim(),
-    title: !!v.title.trim(),
-    subtitle: !!v.subtitle.trim(),
-    button: !!v.cta_label.trim() || (!!v.guest_cta_label?.trim() && !!v.guest_cta_href?.trim()),
-  };
-
-  // ── Drag a text's corner: its size follows the drag ─────────────────────────
-  const resizing = useRef<{ part: SlideText; from: number; height: number; x: number; y: number } | null>(null);
-  const pxOf = (part: SlideText) => heroTextPx(v.font_sizes?.[part]) ?? HERO_DEFAULT_PX[part];
-  const setPx = (part: SlideText, px: number) =>
-    set({ font_sizes: { ...(v.font_sizes ?? {}), [part]: Math.round(clamp(px, MIN_PX, MAX_PX)) } });
-
-  const resize = (part: SlideText): HTMLAttributes<HTMLElement> => ({
-    role: "slider",
-    tabIndex: 0,
-    "aria-label": `${TEXT_LABEL[part]} boyutu — köşeden sürükleyin ya da oklarla değiştirin`,
-    "aria-valuemin": MIN_PX,
-    "aria-valuemax": MAX_PX,
-    "aria-valuenow": pxOf(part),
-    "aria-valuetext": `${pxOf(part)} piksel`,
-    onPointerDown: (e: PointerEvent<HTMLElement>) => {
-      if (e.button !== 0) return;
-      // The handle sits on the text: the text's own drag (move) must not start.
-      e.stopPropagation();
-      e.preventDefault();
-      const text = e.currentTarget.parentElement;
-      resizing.current = { part, from: pxOf(part), height: text?.getBoundingClientRect().height || 1, x: e.clientX, y: e.clientY };
-      e.currentTarget.setPointerCapture(e.pointerId);
-    },
-    onPointerMove: (e: PointerEvent<HTMLElement>) => {
-      const r = resizing.current;
-      if (!r) return;
-      // Down and outward grows it, up and inward shrinks it: the text's
-      // height scales with its size, so the drag's distance is the ratio.
-      const outward = (e.clientX - r.x) * (getComputedStyle(e.currentTarget).direction === "rtl" ? -1 : 1);
-      const grow = (outward + (e.clientY - r.y)) / 2;
-      setPx(r.part, (r.from * (r.height + grow)) / r.height);
-    },
-    onPointerUp: (e: PointerEvent<HTMLElement>) => {
-      resizing.current = null;
-      if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
-    },
-    onKeyDown: (e: KeyboardEvent<HTMLElement>) => {
-      const step = { ArrowUp: 1, ArrowRight: 1, ArrowDown: -1, ArrowLeft: -1 }[e.key];
-      if (!step) return;
-      e.preventDefault();
-      e.stopPropagation(); // not the text's own arrow-key move
-      setPx(part, pxOf(part) + step * (e.shiftKey ? 4 : 1));
-    },
-  });
-
-  // ── Drag the photo: its focal point follows ─────────────────────────────────
-  const panning = useRef<{ x: number; y: number; focus: { x: number; y: number }; reach: { x: number; y: number } } | null>(null);
-  const pan: HTMLAttributes<HTMLDivElement> = {
-    onPointerDown: (e) => {
-      // A text, a button or a handle has its own drag; the photo is everything else.
-      if (!image || e.button !== 0 || (e.target as HTMLElement).closest("[data-part],[data-resize]")) return;
-      e.preventDefault();
-      const stage = e.currentTarget.getBoundingClientRect();
-      panning.current = {
-        x: e.clientX,
-        y: e.clientY,
-        focus: { x: v.image_focus_x, y: v.image_focus_y },
-        reach: overflowOf(e.currentTarget.querySelector("img"), stage, v.image_zoom),
-      };
-      setSelected(null);
-      e.currentTarget.setPointerCapture(e.pointerId);
-    },
-    onPointerMove: (e) => {
-      const p = panning.current;
-      if (!p) return;
-      // Dragging the photo right shows more of its left: the focal point moves the other way.
-      const along = (moved: number, reach: number, from: number) =>
-        reach > 1 ? Math.round(clamp(from - (moved / reach) * 100, 0, 100)) : from;
-      set({
-        image_focus_x: along(e.clientX - p.x, p.reach.x, p.focus.x),
-        image_focus_y: along(e.clientY - p.y, p.reach.y, p.focus.y),
-      });
-    },
-    onPointerUp: (e) => {
-      panning.current = null;
-      if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
-    },
-  };
-  pan.onPointerCancel = pan.onPointerUp;
+  const layout: HeroLayout | null = mobile ? v.mobile_layout : v.layout;
+  const bg = mobile ? mobileBg(v, !!mobileImage) : { x: v.image_focus_x, y: v.image_focus_y, zoom: v.image_zoom };
+  const setBg = (patch: Partial<typeof bg>) =>
+    mobile
+      ? set({ mobile_bg_position: { ...bg, ...patch } })
+      : set({
+          ...(patch.x !== undefined ? { image_focus_x: patch.x } : {}),
+          ...(patch.y !== undefined ? { image_focus_y: patch.y } : {}),
+          ...(patch.zoom !== undefined ? { image_zoom: patch.zoom } : {}),
+        });
+  const mobileDesigned = !!(v.mobile_layout || v.mobile_font_sizes || v.mobile_bg_position);
 
   return (
     <fieldset className="space-y-4 rounded-xl border border-slate-200 p-4 dark:border-white/10">
       <legend className="px-1 text-sm font-medium text-slate-700 dark:text-zinc-300">Yerleşim & görsel kırpma</legend>
 
       <div className="flex flex-wrap items-center gap-3">
-        <div role="radiogroup" aria-label="Metin hizası" className="flex gap-1.5">
-          {ALIGNMENTS.map(({ value, label, Icon }) => {
-            const active = v.text_align === value;
-            return (
-              <button
-                key={value}
-                type="button"
-                role="radio"
-                aria-checked={active}
-                onClick={() => set({ text_align: value })}
-                className={`inline-flex items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
-                  active
-                    ? "border-red-500 bg-red-50 text-red-700 dark:bg-red-500/15 dark:text-red-300"
-                    : "border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-white/10 dark:text-zinc-300 dark:hover:bg-white/5"
-                }`}
-              >
-                <Icon className="h-4 w-4" aria-hidden /> {label}
-              </button>
-            );
-          })}
+        <div role="radiogroup" aria-label="Görünüm" className="flex gap-1 rounded-xl bg-slate-100 p-1 dark:bg-white/5">
+          {DEVICES.map(({ value, label, Icon }) => (
+            <button
+              key={value}
+              type="button"
+              role="radio"
+              aria-checked={device === value}
+              onClick={() => {
+                setDevice(value);
+                desktop.setSelected(null);
+              }}
+              className={`${pill(device === value)} ${device === value ? "" : "border-transparent"}`}
+            >
+              <Icon className="h-4 w-4" aria-hidden /> {label}
+            </button>
+          ))}
         </div>
-        <p className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-zinc-400">
-          <Move className="h-3.5 w-3.5" aria-hidden /> Yazıları sürükleyerek taşıyın; seçili yazıyı kırmızı köşesinden
-          sürükleyerek büyütüp küçültün; fotoğrafı boş yerinden sürükleyerek kaydırın.
-        </p>
+        <div role="radiogroup" aria-label="Metin hizası" className="flex gap-1.5">
+          {ALIGNMENTS.map(({ value, label, Icon }) => (
+            <button
+              key={value}
+              type="button"
+              role="radio"
+              aria-checked={v.text_align === value}
+              onClick={() => set({ text_align: value })}
+              className={pill(v.text_align === value)}
+            >
+              <Icon className="h-4 w-4" aria-hidden /> {label}
+            </button>
+          ))}
+        </div>
         <button
           type="button"
-          disabled={!v.layout}
+          disabled={!layout}
           onClick={() => {
-            set({ layout: null });
-            setSelected(null);
+            set(mobile ? { mobile_layout: null } : { layout: null });
+            desktop.setSelected(null);
           }}
           className="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40 dark:border-white/10 dark:text-zinc-300 dark:hover:bg-white/5"
         >
           <RotateCcw className="h-3.5 w-3.5" aria-hidden /> Konumları Sıfırla
         </button>
       </div>
+      <p className="flex items-start gap-1.5 text-xs text-slate-500 dark:text-zinc-400">
+        <Move className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+        <span>
+          Yazıları sürükleyerek taşıyın; seçili yazıyı kırmızı köşesinden sürükleyerek büyütüp küçültün; fotoğrafı boş yerinden
+          sürükleyerek kaydırın.{" "}
+          {mobile
+            ? "Bu görünümdeki değişiklikler yalnızca telefonda (768px altı) geçerlidir; masaüstü tasarımı değişmez."
+            : "Bu görünümdeki değişiklikler geniş ekranda geçerlidir; mobil tasarımı değiştirmez."}
+        </span>
+      </p>
 
-      {/* The storefront's slide, in the storefront's frame. */}
-      <div ref={frame} className={`${HERO_FRAME} mx-auto w-full max-w-[1024px]`}>
-        <HeroBackdrop />
-        <HeroSlideView
-          slide={slide}
-          heading="div"
-          editor={{ selected, bind, resize }}
-          wrapperProps={pan}
-          className={image ? "cursor-move touch-none" : ""}
-        >
-          {/* Where the slide's own controls sit, so nothing is dropped under them. */}
-          {v.layout && (
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-x-[38%] bottom-[2.52cqw] hidden h-[3.78cqw] items-center justify-center rounded-full border border-dashed border-white/25 text-[1cqw] text-white/40 lg:flex"
-            >
-              slayt kontrolleri
-            </div>
-          )}
-        </HeroSlideView>
-      </div>
+      {mobile ? (
+        <PhoneCanvas v={v} set={set} image={image} mobileImage={mobileImage} />
+      ) : (
+        // The storefront's slide, in the storefront's frame.
+        <div ref={frame} className={`${HERO_FRAME} mx-auto w-full max-w-[1024px]`}>
+          <HeroBackdrop />
+          <HeroSlideView
+            slide={previewSlide(v, image, mobileImage)}
+            heading="div"
+            editor={{ selected: desktop.selected, bind: desktop.bind, resize: desktop.resize }}
+            wrapperProps={desktop.pan}
+            className={image ? "cursor-move touch-none" : ""}
+          >
+            {/* Where the slide's own controls sit, so nothing is dropped under them. */}
+            {v.layout && (
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-x-[38%] bottom-[2.52cqw] hidden h-[3.78cqw] items-center justify-center rounded-full border border-dashed border-white/25 text-[1cqw] text-white/40 lg:flex"
+              >
+                slayt kontrolleri
+              </div>
+            )}
+          </HeroSlideView>
+        </div>
+      )}
 
       <ul className="grid gap-2 text-xs sm:grid-cols-4">
-        {PARTS.map(({ part, label }) => (
+        {HERO_PARTS.map(({ part, label }) => (
           <li
             key={part}
-            className={`rounded-lg border px-3 py-2 ${selected === part ? "border-red-400 bg-red-50/60 dark:bg-red-500/10" : "border-slate-200 dark:border-white/10"}`}
+            className={`rounded-lg border px-3 py-2 ${!mobile && desktop.selected === part ? "border-red-400 bg-red-50/60 dark:bg-red-500/10" : "border-slate-200 dark:border-white/10"}`}
           >
             <span className="font-medium">{label}</span>
             <span className="float-right font-mono tabular-nums text-slate-500">
-              {!present[part] ? "yok" : v.layout ? `${v.layout[part].x.toFixed(1)}% · ${v.layout[part].y.toFixed(1)}%` : "ortalı"}
+              {!present[part] ? "yok" : layout ? `${layout[part].x.toFixed(1)}% · ${layout[part].y.toFixed(1)}%` : "ortalı"}
             </span>
           </li>
         ))}
       </ul>
       <p className="text-[11px] text-slate-500 dark:text-zinc-400">
-        Serbest konumlar geniş ekranlarda (1024px ve üzeri) uygulanır; tablet ve telefonda öğeler okunaklı kalması için ortalı dizilir.
+        {mobile ? (
+          <>
+            Telefonda slayt 4:5 oranında gösterilir. Telefona özel dikey fotoğraf{" "}
+            <Link href="/admin/homepage?tab=mobil-yonetim" className="font-medium text-red-600 hover:underline dark:text-red-400">
+              Ana Sayfa Düzenleme › Mobil Yönetim
+            </Link>
+            ’den yüklenir{mobileImage ? " (bu slaytta var)" : "; yoksa geniş fotoğraf kırpılarak kullanılır"}.
+          </>
+        ) : (
+          "Serbest konumlar geniş ekranlarda (1024px ve üzeri) uygulanır; tablette öğeler okunaklı kalması için ortalı dizilir. Telefonun kendi tasarımı “Mobil” görünümündedir."
+        )}
       </p>
 
       <div className="grid gap-4 sm:grid-cols-3">
         {(
           [
-            ["image_focus_x", "Görsel odağı — yatay", 0, 100],
-            ["image_focus_y", "Görsel odağı — dikey", 0, 100],
-            ["image_zoom", "Yakınlaştırma", 100, 200],
+            ["x", "Görsel odağı — yatay", 0, 100],
+            ["y", "Görsel odağı — dikey", 0, 100],
+            ["zoom", "Yakınlaştırma", 100, 200],
           ] as const
         ).map(([key, label, min, max]) => (
           <label key={key} className="block space-y-1">
             <span className="flex justify-between text-xs font-medium text-slate-600 dark:text-zinc-400">
-              {label}
-              <span className="font-mono tabular-nums">{v[key]}%</span>
+              <span>
+                {label}
+                {mobile && " (mobil)"}
+              </span>
+              <span className="font-mono tabular-nums">{bg[key]}%</span>
             </span>
-            <input type="range" min={min} max={max} value={v[key]} onChange={(e) => set({ [key]: Number(e.target.value) })} className={rangeClass} />
+            <input
+              type="range"
+              min={min}
+              max={max}
+              value={bg[key]}
+              onChange={(e) => setBg({ [key]: Number(e.target.value) })}
+              className={rangeClass}
+            />
           </label>
         ))}
       </div>
+      {mobile && (
+        <button
+          type="button"
+          disabled={!mobileDesigned}
+          onClick={() => set({ mobile_layout: null, mobile_font_sizes: null, mobile_bg_position: null })}
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-900 disabled:pointer-events-none disabled:opacity-40 dark:text-zinc-400 dark:hover:text-white"
+        >
+          <RotateCcw className="h-3.5 w-3.5" aria-hidden /> Mobil tasarımı sıfırla (telefon eskisi gibi gösterir)
+        </button>
+      )}
     </fieldset>
+  );
+}
+
+/**
+ * The "Mobil" view: the slide in an iframe a phone wide (/onizleme/slayt),
+ * kept in step with the form both ways — the form's state goes in, the
+ * phone's own edits come back — over same-origin messages only.
+ */
+function PhoneCanvas({
+  v,
+  set,
+  image,
+  mobileImage,
+}: {
+  v: HeroSlideWrite;
+  set: (patch: Partial<HeroSlideWrite>) => void;
+  image: string | null;
+  mobileImage: string | null;
+}) {
+  const iframe = useRef<HTMLIFrameElement>(null);
+  const [height, setHeight] = useState(480);
+  const state: MobilePreviewState = { value: v, image, mobileImage };
+  const latest = useRef(state);
+  const setRef = useRef(set);
+  useEffect(() => {
+    latest.current = state;
+    setRef.current = set;
+  });
+
+  const send = (s: MobilePreviewState) =>
+    iframe.current?.contentWindow?.postMessage({ source: "hero-editor", type: "state", state: s } satisfies PreviewMessage, window.location.origin);
+
+  useEffect(() => {
+    const onMessage = (e: MessageEvent<PreviewMessage>) => {
+      if (e.source !== iframe.current?.contentWindow || e.origin !== window.location.origin) return;
+      const m = e.data;
+      if (m?.source !== "hero-preview") return;
+      if (m.type === "ready") send(latest.current);
+      else if (m.type === "height") setHeight(Math.max(200, Math.min(1200, m.height)));
+      else if (m.type === "patch") {
+        // Only a phone's own fields: the preview never writes the wide screen's design.
+        const allowed: Partial<HeroSlideWrite> = {};
+        if ("mobile_layout" in m.patch) allowed.mobile_layout = m.patch.mobile_layout ?? null;
+        if ("mobile_font_sizes" in m.patch) allowed.mobile_font_sizes = m.patch.mobile_font_sizes ?? null;
+        if ("mobile_bg_position" in m.patch) allowed.mobile_bg_position = m.patch.mobile_bg_position ?? null;
+        setRef.current(allowed);
+      }
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, []);
+
+  // Every change of the form (or of the photos) goes to the phone.
+  const serialised = JSON.stringify(state);
+  useEffect(() => {
+    send(JSON.parse(serialised) as MobilePreviewState);
+  }, [serialised]);
+
+  return (
+    <div className="flex justify-center rounded-2xl bg-slate-100 py-6 dark:bg-white/5">
+      <div className="rounded-[2.25rem] border-[6px] border-zinc-900 bg-zinc-900 shadow-xl">
+        <iframe
+          ref={iframe}
+          src="/onizleme/slayt"
+          title="Telefon önizlemesi"
+          className="block rounded-[1.9rem] bg-black"
+          style={{ width: PHONE_WIDTH, height }}
+        />
+      </div>
+    </div>
   );
 }

@@ -5,6 +5,7 @@
 import type {
   ContentRequirement,
   HeroLayout,
+  HeroBgPosition,
   HeroSlideContent,
   HeroTextAlign,
   HeroTextColors,
@@ -47,6 +48,8 @@ export interface HeroSlide {
   /** The admin's size and colour per text; none set, the slide's own. */
   sizes?: HeroTextSizes | null;
   colors?: HeroTextColors | null;
+  /** A phone's own design (below `md`); each part null keeps how a phone has always shown it. */
+  mobile?: { layout: HeroLayout | null; sizes: HeroTextSizes | null; bg: HeroBgPosition | null };
 }
 
 export const toHeroSlide = (s: HeroSlideContent): HeroSlide => ({
@@ -65,6 +68,11 @@ export const toHeroSlide = (s: HeroSlideContent): HeroSlide => ({
   overlay: s.enable_overlay ?? true,
   sizes: s.font_sizes ?? null,
   colors: s.text_colors ?? null,
+  mobile: {
+    layout: s.mobile_layout ?? null,
+    sizes: s.mobile_font_sizes ?? null,
+    bg: s.mobile_bg_position ?? null,
+  },
 });
 
 /**

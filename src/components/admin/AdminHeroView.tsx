@@ -1,13 +1,13 @@
 "use client";
 
-import { useId } from "react";
+import { useEffect, useId, useState } from "react";
 
 import { ContentEditor, adminSelectClass, isImageUrl, isSiteOrHttpsLink } from "@/components/admin/ContentEditor";
 import { SlideCanvas } from "@/components/admin/hero/SlideCanvas";
 import { TextStyleFields } from "@/components/admin/hero/TextStyleFields";
 import { Input } from "@/components/ui/Input";
 import { Switch } from "@/components/ui/Switch";
-import { adminHeroSlides } from "@/lib/adminApi";
+import { adminGetHomepage, adminHeroSlides } from "@/lib/adminApi";
 import type { HeroSlideContent, HeroSlideWrite, HeroTextColors, HeroTextSizes } from "@/types";
 
 type SlideText = "eyebrow" | "title" | "subtitle";
@@ -74,6 +74,9 @@ const blank = (): HeroSlideWrite => ({
   enable_overlay: true,
   font_sizes: null,
   text_colors: null,
+  mobile_layout: null,
+  mobile_font_sizes: null,
+  mobile_bg_position: null,
   is_active: true,
   sort_order: 100,
 });
@@ -96,6 +99,9 @@ const toWrite = (s: HeroSlideContent): HeroSlideWrite => ({
   enable_overlay: s.enable_overlay ?? true,
   font_sizes: s.font_sizes ?? null,
   text_colors: s.text_colors ?? null,
+  mobile_layout: s.mobile_layout ?? null,
+  mobile_font_sizes: s.mobile_font_sizes ?? null,
+  mobile_bg_position: s.mobile_bg_position ?? null,
   is_active: s.is_active,
   sort_order: s.sort_order,
 });
@@ -113,6 +119,16 @@ function validate(v: HeroSlideWrite): string | null {
 
 /** Admin: homepage hero slider (Module 5). */
 export function AdminHeroView() {
+  // Each slide's portrait photo for phones ("Mobil Yönetim"), for the canvas's "Mobil" view.
+  const [mobileImages, setMobileImages] = useState<Record<number, string>>({});
+  useEffect(() => {
+    const controller = new AbortController();
+    adminGetHomepage(controller.signal)
+      .then((res) => setMobileImages(Object.fromEntries((res.data.mobile?.hero_images ?? []).map((e) => [e.slide_id, e.image]))))
+      .catch(() => {});
+    return () => controller.abort();
+  }, []);
+
   return (
     <ContentEditor
       title="Hero Slider"
@@ -130,8 +146,10 @@ export function AdminHeroView() {
           <TextStyleFields
             label={label}
             size={v.font_sizes?.[text]}
+            mobileSize={v.mobile_font_sizes?.[text]}
             color={v.text_colors?.[text]}
             onSize={(size) => set({ font_sizes: withOne(v.font_sizes, text, size) })}
+            onMobileSize={(size) => set({ mobile_font_sizes: withOne(v.mobile_font_sizes, text, size) })}
             onColor={(color) => set({ text_colors: withOne(v.text_colors, text, color) })}
           />
         );
@@ -200,7 +218,12 @@ export function AdminHeroView() {
               describedBy="slide-overlay-hint"
             />
           </div>
-          <SlideCanvas value={v} set={set} image={current?.image ?? v.image_url} />
+          <SlideCanvas
+            value={v}
+            set={set}
+            image={current?.image ?? v.image_url}
+            mobileImage={current ? (mobileImages[current.id] ?? null) : null}
+          />
           <div className="space-y-1.5">
             <label htmlFor="slide-requires" className="block text-sm font-medium text-slate-700 dark:text-zinc-300">
               Gösterim koşulu

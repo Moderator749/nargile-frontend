@@ -1156,6 +1156,13 @@ export interface HeroTextColors {
   subtitle?: string | null;
 }
 
+/** The photo's crop on a phone: focal point (0–100 %) and zoom (100 = fills the slide). */
+export interface HeroBgPosition {
+  x: number;
+  y: number;
+  zoom: number;
+}
+
 export interface HeroSlideContent {
   id: number;
   eyebrow: string;
@@ -1185,6 +1192,14 @@ export interface HeroSlideContent {
   enable_overlay: boolean;
   font_sizes: HeroTextSizes | null;
   text_colors: HeroTextColors | null;
+  /**
+   * A phone's own design (below 768px), apart from the wide screen's: the
+   * parts' positions on a 4:5 stage, the texts' sizes (px on a 375px-wide
+   * stage), the photo's crop. Null: as a phone has always shown the slide.
+   */
+  mobile_layout: HeroLayout | null;
+  mobile_font_sizes: HeroTextSizes | null;
+  mobile_bg_position: HeroBgPosition | null;
   is_active: boolean;
   sort_order: number;
 }
