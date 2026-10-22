@@ -5,7 +5,7 @@ import { ArrowRight } from "lucide-react";
 
 import { LinkButton, linkButtonClass } from "@/components/ui/LinkButton";
 import { canOptimiseImage, type HeroSlide } from "@/lib/home";
-import type { HeroPart, HeroTextAlign } from "@/types";
+import type { HeroFontSize, HeroPart, HeroTextAlign } from "@/types";
 import { SITE_NAME } from "@/lib/site";
 
 /**
@@ -90,6 +90,36 @@ function ArtDirectedImage({
   );
 }
 
+/** The sizes the admin can give a text, in px on the widest slider (≈952px). */
+export const HERO_FONT_PX: Record<HeroFontSize, number> = {
+  sm: 14,
+  base: 16,
+  lg: 18,
+  xl: 20,
+  "2xl": 24,
+  "3xl": 30,
+  "4xl": 36,
+  "5xl": 48,
+  "6xl": 60,
+  "7xl": 72,
+};
+const WIDEST = 9.52; // px per cqw on the widest slider
+
+/**
+ * A text the admin sized: its size on the widest slider, shrinking with the
+ * slide (`cqw`) down to half of it (12px at least) on a phone. On a stage
+ * with placed parts it is exactly the stage's fraction from `lg`, like
+ * every other size there, so the admin's preview stays a scale model.
+ */
+function sized(size: HeroFontSize | null | undefined, placed: boolean): { className: string; style: CSSProperties } | null {
+  if (!size) return null;
+  const px = HERO_FONT_PX[size];
+  return {
+    className: `text-[length:clamp(var(--fs-min),var(--fs-cqw),var(--fs))] ${placed ? "lg:text-[length:var(--fs-cqw)]" : ""}`,
+    style: { "--fs": `${px}px`, "--fs-cqw": `${(px / WIDEST).toFixed(3)}cqw`, "--fs-min": `${Math.max(12, px / 2)}px` } as CSSProperties,
+  };
+}
+
 /** A part placed on the stage: centred on its point, as wide as its content. */
 const PLACED = "lg:absolute lg:left-(--x) lg:top-(--y) lg:m-0 lg:w-max lg:-translate-x-1/2 lg:-translate-y-1/2";
 
@@ -124,18 +154,28 @@ export function HeroSlideView({
   const at = (part: HeroPart): CSSProperties | undefined =>
     slide.layout ? ({ "--x": `${slide.layout[part].x}%`, "--y": `${slide.layout[part].y}%` } as CSSProperties) : undefined;
 
-  /** The positioning, the editor's handles, and a part's own classes, together. */
-  const part = (name: HeroPart, own: string) => {
+  /** The positioning, the editor's handles, and a part's own classes and style, together. */
+  const part = (name: HeroPart, own: string, style?: CSSProperties) => {
     const bound = editor?.bind(name) ?? {};
     const editing = editor
       ? `cursor-grab touch-none select-none outline-dashed outline-1 outline-offset-4 active:cursor-grabbing ${
           editor.selected === name ? "outline-2 outline-red-500" : "outline-white/40 hover:outline-white/80"
         }`
       : "";
-    return { ...bound, "data-part": name, style: at(name), className: `${placed ? PLACED : ""} ${own} ${editing}` };
+    return { ...bound, "data-part": name, style: { ...at(name), ...style }, className: `${placed ? PLACED : ""} ${own} ${editing}` };
   };
 
   const textShadow = slide.image ? "[text-shadow:0_2px_24px_rgb(0_0_0/0.45)]" : "";
+  // The admin's size and colour per text, where set; the slide's own otherwise.
+  const size = {
+    eyebrow: sized(slide.sizes?.eyebrow, placed),
+    title: sized(slide.sizes?.title, placed),
+    subtitle: sized(slide.sizes?.subtitle, placed),
+  };
+  const color = (text: "eyebrow" | "title" | "subtitle"): CSSProperties =>
+    slide.colors?.[text] ? { color: slide.colors[text]! } : {};
+  const alt = slide.title ? `${slide.title.replace(/\s*\n\s*/g, " ")} | ${SITE_NAME}` : SITE_NAME;
+  const buttons = !!slide.cta || !!slide.guestCta;
 
   return (
     <div
@@ -154,7 +194,7 @@ export function HeroSlideView({
             <ArtDirectedImage
               wide={slide.image}
               tall={slide.mobileImage}
-              alt={slide.title ? `${slide.title} | ${SITE_NAME}` : SITE_NAME}
+              alt={alt}
               focus={slide.focus}
               zoom={slide.zoom}
               eager={preloadImage}
@@ -164,7 +204,7 @@ export function HeroSlideView({
               src={slide.image}
               // Named for search engines and image search; the visible title
               // overlaps it, which costs a screen reader one repeated phrase.
-              alt={slide.title ? `${slide.title} | ${SITE_NAME}` : SITE_NAME}
+              alt={alt}
               fill
               preload={preloadImage}
               unoptimized={!canOptimiseImage(slide.image)}
@@ -179,31 +219,45 @@ export function HeroSlideView({
             />
           )}
           {/* A light wash keeps white text legible while the photo stays vivid; the
-              bottom fade only darkens behind the slide controls. */}
-          <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 bg-black/35" />
-          <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-1/3 bg-gradient-to-t from-black/45 to-transparent" />
+              bottom fade only darkens behind the slide controls. Switched off by
+              the admin, the photo shows as it is. */}
+          {slide.overlay && (
+            <>
+              <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 bg-black/30" />
+              <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-1/3 bg-gradient-to-t from-black/45 to-transparent" />
+            </>
+          )}
         </>
       )}
 
       <p
         {...part(
           "eyebrow",
-          `text-[11px] font-medium uppercase tracking-[0.35em] lg:max-w-[90cqw] ${placed ? "lg:text-[1.1555cqw]" : ""} ${
-            slide.image ? "text-white/80 [text-shadow:0_1px_8px_rgb(0_0_0/0.5)]" : "text-zinc-500"
-          }`,
+          `font-medium uppercase tracking-[0.35em] lg:max-w-[90cqw] ${
+            size.eyebrow ? size.eyebrow.className : `text-[11px] ${placed ? "lg:text-[1.1555cqw]" : ""}`
+          } ${slide.image ? "text-white/80 [text-shadow:0_1px_8px_rgb(0_0_0/0.5)]" : "text-zinc-500"}`,
+          { ...size.eyebrow?.style, ...color("eyebrow") },
         )}
       >
         {slide.eyebrow}
       </p>
 
       <Heading className={`mt-5 max-w-4xl ${placed ? "lg:contents" : ""} ${textShadow}`}>
-        {/* Over a photo the title is solid white: the silver gradient would fade into it. */}
+        {/* Over a photo the title is solid white: the silver gradient would fade
+            into it. A colour the admin chose replaces either. Line breaks kept. */}
         <span
           {...part(
             "title",
-            `block text-balance pb-2 text-4xl font-semibold leading-[1.04] tracking-tighter sm:text-6xl lg:text-7xl ${
-              placed ? `lg:max-w-[90cqw] lg:pb-[0.84cqw] lg:text-[7.563cqw] ${textShadow}` : ""
-            } ${slide.image ? "text-white" : "bg-gradient-to-b from-white via-zinc-200 to-zinc-500 bg-clip-text text-transparent"}`,
+            `block whitespace-pre-line text-balance pb-2 font-semibold leading-[1.04] tracking-tighter ${
+              size.title ? size.title.className : `text-4xl sm:text-6xl lg:text-7xl ${placed ? "lg:text-[7.563cqw]" : ""}`
+            } ${placed ? `lg:max-w-[90cqw] lg:pb-[0.84cqw] ${textShadow}` : ""} ${
+              slide.colors?.title
+                ? ""
+                : slide.image
+                  ? "text-white"
+                  : "bg-gradient-to-b from-white via-zinc-200 to-zinc-500 bg-clip-text text-transparent"
+            }`,
+            { ...size.title?.style, ...color("title") },
           )}
         >
           {slide.title}
@@ -211,36 +265,42 @@ export function HeroSlideView({
         <span
           {...part(
             "subtitle",
-            `mt-5 block text-balance text-base font-light tracking-tight sm:text-lg ${
-              placed ? `lg:max-w-[70cqw] lg:text-[1.891cqw] lg:leading-[1.5556] ${textShadow}` : ""
-            } ${slide.image ? "text-white/85" : "text-zinc-400"}`,
+            `mt-5 block whitespace-pre-line text-balance font-light tracking-tight ${
+              size.subtitle ? size.subtitle.className : `text-base sm:text-lg ${placed ? "lg:text-[1.891cqw]" : ""}`
+            } ${placed ? `lg:max-w-[70cqw] lg:leading-[1.5556] ${textShadow}` : ""} ${slide.image ? "text-white/85" : "text-zinc-400"}`,
+            { ...size.subtitle?.style, ...color("subtitle") },
           )}
         >
           {slide.subtitle}
         </span>
       </Heading>
 
-      <div
-        {...part(
-          "button",
-          `mt-10 flex flex-col gap-3 sm:flex-row ${ALIGN[slide.align].actions} ${placed ? "lg:flex-row lg:gap-[1.26cqw]" : ""}`,
-        )}
-      >
-        <HeroButton editor={!!editor} placed={placed} href={slide.cta.href} variant="primary">
-          {slide.cta.label}
-          <ArrowRight
-            className={`h-4 w-4 transition-transform duration-200 rtl:-scale-x-100 motion-safe:group-hover:translate-x-0.5 rtl:motion-safe:group-hover:-translate-x-0.5 ${placed ? "lg:h-[1.681cqw] lg:w-[1.681cqw]" : ""}`}
-            aria-hidden
-          />
-        </HeroButton>
-        {slide.guestCta && (
-          // A guest-only button: hidden once signed in on the storefront, but
-          // always shown in the editor, since guests are who see it.
-          <HeroButton editor={!!editor} placed={placed} href={slide.guestCta.href} variant="glass" className={editor ? "" : "guest-only"}>
-            {slide.guestCta.label}
-          </HeroButton>
-        )}
-      </div>
+      {/* No button text, no button: the slide is words and a photo only. */}
+      {buttons && (
+        <div
+          {...part(
+            "button",
+            `mt-10 flex flex-col gap-3 sm:flex-row ${ALIGN[slide.align].actions} ${placed ? "lg:flex-row lg:gap-[1.26cqw]" : ""}`,
+          )}
+        >
+          {slide.cta && (
+            <HeroButton editor={!!editor} placed={placed} href={slide.cta.href} variant="primary">
+              {slide.cta.label}
+              <ArrowRight
+                className={`h-4 w-4 transition-transform duration-200 rtl:-scale-x-100 motion-safe:group-hover:translate-x-0.5 rtl:motion-safe:group-hover:-translate-x-0.5 ${placed ? "lg:h-[1.681cqw] lg:w-[1.681cqw]" : ""}`}
+                aria-hidden
+              />
+            </HeroButton>
+          )}
+          {slide.guestCta && (
+            // A guest-only button: hidden once signed in on the storefront, but
+            // always shown in the editor, since guests are who see it.
+            <HeroButton editor={!!editor} placed={placed} href={slide.guestCta.href} variant="glass" className={editor ? "" : "guest-only"}>
+              {slide.guestCta.label}
+            </HeroButton>
+          )}
+        </div>
+      )}
 
       {children}
     </div>

@@ -30,13 +30,17 @@ function previewSlide(v: HeroSlideWrite, image: string | null): HeroSlide {
     eyebrow: v.eyebrow || "Üst etiket",
     title: v.title || "Başlık",
     subtitle: v.subtitle,
-    cta: { label: v.cta_label || "Buton", href: v.cta_href || "/" },
+    // As the storefront: no button text, no button.
+    cta: v.cta_label.trim() ? { label: v.cta_label, href: v.cta_href || "/" } : undefined,
     guestCta: v.guest_cta_label && v.guest_cta_href ? { label: v.guest_cta_label, href: v.guest_cta_href } : undefined,
     image: image || null,
     align: v.text_align,
     focus: { x: v.image_focus_x, y: v.image_focus_y },
     zoom: v.image_zoom,
     layout: v.layout,
+    overlay: v.enable_overlay,
+    sizes: v.font_sizes,
+    colors: v.text_colors,
   };
 }
 

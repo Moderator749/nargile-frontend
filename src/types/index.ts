@@ -1136,11 +1136,30 @@ export interface AdminFlashSaleWrite {
 /** Content shown only while something exists (e.g. a live flash sale). */
 export type ContentRequirement = "flash_sales";
 
+/** A slide text's size, by Tailwind's names: sm 14px … 7xl 72px on the widest slider. */
+export type HeroFontSize = "sm" | "base" | "lg" | "xl" | "2xl" | "3xl" | "4xl" | "5xl" | "6xl" | "7xl";
+
+/** Per text; one left out (null) keeps the slide's own. */
+export interface HeroTextSizes {
+  eyebrow?: HeroFontSize | null;
+  title?: HeroFontSize | null;
+  subtitle?: HeroFontSize | null;
+}
+
+/** Per text, "#rrggbb"; one left out (null) keeps the slide's own. */
+export interface HeroTextColors {
+  eyebrow?: string | null;
+  title?: string | null;
+  subtitle?: string | null;
+}
+
 export interface HeroSlideContent {
   id: number;
   eyebrow: string;
+  /** May run over several lines ("\n"), as may the subtitle. */
   title: string;
   subtitle: string;
+  /** Empty: the slide has no button. */
   cta_label: string;
   cta_href: string;
   guest_cta_label: string | null;
@@ -1159,6 +1178,10 @@ export interface HeroSlideContent {
   image_zoom: number;
   /** Free positions of the four parts on a wide screen; null = centred stack. */
   layout: HeroLayout | null;
+  /** The dark wash (30%) over the photo; off, the photo shows as it is. */
+  enable_overlay: boolean;
+  font_sizes: HeroTextSizes | null;
+  text_colors: HeroTextColors | null;
   is_active: boolean;
   sort_order: number;
 }

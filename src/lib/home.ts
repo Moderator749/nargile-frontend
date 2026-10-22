@@ -7,6 +7,8 @@ import type {
   HeroLayout,
   HeroSlideContent,
   HeroTextAlign,
+  HeroTextColors,
+  HeroTextSizes,
   PromoBoxContent,
   SocialWidget,
 } from "@/types";
@@ -26,7 +28,8 @@ export interface HeroSlide {
   eyebrow: string;
   title: string;
   subtitle: string;
-  cta: { label: string; href: string };
+  /** None when the admin left the button's text empty. */
+  cta?: { label: string; href: string };
   /** Shown to guests only (hidden pre-paint once logged in). */
   guestCta?: { label: string; href: string };
   /** Optional background photo, shown at 30% under a vignette; null = CSS spotlight only. */
@@ -39,6 +42,11 @@ export interface HeroSlide {
   zoom: number;
   /** Free part positions on a wide screen (lg and up); null = centred stack. */
   layout: HeroLayout | null;
+  /** The dark wash over the photo. */
+  overlay: boolean;
+  /** The admin's size and colour per text; none set, the slide's own. */
+  sizes?: HeroTextSizes | null;
+  colors?: HeroTextColors | null;
 }
 
 export const toHeroSlide = (s: HeroSlideContent): HeroSlide => ({
@@ -46,13 +54,17 @@ export const toHeroSlide = (s: HeroSlideContent): HeroSlide => ({
   eyebrow: s.eyebrow,
   title: s.title,
   subtitle: s.subtitle,
-  cta: { label: s.cta_label, href: s.cta_href },
+  cta: s.cta_label.trim() && s.cta_href ? { label: s.cta_label, href: s.cta_href } : undefined,
   guestCta: s.guest_cta_label && s.guest_cta_href ? { label: s.guest_cta_label, href: s.guest_cta_href } : undefined,
   image: s.image,
   align: s.text_align ?? "center",
   focus: { x: s.image_focus_x ?? 50, y: s.image_focus_y ?? 50 },
   zoom: s.image_zoom ?? 100,
   layout: s.layout ?? null,
+  // Rows from before the design fields read as they always looked.
+  overlay: s.enable_overlay ?? true,
+  sizes: s.font_sizes ?? null,
+  colors: s.text_colors ?? null,
 });
 
 /**
@@ -80,6 +92,7 @@ export const FALLBACK_SLIDE: HeroSlide = {
   focus: { x: 50, y: 50 },
   zoom: 100,
   layout: null,
+  overlay: true,
 };
 
 // ── The promo box beside the hero ─────────────────────────────────────────────
