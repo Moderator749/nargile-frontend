@@ -12,6 +12,7 @@
 
 import { ADVANTAGES } from "@/lib/advantages";
 import { HOME_BLOCKS, resolveBlockOrder } from "@/lib/homeBlocks";
+import { DEFAULT_SECTION_COPY } from "@/lib/homeSectionCopy";
 import { BILGI_DOCUMENTS, PERKS_PAGE, bilgiHref } from "@/lib/bilgi";
 import { BLOG_HREF } from "@/lib/blog";
 import { EMAIL, PHONE, WHATSAPP_HREF } from "@/lib/contact";
@@ -128,6 +129,8 @@ export const DEFAULT_HOMEPAGE: Homepage = {
   },
   // A phone shows the whole page and the slides' wide photos until the admin says otherwise.
   mobile: { hero_images: [], hidden: [] },
+  // The sections' own words, pictures and links (lib/homeSectionCopy).
+  ...DEFAULT_SECTION_COPY,
 };
 
 /** "Mobil Yönetim": the sections a phone can go without, in page order, as the switches name them. */

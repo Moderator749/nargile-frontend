@@ -4,12 +4,10 @@ import { Fragment } from "react";
 
 import { CourierPerks } from "@/components/home/CourierPerks";
 import { ProductRow } from "@/components/home/ProductRow";
-import { useMessages } from "@/components/i18n/LocaleProvider";
 import { useOwnPrices } from "@/hooks/useOwnPrices";
-import { homeMessages } from "@/lib/i18n/messages/home";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useAuthHydrated } from "@/store/useHasHydrated";
-import type { CatalogProduct, Category } from "@/types";
+import type { CatalogProduct, Category, HomeLules } from "@/types";
 
 /**
  * "Lüle Alırken Kararsız Kalacaksınız": the Lüleler category as one sliding
@@ -48,32 +46,31 @@ function Subtitle({ kinds, closing }: { kinds: string[]; closing: string }) {
 export function LuleShowcase({
   products,
   categories,
-  categoryHref,
+  copy,
 }: {
   products: CatalogProduct[];
   categories: Category[];
-  /** The Lüleler category's page, for "Tüm Lüleleri Gör". */
-  categoryHref: string;
+  /** Its words and its "Tüm Lüleleri Gör" link, from "Ana Sayfa Düzenleme". */
+  copy: HomeLules;
 }) {
   const mine = useOwnPrices(products);
   const hydrated = useAuthHydrated();
   const token = useAuthStore((s) => s.token);
-  const t = useMessages(homeMessages);
 
   return (
     <ProductRow
       headingId="luleler-baslik"
-      title={t.lules.title}
-      subtitle={<Subtitle kinds={t.lules.kinds} closing={t.lules.closing} />}
+      title={copy.title}
+      subtitle={<Subtitle kinds={copy.kinds} closing={copy.closing} />}
       // The picks row's white, continued: the two read as a pair.
       className="bg-white pt-8 pb-12 sm:pt-10 sm:pb-16 dark:bg-transparent"
-      actions={<CourierPerks />}
+      actions={<CourierPerks eyebrow={copy.courier_eyebrow} text={copy.courier_text} />}
       products={products}
       mine={mine}
       loggedIn={hydrated && !!token}
       categories={categories}
       accent
-      more={{ href: categoryHref, label: t.lules.more }}
+      more={{ href: copy.href, label: copy.more }}
     />
   );
 }

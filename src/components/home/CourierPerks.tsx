@@ -1,10 +1,8 @@
 "use client";
 
 import { AMBER, BEAM, BeamGradient, DeliveryPerk, IDLE, RED, SpeedLines, Wheel } from "@/components/home/DeliveryPerk";
-import { useMessages } from "@/components/i18n/LocaleProvider";
 import { useShippingPerks } from "@/hooks/useShippingPerks";
 import { PERKS_PAGE } from "@/lib/bilgi";
-import { homeMessages } from "@/lib/i18n/messages/home";
 
 /**
  * The courier perk in the lüle row's header, beside its title: İstanbul's
@@ -15,9 +13,8 @@ import { homeMessages } from "@/lib/i18n/messages/home";
  * Same-day delivery is offered as a retail perk (as on the product page), so
  * it is left out for a signed-in B2B account (`useShippingPerks`).
  */
-export function CourierPerks() {
+export function CourierPerks({ eyebrow, text }: { eyebrow: string; text: string }) {
   const { show } = useShippingPerks();
-  const t = useMessages(homeMessages);
   if (!show) return null;
 
   return (
@@ -25,7 +22,7 @@ export function CourierPerks() {
       viewBox="0 0 132 76"
       width="w-[104px] sm:w-[132px]"
       href={`${PERKS_PAGE.href}#istanbul-kurye`}
-      eyebrow={t.perks.courierEyebrow}
+      eyebrow={eyebrow}
       facing="left"
       className="self-start md:self-end"
       vehicle={
@@ -76,7 +73,7 @@ export function CourierPerks() {
         </>
       }
     >
-      <p className="mt-1.5 text-sm font-semibold leading-snug text-neutral-900 dark:text-white">{t.perks.courierText}</p>
+      <p className="mt-1.5 text-sm font-semibold leading-snug text-neutral-900 dark:text-white">{text}</p>
     </DeliveryPerk>
   );
 }

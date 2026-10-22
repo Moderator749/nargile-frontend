@@ -5,7 +5,8 @@ import { GoldShowcase } from "@/components/home/GoldShowcase";
 import { useMessages } from "@/components/i18n/LocaleProvider";
 import { useStoreParameters } from "@/hooks/useStoreParameters";
 import { homeMessages } from "@/lib/i18n/messages/home";
-import type { CatalogProduct, Category } from "@/types";
+import { fillIn } from "@/lib/homeSectionCopy";
+import type { CatalogProduct, Category, HomeLoyaltyCopy } from "@/types";
 
 const whole = new Intl.NumberFormat("tr-TR", { maximumFractionDigits: 0 });
 
@@ -19,7 +20,16 @@ const whole = new Intl.NumberFormat("tr-TR", { maximumFractionDigits: 0 });
  * share of it (1.000 puan × 1 TL on 20.000 TL). With Sultan Puan or the bonus
  * switched off in the panel, the band is not shown at all.
  */
-export function KumbaraShowcase({ products, categories }: { products: CatalogProduct[]; categories: Category[] }) {
+export function KumbaraShowcase({
+  products,
+  categories,
+  copy,
+}: {
+  products: CatalogProduct[];
+  categories: Category[];
+  /** Its words, from "Ana Sayfa Düzenleme"; {tutar} is the live target, {oran} the bonus. */
+  copy: HomeLoyaltyCopy;
+}) {
   const { loyalty } = useStoreParameters();
   const t = useMessages(homeMessages);
   const target = Number(loyalty.annual_spend_threshold);
@@ -39,9 +49,9 @@ export function KumbaraShowcase({ products, categories }: { products: CatalogPro
           <span className={`${FIGURE} ${GOLD} text-3xl md:text-4xl`}>{amount}</span>
         </>
       }
-      subtitle={t.loyalty.kumbaraSubtitle}
-      note={t.loyalty.kumbaraNote(amount, bonus)}
-      call={t.loyalty.kumbaraCall}
+      subtitle={copy.subtitle}
+      note={fillIn(copy.note, { tutar: amount, oran: bonus })}
+      call={copy.call}
       products={products}
       categories={categories}
       // Light grey, as "Fırsatları Kaçırma" and the SultanPuan band.

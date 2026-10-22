@@ -35,8 +35,7 @@ import {
 import { getHomepage } from "@/lib/server/homepage";
 import { resolveShowcase, tileSlug } from "@/lib/showcase";
 import { resolveNav } from "@/lib/storefrontNav";
-import { homeMessages } from "@/lib/i18n/messages/home";
-import { getI18n, getMessages } from "@/lib/i18n/server";
+import { getI18n } from "@/lib/i18n/server";
 import { PAGE_CONTAINER } from "@/lib/layout";
 import { displayVariant } from "@/lib/variants";
 import type { CatalogProduct, HomeBlock, HomeMobileSection } from "@/types";
@@ -188,7 +187,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function HomePage() {
   // What to show and what it says: "Ana Sayfa Düzenleme" (/admin/homepage).
-  const [home, { locale, t }, words] = await Promise.all([getHomepage(), getI18n(), getMessages(homeMessages)]);
+  const [home, { locale, t }] = await Promise.all([getHomepage(), getI18n()]);
   const { sections } = home;
   const [
     categories, featured, flashSales, brands, content, artwork, bestsellers, newest, brandRows, sultanPuan, lules, marpuclar,
@@ -276,33 +275,33 @@ export default async function HomePage() {
   // each is whole on its own: no section counts on its neighbour.
   const blocks: Record<HomeBlock, () => ReactNode> = {
     // The payment advantages as a quiet bar, no boxes.
-    perks: () => phones("perks", <StorePerks />),
+    perks: () => phones("perks", <StorePerks copy={home.perks} />),
     // The brand ticker on its own. Decorative: a screen reader hears the list
     // once, in the other ticker ("brands").
     brands_top: () =>
       phones("brand_ticker", <BrandTicker brands={home.brands.items} decorative className="pb-2 pt-4 sm:pt-5" />),
     // "Sizin İçin Seçtiklerimiz": two tabbed product lists in one row that
     // slides sideways.
-    picks: () => <FeaturedProductsShowcase lists={picks} categories={allCategories} />,
+    picks: () => <FeaturedProductsShowcase lists={picks} categories={allCategories} copy={home.picks} />,
     // "Lüle Alırken Kararsız Kalacaksınız", with the courier perk.
     lules: () =>
       phones(
         "lules",
-        <LuleShowcase
-          products={showable(lules, LULE_COUNT)}
-          categories={allCategories}
-          categoryHref={`/catalog/${LULE_CATEGORY_SLUG}`}
-        />,
+        <LuleShowcase products={showable(lules, LULE_COUNT)} categories={allCategories} copy={home.lules} />,
       ),
     // "%10 SultanPuan": the loyalty card and the products whose price alone
     // earns it. Nothing while the programme is off or no product is priced in
     // its band.
     sultanpuan: () =>
-      sultanPuan && phones("sultanpuan", <SultanPuanShowcase showcase={sultanPuan} categories={allCategories} />),
+      sultanPuan &&
+      phones("sultanpuan", <SultanPuanShowcase showcase={sultanPuan} categories={allCategories} copy={home.sultanpuan} />),
     // "Kumbara 20.000 TL": the annual bonus, over the Marpuçlar. Nothing while
     // the bonus is off or the category is empty.
     kumbara: () =>
-      phones("kumbara", <KumbaraShowcase products={showable(marpuclar, KUMBARA_COUNT)} categories={allCategories} />),
+      phones(
+        "kumbara",
+        <KumbaraShowcase products={showable(marpuclar, KUMBARA_COUNT)} categories={allCategories} copy={home.kumbara} />,
+      ),
     // "Fırsatları Kaçırma": the page's only deals section, a dark band. It
     // renders nothing when none are running.
     deals: () => (
@@ -310,14 +309,14 @@ export default async function HomePage() {
     ),
     // The campaign boxes: the big one and the mini bento (placeholder art
     // until the shop's photos).
-    campaigns: () => phones("campaigns", <CampaignBanners />),
+    campaigns: () => phones("campaigns", <CampaignBanners copy={home.campaigns} />),
     // "Sektörde Referans Noktası", on a white band of its own.
     promos: () =>
       phones(
         "brand_statement",
         <div className="bg-white dark:bg-transparent">
           <div className={`${PAGE_CONTAINER} pt-2 pb-6`}>
-            <BrandStatement />
+            <BrandStatement copy={home.statement} />
           </div>
         </div>,
       ),
@@ -333,7 +332,7 @@ export default async function HomePage() {
             id="markalarimiz-baslik"
             className="pt-12 text-center text-3xl font-extrabold text-gray-900 md:text-4xl dark:text-white"
           >
-            {words.brands.heading}
+            {home.brand_showcase.heading}
           </h2>
           {/* The red rule under the heading, as "Premium Ürün Yelpazesi" has. */}
           <span aria-hidden className="mx-auto mt-4 mb-8 block h-1.5 w-14 rounded-full bg-red-600" />
@@ -347,7 +346,9 @@ export default async function HomePage() {
               logoHeight={logo.height}
               logoDisplayWidth={"displayWidth" in logo ? logo.displayWidth : undefined}
               logoFrameRatio={"frameRatio" in logo ? logo.frameRatio : undefined}
-              description={words.brands[slug]}
+              description={home.brand_showcase[slug].description}
+              collection={home.brand_showcase.collection}
+              logoOverride={home.brand_showcase[slug].logo}
               brandLink={brandHref(slug)}
               products={brandRows[i]}
               reverseLayout={i % 2 === 1}
@@ -363,11 +364,11 @@ export default async function HomePage() {
         "kozlukler",
         <CategoryRow
           headingId="kozlukler-baslik"
-          title={words.rows.kozlukTitle}
-          subtitle={words.rows.kozlukSubtitle}
+          title={home.kozlukler.title}
+          subtitle={home.kozlukler.subtitle}
           products={showable(onePerName(kozlukProducts), CATEGORY_ROW_COUNT)}
           categories={allCategories}
-          more={{ href: `/catalog/${KOZLUK_CATEGORY_SLUG}`, label: words.rows.kozlukMore }}
+          more={{ href: `/catalog/${KOZLUK_CATEGORY_SLUG}`, label: home.kozlukler.more }}
         />,
       ),
     games: () =>
@@ -375,11 +376,11 @@ export default async function HomePage() {
         "games",
         <CategoryRow
           headingId="oyun-baslik"
-          title={words.rows.gamesTitle}
-          subtitle={words.rows.gamesSubtitle}
+          title={home.games.title}
+          subtitle={home.games.subtitle}
           products={showable(onePerName(gameProducts), CATEGORY_ROW_COUNT)}
           categories={allCategories}
-          more={{ href: `/catalog/${GAMES_CATEGORY_SLUG}`, label: words.rows.gamesMore }}
+          more={{ href: `/catalog/${GAMES_CATEGORY_SLUG}`, label: home.games.more }}
         />,
       ),
     // "Premium Ürün Yelpazesi": the catalog as a gallery (the category bento).

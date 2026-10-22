@@ -7,6 +7,7 @@ import { Alert } from "@/components/ui/Alert";
 import { adminGetHomeTranslations, adminSaveHomeTranslations } from "@/lib/adminApi";
 import { API_URL } from "@/lib/config";
 import { getApiErrorMessage } from "@/lib/errors";
+import { BUILT_IN_HOME_MEMORY } from "@/lib/homeSectionCopy";
 import { collectTexts, type TextMemory } from "@/lib/homeTranslations";
 import { refreshStorefront } from "@/lib/revalidate";
 import type { Homepage } from "@/types";
@@ -52,7 +53,8 @@ export function TranslationsTab({ doc }: { doc: Homepage }) {
     const controller = new AbortController();
     adminGetHomeTranslations(controller.signal)
       .then((t) => {
-        const both = { en: t.en ?? {}, ar: t.ar ?? {} };
+        // The default sections' copy comes with its translations; a saved one wins.
+        const both = { en: { ...BUILT_IN_HOME_MEMORY.en, ...t.en }, ar: { ...BUILT_IN_HOME_MEMORY.ar, ...t.ar } };
         setMemory(both);
         setSaved(both);
       })

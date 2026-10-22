@@ -9,8 +9,10 @@ import {
   Layers,
   Package,
   Shield,
+  ShoppingCart,
   Sparkles,
   Store,
+  TrendingDown,
   TrendingUp,
   Truck,
   Wind,
@@ -43,6 +45,8 @@ export const HOME_ICONS: Record<HomeIconKey, { Icon: LucideIcon; label: string }
   "badge-check": { Icon: BadgeCheck, label: "Onay" },
   headset: { Icon: Headset, label: "Destek" },
   store: { Icon: Store, label: "Mağaza" },
+  "shopping-cart": { Icon: ShoppingCart, label: "Sepet" },
+  "trending-down": { Icon: TrendingDown, label: "İndirim" },
 };
 
 export const homeIcon = (key: HomeIconKey | undefined): LucideIcon => HOME_ICONS[key ?? "package"]?.Icon ?? Package;

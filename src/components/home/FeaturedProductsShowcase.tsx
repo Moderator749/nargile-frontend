@@ -9,9 +9,9 @@ import { useOwnPrices } from "@/hooks/useOwnPrices";
 import { homeMessages } from "@/lib/i18n/messages/home";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useAuthHydrated } from "@/store/useHasHydrated";
-import type { CatalogProduct, Category } from "@/types";
+import type { CatalogProduct, Category, HomePicks } from "@/types";
 
-/** The tabs, in order; each one's label is its key in the messages (`picks.bestsellers`). */
+/** The tabs, in order; each one's label is its key in the copy (`bestsellers`). */
 const TABS = [{ key: "bestsellers" }, { key: "newest" }] as const;
 
 type TabKey = (typeof TABS)[number]["key"];
@@ -37,9 +37,12 @@ const TAB_IDLE = "text-gray-600 hover:text-gray-900 dark:text-neutral-400 dark:h
 export function FeaturedProductsShowcase({
   lists,
   categories,
+  copy,
 }: {
   lists: Record<TabKey, CatalogProduct[]>;
   categories: Category[];
+  /** Its words, from "Ana Sayfa Düzenleme". */
+  copy: HomePicks;
 }) {
   const [tab, setTab] = useState<TabKey>("newest");
   const t = useMessages(homeMessages);
@@ -58,15 +61,17 @@ export function FeaturedProductsShowcase({
     // lüle row continues the white below, so this one keeps less at its foot.
     <ProductRow
       headingId="sectiklerimiz-baslik"
-      title={t.picks.title}
-      subtitle={t.picks.subtitle}
+      title={copy.title}
+      subtitle={copy.subtitle}
       className="bg-white pt-8 pb-8 sm:pt-10 sm:pb-10 dark:bg-transparent"
       products={lists[active]}
       mine={mine}
       loggedIn={loggedIn}
       categories={categories}
       // Title at the left, the tabs dead centre, the van at the right.
-      actions={<FreeShippingPerk className="self-start xl:justify-self-end" />}
+      actions={
+        <FreeShippingPerk eyebrow={copy.shipping_eyebrow} text={copy.shipping_text} className="self-start xl:justify-self-end" />
+      }
       besideTitle={
         visible.length > 1 && (
           <div className={TABS_TRACK} role="group" aria-label={t.picks.tabs}>
@@ -78,7 +83,7 @@ export function FeaturedProductsShowcase({
                 onClick={() => setTab(key)}
                 className={`${TAB} ${key === active ? TAB_ACTIVE : TAB_IDLE}`}
               >
-                {t.picks[key]}
+                {copy[key]}
               </button>
             ))}
           </div>

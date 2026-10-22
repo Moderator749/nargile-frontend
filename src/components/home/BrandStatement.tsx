@@ -4,10 +4,11 @@ import { useId, useState } from "react";
 
 import { useMessages } from "@/components/i18n/LocaleProvider";
 import { homeMessages } from "@/lib/i18n/messages/home";
+import type { HomeStatement } from "@/types";
 
 const PARAGRAPH = "text-sm leading-relaxed text-gray-600 md:text-base dark:text-neutral-400";
 
-// The first sentence is shown (`statement.lead`); the rest (`statement.rest`)
+// The first sentence is shown (`copy.lead`); the rest (`copy.rest`)
 // waits behind "Devamını Oku".
 
 /**
@@ -20,7 +21,7 @@ const PARAGRAPH = "text-sm leading-relaxed text-gray-600 md:text-base dark:text-
  * (and from the keyboard and screen readers while shut), easing its height
  * from nothing to its own.
  */
-export function BrandStatement() {
+export function BrandStatement({ copy }: { copy: HomeStatement }) {
   const [open, setOpen] = useState(false);
   const headingId = useId();
   const moreId = useId();
@@ -29,11 +30,11 @@ export function BrandStatement() {
   return (
     <section aria-labelledby={headingId} className="flex w-full flex-col items-center gap-4 text-center">
       <h2 id={headingId} className="text-center text-2xl font-bold text-gray-900 dark:text-white">
-        {t.statement.heading}
+        {copy.heading}
       </h2>
 
       <div className="w-full text-center">
-        <p className={PARAGRAPH}>{t.statement.lead}</p>
+        <p className={PARAGRAPH}>{copy.lead}</p>
         <div
           id={moreId}
           inert={!open}
@@ -42,7 +43,7 @@ export function BrandStatement() {
           }`}
         >
           <div className="overflow-hidden">
-            <p className={`mt-2 ${PARAGRAPH}`}>{t.statement.rest}</p>
+            <p className={`mt-2 ${PARAGRAPH}`}>{copy.rest}</p>
           </div>
         </div>
         <button

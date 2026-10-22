@@ -1,63 +1,34 @@
+import Image from "next/image";
 import { ArrowRight, ArrowUpRight } from "lucide-react";
 
 import Link from "@/components/i18n/Link";
+import { canOptimiseImage } from "@/lib/home";
 import { homeMessages } from "@/lib/i18n/messages/home";
 import { getMessages } from "@/lib/i18n/server";
 import { PAGE_CONTAINER } from "@/lib/layout";
-
-/** The boxes' words, by key (`campaigns` in the homepage's messages). */
-type CampaignWords = (typeof homeMessages)["tr"]["campaigns"];
+import type { HomeCampaigns } from "@/types";
 
 /** Decorative light over a gradient: silver, a warm gold, or a deep rose. */
 type Accent = "slate" | "gold" | "rose";
 
-interface Banner {
-  title: keyof CampaignWords;
-  subtitle: keyof CampaignWords;
-  href: string;
-  /**
-   * The background until a photo takes its place: a gradient (Tailwind
-   * classes, so they are generated). Swap it for an image layer later; the
-   * rest of the card stays.
-   */
+/**
+ * A box's ground while it has no photo: a gradient (Tailwind classes, so they
+ * are generated) and its light. The words, link and photo are the admin's
+ * ("Ana Sayfa Düzenleme › Kampanya Kutuları").
+ */
+interface Look {
   backdrop: string;
   accent: Accent;
 }
 
-/** The big box on the left: its own label and call. */
-const LEAD: Banner & { eyebrow: keyof CampaignWords; cta: keyof CampaignWords } = {
-  eyebrow: "leadEyebrow",
-  title: "leadTitle",
-  subtitle: "leadSubtitle",
-  cta: "leadCta",
-  href: "/firsat-urunleri",
-  backdrop: "bg-gradient-to-br from-slate-600 via-slate-800 to-zinc-950",
-  accent: "slate",
-};
+/** The big box on the left. */
+const LEAD: Look = { backdrop: "bg-gradient-to-br from-slate-600 via-slate-800 to-zinc-950", accent: "slate" };
 
-/** The three on the right: two side by side, then one across both. Placeholder art. */
-const MINIS: Banner[] = [
-  {
-    title: "lulesTitle",
-    subtitle: "lulesSubtitle",
-    href: "/catalog/luleler",
-    backdrop: "bg-gradient-to-br from-red-500 via-red-800 to-neutral-950",
-    accent: "gold",
-  },
-  {
-    title: "kozlukTitle",
-    subtitle: "kozlukSubtitle",
-    href: "/catalog/kozlukler",
-    backdrop: "bg-gradient-to-br from-orange-500 via-orange-800 to-neutral-950",
-    accent: "gold",
-  },
-  {
-    title: "accessoriesTitle",
-    subtitle: "accessoriesSubtitle",
-    href: "/catalog/malzemeler",
-    backdrop: "bg-gradient-to-br from-rose-700 via-rose-950 to-black",
-    accent: "rose",
-  },
+/** The three on the right, in order: two side by side, then one across both. */
+const MINIS: Look[] = [
+  { backdrop: "bg-gradient-to-br from-red-500 via-red-800 to-neutral-950", accent: "gold" },
+  { backdrop: "bg-gradient-to-br from-orange-500 via-orange-800 to-neutral-950", accent: "gold" },
+  { backdrop: "bg-gradient-to-br from-rose-700 via-rose-950 to-black", accent: "rose" },
 ];
 
 /** The light each accent throws: a soft glow up top and fine rings at the end (the right, or the left in Arabic). */
@@ -71,9 +42,28 @@ const ACCENTS: Record<Accent, { glow: string; ring: string }> = {
 const CARD =
   "group relative isolate flex h-full overflow-hidden rounded-3xl bg-neutral-900 shadow-[0_24px_48px_-28px_rgb(0_0_0/0.55)] ring-1 ring-black/5 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent dark:ring-white/10";
 
-/** The gradient, the light and the rings — all of it scaling together under the pointer. */
-function Backdrop({ backdrop, accent, compact = false }: Pick<Banner, "backdrop" | "accent"> & { compact?: boolean }) {
+/**
+ * The gradient, the light and the rings — all of it scaling together under the
+ * pointer — or, with a photo, the photo in their place.
+ */
+function Backdrop({
+  backdrop,
+  accent,
+  image,
+  sizes,
+  compact = false,
+}: Look & { image?: string | null; sizes: string; compact?: boolean }) {
   const light = ACCENTS[accent];
+  if (image) {
+    return (
+      <>
+        <div aria-hidden className="absolute inset-0 -z-20 transition-transform duration-500 ease-out motion-safe:group-hover:scale-105">
+          <Image src={image} alt="" fill sizes={sizes} unoptimized={!canOptimiseImage(image)} className="object-cover" />
+        </div>
+        <div aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+      </>
+    );
+  }
   return (
     <>
       <div
@@ -105,14 +95,16 @@ function Backdrop({ backdrop, accent, compact = false }: Pick<Banner, "backdrop"
  * sides always end level. Below `md` the big box comes first and the bento
  * follows, its two small boxes still side by side.
  *
- * Every box is one link: its background — a placeholder gradient until the
- * shop's photos, with soft light and rings — grows to 105% under the pointer
+ * Every box is one link (words, link and photo from "Ana Sayfa Düzenleme"):
+ * its background — the admin's photo, or without one a gradient with soft
+ * light and rings — grows to 105% under the pointer
  * (500ms; still for reduced motion), a dark gradient from the foot holds the
  * words, and the call nudges forward. The big box keeps its label and pill
  * call; the small ones are tighter, with the arrow chip the category tiles use.
  */
-export async function CampaignBanners() {
+export async function CampaignBanners({ copy }: { copy: HomeCampaigns }) {
   const { campaigns: t } = await getMessages(homeMessages);
+  const lead = copy.lead;
   return (
     <section aria-labelledby="kampanyalar-baslik" className="bg-white py-10 md:py-12 dark:bg-transparent">
       <h2 id="kampanyalar-baslik" className="sr-only">
@@ -122,20 +114,20 @@ export async function CampaignBanners() {
         {/* The big box: its aspect ratio sets the row's height. */}
         <li>
           <Link
-            href={LEAD.href}
+            href={lead.href}
             // Square on a tablet, where half the row is too narrow for the words at
             // a wider ratio; 16:10 again from lg.
             className={`${CARD} aspect-[16/10] sm:aspect-[16/9] md:aspect-square lg:aspect-[16/10]`}
           >
-            <Backdrop backdrop={LEAD.backdrop} accent={LEAD.accent} />
+            <Backdrop {...LEAD} image={lead.image} sizes="(min-width: 768px) 50vw, 100vw" />
             <div className="flex h-full flex-col justify-end p-6 sm:p-8">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-white/70">{t[LEAD.eyebrow]}</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-white/70">{lead.eyebrow}</p>
               <h3 className="mt-2 max-w-md text-balance text-2xl font-extrabold leading-tight tracking-tight text-white sm:text-3xl">
-                {t[LEAD.title]}
+                {lead.title}
               </h3>
-              <p className="mt-2 max-w-sm text-sm leading-relaxed text-white/75 sm:text-base">{t[LEAD.subtitle]}</p>
+              <p className="mt-2 max-w-sm text-sm leading-relaxed text-white/75 sm:text-base">{lead.subtitle}</p>
               <span className="mt-5 inline-flex w-fit items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-neutral-950 shadow-lg shadow-black/20 transition-colors duration-200 group-hover:bg-red-600 group-hover:text-white">
-                {t[LEAD.cta]}
+                {lead.cta}
                 <ArrowRight
                   className="h-4 w-4 transition-transform duration-200 rtl:-scale-x-100 motion-safe:group-hover:translate-x-0.5 rtl:motion-safe:group-hover:-translate-x-0.5"
                   aria-hidden
@@ -148,16 +140,21 @@ export async function CampaignBanners() {
         {/* The mini bento: two rows splitting the big box's height. */}
         <li>
           <ul className="grid h-full grid-cols-2 grid-rows-[10rem_10rem] gap-4 md:grid-rows-2 lg:gap-5">
-            {MINIS.map((mini, i) => (
-              <li key={mini.href} className={i === 2 ? "col-span-2" : undefined}>
+            {copy.minis.slice(0, 3).map((mini, i) => (
+              <li key={i} className={i === 2 ? "col-span-2" : undefined}>
                 <Link href={mini.href} className={CARD}>
-                  <Backdrop backdrop={mini.backdrop} accent={mini.accent} compact />
+                  <Backdrop
+                    {...MINIS[i]}
+                    image={mini.image}
+                    sizes={i === 2 ? "(min-width: 768px) 50vw, 100vw" : "(min-width: 768px) 25vw, 50vw"}
+                    compact
+                  />
                   <div className="flex w-full items-end justify-between gap-3 p-4 sm:p-5 lg:p-6">
                     <div className="min-w-0">
                       <h3 className="text-balance text-lg font-extrabold leading-tight tracking-tight text-white lg:text-xl">
-                        {t[mini.title]}
+                        {mini.title}
                       </h3>
-                      <p className="mt-1 text-xs leading-snug text-white/75 lg:text-sm">{t[mini.subtitle]}</p>
+                      <p className="mt-1 text-xs leading-snug text-white/75 lg:text-sm">{mini.subtitle}</p>
                     </div>
                     <span
                       aria-hidden

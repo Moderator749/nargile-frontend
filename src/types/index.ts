@@ -1476,7 +1476,8 @@ export interface LegalDocument {
 
 export type HomeIconKey =
   | "wind" | "wrench" | "flame" | "layers" | "sparkles" | "shield" | "package" | "gamepad"
-  | "truck" | "bike" | "credit-card" | "landmark" | "trending-up" | "badge-check" | "headset" | "store";
+  | "truck" | "bike" | "credit-card" | "landmark" | "trending-up" | "badge-check" | "headset" | "store"
+  | "shopping-cart" | "trending-down";
 
 export interface HomeSections {
   hero: boolean;
@@ -1579,6 +1580,90 @@ export interface HomeFooter {
   warning: string;
 }
 
+/**
+ * The sections' own copy in "Ana Sayfa Düzenleme" (app/schemas/homepage.py).
+ * A text may hold a placeholder the storefront fills with a live figure:
+ * {tutar} (an amount), {oran} (a rate), {bant} (the SultanPuan band).
+ */
+export interface HomePerk {
+  icon: HomeIconKey;
+  label: string;
+  note: string;
+}
+
+/** "Avantaj Çubuğu": the installments' figure is typed; the two discounts' are live from "Parametreler". */
+export interface HomePerks {
+  installments: HomePerk & { value: string };
+  volume: HomePerk;
+  transfer: HomePerk;
+}
+
+export interface HomePicks {
+  title: string;
+  subtitle: string;
+  bestsellers: string;
+  newest: string;
+  shipping_eyebrow: string;
+  /** {tutar}: the free-shipping threshold. */
+  shipping_text: string;
+}
+
+export interface HomeLules {
+  title: string;
+  kinds: string[];
+  closing: string;
+  more: string;
+  href: string;
+  courier_eyebrow: string;
+  courier_text: string;
+}
+
+export interface HomeLoyaltyCopy {
+  subtitle: string;
+  note: string;
+  call: string;
+}
+
+export interface HomeCampaignBox {
+  title: string;
+  subtitle: string;
+  href: string;
+  /** A photo behind the words; without one, the box keeps its gradient. */
+  image?: string | null;
+}
+
+export interface HomeCampaigns {
+  lead: HomeCampaignBox & { eyebrow: string; cta: string };
+  /** Always three: two side by side, one across both. */
+  minis: HomeCampaignBox[];
+}
+
+export interface HomeStatement {
+  heading: string;
+  lead: string;
+  rest: string;
+}
+
+export interface HomeBrandBlurb {
+  description: string;
+  /** In place of the shop's own logo file. */
+  logo?: string | null;
+}
+
+export interface HomeBrandShowcase {
+  heading: string;
+  collection: string;
+  sultan: HomeBrandBlurb;
+  oduman: HomeBrandBlurb;
+  legend: HomeBrandBlurb;
+}
+
+export interface HomeProductRowCopy {
+  title: string;
+  subtitle: string;
+  more: string;
+}
+
 export interface Homepage {
   sections: HomeSections;
   /** The sections' order between the hero and the footer. */
@@ -1593,6 +1678,17 @@ export interface Homepage {
   footer: HomeFooter;
   /** "Mobil Yönetim": what a phone shows differently. */
   mobile: HomeMobile;
+  perks: HomePerks;
+  picks: HomePicks;
+  lules: HomeLules;
+  sultanpuan: HomeLoyaltyCopy;
+  kumbara: HomeLoyaltyCopy;
+  campaigns: HomeCampaigns;
+  /** "Sektörde Referans Noktası" (the `promos` switch). */
+  statement: HomeStatement;
+  brand_showcase: HomeBrandShowcase;
+  kozlukler: HomeProductRowCopy;
+  games: HomeProductRowCopy;
 }
 
 /** Homepage sections a phone can go without (hidden below `md` only). */

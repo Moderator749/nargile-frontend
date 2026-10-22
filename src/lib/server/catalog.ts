@@ -4,6 +4,7 @@
 import { API_URL, CATALOG_PAGE_SIZE } from "@/lib/config";
 import { DEFAULT_LOCALE } from "@/lib/i18n/config";
 import { getLocale } from "@/lib/i18n/server";
+import { BUILT_IN_HOME_MEMORY } from "@/lib/homeSectionCopy";
 import { translateTexts, type HomeTranslations } from "@/lib/homeTranslations";
 import { DEFAULT_STORE_PARAMETERS } from "@/lib/storeParameters";
 import type {
@@ -193,7 +194,9 @@ export async function inPageLanguage<T>(value: T): Promise<T> {
   const locale = await getLocale();
   if (locale === DEFAULT_LOCALE) return value;
   const memory = await getHomeTranslations();
-  return translateTexts(value, memory?.[locale as "en" | "ar"]);
+  const lang = locale as "en" | "ar";
+  // The default sections' copy reads in its old translations unless the admin saved others.
+  return translateTexts(value, { ...BUILT_IN_HOME_MEMORY[lang], ...memory?.[lang] });
 }
 
 /** Homepage CMS content (slides, the promo box), in the page's language; refreshed by admin saves. */

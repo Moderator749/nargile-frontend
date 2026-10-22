@@ -9,6 +9,7 @@ import { ProductCard } from "@/components/catalog/ProductCard";
 import { useMessages } from "@/components/i18n/LocaleProvider";
 import { useOwnPrices } from "@/hooks/useOwnPrices";
 import { homeMessages } from "@/lib/i18n/messages/home";
+import { canOptimiseImage } from "@/lib/home";
 import { PAGE_CONTAINER } from "@/lib/layout";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useAuthHydrated } from "@/store/useHasHydrated";
@@ -56,6 +57,13 @@ interface BrandShowcaseProps {
    */
   logoFrameRatio?: number;
   description: string;
+  /** The button's words ("Koleksiyonu Keşfet"). */
+  collection: string;
+  /**
+   * A logo uploaded in "Ana Sayfa Düzenleme", in place of the shop's own file:
+   * its size unknown, it is fitted whole into a wide frame.
+   */
+  logoOverride?: string | null;
   /** The brand's own page: every product carrying its name. */
   brandLink: string;
   products: CatalogProduct[];
@@ -90,6 +98,8 @@ export function BrandShowcase({
   logoDisplayWidth = 280,
   logoFrameRatio,
   description,
+  collection,
+  logoOverride,
   brandLink,
   products,
   categories,
@@ -144,7 +154,18 @@ export function BrandShowcase({
           {/* The logo is the heading, under the group's "Markalarımız": it
             already says the name, so no text repeats it on screen. */}
           <h3 id={headingId} className="w-full">
-            {logoFrameRatio ? (
+            {logoOverride ? (
+              <span className="relative block max-w-full" style={{ width: logoDisplayWidth, aspectRatio: 3.5 }}>
+                <Image
+                  src={logoOverride}
+                  alt={brandName}
+                  fill
+                  sizes={`${logoDisplayWidth}px`}
+                  unoptimized={!canOptimiseImage(logoOverride)}
+                  className={`object-contain object-left rtl:object-right ${LOGO_TONE}`}
+                />
+              </span>
+            ) : logoFrameRatio ? (
               <span
                 className="relative block max-w-full overflow-hidden"
                 style={{ width: logoDisplayWidth, aspectRatio: logoFrameRatio }}
@@ -181,7 +202,7 @@ export function BrandShowcase({
               href={brandLink}
               className="inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-red-700 px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-red-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700"
             >
-              {t.brands.collection}
+              {collection}
               <ArrowUpRight className="h-4 w-4 rtl:-scale-x-100" aria-hidden />
             </Link>
             {products.length > VISIBLE && (

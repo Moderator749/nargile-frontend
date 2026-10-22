@@ -8,6 +8,16 @@ import { ExternalLink, FolderTree, Languages, Loader2, RotateCcw, Save, Smartpho
 import { AdminCategoriesView } from "@/components/admin/AdminCategoriesView";
 import { AdminPageHeader } from "@/components/admin/AdminShell";
 import { TranslationsTab } from "@/components/admin/homepage/TranslationsTab";
+import {
+  BrandShowcaseForm,
+  CampaignsForm,
+  LoyaltyForm,
+  LulesForm,
+  PerksForm,
+  PicksForm,
+  ProductRowForm,
+  StatementForm,
+} from "@/components/admin/homepage/sectionCopyForms";
 import { isSiteOrHttpsLink } from "@/components/admin/ContentEditor";
 import {
   SeoIntroTab,
@@ -30,7 +40,26 @@ import { DEFAULT_HOMEPAGE, SECTION_LABELS, resolveHomepage } from "@/lib/homepag
 import { refreshStorefront } from "@/lib/revalidate";
 import type { Brand, Category, HomeBlock, Homepage, HomeSections } from "@/types";
 
-type EditorKey = "hero" | "deals" | "brands" | "showcase" | "seo" | "footer" | "mobile" | "catalog" | "translations";
+type EditorKey =
+  | "hero"
+  | "perks"
+  | "picks"
+  | "lules"
+  | "sultanpuan"
+  | "kumbara"
+  | "deals"
+  | "campaigns"
+  | "statement"
+  | "brands"
+  | "brand_showcase"
+  | "kozlukler"
+  | "games"
+  | "showcase"
+  | "seo"
+  | "footer"
+  | "mobile"
+  | "catalog"
+  | "translations";
 
 /**
  * Each editor the drawer opens: what it is called, the part of the document
@@ -48,7 +77,53 @@ const EDITORS: Record<
     sections: ["hero"],
     size: "lg",
   },
+  perks: {
+    title: "Avantaj Çubuğu",
+    hint: "Hero’nun altındaki üç avantaj: etiket, yazı ve simge.",
+    doc: "perks",
+    sections: ["perks"],
+    size: "md",
+  },
+  picks: {
+    title: "Sizin İçin Seçtiklerimiz",
+    hint: "Başlık, sekmeler ve ücretsiz kargo notu.",
+    doc: "picks",
+    sections: ["picks"],
+    size: "md",
+  },
+  lules: {
+    title: "Lüle Alırken Kararsız Kalacaksınız",
+    hint: "Başlık, çeşitler, bağlantı ve kurye notu.",
+    doc: "lules",
+    sections: ["lules"],
+    size: "md",
+  },
+  sultanpuan: { title: "SultanPuan Bandı", hint: "Bandın yazıları.", doc: "sultanpuan", sections: ["sultanpuan"], size: "md" },
+  kumbara: { title: "Kumbara Bandı", hint: "Bandın yazıları.", doc: "kumbara", sections: ["kumbara"], size: "md" },
   deals: { title: "Fırsatları Kaçırma", hint: "Fırsat vitrininin başlığı ve alt metni.", doc: "deals", sections: ["deals"], size: "md" },
+  campaigns: {
+    title: "Kampanya Kutuları",
+    hint: "Büyük kutu ve üç küçük kutu: görsel, yazılar ve bağlantı.",
+    doc: "campaigns",
+    sections: ["campaigns"],
+    size: "lg",
+  },
+  statement: {
+    title: "Sektörde Referans Noktası",
+    hint: "Başlık ve tanıtım metni.",
+    doc: "statement",
+    sections: ["promos"],
+    size: "md",
+  },
+  brand_showcase: {
+    title: "Markalarımız",
+    hint: "Başlık, buton ve her markanın tanıtımı ile logosu.",
+    doc: "brand_showcase",
+    sections: ["brand_showcase"],
+    size: "lg",
+  },
+  kozlukler: { title: "Közlükler", hint: "Ürün satırının yazıları.", doc: "kozlukler", sections: ["kozlukler"], size: "md" },
+  games: { title: "Oyun & Eğlence", hint: "Ürün satırının yazıları.", doc: "games", sections: ["games"], size: "md" },
   brands: {
     title: "Markalar Şeridi",
     hint: "Üst ve alt şerit aynı adları kaydırır.",
@@ -69,7 +144,17 @@ const EDITORS: Record<
 /** The pencil on a section's row opens these; a section missing here has nothing to set. */
 const SECTION_EDITOR: Partial<Record<keyof HomeSections, EditorKey>> = {
   hero: "hero",
+  perks: "perks",
+  picks: "picks",
+  lules: "lules",
+  sultanpuan: "sultanpuan",
+  kumbara: "kumbara",
   deals: "deals",
+  campaigns: "campaigns",
+  promos: "statement",
+  brand_showcase: "brand_showcase",
+  kozlukler: "kozlukler",
+  games: "games",
   brands_top: "brands",
   brands: "brands",
   showcase: "showcase",
@@ -115,6 +200,16 @@ const SECTION_NAMES: Record<string, string> = {
   seo_intro: "Alt SEO Metni",
   footer: "Footer",
   mobile: "Mobil Yönetim",
+  perks: "Avantaj Çubuğu",
+  picks: "Sizin İçin Seçtiklerimiz",
+  lules: "Lüle",
+  sultanpuan: "SultanPuan Bandı",
+  kumbara: "Kumbara Bandı",
+  campaigns: "Kampanya Kutuları",
+  statement: "Sektörde Referans Noktası",
+  brand_showcase: "Markalarımız",
+  kozlukler: "Közlükler",
+  games: "Oyun & Eğlence",
 };
 
 /** The first problem, said where it is: "Footer › blog › links › 2 › href". */
@@ -158,6 +253,10 @@ function checkLinks(doc: Homepage, categories: Category[]): string | null {
   const s = f.social.findIndex((l) => bad(l.href) || !l.href);
   if (s >= 0) return `Footer, sosyal medya ${s + 1}. bağlantı geçersiz.`;
   if (bad(f.whatsapp_href) || !f.whatsapp_href) return "Footer: WhatsApp bağlantısı https:// ile başlamalı.";
+  const boxes = [doc.campaigns.lead, ...doc.campaigns.minis];
+  const box = boxes.findIndex((b) => bad(b.href) || !b.href);
+  if (box >= 0) return `Kampanya Kutuları, ${box === 0 ? "büyük kutu" : `küçük kutu ${box}`}: bağlantı / ile ya da https:// ile başlamalı.`;
+  if (bad(doc.lules.href) || !doc.lules.href) return "Lüle bölümü: “Tümünü gör” bağlantısı / ile ya da https:// ile başlamalı.";
   return null;
 }
 
@@ -317,6 +416,43 @@ export function AdminHomepageView() {
         return <AdminCategoriesView onChange={reloadCategories} />;
       case "translations":
         return <TranslationsTab doc={saved} />;
+      case "perks":
+        return <PerksForm value={doc.perks} set={set("perks")} />;
+      case "picks":
+        return <PicksForm value={doc.picks} set={set("picks")} />;
+      case "lules":
+        return <LulesForm value={doc.lules} set={set("lules")} categories={categories} />;
+      case "sultanpuan":
+        return (
+          <LoyaltyForm
+            title="SultanPuan Bandı"
+            value={doc.sultanpuan}
+            onChange={set("sultanpuan")}
+            placeholders={[{ name: "bant", means: "puan kazandıran tutar aralığı, ör. 20.000–29.999 TL" }]}
+          />
+        );
+      case "kumbara":
+        return (
+          <LoyaltyForm
+            title="Kumbara Bandı"
+            value={doc.kumbara}
+            onChange={set("kumbara")}
+            placeholders={[
+              { name: "tutar", means: "yıllık hedef, ör. 20.000 TL" },
+              { name: "oran", means: "hedefte kazanılan ekstra, ör. %5" },
+            ]}
+          />
+        );
+      case "campaigns":
+        return <CampaignsForm value={doc.campaigns} set={set("campaigns")} categories={categories} />;
+      case "statement":
+        return <StatementForm value={doc.statement} set={set("statement")} />;
+      case "brand_showcase":
+        return <BrandShowcaseForm value={doc.brand_showcase} set={set("brand_showcase")} />;
+      case "kozlukler":
+        return <ProductRowForm title="Közlükler" source="Közlükler" value={doc.kozlukler} onChange={set("kozlukler")} />;
+      case "games":
+        return <ProductRowForm title="Oyun & Eğlence" source="Oyun & Eğlence" value={doc.games} onChange={set("games")} />;
     }
   }
 

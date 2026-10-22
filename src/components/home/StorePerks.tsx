@@ -1,15 +1,16 @@
 "use client";
 
-import { CreditCard, ShoppingCart, TrendingDown, type LucideIcon } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 import Link from "@/components/i18n/Link";
 import { useMessages } from "@/components/i18n/LocaleProvider";
 import { useShippingPerks } from "@/hooks/useShippingPerks";
 import { useStoreParameters } from "@/hooks/useStoreParameters";
 import { PERKS_PAGE } from "@/lib/bilgi";
+import { homeIcon } from "@/lib/homeIcons";
 import { homeMessages } from "@/lib/i18n/messages/home";
 import { PAGE_CONTAINER } from "@/lib/layout";
-import type { ParameterTier } from "@/types";
+import type { HomePerks, ParameterTier } from "@/types";
 
 /**
  * "%5 – %8": a ladder's lowest and highest rate that give anything; null with
@@ -46,7 +47,7 @@ interface Perk {
  * promises, so the bar is left out for a signed-in B2B account
  * (`useShippingPerks`), as the SultanPuan and Kumbara bands are.
  */
-export function StorePerks() {
+export function StorePerks({ copy }: { copy: HomePerks }) {
   const { show } = useShippingPerks();
   const params = useStoreParameters();
   const t = useMessages(homeMessages);
@@ -57,19 +58,19 @@ export function StorePerks() {
   const perks: Perk[] = [
     {
       anchor: "taksit",
-      Icon: CreditCard,
-      label: t.perks.installmentsLabel,
-      value: t.perks.installmentsValue,
-      note: t.perks.installmentsNote,
+      Icon: homeIcon(copy.installments.icon),
+      label: copy.installments.label,
+      value: copy.installments.value,
+      note: copy.installments.note,
     },
     ...(volume
       ? [
           {
             anchor: "sepet-indirimi",
-            Icon: ShoppingCart,
-            label: t.perks.volumeLabel,
+            Icon: homeIcon(copy.volume.icon),
+            label: copy.volume.label,
             value: volume,
-            note: t.perks.volumeNote,
+            note: copy.volume.note,
           },
         ]
       : []),
@@ -77,10 +78,10 @@ export function StorePerks() {
       ? [
           {
             anchor: "havale-indirimi",
-            Icon: TrendingDown,
-            label: t.perks.transferLabel,
+            Icon: homeIcon(copy.transfer.icon),
+            label: copy.transfer.label,
             value: transfer,
-            note: t.perks.transferNote,
+            note: copy.transfer.note,
           },
         ]
       : []),
