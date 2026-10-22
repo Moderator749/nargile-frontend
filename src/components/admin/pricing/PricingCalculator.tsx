@@ -47,7 +47,7 @@ export interface SheetDraft {
   vatRate: string;
   retailDesired: string;
   retailErpPrice: string;
-  /** "Uygulanacak oran (%)": added to every column's base (ERP fiyatı, else calculated) for its price. */
+  /** "Uygulanacak oran (%)": added to the classes' base (ERP fiyatı, else calculated) for their price; not Mağaza Fiyatı's or retail's. */
   appliedPercent: string;
   /** Between the classes and retail, each a branch off the last class as retail is (after VAT); for reference, never sent to the site. */
   extras: ColumnDraft[];
@@ -67,7 +67,7 @@ export const newColumn = (label = "", segment: PricingSegment | "" = ""): Column
 });
 
 /** The price before retail every sheet starts with; renamed in its header. */
-export const EXTRA_LABELS = ["Özel Fiyat"];
+export const EXTRA_LABELS = ["Mağaza Fiyatı"];
 export const defaultExtras = () => EXTRA_LABELS.map((label) => newColumn(label));
 
 export const emptySheet = (vatMode: VatMode = "EXCL"): SheetDraft => ({
@@ -133,7 +133,7 @@ const greenFill = "bg-[#E2EFDA] dark:bg-emerald-500/15";
 /** The "ERP fiyatı" row under the formula row: Excel's light blue. */
 const blueFill = "bg-[#DDEBF7] text-sky-950 dark:bg-sky-500/15 dark:text-sky-100";
 const headText = "text-[10px] font-bold uppercase leading-tight tracking-wide text-slate-700 dark:text-zinc-200";
-/** Bayi, Toptan, Kafe and Özel Fiyat: with the cost and retail, the six boxes that always fit. */
+/** Bayi, Toptan, Kafe and Mağaza Fiyatı: with the cost and retail, the six boxes that always fit. */
 const STANDARD_STEPS = 4;
 /** An input that is the cell itself, as in a spreadsheet. */
 const cellBase =
@@ -270,7 +270,7 @@ export function PricingCalculator({
         : d.columns.some((c) => num(c.percent) === null) || num(d.retailPercent) === null
           ? "Her sütunun kâr oranını girin (0 da olabilir)."
           : strayExtra
-            ? "Özel fiyata önce kâr oranını girin (boşsa kaydedilmez)."
+            ? "Mağaza fiyatına önce kâr oranını girin (boşsa kaydedilmez)."
             : [...d.columns, ...d.extras].some((c) => c.erpPrice.trim() && !(num(c.erpPrice)! > 0)) ||
                 (d.retailErpPrice.trim() && !(num(d.retailErpPrice)! > 0))
               ? "ERP fiyatlarını sayı olarak girin (ya da boş bırakın)."
@@ -507,7 +507,7 @@ export function PricingCalculator({
                   <span
                     className="block truncate font-mono text-[13px] font-bold tabular-nums"
                     title={fmt(calc.extras[i].computed, d.currency)}
-                    aria-label={`${c.label || "Özel fiyat"} hesaplanan fiyat (KDV dahil)`}
+                    aria-label={`${c.label || "Mağaza fiyatı"} hesaplanan fiyat (KDV dahil)`}
                   >
                     {fmt(calc.extras[i].computed, d.currency)}
                   </span>
@@ -559,7 +559,7 @@ export function PricingCalculator({
               {d.extras.map((c) => (
                 <ErpCell
                   key={c.key}
-                  label={`${c.label || "Özel fiyat"} ERP fiyatı (KDV dahil)`}
+                  label={`${c.label || "Mağaza fiyatı"} ERP fiyatı (KDV dahil)`}
                   value={c.erpPrice}
                   onChange={(erpPrice) => setExtra(c.key, { erpPrice })}
                 />
@@ -607,7 +607,7 @@ export function PricingCalculator({
               {d.extras.map((c, i) => (
                 <PriceCell
                   key={c.key}
-                  label={`${c.label || "Özel fiyat"} uygulanacak fiyat (KDV dahil)`}
+                  label={`${c.label || "Mağaza fiyatı"} uygulanacak fiyat (KDV dahil)`}
                   value={c.desired}
                   auto={calc.extras[i].auto}
                   currency={d.currency}
@@ -692,15 +692,16 @@ export function PricingCalculator({
         </div>
       </div>
       <p className="mt-2 text-[11px] leading-4 text-slate-500 dark:text-zinc-400">
-        Turuncu satır kendi formül zinciriyle hesaplanır: bayi → toptan → kafe → özel fiyat → perakende. Mavi satıra
-        (ERP fiyatı) isterseniz sütun için bir taban fiyat yazın. Yeşil satır siteye gönderilen fiyattır: ERP fiyatına —
-        boşsa hesaplanan fiyata — maliyetin altındaki uygulanacak oran eklenerek kendiliğinden dolar (oran boşsa ya da 0
-        ise tabanın kendisidir). Yeşil satıra fiyat yazarsanız (ör. 199,90) o fiyat geçerli olur. Hiçbiri zinciri
-        değiştirmez. Özel fiyat ve perakende KDV dahildir:{" "}
+        Turuncu satır kendi formül zinciriyle hesaplanır: bayi → toptan → kafe → mağaza fiyatı → perakende. Mavi satıra
+        (ERP fiyatı) isterseniz sütun için bir taban fiyat yazın. Yeşil satır siteye gönderilen fiyattır: ERP fiyatı —
+        boşsa hesaplanan fiyat — bayi, toptan ve kafede maliyetin altındaki uygulanacak oran eklenerek kendiliğinden
+        dolar; mağaza fiyatı ve perakendeye oran eklenmez, yeşil satırları ERP fiyatının (boşsa hesaplananın) kendisidir.
+        Yeşil satıra fiyat yazarsanız (ör. 199,90) o fiyat geçerli olur. Hiçbiri zinciri değiştirmez. Mağaza fiyatı ve
+        perakende KDV dahildir:{" "}
         {d.vatMode === "EXCL"
           ? "maliyet KDV hariç olduğundan KDV perakende adımında eklenir."
           : "maliyet zaten KDV dahil olduğundan perakendeye ayrıca KDV eklenmez; KDV oranı fiyatların KDV hariç karşılığı için kullanılır."}{" "}
-        Perakende, özel fiyatın KDV’siz adımının üzerine hesaplanır (KDV bir kez eklenir). Özel fiyat isteğe bağlıdır
+        Perakende, mağaza fiyatının KDV’siz adımının üzerine hesaplanır (KDV bir kez eklenir). Mağaza fiyatı isteğe bağlıdır
         (kâr oranı boşsa kaydedilmez ve perakende kafe fiyatının üzerine hesaplanır), dosyaya kaydedilir ama siteye
         yazılmaz.
       </p>
@@ -781,7 +782,7 @@ function PriceCell({
 }
 
 /**
- * A price before retail ("Özel Fiyat"), preceded by its "(+)": its name, to
+ * A price before retail ("Mağaza Fiyatı"), preceded by its "(+)": its name, to
  * rename, and its percent — as retail's header, after VAT, for reference only.
  */
 function ExtraHead({
@@ -803,10 +804,10 @@ function ExtraHead({
           value={c.label}
           maxLength={40}
           onChange={(e) => onChange({ label: e.target.value })}
-          aria-label="Özel fiyatın adı"
+          aria-label="Mağaza fiyatının adı"
           className={`${headText} h-5 w-full min-w-0 border-0 border-b border-transparent bg-transparent p-0 text-red-700 hover:border-slate-400 focus:border-red-500 focus:outline-none dark:text-red-300`}
         />
-        <PercentBadge label={`${c.label || "Özel fiyat"} kâr oranı`} value={c.percent} onChange={(percent) => onChange({ percent })} />
+        <PercentBadge label={`${c.label || "Mağaza fiyatı"} kâr oranı`} value={c.percent} onChange={(percent) => onChange({ percent })} />
         <span className="mt-1 block text-[10px] font-normal leading-3 text-slate-500 dark:text-zinc-400">KDV dahil · siteye yazılmaz</span>
       </th>
     </>

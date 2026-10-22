@@ -3,13 +3,16 @@
 import { CheckCircle2, ImageOff, RotateCcw, Trash2 } from "lucide-react";
 
 import { formatDate } from "@/lib/format";
-import type { PricingCurrency, PricingRecord } from "@/lib/pricing";
+import type { PricingCurrency, PricingRecord, StoredColumn } from "@/lib/pricing";
 
 const SYMBOL: Record<PricingCurrency, string> = { TRY: "₺", USD: "$", EUR: "€" };
 const money = (v: string | null, c: PricingCurrency) =>
   v === null ? "—" : `${SYMBOL[c]}${Number(v).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 /** The product's photo, or a quiet placeholder when it has none. */
+/** What a saved column shows here: the ERP fiyatı typed, else the calculated price. */
+const erpOf = (col: StoredColumn) => col.erp_price ?? col.computed;
+
 export function Thumb({ src, alt, size = "h-14 w-14" }: { src: string | null; alt: string; size?: string }) {
   return (
     <span className={`flex ${size} shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-white/5`}>
@@ -125,12 +128,14 @@ export function PricingRecords({
             <dl className="mt-3 flex flex-wrap gap-2 text-xs">
               {/* The two ends of the sheet in red, cost and retail, the classes
                   between them plain; the cost's own figure muted, being the
-                  input rather than a price anyone pays. */}
+                  input rather than a price anyone pays. Each column shows its
+                  ERP fiyatı — the admin's own base — else its calculated
+                  price, not the price sent to the site. */}
               {[
                 { label: "Maliyet", price: s.cost, kind: "cost" as const },
-                ...s.columns.map((col) => ({ label: col.label, price: col.price, kind: "plain" as const })),
-                ...(s.extras ?? []).map((extra) => ({ label: extra.label, price: extra.price, kind: "plain" as const })),
-                { label: "Perakende", price: s.retail.price, kind: "retail" as const },
+                ...s.columns.map((col) => ({ label: col.label, price: erpOf(col), kind: "plain" as const })),
+                ...(s.extras ?? []).map((extra) => ({ label: extra.label, price: erpOf(extra), kind: "plain" as const })),
+                { label: "Perakende", price: erpOf(s.retail), kind: "retail" as const },
               ].map((cell, i) => (
                 <div
                   key={i}

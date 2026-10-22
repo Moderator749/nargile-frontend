@@ -37,7 +37,7 @@ export interface PricingSheetInput {
   retail: { percent: DecimalString; vat_rate: DecimalString; desired: DecimalString | null; erp_price: DecimalString | null };
   /** Between the classes and retail, shown as retail is, retail building on it; never sent to the site. */
   extras: { label: string; percent: DecimalString; desired: DecimalString | null; erp_price: DecimalString | null }[];
-  /** "Uygulanacak oran (%)": added to every column's base for its price, unless a price is typed. */
+  /** "Uygulanacak oran (%)": added to the classes' base for their price (never the extras' or retail's), unless typed. */
   applied_percent: DecimalString | null;
   usd_rate: DecimalString | null;
   eur_rate: DecimalString | null;
@@ -64,7 +64,7 @@ export interface StoredSheet {
   columns: StoredColumn[];
   /** After VAT; `before_vat` is the markup step on its own. */
   retail: StoredColumn & { vat_rate: DecimalString; before_vat?: DecimalString };
-  /** "Özel Fiyat"…, before retail; absent on rows saved before there were any. */
+  /** "Mağaza Fiyatı"…, before retail; absent on rows saved before there were any. */
   extras?: (StoredColumn & { vat_rate: DecimalString; before_vat: DecimalString })[];
   usd_rate: DecimalString | null;
   eur_rate: DecimalString | null;
@@ -156,12 +156,13 @@ function priced(computed: number | null, { desired, erpPrice }: Typed, applied: 
  * column's price but never feeds the chain. Null propagates: a column after an
  * unusable one has nothing to stand on.
  *
- * After the classes come the extras ("Özel Fiyat"), then retail, both shown
+ * After the classes come the extras ("Mağaza Fiyatı"), then retail, both shown
  * after VAT while the chain runs on before VAT, so VAT is added once: retail
  * builds on the extra's step before VAT. An extra left without a percent is
  * not sent, and is passed over here too: retail then builds on the step
  * before it. Each column's "uygulanacak fiyat", when none is typed, is its
- * ERP fiyatı (else its calculated value) plus the sheet's "uygulanacak oran".
+ * ERP fiyatı (else its calculated value) plus — for the classes only — the
+ * sheet's "uygulanacak oran"; the extras and retail never take the rate.
  */
 export function computeSheet(input: {
   cost: number | null;
@@ -190,12 +191,13 @@ export function computeSheet(input: {
     if (typed.percent === null) return { computed: null, auto: null, price: null, beforeVat: null };
     const step = previous === null ? null : previous * (1 + typed.percent / 100);
     previous = step;
-    return { ...priced(withVat(step), typed, applied), beforeVat: step === null ? null : round2(step) };
+    // The rate is the classes' only: an extra's price is its base.
+    return { ...priced(withVat(step), typed, null), beforeVat: step === null ? null : round2(step) };
   });
   // Retail is the shelf price, after VAT: VAT is added here when the sheet's
   // cost (and so its chain) is before VAT.
   const beforeVat = previous !== null && r.percent !== null ? previous * (1 + r.percent / 100) : null;
-  const retail = priced(withVat(beforeVat), r, applied);
+  const retail = priced(withVat(beforeVat), r, null); // retail never takes the rate
   const rate = input.currency === "USD" ? input.usdRate : input.currency === "EUR" ? input.eurRate : null;
   return {
     columns,
