@@ -44,6 +44,8 @@ export interface SheetDraft {
   retailPercent: string;
   vatRate: string;
   retailDesired: string;
+  /** After retail, each worked out as retail is (after VAT); for reference, never sent to the site. */
+  extras: ColumnDraft[];
   usdRate: string;
   eurRate: string;
   finalTry: string;
@@ -58,6 +60,10 @@ export const newColumn = (label = "", segment: PricingSegment | "" = ""): Column
   desired: "",
 });
 
+/** The price after retail every sheet starts with; renamed in its header. */
+export const EXTRA_LABELS = ["Özel Fiyat"];
+export const defaultExtras = () => EXTRA_LABELS.map((label) => newColumn(label));
+
 export const emptySheet = (vatMode: VatMode = "EXCL"): SheetDraft => ({
   code: "",
   name: "",
@@ -68,6 +74,7 @@ export const emptySheet = (vatMode: VatMode = "EXCL"): SheetDraft => ({
   retailPercent: "",
   vatRate: "20",
   retailDesired: "",
+  extras: defaultExtras(),
   usdRate: "",
   eurRate: "",
   finalTry: "",
@@ -113,8 +120,8 @@ const headFill = "bg-[#F2F2F2] dark:bg-zinc-800";
 const orangeFill = "bg-[#FCE4D6] text-orange-950 dark:bg-orange-500/15 dark:text-orange-100";
 const greenFill = "bg-[#E2EFDA] dark:bg-emerald-500/15";
 const headText = "text-[10px] font-bold uppercase leading-tight tracking-wide text-slate-700 dark:text-zinc-200";
-/** Bayi, Toptan, Kafe: with the cost and retail, the five boxes that always fit. */
-const STANDARD_CLASSES = 3;
+/** Bayi, Toptan, Kafe and the one after retail: with the cost and retail, the six boxes that always fit. */
+const STANDARD_STEPS = 4;
 /** An input that is the cell itself, as in a spreadsheet. */
 const cellInput =
   "block h-8 w-full border-0 bg-transparent px-1.5 text-center font-mono text-sm tabular-nums text-slate-900 placeholder:font-sans placeholder:text-[11px] placeholder:text-slate-400 focus:outline-2 focus:-outline-offset-2 focus:outline-red-500 dark:text-zinc-100";
@@ -197,6 +204,8 @@ export function PricingCalculator({
   };
   const setColumn = (key: number, patch: Partial<ColumnDraft>) =>
     set({ columns: d.columns.map((c) => (c.key === key ? { ...c, ...patch } : c)) });
+  const setExtra = (key: number, patch: Partial<ColumnDraft>) =>
+    set({ extras: d.extras.map((c) => (c.key === key ? { ...c, ...patch } : c)) });
 
   const foreign = d.currency !== "TRY";
   // A foreign sheet starts on the day's TCMB rates; the admin can type others.
@@ -217,6 +226,7 @@ export function PricingCalculator({
     cost: num(d.cost),
     columns: d.columns.map((c) => ({ percent: num(c.percent), desired: num(c.desired) })),
     retail: { percent: num(d.retailPercent), desired: num(d.retailDesired), vatRate: num(d.vatRate) },
+    extras: d.extras.map((c) => ({ percent: num(c.percent), desired: num(c.desired) })),
     vatMode: d.vatMode,
     currency: d.currency,
     usdRate: num(d.usdRate),
@@ -225,18 +235,25 @@ export function PricingCalculator({
 
   // What the server takes; null with the reason when the sheet is not complete.
   const used = d.columns.map((c) => c.segment).filter(Boolean);
+  // The extras are optional: those filled in from the left are sent, an
+  // empty one and everything after it are not (each builds on the one before).
+  const firstEmpty = d.extras.findIndex((c) => num(c.percent) === null);
+  const sentExtras = firstEmpty === -1 ? d.extras : d.extras.slice(0, firstEmpty);
+  const strayExtra = d.extras.slice(sentExtras.length).some((c) => c.percent.trim() || c.desired.trim());
   const problem =
     num(d.cost) === null || num(d.cost)! <= 0
       ? "Maliyeti girin."
-      : d.columns.some((c) => !c.label.trim())
+      : [...d.columns, ...sentExtras].some((c) => !c.label.trim())
         ? "Her fiyat sınıfına bir ad verin."
         : d.columns.some((c) => num(c.percent) === null) || num(d.retailPercent) === null
           ? "Her sütunun kâr oranını girin (0 da olabilir)."
-          : num(d.vatRate) === null
-            ? "Perakende için KDV oranını girin."
-            : new Set(used).size !== used.length
-              ? "Bir müşteri grubu yalnızca bir sütuna bağlanabilir."
-              : null;
+          : strayExtra
+            ? "Özel fiyata önce kâr oranını girin (boşsa kaydedilmez)."
+            : num(d.vatRate) === null
+              ? "Perakende için KDV oranını girin."
+              : new Set(used).size !== used.length
+                ? "Bir müşteri grubu yalnızca bir sütuna bağlanabilir."
+                : null;
   const payload = (): PricingSheetInput => ({
     product_code: d.code.trim(),
     product_name: d.name.trim(),
@@ -250,6 +267,7 @@ export function PricingCalculator({
       desired: dec(c.desired, 2),
     })),
     retail: { percent: dec(d.retailPercent)!, vat_rate: dec(d.vatRate, 2)!, desired: dec(d.retailDesired, 2) },
+    extras: sentExtras.map((c) => ({ label: c.label.trim(), percent: dec(c.percent)!, desired: dec(c.desired, 2) })),
     usd_rate: foreign ? dec(d.usdRate) : null,
     eur_rate: foreign ? dec(d.eurRate) : null,
     final_try: foreign ? dec(d.finalTry, 2) : null,
@@ -294,8 +312,9 @@ export function PricingCalculator({
 
   // On a before-VAT sheet, the orange retail cell says how it got there.
   const vatShown = d.vatMode === "EXCL" && calc.retailBeforeVat !== null && calc.retail.computed !== null;
-  // Label, cost, then a "+" and a step per column, "+", retail, (TL).
-  const span = 2 + d.columns.length * 2 + 2 + (foreign ? 1 : 0);
+  // Label, cost, then a "+" and a step per column, "+", retail, a "+" and a step per extra, (TL).
+  const span = 2 + d.columns.length * 2 + 2 + d.extras.length * 2 + (foreign ? 1 : 0);
+  const steps = d.columns.length + d.extras.length;
 
   return (
     <section aria-labelledby={headingId}>
@@ -303,15 +322,15 @@ export function PricingCalculator({
         {title}
       </h2>
 
-      {/* No scrolling box at all for the standard five: the grid is the width of
-          the page. Past those, it scrolls inside its own box. */}
-      <div className={d.columns.length > STANDARD_CLASSES ? "overflow-x-auto" : undefined}>
+      {/* No scrolling box at all for the standard six: the grid is the width
+          of the page. Past those, it scrolls inside its own box. */}
+      <div className={steps > STANDARD_STEPS ? "overflow-x-auto" : undefined}>
         <table
           className="w-full table-fixed border-collapse bg-white text-sm dark:bg-zinc-950"
-          // The steps share the width equally, so the standard five boxes (cost,
-          // three classes, retail) always fit. Past those, each added box keeps
-          // a usable width and the grid scrolls inside its box instead.
-          style={d.columns.length > STANDARD_CLASSES ? { minWidth: `${6.5 + d.columns.length * 9.25 + 1.25 + 2 * 8 + (foreign ? 8 : 0)}rem` } : undefined}
+          // The steps share the width equally, so the standard six boxes (cost,
+          // three classes, retail, the extra) always fit. Past those, each added
+          // box keeps a usable width and the grid scrolls inside its box instead.
+          style={steps > STANDARD_STEPS ? { minWidth: `${6.5 + steps * 9.25 + 1.25 + 2 * 8 + (foreign ? 8 : 0)}rem` } : undefined}
         >
           {/* Only the label and "+" columns have a width; the steps split the
               rest. Set here because a fixed table otherwise takes its widths
@@ -327,6 +346,12 @@ export function PricingCalculator({
             ))}
             <col className="w-5" />
             <col />
+            {d.extras.map((c) => (
+              <Fragment key={c.key}>
+                <col className="w-5" />
+                <col />
+              </Fragment>
+            ))}
             {foreign && <col />}
           </colgroup>
           <tbody>
@@ -388,6 +413,9 @@ export function PricingCalculator({
                 <span className={`${headText} text-red-700 dark:text-red-300`}>KDV dahil perakende fiyat</span>
                 <PercentBadge label="Perakende kâr oranı" value={d.retailPercent} onChange={(retailPercent) => set({ retailPercent })} />
               </th>
+              {d.extras.map((c) => (
+                <ExtraHead key={c.key} column={c} onChange={(patch) => setExtra(c.key, patch)} />
+              ))}
               {foreign && (
                 <th scope="col" className={`${td} ${clip} px-1.5 py-1.5 text-left align-top`}>
                   <span className={headText}>TL fiyat</span>
@@ -438,6 +466,22 @@ export function PricingCalculator({
                   </span>
                 )}
               </td>
+              {d.extras.map((c, i) => (
+                <td key={c.key} className={`${td} ${clip} ${orangeFill} px-1 py-0.5 text-center`}>
+                  <span
+                    className="block truncate font-mono text-[13px] font-bold tabular-nums"
+                    title={fmt(calc.extras[i].computed, d.currency)}
+                    aria-label={`${c.label || "Özel fiyat"} hesaplanan fiyat (KDV dahil)`}
+                  >
+                    {fmt(calc.extras[i].computed, d.currency)}
+                  </span>
+                  {d.vatMode === "EXCL" && calc.extras[i].computed !== null && (
+                    <span className="block truncate font-mono text-[9px] leading-3 text-orange-800/80 dark:text-orange-200/70">
+                      {fmt(calc.extras[i].beforeVat, d.currency)} + %{d.vatRate.trim() || "0"} KDV
+                    </span>
+                  )}
+                </td>
+              ))}
               {foreign && (
                 <td className={`${td} ${clip} ${orangeFill} px-1 text-center font-mono text-[13px] font-semibold tabular-nums`}>
                   <span className="block truncate" title={fmt(calc.tryPrice, "TRY")} aria-label="TL fiyat">
@@ -475,6 +519,18 @@ export function PricingCalculator({
                   className={`${cellInput} font-semibold`}
                 />
               </td>
+              {d.extras.map((c) => (
+                <td key={c.key} className={`${td} ${clip} ${greenFill} p-0`}>
+                  <input
+                    inputMode="decimal"
+                    value={c.desired}
+                    onChange={(e) => setExtra(c.key, { desired: e.target.value })}
+                    placeholder="hesaplanan"
+                    aria-label={`${c.label || "Özel fiyat"} uygulanacak fiyat (KDV dahil)`}
+                    className={`${cellInput} font-semibold`}
+                  />
+                </td>
+              ))}
               {foreign && (
                 <td className={`${td} ${clip} bg-red-50 p-0 dark:bg-red-500/10`}>
                   <input
@@ -545,10 +601,12 @@ export function PricingCalculator({
       </div>
       <p className="mt-2 text-[11px] leading-4 text-slate-500 dark:text-zinc-400">
         Turuncu satır kendi formül zinciriyle hesaplanır; yeşil satıra yazdığınız fiyat zinciri değiştirmez, o sütunda
-        siteye gönderilen fiyat olur (boşsa hesaplanan). Perakende KDV dahildir:{" "}
+        siteye gönderilen fiyat olur (boşsa hesaplanan). Perakende ve özel fiyat KDV dahildir:{" "}
         {d.vatMode === "EXCL"
           ? "maliyet KDV hariç olduğundan KDV perakende adımında eklenir."
-          : "maliyet zaten KDV dahil olduğundan perakendeye ayrıca KDV eklenmez; KDV oranı fiyatların KDV hariç karşılığı için kullanılır."}
+          : "maliyet zaten KDV dahil olduğundan perakendeye ayrıca KDV eklenmez; KDV oranı fiyatların KDV hariç karşılığı için kullanılır."}{" "}
+        Özel fiyat zinciri perakendenin KDV’siz adımından sürdürür (KDV bir kez eklenir); isteğe bağlıdır (kâr oranı
+        boşsa kaydedilmez), dosyaya kaydedilir ama siteye yazılmaz.
       </p>
 
       {result && (
@@ -573,6 +631,29 @@ export function PricingCalculator({
         />
       )}
     </section>
+  );
+}
+
+/**
+ * A price after retail ("Özel Fiyat 1"), preceded by its "(+)": its name, to
+ * rename, and its percent — as retail's header, after VAT, for reference only.
+ */
+function ExtraHead({ column: c, onChange }: { column: ColumnDraft; onChange: (patch: Partial<ColumnDraft>) => void }) {
+  return (
+    <>
+      <StepPlus rowSpan={3} />
+      <th scope="col" className={`${td} ${clip} px-1.5 py-1.5 text-left align-top`}>
+        <input
+          value={c.label}
+          maxLength={40}
+          onChange={(e) => onChange({ label: e.target.value })}
+          aria-label="Özel fiyatın adı"
+          className={`${headText} h-5 w-full min-w-0 border-0 border-b border-transparent bg-transparent p-0 text-red-700 hover:border-slate-400 focus:border-red-500 focus:outline-none dark:text-red-300`}
+        />
+        <PercentBadge label={`${c.label || "Özel fiyat"} kâr oranı`} value={c.percent} onChange={(percent) => onChange({ percent })} />
+        <span className="mt-1 block text-[10px] font-normal leading-3 text-slate-500 dark:text-zinc-400">KDV dahil · siteye yazılmaz</span>
+      </th>
+    </>
   );
 }
 

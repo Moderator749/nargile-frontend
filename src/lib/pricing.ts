@@ -28,6 +28,8 @@ export interface PricingSheetInput {
   cost: DecimalString;
   columns: { label: string; segment: PricingSegment | null; percent: DecimalString; desired: DecimalString | null }[];
   retail: { percent: DecimalString; vat_rate: DecimalString; desired: DecimalString | null };
+  /** After retail, worked out as retail is; for reference, never sent to the site. */
+  extras: { label: string; percent: DecimalString; desired: DecimalString | null }[];
   usd_rate: DecimalString | null;
   eur_rate: DecimalString | null;
   final_try: DecimalString | null;
@@ -51,6 +53,8 @@ export interface StoredSheet {
   columns: StoredColumn[];
   /** After VAT; `before_vat` is the markup step on its own. */
   retail: StoredColumn & { vat_rate: DecimalString; before_vat?: DecimalString };
+  /** "Özel Fiyat 1"…; absent on rows saved before there were any. */
+  extras?: (StoredColumn & { vat_rate: DecimalString; before_vat: DecimalString })[];
   usd_rate: DecimalString | null;
   eur_rate: DecimalString | null;
   try_price: DecimalString | null;
@@ -105,6 +109,8 @@ export interface ComputedSheet {
   retail: { computed: number | null; price: number | null };
   /** The retail markup step before VAT is added (equal to `computed` on an after-VAT sheet). */
   retailBeforeVat: number | null;
+  /** After retail, each as retail is: after VAT, with its step before VAT. */
+  extras: { computed: number | null; price: number | null; beforeVat: number | null }[];
   /** USD/EUR sheets: retail × the typed rate. */
   tryPrice: number | null;
 }
@@ -121,6 +127,7 @@ export function computeSheet(input: {
   cost: number | null;
   columns: { percent: number | null; desired: number | null }[];
   retail: { percent: number | null; desired: number | null; vatRate: number | null };
+  extras?: { percent: number | null; desired: number | null }[];
   vatMode: VatMode;
   currency: PricingCurrency;
   usdRate: number | null;
@@ -137,14 +144,27 @@ export function computeSheet(input: {
   const r = input.retail;
   const beforeVat = previous !== null && r.percent !== null ? previous * (1 + r.percent / 100) : null;
   const factor = r.vatRate !== null ? 1 + r.vatRate / 100 : null;
-  const rc =
-    beforeVat === null ? null : input.vatMode === "INCL" ? beforeVat : factor === null ? null : beforeVat * factor;
+  const withVat = (v: number | null) =>
+    v === null ? null : input.vatMode === "INCL" ? v : factor === null ? null : v * factor;
+  const rc = withVat(beforeVat);
   const retailPrice = r.desired ?? (rc === null ? null : round2(rc));
+  // The extras chain on from retail *before* VAT, so VAT is added once.
+  let step = beforeVat;
+  const extras = (input.extras ?? []).map(({ percent, desired }) => {
+    step = step !== null && percent !== null ? step * (1 + percent / 100) : null;
+    const computed = withVat(step);
+    return {
+      computed: computed === null ? null : round2(computed),
+      price: desired ?? (computed === null ? null : round2(computed)),
+      beforeVat: step === null ? null : round2(step),
+    };
+  });
   const rate = input.currency === "USD" ? input.usdRate : input.currency === "EUR" ? input.eurRate : null;
   return {
     columns,
     retail: { computed: rc === null ? null : round2(rc), price: retailPrice },
     retailBeforeVat: beforeVat === null ? null : round2(beforeVat),
+    extras,
     tryPrice: retailPrice !== null && rate ? round2(retailPrice * rate) : null,
   };
 }

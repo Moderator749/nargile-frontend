@@ -6,6 +6,7 @@ import { ArrowLeft, FileText, Folder, Trash2 } from "lucide-react";
 import { AdminPageHeader } from "@/components/admin/AdminShell";
 import {
   PricingCalculator,
+  defaultExtras,
   emptySheet,
   newColumn,
   type SheetDraft,
@@ -52,6 +53,11 @@ function draftFrom(r: PricingRecord): SheetDraft {
     retailPercent: typed(s.retail.percent),
     vatRate: typed(s.retail.vat_rate),
     retailDesired: typed(s.retail.desired),
+    // A row keeps its extras; the ones it did not fill (or an older row's) start empty.
+    extras: [
+      ...(s.extras ?? []).map((c) => ({ ...newColumn(c.label), percent: typed(c.percent), desired: typed(c.desired) })),
+      ...defaultExtras().slice(s.extras?.length ?? 0),
+    ],
     usdRate: typed(s.usd_rate),
     eurRate: typed(s.eur_rate),
     finalTry: typed(s.final_try),
