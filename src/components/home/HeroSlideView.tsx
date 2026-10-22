@@ -200,8 +200,15 @@ export function HeroSlideView({
   };
   const color = (text: "eyebrow" | "title" | "subtitle"): CSSProperties =>
     slide.colors?.[text] ? { color: slide.colors[text]! } : {};
-  const alt = slide.title ? `${slide.title.replace(/\s*\n\s*/g, " ")} | ${SITE_NAME}` : SITE_NAME;
+  // Every text is optional: one left empty is not on the page at all (a
+  // banner can carry its words in the photo). The title, when there is one,
+  // is the heading; the subtitle without it is plain text.
+  const has = { eyebrow: !!slide.eyebrow.trim(), title: !!slide.title.trim(), subtitle: !!slide.subtitle.trim() };
+  const alt = has.title ? `${slide.title.replace(/\s*\n\s*/g, " ")} | ${SITE_NAME}` : SITE_NAME;
   const buttons = !!slide.cta || !!slide.guestCta;
+  // No text and no button: the photo alone, as tall as a slide with words.
+  const bare = !has.eyebrow && !has.title && !has.subtitle && !buttons;
+  const TextBlock = has.title ? Heading : "div";
 
   return (
     <div
@@ -212,7 +219,7 @@ export function HeroSlideView({
         // A portrait photo for phones gets a portrait slide to show it in (and,
         // in the slider's stack, so do the slides beside it).
         slide.image && slide.mobileImage ? "max-md:aspect-[4/5]" : ""
-      } ${className}`}
+      } ${bare ? "min-h-[22rem] sm:min-h-[26rem] lg:min-h-[30rem]" : ""} ${className}`}
     >
       {slide.image && (
         <>
@@ -256,60 +263,68 @@ export function HeroSlideView({
         </>
       )}
 
-      <p
-        {...part(
-          "eyebrow",
-          `font-medium uppercase tracking-[0.35em] lg:max-w-[90cqw] ${
-            size.eyebrow ? size.eyebrow.className : `text-[11px] ${placed ? "lg:text-[1.1555cqw]" : ""}`
-          } ${slide.image ? "text-white/80 [text-shadow:0_1px_8px_rgb(0_0_0/0.5)]" : "text-zinc-500"}`,
-          { ...size.eyebrow?.style, ...color("eyebrow") },
-        )}
-      >
-        {slide.eyebrow}
-        <ResizeHandle editor={editor} part="eyebrow" />
-      </p>
+      {has.eyebrow && (
+        <p
+          {...part(
+            "eyebrow",
+            `font-medium uppercase tracking-[0.35em] lg:max-w-[90cqw] ${
+              size.eyebrow ? size.eyebrow.className : `text-[11px] ${placed ? "lg:text-[1.1555cqw]" : ""}`
+            } ${slide.image ? "text-white/80 [text-shadow:0_1px_8px_rgb(0_0_0/0.5)]" : "text-zinc-500"}`,
+            { ...size.eyebrow?.style, ...color("eyebrow") },
+          )}
+        >
+          {slide.eyebrow}
+          <ResizeHandle editor={editor} part="eyebrow" />
+        </p>
+      )}
 
-      <Heading className={`mt-5 max-w-4xl ${placed ? "lg:contents" : ""} ${textShadow}`}>
-        {/* Over a photo the title is solid white: the silver gradient would fade
-            into it. A colour the admin chose replaces either. Line breaks kept. */}
-        <span
-          {...part(
-            "title",
-            `block whitespace-pre-line text-balance pb-2 font-semibold leading-[1.04] tracking-tighter ${
-              size.title ? size.title.className : `text-4xl sm:text-6xl lg:text-7xl ${placed ? "lg:text-[7.563cqw]" : ""}`
-            } ${placed ? `lg:max-w-[90cqw] lg:pb-[0.84cqw] ${textShadow}` : ""} ${
-              slide.colors?.title
-                ? ""
-                : slide.image
-                  ? "text-white"
-                  : "bg-gradient-to-b from-white via-zinc-200 to-zinc-500 bg-clip-text text-transparent"
-            }`,
-            { ...size.title?.style, ...color("title") },
+      {(has.title || has.subtitle) && (
+        <TextBlock className={`${has.eyebrow ? "mt-5" : ""} max-w-4xl ${placed ? "lg:contents" : ""} ${textShadow}`}>
+          {/* Over a photo the title is solid white: the silver gradient would fade
+              into it. A colour the admin chose replaces either. Line breaks kept. */}
+          {has.title && (
+            <span
+              {...part(
+                "title",
+                `block whitespace-pre-line text-balance pb-2 font-semibold leading-[1.04] tracking-tighter ${
+                  size.title ? size.title.className : `text-4xl sm:text-6xl lg:text-7xl ${placed ? "lg:text-[7.563cqw]" : ""}`
+                } ${placed ? `lg:max-w-[90cqw] lg:pb-[0.84cqw] ${textShadow}` : ""} ${
+                  slide.colors?.title
+                    ? ""
+                    : slide.image
+                      ? "text-white"
+                      : "bg-gradient-to-b from-white via-zinc-200 to-zinc-500 bg-clip-text text-transparent"
+                }`,
+                { ...size.title?.style, ...color("title") },
+              )}
+            >
+              {slide.title}
+              <ResizeHandle editor={editor} part="title" />
+            </span>
           )}
-        >
-          {slide.title}
-          <ResizeHandle editor={editor} part="title" />
-        </span>
-        <span
-          {...part(
-            "subtitle",
-            `mt-5 block whitespace-pre-line text-balance font-light tracking-tight ${
-              size.subtitle ? size.subtitle.className : `text-base sm:text-lg ${placed ? "lg:text-[1.891cqw]" : ""}`
-            } ${placed ? `lg:max-w-[70cqw] lg:leading-[1.5556] ${textShadow}` : ""} ${slide.image ? "text-white/85" : "text-zinc-400"}`,
-            { ...size.subtitle?.style, ...color("subtitle") },
+          {has.subtitle && (
+            <span
+              {...part(
+                "subtitle",
+                `${has.title ? "mt-5" : ""} block whitespace-pre-line text-balance font-light tracking-tight ${
+                  size.subtitle ? size.subtitle.className : `text-base sm:text-lg ${placed ? "lg:text-[1.891cqw]" : ""}`
+                } ${placed ? `lg:max-w-[70cqw] lg:leading-[1.5556] ${textShadow}` : ""} ${slide.image ? "text-white/85" : "text-zinc-400"}`,
+                { ...size.subtitle?.style, ...color("subtitle") },
+              )}
+            >
+              {slide.subtitle}
+              <ResizeHandle editor={editor} part="subtitle" />
+            </span>
           )}
-        >
-          {slide.subtitle}
-          <ResizeHandle editor={editor} part="subtitle" />
-        </span>
-      </Heading>
+        </TextBlock>
+      )}
 
       {/* No button text, no button: the slide is words and a photo only. */}
       {buttons && (
         <div
           {...part(
             "button",
-            `mt-10 flex flex-col gap-3 sm:flex-row ${ALIGN[slide.align].actions} ${placed ? "lg:flex-row lg:gap-[1.26cqw]" : ""}`,
+            `${has.eyebrow || has.title || has.subtitle ? "mt-10" : ""} flex flex-col gap-3 sm:flex-row ${ALIGN[slide.align].actions} ${placed ? "lg:flex-row lg:gap-[1.26cqw]" : ""}`,
           )}
         >
           {slide.cta && (

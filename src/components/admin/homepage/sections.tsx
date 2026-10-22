@@ -842,7 +842,7 @@ export function MobileTab({ value, set }: { value: Homepage["mobile"]; set: Set<
                     )}
                   </span>
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold">{slide.title}</p>
+                    <p className="truncate text-sm font-semibold">{slide.title.replace(/\s+/g, " ").trim() || slide.eyebrow || "Yalnızca görsel"}</p>
                     <p className="text-xs text-slate-500 dark:text-zinc-400">
                       {slide.is_active ? "Soldaki: masaüstü fotoğrafı" : "Pasif slayt"}
                       {imageOf(slide.id) && (

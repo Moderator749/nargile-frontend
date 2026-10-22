@@ -45,8 +45,9 @@ function overflowOf(img: HTMLImageElement | null, stage: DOMRect, zoom: number):
 function previewSlide(v: HeroSlideWrite, image: string | null): HeroSlide {
   return {
     id: "preview",
-    eyebrow: v.eyebrow || "Üst etiket",
-    title: v.title || "Başlık",
+    // As the storefront: an empty text is not there, so there is nothing of it to drag.
+    eyebrow: v.eyebrow,
+    title: v.title,
     subtitle: v.subtitle,
     // As the storefront: no button text, no button.
     cta: v.cta_label.trim() ? { label: v.cta_label, href: v.cta_href || "/" } : undefined,
@@ -87,6 +88,13 @@ export function SlideCanvas({
   });
 
   const slide = previewSlide(v, image);
+  /** The parts this slide has: an empty text, or no button, is not on the slide. */
+  const present: Record<HeroPart, boolean> = {
+    eyebrow: !!v.eyebrow.trim(),
+    title: !!v.title.trim(),
+    subtitle: !!v.subtitle.trim(),
+    button: !!v.cta_label.trim() || (!!v.guest_cta_label?.trim() && !!v.guest_cta_href?.trim()),
+  };
 
   // ── Drag a text's corner: its size follows the drag ─────────────────────────
   const resizing = useRef<{ part: SlideText; from: number; height: number; x: number; y: number } | null>(null);
@@ -241,7 +249,7 @@ export function SlideCanvas({
           >
             <span className="font-medium">{label}</span>
             <span className="float-right font-mono tabular-nums text-slate-500">
-              {v.layout ? `${v.layout[part].x.toFixed(1)}% · ${v.layout[part].y.toFixed(1)}%` : "ortalı"}
+              {!present[part] ? "yok" : v.layout ? `${v.layout[part].x.toFixed(1)}% · ${v.layout[part].y.toFixed(1)}%` : "ortalı"}
             </span>
           </li>
         ))}

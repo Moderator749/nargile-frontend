@@ -7,6 +7,7 @@ import { HERO_FRAME, HeroBackdrop, HeroSlideView } from "@/components/home/HeroS
 import { useMessages } from "@/components/i18n/LocaleProvider";
 import { homeMessages } from "@/lib/i18n/messages/home";
 import type { HeroSlide } from "@/lib/home";
+import { SITE_NAME } from "@/lib/site";
 
 const AUTOPLAY_MS = 7000;
 
@@ -98,7 +99,8 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
                 key={slide.id}
                 type="button"
                 onClick={() => go(i)}
-                aria-label={t.hero.slide(i + 1, slide.eyebrow)}
+                // Named by its eyebrow, else its title; a slide that is its photo alone, by the shop.
+                aria-label={t.hero.slide(i + 1, slide.eyebrow.trim() || slide.title.replace(/\s+/g, " ").trim() || SITE_NAME)}
                 aria-current={i === index ? "true" : undefined}
                 className="group flex h-6 items-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               >

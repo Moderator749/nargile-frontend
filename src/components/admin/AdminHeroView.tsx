@@ -101,7 +101,6 @@ const toWrite = (s: HeroSlideContent): HeroSlideWrite => ({
 });
 
 function validate(v: HeroSlideWrite): string | null {
-  if (!v.title.trim()) return "Başlık gerekli.";
   // The button is optional; one with a text needs a link.
   if (v.cta_label.trim() && !isSiteOrHttpsLink(v.cta_href)) return "Buton için geçerli bir bağlantı (/… veya https://…) girin.";
   const colors = Object.values(v.text_colors ?? {}).filter(Boolean) as string[];
@@ -123,7 +122,7 @@ export function AdminHeroView() {
       api={adminHeroSlides}
       blank={blank}
       toWrite={toWrite}
-      summary={(s) => ({ primary: s.title, secondary: [s.eyebrow, s.requires === "flash_sales" ? "yalnızca fırsat varken" : ""].filter(Boolean).join(" · ") })}
+      summary={(s) => ({ primary: s.title.replace(/\s+/g, " ").trim() || s.eyebrow || "Yalnızca görsel (yazısız)", secondary: [s.eyebrow, s.requires === "flash_sales" ? "yalnızca fırsat varken" : ""].filter(Boolean).join(" · ") })}
       validate={validate}
       listNote="İlk sıradaki etkin slaytın başlığı sayfanın ana başlığıdır (H1)."
       fields={(v, set, current) => {
@@ -138,10 +137,10 @@ export function AdminHeroView() {
         );
         return (
         <>
-          <Input label="Üst etiket" value={v.eyebrow} maxLength={60} onChange={(e) => set({ eyebrow: e.target.value })} placeholder="ör. Nargile Kömürleri" />
+          <Input label="Üst etiket (isteğe bağlı)" value={v.eyebrow} maxLength={60} onChange={(e) => set({ eyebrow: e.target.value })} placeholder="ör. Nargile Kömürleri" />
           {style("eyebrow", "Üst etiket")}
           <SlideTextArea
-            label="Başlık"
+            label="Başlık (isteğe bağlı)"
             value={v.title}
             maxLength={120}
             rows={2}
@@ -149,7 +148,7 @@ export function AdminHeroView() {
             placeholder="ör. Saf ısı.&#10;Kesintisiz seans."
           />
           {style("title", "Başlık")}
-          <SlideTextArea label="Alt metin" value={v.subtitle} maxLength={240} rows={3} onChange={(subtitle) => set({ subtitle })} />
+          <SlideTextArea label="Alt metin (isteğe bağlı)" value={v.subtitle} maxLength={240} rows={3} onChange={(subtitle) => set({ subtitle })} />
           {style("subtitle", "Alt metin")}
           <div className="grid grid-cols-2 gap-4">
             <Input

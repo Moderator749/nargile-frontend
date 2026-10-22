@@ -408,7 +408,8 @@ export default async function HomePage() {
 
         {/* The first slide's title is the page's h1; with the slider switched
             off, the page still needs one. */}
-        {!sections.hero && <h1 className="sr-only">{t.meta.siteTitle}</h1>}
+        {/* So does a first slide without a title of its own (a banner with its words in the photo). */}
+        {(!sections.hero || !slides[0]?.title.trim()) && <h1 className="sr-only">{t.meta.siteTitle}</h1>}
 
         {/* Module 4: the category column (closed until "KATEGORİLER" opens
             it), with the hero beside it, on a white band edge to edge that
