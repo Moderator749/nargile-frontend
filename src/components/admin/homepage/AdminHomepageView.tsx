@@ -104,7 +104,7 @@ const EDITORS: Record<
   kumbara: { title: "Kumbara Bandı", hint: "Bandın yazıları.", doc: "kumbara", sections: ["kumbara"], size: "md" },
   bento: {
     title: "Görsel Vitrin",
-    hint: "İki sekme, her birinde beş görsel kutu: görsel, bağlantı ve açıklama.",
+    hint: "“Yeni Gelenler” 5 kutulu bento, “Popüler” 3 yatay 16:9 kutu: görsel, bağlantı ve açıklama.",
     doc: "bento",
     sections: ["bento"],
     size: "lg",

@@ -1711,9 +1711,12 @@ export interface HomeBentoTile {
   focus_x: number;
 }
 
+/** A tab's arrangement: "bento" = three tall boxes and two wide stacked beside them (5); "row" = three 16:9 boxes (3). */
+export type HomeBentoLayout = "bento" | "row";
+
 export interface HomeBento {
-  /** Always two; each with five boxes: three tall, then two wide stacked beside them. */
-  tabs: { label: string; tiles: HomeBentoTile[] }[];
+  /** Always two, each in its own arrangement. */
+  tabs: { label: string; layout: HomeBentoLayout; tiles: HomeBentoTile[] }[];
 }
 
 export interface HomeStatement {

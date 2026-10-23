@@ -42,26 +42,26 @@ type Words = (typeof homeMessages)["tr"];
 
 /**
  * "Görsel Vitrin"'s starting photos (the shop's own, in public/images) and
- * where each leads; per tab, three tall boxes then two wide. `focus_x` keeps
- * a wide photo's subject in a tall box. Their words are the messages' `alts`,
- * in this order.
+ * where each leads: "Yeni Gelenler" a bento (three tall boxes, then two
+ * wide), "Popüler" a row of three 16:9 boxes. `focus_x` keeps a wide photo's
+ * subject in a tall box. Their words are the messages' alts, in this order.
  */
-const BENTO_TILES: [string, string, number][][] = [
-  [
-    ["/images/avantaj-oduman.jpg", "/catalog/oduman", 24],
-    ["/images/avantaj-cat-nargile.jpg", "/catalog/klasik-takimlar", 50],
-    ["/images/avantaj-legend.jpg", "/catalog/legend", 72],
-    ["/images/avantaj-hero-1.jpg", "/catalog", 20],
-    ["/images/avantaj-hero-3.jpg", "/catalog/malzemeler", 70],
-  ],
-  [
-    ["/images/avantaj-cat-tutun.jpg", "/catalog/bitkisel-urunler", 58],
-    ["/images/avantaj-cat-komur.jpg", "/catalog/komurler", 45],
-    ["/images/avantaj-cat-aksesuar.jpg", "/catalog/malzemeler", 40],
-    ["/images/avantaj-legend.jpg", "/catalog/legend", 60],
-    ["/images/avantaj-oduman.jpg", "/catalog/oduman", 24],
-  ],
+const BENTO_NEWEST: [string, string, number][] = [
+  ["/images/avantaj-oduman.jpg", "/catalog/oduman", 24],
+  ["/images/avantaj-cat-nargile.jpg", "/catalog/klasik-takimlar", 50],
+  ["/images/avantaj-legend.jpg", "/catalog/legend", 72],
+  ["/images/avantaj-hero-1.jpg", "/catalog", 20],
+  ["/images/avantaj-hero-3.jpg", "/catalog/malzemeler", 70],
 ];
+const BENTO_POPULAR: [string, string, number][] = [
+  ["/images/avantaj-cat-komur.jpg", "/catalog/komurler", 50],
+  ["/images/avantaj-cat-tutun.jpg", "/catalog/bitkisel-urunler", 50],
+  ["/images/avantaj-cat-aksesuar.jpg", "/catalog/malzemeler", 50],
+];
+
+const bentoTiles = (tiles: [string, string, number][], alts: readonly string[]) =>
+  tiles.map(([image, href, focus_x], i) => ({ image, href, focus_x, alt: alts[i] ?? "" }));
+
 type Emphasis = { before: string; strong: string; after: string };
 const joined = (e: Emphasis) => `${e.before}${e.strong}${e.after}`;
 
@@ -106,10 +106,10 @@ function copyIn(w: Words): SectionCopy {
       call: w.loyalty.kumbaraCall,
     },
     bento: {
-      tabs: [w.bento.newest, w.bento.popular].map((label, t) => ({
-        label,
-        tiles: BENTO_TILES[t].map(([image, href, focus_x], i) => ({ image, href, focus_x, alt: w.bento.alts[t * 5 + i] })),
-      })),
+      tabs: [
+        { label: w.bento.newest, layout: "bento", tiles: bentoTiles(BENTO_NEWEST, w.bento.newestAlts) },
+        { label: w.bento.popular, layout: "row", tiles: bentoTiles(BENTO_POPULAR, w.bento.popularAlts) },
+      ],
     },
     campaigns: {
       lead: {

@@ -15,6 +15,7 @@ import {
 } from "@/components/admin/homepage/fields";
 import type {
   Category,
+  HomeBentoLayout,
   HomeBentoTile,
   HomeBrandBlurb,
   HomeCampaignBox,
@@ -272,13 +273,35 @@ export function CampaignsForm({
 
 // ── Görsel Vitrin ────────────────────────────────────────────────────────────
 
-const BENTO_BOXES = ["Dikey 1", "Dikey 2", "Dikey 3", "Yatay üst", "Yatay alt"];
+/** Each arrangement's boxes, as the storefront lays them out; "tall" ones are 3:4, the rest wide. */
+const BENTO_LAYOUTS: Record<HomeBentoLayout, { title: string; boxes: { name: string; tall: boolean }[]; photo: string }> = {
+  bento: {
+    title: "Bento: 3 dikey + 2 yatay kutu",
+    boxes: [
+      { name: "Dikey 1", tall: true },
+      { name: "Dikey 2", tall: true },
+      { name: "Dikey 3", tall: true },
+      { name: "Yatay üst", tall: false },
+      { name: "Yatay alt", tall: false },
+    ],
+    photo: "",
+  },
+  row: {
+    title: "3 yatay kutu (16:9), yan yana",
+    boxes: [
+      { name: "Yatay 1", tall: false },
+      { name: "Yatay 2", tall: false },
+      { name: "Yatay 3", tall: false },
+    ],
+    photo: "16:9 yatay fotoğraf: kutuya kırpılmadan oturur.",
+  },
+};
 
-/** The crop the storefront will show: the photo in the box's shape, centred where the slider says. */
+/** The crop the storefront will show: the photo in the box's shape (3:4 or 16:9), centred where the slider says. */
 function CropPreview({ tile, tall }: { tile: HomeBentoTile; tall: boolean }) {
   return (
     <div
-      className={`relative shrink-0 overflow-hidden rounded-lg bg-slate-100 ring-1 ring-black/5 dark:bg-white/5 ${tall ? "h-24 w-[4.5rem]" : "h-[4.5rem] w-32"}`}
+      className={`relative shrink-0 overflow-hidden rounded-lg bg-slate-100 ring-1 ring-black/5 dark:bg-white/5 ${tall ? "h-24 w-[4.5rem]" : "aspect-video w-32"}`}
     >
       {tile.image && (
         // eslint-disable-next-line @next/next/no-img-element -- a small live preview of an admin's photo
@@ -291,21 +314,24 @@ function CropPreview({ tile, tall }: { tile: HomeBentoTile; tall: boolean }) {
 function BentoBoxFields({
   tile,
   index,
+  layout,
   categories,
   onChange,
 }: {
   tile: HomeBentoTile;
   index: number;
+  layout: HomeBentoLayout;
   categories: Category[];
   onChange: (patch: Partial<HomeBentoTile>) => void;
 }) {
   const focusId = useId();
-  const tall = index < 3;
+  const { boxes, photo } = BENTO_LAYOUTS[layout];
+  const tall = boxes[index]?.tall ?? false;
   return (
     <div className="grid gap-4 border-t border-slate-200 pt-4 first:border-t-0 first:pt-0 @2xl:grid-cols-[1fr_15rem] dark:border-white/10">
       <div className="space-y-3">
         <p className="text-xs font-semibold text-slate-700 dark:text-zinc-300">
-          Kutu {index + 1} · {BENTO_BOXES[index]}
+          Kutu {index + 1} · {boxes[index]?.name}
         </p>
         <LinkField categories={categories} value={tile.href} onChange={(href) => onChange({ href })} />
         <TextField
@@ -338,7 +364,7 @@ function BentoBoxFields({
         label="Görsel"
         value={tile.image}
         onChange={(image) => onChange({ image: image ?? "" })}
-        hint={tall ? "Dikey kutu: 3:4 veya 2:3 dikey fotoğraf en iyisi." : "Yatay kutu: 16:9 veya 2:1 yatay fotoğraf en iyisi."}
+        hint={photo || (tall ? "Dikey kutu: 3:4 veya 2:3 dikey fotoğraf en iyisi." : "Yatay kutu: 16:9 veya 2:1 yatay fotoğraf en iyisi.")}
       />
     </div>
   );
@@ -350,7 +376,7 @@ export function BentoForm({ value, set, categories }: { value: Homepage["bento"]
   return (
     <div className="space-y-6">
       {value.tabs.map((tab, t) => (
-        <Panel key={t} title={`Sekme ${t + 1}`} hint="Sekmeye geçince beş kutunun görselleri birlikte değişir.">
+        <Panel key={t} title={`Sekme ${t + 1} · ${BENTO_LAYOUTS[tab.layout].title}`} hint="Sekmeye geçince görünüm yana kayarak bu sekmenin kutularına geçer.">
           <TextField label="Sekme adı" value={tab.label} max={30} onChange={(label) => setTab(t, { label })} />
           <div className="space-y-4 pt-2">
             {tab.tiles.map((tile, i) => (
@@ -358,6 +384,7 @@ export function BentoForm({ value, set, categories }: { value: Homepage["bento"]
                 key={i}
                 tile={tile}
                 index={i}
+                layout={tab.layout}
                 categories={categories}
                 onChange={(patch) => setTab(t, { tiles: tab.tiles.map((x, j) => (j === i ? { ...x, ...patch } : x)) })}
               />

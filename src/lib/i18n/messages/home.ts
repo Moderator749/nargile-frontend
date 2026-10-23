@@ -107,18 +107,14 @@ export const homeMessages = defineMessages({
       label: "Öne Çıkan Koleksiyonlar",
       newest: "Yeni Gelenler",
       popular: "Popüler",
-      alts: [
+      newestAlts: [
         "Oduman nargile takımı",
         "Klasik nargile takımları",
         "Legend Hookah nargile takımı",
         "Altın detaylı nargile takımı",
         "Nargile aksesuarları",
-        "Bitkisel nargile aromaları",
-        "Nargile kömürleri",
-        "Nargile malzemeleri",
-        "Legend Hookah koleksiyonu",
-        "Oduman koleksiyonu",
       ],
+      popularAlts: ["Nargile kömürleri", "Bitkisel nargile aromaları", "Nargile malzemeleri"],
     },
     campaigns: {
       heading: "Kampanyalar",
@@ -243,18 +239,14 @@ export const homeMessages = defineMessages({
       label: "Featured collections",
       newest: "New Arrivals",
       popular: "Popular",
-      alts: [
+      newestAlts: [
         "Oduman hookah set",
         "Classic hookah sets",
         "Legend Hookah set",
         "Hookah set with gold details",
         "Hookah accessories",
-        "Herbal hookah flavours",
-        "Hookah charcoal",
-        "Hookah supplies",
-        "Legend Hookah collection",
-        "Oduman collection",
       ],
+      popularAlts: ["Hookah charcoal", "Herbal hookah flavours", "Hookah supplies"],
     },
     campaigns: {
       heading: "Promotions",
@@ -379,18 +371,14 @@ export const homeMessages = defineMessages({
       label: "مجموعات مميزة",
       newest: "وصل حديثًا",
       popular: "الأكثر رواجًا",
-      alts: [
+      newestAlts: [
         "طقم أرجيلة أودومان",
         "أطقم أرجيلة كلاسيكية",
         "طقم أرجيلة ليجند",
         "طقم أرجيلة بتفاصيل ذهبية",
         "إكسسوارات الأرجيلة",
-        "نكهات أرجيلة عشبية",
-        "فحم الأرجيلة",
-        "مستلزمات الأرجيلة",
-        "مجموعة ليجند",
-        "مجموعة أودومان",
       ],
+      popularAlts: ["فحم الأرجيلة", "نكهات أرجيلة عشبية", "مستلزمات الأرجيلة"],
     },
     campaigns: {
       heading: "العروض",
