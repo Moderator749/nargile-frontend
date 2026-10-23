@@ -36,6 +36,9 @@ interface FormState {
   isActive: boolean;
   imageUrl: string | null;
   description: string;
+  /** The passage closing the page, in place of the shop's "Alt SEO Metni". */
+  seoTitle: string;
+  seoText: string;
   /** "Çeviriler": English and Arabic name and description; no name = not saved. */
   translations: Record<TranslatedLocale, { name: string; description: string; draft: boolean; source: string | null }>;
 }
@@ -56,6 +59,8 @@ const EMPTY: FormState = {
   isActive: true,
   imageUrl: null,
   description: "",
+  seoTitle: "",
+  seoText: "",
   translations: NO_TRANSLATIONS,
 };
 
@@ -113,6 +118,8 @@ export function AdminCategoriesView({ onChange }: { onChange?: () => void } = {}
       isActive: c.is_active,
       imageUrl: c.image_url ?? null,
       description: c.description ?? "",
+      seoTitle: c.seo_title ?? "",
+      seoText: c.seo_text ?? "",
       translations: {
         // A draft (Claude's) keeps its flag and source until "Onayla".
         en: { name: c.translations?.en?.name ?? "", description: c.translations?.en?.description ?? "", draft: !!c.translations?.en?.draft, source: c.translations?.en?.source ?? null },
@@ -140,6 +147,8 @@ export function AdminCategoriesView({ onChange }: { onChange?: () => void } = {}
       is_active: form.isActive,
       image_url: form.imageUrl?.trim() || null,
       description: form.description.trim() || null,
+      seo_title: form.seoTitle.trim() || null,
+      seo_text: blankHtml(form.seoText) ? null : form.seoText.trim(),
       // Only the languages with a name; one emptied here is removed.
       translations: Object.fromEntries(
         (["en", "ar"] as const)
@@ -285,6 +294,34 @@ export function AdminCategoriesView({ onChange }: { onChange?: () => void } = {}
               İlk cümleler arama sonuçlarındaki açıklama olarak da kullanılır. Boş bırakılırsa hazır metin gösterilir.
             </p>
           </div>
+          {/* The passage at the foot of the page, in place of the shop's own. */}
+          <fieldset className="space-y-3 rounded-lg border border-slate-200 p-3 dark:border-white/10">
+            <legend className="px-1 text-sm font-medium text-slate-700 dark:text-zinc-300">Sayfa sonu metni</legend>
+            <p className="text-xs text-slate-500 dark:text-zinc-400">
+              Ürünlerin altındaki başlık ve yazı. Boş bırakılırsa tüm kategorilerdeki ortak “Alt SEO Metni” (Türkiye’nin Lider
+              Nargile Malzemeleri…) gösterilir. Yalnızca Türkçe sayfada.
+            </p>
+            <Input
+              label="Başlık"
+              value={form.seoTitle}
+              maxLength={160}
+              onChange={(e) => set("seoTitle", e.target.value)}
+              placeholder="boş: kategori adı"
+            />
+            <div className="space-y-1.5">
+              <p id="cat-seo-text-label" className="block text-sm font-medium text-slate-700 dark:text-zinc-300">
+                Yazı
+              </p>
+              <RichTextEditor
+                id="cat-seo-text"
+                labelledBy="cat-seo-text-label"
+                value={form.seoText}
+                onChange={(html) => set("seoText", html)}
+                minHeight="7rem"
+                placeholder="İlk paragraf görünür; devamı “Devamını Oku” ile açılır."
+              />
+            </div>
+          </fieldset>
           {/* The category in English and Arabic: its /en and /ar pages and
               the menu there. No name = the Turkish is shown (not indexed). */}
           <details className="rounded-lg border border-slate-200 p-3 dark:border-white/10" open={!!(form.translations.en.name || form.translations.ar.name)}>

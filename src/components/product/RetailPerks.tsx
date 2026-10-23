@@ -1,6 +1,6 @@
 "use client";
 
-import { BadgePercent, Clock, Crown, Landmark, ShieldCheck, Truck, type LucideIcon } from "lucide-react";
+import { BadgePercent, Clock, Crown, Landmark, ShieldCheck, ShoppingCart, Truck, type LucideIcon } from "lucide-react";
 
 import { useLocale, useMessages } from "@/components/i18n/LocaleProvider";
 import { formatMoneyCompact } from "@/lib/format";
@@ -40,12 +40,23 @@ function perks(params: StoreParameters, locale: Locale): Perk[] {
   const t = productMessages[locale].perks;
   const threshold = formatMoneyCompact(params.free_shipping_threshold);
   const havale = rateSpan(params.bank_transfer_tiers, locale);
+  // The ciro discount's span, as the homepage's perks bar shows it (StorePerks).
+  const volume = rateSpan(params.volume_tiers, locale);
   return [
     {
       Icon: Truck,
       title: t.freeShipping(threshold),
       note: t.freeShippingNote(threshold),
     },
+    ...(volume
+      ? [
+          {
+            Icon: ShoppingCart,
+            title: t.volume(volume),
+            note: t.volumeNote,
+          },
+        ]
+      : []),
     ...(havale
       ? [
           {

@@ -69,7 +69,6 @@ export function LuleShowcase({
       mine={mine}
       loggedIn={hydrated && !!token}
       categories={categories}
-      accent
       more={{ href: copy.href, label: copy.more }}
     />
   );

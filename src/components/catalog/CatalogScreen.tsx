@@ -1,4 +1,5 @@
 import { CatalogHeading } from "@/components/catalog/CatalogHeading";
+import { CategoryClosing } from "@/components/catalog/CategoryClosing";
 import { SeoIntro } from "@/components/home/SeoIntro";
 import { CatalogView } from "@/components/catalog/CatalogView";
 import { CategorySidebar } from "@/components/layout/CategorySidebar";
@@ -22,6 +23,8 @@ interface CatalogScreenProps {
   brand?: Brand;
   /** The page's introduction under its heading; clamped, the full text in the page. */
   intro?: string | null;
+  /** A category's own passage at the page's foot, in place of the shop's "Alt SEO Metni". */
+  closing?: { title: string; html: string | null } | null;
 }
 
 /**
@@ -38,6 +41,7 @@ export async function CatalogScreen({
   brands = [],
   brand,
   intro,
+  closing,
 }: CatalogScreenProps) {
   const [home, locale] = await Promise.all([getHomepage(), getLocale()]);
   const pageHref = breadcrumbs[breadcrumbs.length - 1].href;
@@ -65,7 +69,7 @@ export async function CatalogScreen({
           above the footer. A category's own
           description is not repeated here: it already opens the page, under
           its heading. */}
-      <SeoIntro copy={home.seo_intro} />
+      {closing ? <CategoryClosing title={closing.title} html={closing.html} /> : <SeoIntro copy={home.seo_intro} />}
     </main>
   );
 }

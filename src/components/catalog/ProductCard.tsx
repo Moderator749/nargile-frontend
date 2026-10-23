@@ -32,6 +32,11 @@ interface ProductCardProps {
   publicPrices: boolean;
   /** The viewer's own prices haven't loaded yet: adding now would use the wrong price. */
   pricesPending: boolean;
+  /**
+   * "Fırsat Ürünleri" keeps its own hover (a darker edge and a soft shadow);
+   * every other card's edge turns the shop's red, flat (HOVER).
+   */
+  dealHover?: boolean;
 }
 
 // Shared by card and skeleton so both occupy identical space (0 CLS).
@@ -64,8 +69,19 @@ const badgeClass =
   "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-[10px] font-medium uppercase tracking-widest backdrop-blur-md @max-[13rem]:gap-1 @max-[13rem]:px-2 @max-[13rem]:text-[9px] @max-[13rem]:tracking-wider";
 
 const ADDED_FEEDBACK_MS = 1600;
+/**
+ * The quick add: a small frosted chip in the photo's corner — 36px, a
+ * hairline ring and a soft shadow so it holds on a white product shot — the
+ * shop's red under the pointer. An invisible ring around it (`before:`) keeps
+ * a 48px touch target. The in-cart stepper and "choose a colour" share it.
+ */
+const QUICK_SPOT = "absolute bottom-2.5 end-2.5 z-10 @max-[13rem]:bottom-2 @max-[13rem]:end-2";
+const QUICK_GLASS =
+  "bg-white/85 text-neutral-900 shadow-[0_2px_10px_-3px_rgb(0_0_0/0.35)] ring-1 ring-black/[0.08] backdrop-blur-md dark:bg-neutral-900/75 dark:text-white dark:ring-white/15";
+const QUICK_BUTTON = `${QUICK_SPOT} ${QUICK_GLASS} flex h-9 w-9 items-center justify-center rounded-full before:absolute before:-inset-1.5 before:content-[''] transition-[background-color,color,transform,opacity] duration-200 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-safe:active:scale-95`;
+const QUICK_HOVER = "hover:bg-accent hover:text-white hover:ring-accent dark:hover:bg-accent";
 const stepBtn =
-  "flex h-11 w-10 items-center justify-center rounded-full transition-colors duration-200 hover:bg-white/15 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-white disabled:cursor-not-allowed disabled:opacity-40";
+  "relative flex h-9 w-8 items-center justify-center rounded-full transition-colors duration-200 before:absolute before:-inset-y-1.5 before:inset-x-0 before:content-[''] hover:bg-black/[0.06] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-white/10";
 
 /**
  * "2g 14:03:22" / "14:03:22" — monospaced, so the badge never changes width as
@@ -77,7 +93,15 @@ function formatCountdown(ms: number, day: (n: number) => string): string {
   return `${days > 0 ? day(days) : ""}${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
 }
 
-export function ProductCard({ product, category, isLoggedIn, publicPrices, pricesPending, eager }: ProductCardProps) {
+/**
+ * Every card's hover: its edge turns the shop's red, flat — the hover the
+ * "Oyun & Eğlence" and lüle rows had of their own, now the site's.
+ */
+const HOVER = "hover:border-red-300 hover:shadow-none dark:hover:border-red-400/50";
+/** "Fırsat Ürünleri"'s own: a darker edge and a soft shadow. */
+const DEAL_HOVER = "hover:border-slate-300 hover:shadow-sm dark:hover:border-white/20 dark:hover:shadow-black/40";
+
+export function ProductCard({ product, category, isLoggedIn, publicPrices, pricesPending, eager, dealHover = false }: ProductCardProps) {
   // A coloured product is still one card. The colour it speaks for is the first
   // that can be bought, so the price shown is one the visitor can actually get;
   // the card only reads "Tükendi" once every colour is gone.
@@ -136,8 +160,8 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
 
   return (
     <article
-      // Hover: the frame darkens and lifts a touch, rather than the card floating up.
-      className={`${cardClass} transition-[border-color,box-shadow] duration-300 ease-out hover:border-slate-300 hover:shadow-sm dark:hover:border-white/20 dark:hover:shadow-black/40`}
+      // Hover: the frame changes (HOVER), rather than the card floating up.
+      className={`${cardClass} transition-[border-color,box-shadow] duration-300 ease-out ${dealHover ? DEAL_HOVER : HOVER}`}
     >
       <div className={mediaClass}>
         {/* Only the photo dims when sold out; badges and the button stay crisp. */}
@@ -202,7 +226,7 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
           <div
             role="group"
             aria-label={t.inCart(product.name, inCartShown)}
-            className="absolute bottom-3 end-3 z-10 flex h-11 items-center rounded-full bg-black/85 @max-[13rem]:bottom-2 @max-[13rem]:end-2 text-white shadow-lg backdrop-blur-md"
+            className={`${QUICK_SPOT} ${QUICK_GLASS} flex h-9 items-center rounded-full`}
           >
             <button
               type="button"
@@ -210,9 +234,9 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
               aria-label={inCartShown === 1 ? t.removeOne(product.name) : t.decrease(product.name)}
               className={stepBtn}
             >
-              <Minus className="h-4 w-4" strokeWidth={2} aria-hidden />
+              <Minus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
             </button>
-            <span className="min-w-7 text-center font-mono text-sm font-semibold tabular-nums" aria-live="polite">
+            <span className="min-w-5 text-center font-mono text-xs font-semibold tabular-nums" aria-live="polite">
               {inCartShown > 999 ? "999+" : inCartShown}
             </span>
             <button
@@ -222,7 +246,7 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
               aria-label={t.increase(product.name)}
               className={stepBtn}
             >
-              <Plus className="h-4 w-4" strokeWidth={2} aria-hidden />
+              <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
             </button>
           </div>
         ) : needsColorChoice && !soldOut ? (
@@ -233,30 +257,32 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
             href={productHref(product)}
             aria-label={t.chooseColourFor(product.name)}
             title={t.chooseColour}
-            className="absolute bottom-3 end-3 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-black/80 text-white @max-[13rem]:bottom-2 @max-[13rem]:end-2 shadow-lg backdrop-blur-md transition-[background-color,transform] duration-300 ease-out hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-safe:active:scale-95"
+            className={`${QUICK_BUTTON} ${QUICK_HOVER}`}
           >
-            <Plus className="h-5 w-5" strokeWidth={1.75} aria-hidden />
+            <Plus className="h-4 w-4" strokeWidth={1.75} aria-hidden />
           </Link>
         ) : (
-          // Always visible (touch has no hover); frosted ink, crimson on hover. z-10: above
+          // Always visible (touch has no hover); frosted glass, crimson on hover. z-10: above
           // the card-wide product link.
           <button
             type="button"
             onClick={handleAdd}
             disabled={!canAdd}
             aria-label={soldOut ? t.soldOutFor(product.name) : t.addFor(product.name)}
-            className={`absolute bottom-3 end-3 z-10 flex h-11 w-11 items-center justify-center rounded-full text-white @max-[13rem]:bottom-2 @max-[13rem]:end-2 shadow-lg backdrop-blur-md transition-[background-color,transform,opacity] duration-300 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40 motion-safe:active:scale-95 ${
-              added ? "bg-emerald-600" : "bg-black/80 enabled:hover:bg-accent"
+            className={`${QUICK_BUTTON} disabled:cursor-not-allowed disabled:opacity-40 ${
+              added
+                ? "bg-emerald-600 text-white ring-emerald-600 dark:bg-emerald-600"
+                : "enabled:hover:bg-accent enabled:hover:text-white enabled:hover:ring-accent dark:enabled:hover:bg-accent"
             }`}
           >
             {/* Both icons share one grid cell, so the swap never shifts anything. */}
             <span className="grid [grid-template-areas:'stack']" aria-hidden>
               <Plus
-                className={`h-5 w-5 transition-[opacity,transform] duration-300 [grid-area:stack] ${added ? "scale-50 opacity-0" : "scale-100 opacity-100"}`}
+                className={`h-4 w-4 transition-[opacity,transform] duration-300 [grid-area:stack] ${added ? "scale-50 opacity-0" : "scale-100 opacity-100"}`}
                 strokeWidth={1.75}
               />
               <Check
-                className={`h-5 w-5 transition-[opacity,transform] duration-300 [grid-area:stack] ${added ? "scale-100 opacity-100" : "scale-50 opacity-0"}`}
+                className={`h-4 w-4 transition-[opacity,transform] duration-300 [grid-area:stack] ${added ? "scale-100 opacity-100" : "scale-50 opacity-0"}`}
                 strokeWidth={2}
               />
             </span>

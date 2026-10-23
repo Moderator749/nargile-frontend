@@ -235,6 +235,9 @@ export interface Category {
   image_url?: string | null;
   /** The page's introduction as the admin wrote it; null = the built-in copy, if any. */
   description?: string | null;
+  /** The passage closing its page (heading, HTML), in place of the shop's "Alt SEO Metni"; Turkish only. */
+  seo_title?: string | null;
+  seo_text?: string | null;
   /** `GET /categories/` only: published products its page lists, subcategories included. */
   product_count?: number;
   /** `GET /categories/` only: the newest last edit among them (the sitemap's <lastmod>). */
@@ -311,6 +314,8 @@ export interface CategoryWrite {
   name: string;
   slug?: string | null;
   description?: string | null;
+  seo_title?: string | null;
+  seo_text?: string | null;
   parent_id: number | null;
   sort_order: number;
   is_active: boolean;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, type ReactNode } from "react";
+import { useEffect, type KeyboardEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 
 import { fetchMe } from "@/lib/authApi";
+import { stepSize, steppedValue } from "@/lib/numberStep";
 import { isAdminRole } from "@/lib/roles";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useAuthHydrated } from "@/store/useHasHydrated";
@@ -77,6 +78,26 @@ const NAV: NavItem[] = [
   { href: "/admin/notes", label: "Not Defteri", icon: NotebookPen },
   { href: "/admin/pricing", label: "Excel Dosya Aktarımı", icon: FileSpreadsheet },
 ];
+
+/**
+ * ↑/↓ in a number field steps its number (Shift ×10, Alt 0.1), as a number
+ * input would: the panel's price, rate and amount fields are text fields
+ * (`inputMode="decimal"`/"numeric") so "12,5" can be typed, and a text field
+ * only moves its caret to the start or end on those keys. The new value goes
+ * in as typing does (an `input` event), so every form sees it as its own.
+ * A field whose own handler already used the key (a list's arrows) keeps it.
+ */
+function stepNumberField(event: KeyboardEvent<HTMLElement>) {
+  const field = event.target;
+  if (event.defaultPrevented || !(field instanceof HTMLInputElement)) return;
+  if (field.type !== "text" || !["decimal", "numeric"].includes(field.inputMode) || field.readOnly || field.disabled) return;
+  const delta = stepSize(event.key, event.shiftKey, event.altKey);
+  const next = delta === null ? null : steppedValue(field.value, delta);
+  if (next === null) return;
+  event.preventDefault();
+  Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(field, next);
+  field.dispatchEvent(new Event("input", { bubbles: true }));
+}
 
 function Gate({ title, body, action }: { title: string; body: string; action?: ReactNode }) {
   return (
@@ -182,7 +203,9 @@ export function AdminShell({ children }: { children: ReactNode }) {
           </ul>
         </nav>
       </aside>
-      <main className="min-w-0 flex-1">{children}</main>
+      <main className="min-w-0 flex-1" onKeyDown={stepNumberField}>
+        {children}
+      </main>
     </div>
   );
 }

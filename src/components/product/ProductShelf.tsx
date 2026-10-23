@@ -39,10 +39,10 @@ export function ProductShelf({
       <h2 id={id} className="text-center text-2xl font-semibold tracking-tighter text-foreground sm:text-3xl">
         {title}
       </h2>
-      <ul className="mx-auto mt-8 flex flex-wrap justify-center gap-6">
+      <ul className="mx-auto mt-8 flex flex-wrap justify-center gap-3 sm:gap-6">
         {products.map((product) => (
-          // Four of these fit one row on xl and wrap evenly below it.
-          <li key={product.id} className="flex w-full max-w-sm sm:w-[20rem] xl:w-[17.5rem] [&>*]:flex-1">
+          // Two side by side on a phone; four of these fit one row on xl and wrap evenly below it.
+          <li key={product.id} className="flex w-[calc(50%-0.375rem)] sm:w-[20rem] sm:max-w-sm xl:w-[17.5rem] [&>*]:flex-1">
             <ProductCard
               product={product}
               category={product.category_id != null ? categoryById.get(product.category_id) : undefined}

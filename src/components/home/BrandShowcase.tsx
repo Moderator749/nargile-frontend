@@ -22,7 +22,8 @@ import type { CatalogProduct, Category } from "@/types";
  * a minimum: a flex item otherwise grows to its longest product name on one
  * line, and four no longer fit.
  */
-const SLIDE = "flex shrink-0 snap-start flex-col w-[85vw] md:w-[calc(33.333%-1rem)] lg:w-[calc(25%-1.125rem)]";
+// Two to a screen on a phone (the track's gap is 0.75rem there), three from `md`, four from `lg`.
+const SLIDE = "flex shrink-0 snap-start flex-col w-[calc(50%-0.375rem)] md:w-[calc(33.333%-1rem)] lg:w-[calc(25%-1.125rem)]";
 
 /** How many cards a desktop shows at once; the arrows appear only past it. */
 const VISIBLE = 4;
@@ -234,7 +235,7 @@ export function BrandShowcase({
           <ul
             ref={track}
             onScroll={measure}
-            className="flex w-full snap-x snap-mandatory flex-row flex-nowrap gap-6 overflow-x-auto scroll-smooth pt-2 pb-6 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            className="flex w-full snap-x snap-mandatory flex-row flex-nowrap gap-3 overflow-x-auto scroll-smooth pt-2 pb-6 md:gap-6 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           >
             {products.map((listed) => {
               const product = mine?.get(listed.id) ?? listed;

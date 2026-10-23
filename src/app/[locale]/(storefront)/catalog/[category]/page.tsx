@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 
 import { CatalogScreen } from "@/components/catalog/CatalogScreen";
-import { localePath } from "@/lib/i18n/config";
+import { DEFAULT_LOCALE, localePath } from "@/lib/i18n/config";
 import { getI18n } from "@/lib/i18n/server";
 import { hasCategoryCopy, categoryCopy } from "@/lib/categories";
 import { getBrands, getCategories, getCategoryBySlug, getPublicProducts, required } from "@/lib/server/catalog";
@@ -86,6 +86,13 @@ export default async function CategoryPage(props: PageProps<"/[locale]/catalog/[
       // one (the meta description's generated fallback is for search
       // results, not the page). Long text is clamped, all of it in the HTML.
       intro={category.description || (hasCategoryCopy(slug) ? categoryCopy(slug, locale).description : null)}
+      // Its own passage at the foot, in place of the shop's: written in
+      // Turkish, so the Turkish page's only.
+      closing={
+        locale === DEFAULT_LOCALE && (category.seo_title?.trim() || category.seo_text?.trim())
+          ? { title: category.seo_title?.trim() || category.name, html: category.seo_text?.trim() || null }
+          : null
+      }
     />
   );
 }

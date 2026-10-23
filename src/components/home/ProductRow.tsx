@@ -17,16 +17,7 @@ import type { CatalogProduct, Category } from "@/types";
  * five). A fixed width, not a minimum, so a long name cannot push a card wider.
  */
 const SLIDE =
-  "flex shrink-0 snap-start flex-col w-[70vw] sm:w-[calc(50%-0.5rem)] md:w-[calc(33.333%-0.667rem)] lg:w-[calc(25%-0.75rem)] xl:w-[calc(20%-0.8rem)]";
-
-/**
- * `accent`: the card's edge turns the shop's red under the pointer, in place
- * of the shared card's darker edge. Flat like every other card: its own
- * hover shadow is taken off too. Applied over the shared card's frame (the
- * `> article` selector outranks its classes).
- */
-const ACCENT_CARD =
-  "hover:[&>article]:border-red-300 hover:[&>article]:shadow-none dark:hover:[&>article]:border-red-400/50";
+  "flex shrink-0 snap-start flex-col w-[calc(50%-0.5rem)] md:w-[calc(33.333%-0.667rem)] lg:w-[calc(25%-0.75rem)] xl:w-[calc(20%-0.8rem)]";
 
 const HEADING = "text-3xl font-extrabold tracking-tight text-gray-900 md:text-4xl dark:text-white";
 const SUBTITLE = "mt-2 text-gray-500 dark:text-neutral-400";
@@ -53,8 +44,6 @@ interface ProductRowProps {
   categories: Category[];
   /** The section's own band and spacing. */
   className?: string;
-  /** The red-edged hover (`ACCENT_CARD`). */
-  accent?: boolean;
   /** "See all": the collection the row is taken from, beside the arrows. */
   more?: { href: string; label: string };
 }
@@ -83,7 +72,6 @@ export function ProductRow({
   loggedIn,
   categories,
   className = "",
-  accent = false,
   more,
 }: ProductRowProps) {
   const t = useMessages(homeMessages);
@@ -177,7 +165,7 @@ export function ProductRow({
             const product = mine?.get(listed.id) ?? listed;
             return (
               <li key={listed.id} className={SLIDE}>
-                <div className={`flex w-full flex-1 flex-col [&>article]:flex-1 ${accent ? ACCENT_CARD : ""}`}>
+                <div className="flex w-full flex-1 flex-col [&>article]:flex-1">
                   <ProductCard
                     product={product}
                     category={product.category_id != null ? categoryById.get(product.category_id) : undefined}

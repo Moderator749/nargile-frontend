@@ -22,7 +22,7 @@ import type { CatalogProduct, Category } from "@/types";
  * A fixed width, not a minimum, so a long name cannot push a card wider.
  */
 const SLIDE =
-  "flex shrink-0 snap-start flex-col w-[70vw] sm:w-[calc(50%-0.5rem)] md:w-[calc(33.333%-0.667rem)] lg:w-[calc(25%-0.75rem)] xl:w-[calc(20%-0.8rem)]";
+  "flex shrink-0 snap-start flex-col w-[calc(50%-0.5rem)] md:w-[calc(33.333%-0.667rem)] lg:w-[calc(25%-0.75rem)] xl:w-[calc(20%-0.8rem)]";
 
 /** How long each page of cards is shown before the row moves on by itself. */
 const AUTOPLAY_MS = 3000;

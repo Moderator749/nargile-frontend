@@ -45,7 +45,6 @@ export function CategoryRow({
       mine={mine}
       loggedIn={hydrated && !!token}
       categories={categories}
-      accent
       more={more}
     />
   );

@@ -277,18 +277,32 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
             <SheetField id="sheet-name" label="Ürün Adı" className="xl:col-span-2">
               <input id="sheet-name" value={draft.name} onChange={(e) => set("name", e.target.value)} className={sheetInputClass} />
             </SheetField>
-            <SheetField id="sheet-brand" label="Marka">
-              {/* The sidebar's brand entries search for the brand's term, which
-                  the name carries — so a brand picked here lists the product there. */}
-              <BrandCombobox
-                id="sheet-brand"
-                value={draft.brand.trim()}
-                brand={brand}
-                brands={brands}
-                onChange={(name) => set("brand", name)}
-                onCreated={(b) => setBrands((list) => [...list, b])}
-              />
-            </SheetField>
+            {/* Brand, colours and the publish switch in one column, beside the
+                category list's height: no section of its own for one switch. */}
+            <div className="space-y-4">
+              <SheetField id="sheet-brand" label="Marka">
+                {/* The sidebar's brand entries search for the brand's term, which
+                    the name carries — so a brand picked here lists the product there. */}
+                <BrandCombobox
+                  id="sheet-brand"
+                  value={draft.brand.trim()}
+                  brand={brand}
+                  brands={brands}
+                  onChange={(name) => set("brand", name)}
+                  onCreated={(b) => setBrands((list) => [...list, b])}
+                />
+              </SheetField>
+              <ColorTags colors={draft.colors} onChange={(colors) => set("colors", colors)} />
+              <div className="rounded-lg border border-slate-200 px-3 dark:border-white/10">
+                <RuleSwitch
+                  id="sheet-published"
+                  label="Mağazada Yayında"
+                  hint="Kapalıyken ürün mağazada hiç görünmez. Ürünler listesinden de açılıp kapatılır."
+                  checked={draft.isPublished}
+                  onChange={(v) => set("isPublished", v)}
+                />
+              </div>
+            </div>
             <div className="xl:col-span-2">
               <CategoryPicker
                 categories={categories}
@@ -296,18 +310,7 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
                 onChange={(ids) => set("category_ids", ids)}
               />
             </div>
-            <ColorTags colors={draft.colors} onChange={(colors) => set("colors", colors)} />
           </div>
-        </SheetSection>
-
-        <SheetSection title="Yayın Durumu" hint="Kapalıyken ürün mağazada hiç görünmez.">
-          <RuleSwitch
-            id="sheet-published"
-            label="Mağazada Yayında"
-            hint="Ürünler listesinden de açıp kapatabilirsiniz."
-            checked={draft.isPublished}
-            onChange={(v) => set("isPublished", v)}
-          />
         </SheetSection>
 
         <SheetSection title="Görseller ve Video">

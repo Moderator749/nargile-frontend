@@ -143,6 +143,7 @@ export function DealsGrid({
                       isLoggedIn={loggedIn}
                       publicPrices={!mine}
                       pricesPending={pricesPending}
+                      dealHover
                     />
                   </div>
                 </li>

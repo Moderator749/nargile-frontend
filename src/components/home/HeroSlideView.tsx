@@ -33,10 +33,17 @@ import { SITE_NAME } from "@/lib/site";
  * page a flex column's `start` is the right, hence the `rtl:` swaps.
  */
 const ALIGN: Record<HeroTextAlign, { block: string; actions: string }> = {
-  left: { block: "items-start text-left rtl:items-end", actions: "items-start sm:justify-start rtl:items-end sm:rtl:justify-end" },
-  center: { block: "items-center text-center", actions: "items-center sm:justify-center" },
-  right: { block: "items-end text-right rtl:items-start", actions: "items-end sm:justify-end rtl:items-start sm:rtl:justify-start" },
+  left: { block: "items-start text-left rtl:items-end", actions: "justify-start rtl:justify-end" },
+  center: { block: "items-center text-center", actions: "justify-center" },
+  right: { block: "items-end text-right rtl:items-start", actions: "justify-end rtl:justify-start" },
 };
+
+/**
+ * The buttons a size down below `md`, side by side: full size they filled a
+ * phone's slide. From `md` the shop's own size; on a stage of placed parts,
+ * the stage's (`scaled`).
+ */
+const PHONE_BUTTON = "max-md:h-10 max-md:gap-1.5 max-md:px-5 max-md:text-[13px]";
 
 /** The wide photo's width on screen: the slider's, 1024px at most. */
 const WIDE_SIZES = "(min-width: 1280px) 1024px, 100vw";
@@ -376,14 +383,14 @@ export function HeroSlideView({
         <div
           {...part(
             "button",
-            `${has.eyebrow || has.title || has.subtitle ? "mt-10" : ""} flex flex-col gap-3 sm:flex-row ${ALIGN[slide.align].actions} ${placed ? "lg:flex-row lg:gap-[1.26cqw]" : ""}`,
+            `${has.eyebrow || has.title || has.subtitle ? "mt-8 md:mt-10" : ""} flex flex-row flex-wrap gap-2 md:gap-3 ${ALIGN[slide.align].actions} ${placed ? "lg:gap-[1.26cqw]" : ""}`,
           )}
         >
           {slide.cta && (
             <HeroButton editor={!!editor} placed={placed} href={slide.cta.href} variant="primary">
               {slide.cta.label}
               <ArrowRight
-                className={`h-4 w-4 transition-transform duration-200 rtl:-scale-x-100 motion-safe:group-hover:translate-x-0.5 rtl:motion-safe:group-hover:-translate-x-0.5 ${placed ? "lg:h-[1.681cqw] lg:w-[1.681cqw]" : ""}`}
+                className={`h-4 w-4 max-md:h-3.5 max-md:w-3.5 transition-transform duration-200 rtl:-scale-x-100 motion-safe:group-hover:translate-x-0.5 rtl:motion-safe:group-hover:-translate-x-0.5 ${placed ? "lg:h-[1.681cqw] lg:w-[1.681cqw]" : ""}`}
                 aria-hidden
               />
             </HeroButton>
@@ -419,7 +426,7 @@ function HeroButton({
   className?: string;
   children: ReactNode;
 }) {
-  const scaled = placed ? "lg:h-[5.042cqw] lg:gap-[0.84cqw] lg:px-[2.941cqw] lg:text-[1.471cqw] lg:leading-[1.43]" : "";
+  const scaled = `${PHONE_BUTTON} ${placed ? "lg:h-[5.042cqw] lg:gap-[0.84cqw] lg:px-[2.941cqw] lg:text-[1.471cqw] lg:leading-[1.43]" : ""}`;
   if (editor) return <span className={`${linkButtonClass(variant)} pointer-events-none ${scaled} ${className}`}>{children}</span>;
   return (
     <LinkButton href={href} variant={variant} className={`${scaled} ${className}`}>
