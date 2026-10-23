@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { stepSize, steppedValue } from "./numberStep.ts";
+import { stepOnArrowKey, stepSize, steppedValue } from "./numberStep.ts";
 
 test("whole numbers step by one, keeping their form", () => {
   assert.equal(steppedValue("12", 1), "13");
@@ -36,3 +36,37 @@ test("the step: 1, ×10 with Shift, 0.1 with Alt; other keys none", () => {
   assert.equal(stepSize("ArrowUp", false, true), 0.1);
   assert.equal(stepSize("ArrowLeft", false, false), null);
 });
+
+const keydown = (key, value, mods = {}) => {
+  const event = { key, shiftKey: false, altKey: false, defaultPrevented: false, currentTarget: { value, readOnly: false, disabled: false }, ...mods };
+  event.preventDefault = () => (event.defaultPrevented = true);
+  return event;
+};
+
+test("the field's keydown: ↑/↓ hand the stepped text to its own onChange path", () => {
+  const got = [];
+  const up = keydown("ArrowUp", "12,5");
+  stepOnArrowKey(up, (v) => got.push(v));
+  assert.deepEqual(got, ["13,5"]);
+  assert.equal(up.defaultPrevented, true); // no caret jump to the start
+});
+
+test("←/→ and other keys are left to the field: the caret moves", () => {
+  const got = [];
+  for (const key of ["ArrowLeft", "ArrowRight", "Home", "a"]) {
+    const event = keydown(key, "12,5");
+    stepOnArrowKey(event, (v) => got.push(v));
+    assert.equal(event.defaultPrevented, false);
+  }
+  assert.deepEqual(got, []);
+});
+
+test("whole numbers stay whole; a points adjustment may go negative; a key already used is not", () => {
+  const got = [];
+  stepOnArrowKey(keydown("ArrowUp", "4", { altKey: true }), (v) => got.push(v), { integer: true });
+  stepOnArrowKey(keydown("ArrowDown", "0"), (v) => got.push(v), { negative: true });
+  stepOnArrowKey(keydown("ArrowUp", "4", { defaultPrevented: true }), (v) => got.push(v));
+  stepOnArrowKey(keydown("ArrowUp", "4", { currentTarget: { value: "4", readOnly: true, disabled: false } }), (v) => got.push(v));
+  assert.deepEqual(got, ["5", "-1"]);
+});
+

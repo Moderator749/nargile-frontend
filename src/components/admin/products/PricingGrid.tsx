@@ -11,6 +11,7 @@ import {
 } from "@/components/admin/products/sheetDraft";
 import { parseDecimalInput, tidyPriceInput } from "@/lib/format";
 import type { CurrencyType, SheetSegment } from "@/types";
+import { stepOnArrowKey } from "@/lib/numberStep";
 
 const cellInput =
   "h-9 w-full rounded-md border border-slate-300 bg-white px-2 text-right text-sm tabular-nums shadow-sm transition-colors placeholder:text-slate-300 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20 aria-invalid:border-red-500 aria-invalid:bg-red-50 dark:border-white/15 dark:bg-zinc-900 dark:placeholder:text-zinc-600 dark:aria-invalid:bg-red-500/10";
@@ -83,6 +84,7 @@ export function PricingGrid({
                         inputMode="decimal"
                         value={cell.excl}
                         onChange={(e) => onChange(currency, segment, typedCell(cell, "excl", e.target.value, vatRate))}
+                        onKeyDown={(e) => stepOnArrowKey(e, (v) => onChange(currency, segment, typedCell(cell, "excl", v, vatRate)))}
                         onBlur={() => onChange(currency, segment, { ...cell, excl: tidyPriceInput(cell.excl) })}
                         aria-invalid={invalid(cell.excl) || undefined}
                         aria-label={`${label} ${CURRENCY_LABEL[currency]} KDV hariç fiyat`}
@@ -94,6 +96,7 @@ export function PricingGrid({
                         inputMode="decimal"
                         value={cell.incl}
                         onChange={(e) => onChange(currency, segment, typedCell(cell, "incl", e.target.value, vatRate))}
+                        onKeyDown={(e) => stepOnArrowKey(e, (v) => onChange(currency, segment, typedCell(cell, "incl", v, vatRate)))}
                         onBlur={() => onChange(currency, segment, { ...cell, incl: tidyPriceInput(cell.incl) })}
                         aria-invalid={invalid(cell.incl) || undefined}
                         aria-label={`${label} ${CURRENCY_LABEL[currency]} KDV dahil fiyat`}

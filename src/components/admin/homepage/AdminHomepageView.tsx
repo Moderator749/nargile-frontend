@@ -26,6 +26,7 @@ import {
   DealsTab,
   FooterTab,
   HeroTab,
+  SliderTab,
   MobileTab,
   NavigationTab,
   SectionsTab,
@@ -70,12 +71,19 @@ type EditorKey =
  */
 const EDITORS: Record<
   EditorKey,
-  { title: string; hint: string; doc?: keyof Homepage; sections?: (keyof HomeSections)[]; size: "md" | "lg" }
+  {
+    title: string;
+    hint: string;
+    /** The part(s) of the document it edits: its changed state, "Varsayılana döndür" and "Vazgeç" cover them all. */
+    doc?: keyof Homepage | (keyof Homepage)[];
+    sections?: (keyof HomeSections)[];
+    size: "md" | "lg";
+  }
 > = {
   hero: {
     title: "Hero Slider & Kategori Menüleri",
-    hint: "Slaytlar ve kutular kendi sayfalarında; slider’ın yanındaki ve üstündeki menüler burada.",
-    doc: "navigation",
+    hint: "Slaytlar ve kutular kendi sayfalarında; slider butonlarının boyutu ve slider’ın yanındaki ve üstündeki menüler burada.",
+    doc: ["slider", "navigation"],
     sections: ["hero"],
     size: "lg",
   },
@@ -205,6 +213,7 @@ function toPayload(doc: Homepage): Partial<Homepage> {
 const SECTION_NAMES: Record<string, string> = {
   navigation: "Kategori Düzenle",
   deals: "Fırsatlar",
+  slider: "Slider butonları",
   brands: "Markalar Şeridi",
   showcase: "Premium Yelpaze",
   seo_intro: "Alt SEO Metni",
@@ -395,7 +404,10 @@ export function AdminHomepageView() {
   }
 
   const set = <K extends keyof Homepage>(key: K) => (value: Homepage[K]) => setDoc((d) => (d ? { ...d, [key]: value } : d));
-  const changedDoc = (key: keyof Homepage | undefined) => !!key && !!doc && !!saved && !same(doc[key], saved[key]);
+  const docKeys = (key: keyof Homepage | (keyof Homepage)[] | undefined): (keyof Homepage)[] =>
+    key === undefined ? [] : Array.isArray(key) ? key : [key];
+  const changedDoc = (key: keyof Homepage | (keyof Homepage)[] | undefined) =>
+    !!doc && !!saved && docKeys(key).some((k) => !same(doc[k], saved[k]));
 
   function open(key: EditorKey) {
     setResult(null);
@@ -414,6 +426,7 @@ export function AdminHomepageView() {
         return (
           <div className="space-y-6">
             <HeroTab />
+            <SliderTab value={doc.slider} set={set("slider")} />
             <NavigationTab value={doc.navigation} set={set("navigation")} categories={categories} brands={brands} />
           </div>
         );
@@ -548,14 +561,14 @@ export function AdminHomepageView() {
                   changed={changedDoc(current.doc)}
                   dirty={dirty}
                   saving={saving}
-                  isDefault={same(doc[current.doc], DEFAULT_HOMEPAGE[current.doc])}
+                  isDefault={docKeys(current.doc).every((k) => same(doc[k], DEFAULT_HOMEPAGE[k]))}
                   onReset={() => {
-                    const key = current.doc!;
-                    setDoc((d) => (d ? { ...d, [key]: DEFAULT_HOMEPAGE[key] } : d));
+                    const keys = docKeys(current.doc);
+                    setDoc((d) => (d ? { ...d, ...Object.fromEntries(keys.map((k) => [k, DEFAULT_HOMEPAGE[k]])) } : d));
                   }}
                   onDiscard={() => {
-                    const key = current.doc!;
-                    setDoc((d) => (d ? { ...d, [key]: saved[key] } : d));
+                    const keys = docKeys(current.doc);
+                    setDoc((d) => (d ? { ...d, ...Object.fromEntries(keys.map((k) => [k, saved[k]])) } : d));
                   }}
                   onClose={close}
                   onSave={() => void save()}

@@ -14,6 +14,7 @@ import { PAGE_CONTAINER } from "@/lib/layout";
 import { pickSimilar, relatedCategories } from "@/lib/related";
 import { getBrands, getCategories, getCategoryProducts, getProduct } from "@/lib/server/catalog";
 import { getHomepage } from "@/lib/server/homepage";
+import { advantageSources } from "@/lib/storeAdvantages";
 import { nameWithCode } from "@/lib/slug";
 import { resolveNav } from "@/lib/storefrontNav";
 import { displayVariant, soldOut } from "@/lib/variants";
@@ -116,6 +117,7 @@ export default async function ProductPage(props: PageProps<"/[locale]/product/[s
         categories={categories}
         breadcrumbs={crumbs}
         sidebar={<CategorySidebar items={resolveNav(home.navigation.sidebar, categories, brands ?? [])} fit />}
+        advantages={advantageSources(home)}
       />
       {(similar.length > 0 || related.length > 0) && (
         <div className={`${PAGE_CONTAINER} -mt-6 pb-10 sm:-mt-8`}>

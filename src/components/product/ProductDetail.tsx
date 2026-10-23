@@ -11,6 +11,7 @@ import { ColorPicker } from "@/components/product/ColorPicker";
 import { CrossSells } from "@/components/product/CrossSells";
 import { ProductDescription } from "@/components/product/ProductDescription";
 import { RetailPerks, showsRetailPerks } from "@/components/product/RetailPerks";
+import type { AdvantageSources } from "@/lib/storeAdvantages";
 import { isExportAccount } from "@/lib/exportAccount";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { TransferPrice } from "@/components/product/TransferPrice";
@@ -42,6 +43,8 @@ interface ProductDetailProps {
   breadcrumbs: Breadcrumb[];
   /** Kategoriler, beside the product; closed until "KATEGORİLER" opens it. */
   sidebar?: ReactNode;
+  /** The homepage's advantages, as it words them, for "Size Özel Alışveriş Avantajları". */
+  advantages: AdvantageSources;
 }
 
 /** "2g 14:03:22", the days in the page's language. */
@@ -66,7 +69,7 @@ function countdown(ms: number, day: (n: number) => string) {
  * the column is closed again. Below `lg` the column is the bar's drawer and
  * nothing here changes.
  */
-export function ProductDetail({ initialProduct, category, categories, breadcrumbs, sidebar }: ProductDetailProps) {
+export function ProductDetail({ initialProduct, category, categories, breadcrumbs, sidebar, advantages }: ProductDetailProps) {
   const hydrated = useAuthHydrated();
   const token = useAuthStore((s) => s.token);
   const user = useAuthStore((s) => s.user);
@@ -294,7 +297,7 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
               has mostly folded away, once it is closed. */}
           {perksShown && (
             <div className="lg:hidden lg:sidebar-closed:block lg:sidebar-closed:motion-safe:animate-perks-in">
-              <RetailPerks params={params} />
+              <RetailPerks params={params} sources={advantages} />
             </div>
           )}
           </div>

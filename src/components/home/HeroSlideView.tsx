@@ -5,7 +5,7 @@ import { ArrowRight } from "lucide-react";
 
 import { LinkButton, linkButtonClass } from "@/components/ui/LinkButton";
 import { canOptimiseImage, type HeroSlide } from "@/lib/home";
-import type { HeroFontSize, HeroPart, HeroTextAlign } from "@/types";
+import type { HeroButtonSize, HeroFontSize, HeroPart, HeroTextAlign } from "@/types";
 import { SITE_NAME } from "@/lib/site";
 
 /**
@@ -39,11 +39,57 @@ const ALIGN: Record<HeroTextAlign, { block: string; actions: string }> = {
 };
 
 /**
- * The buttons a size down below `md`, side by side: full size they filled a
- * phone's slide. From `md` the shop's own size; on a stage of placed parts,
- * the stage's (`scaled`).
+ * The buttons' size, as "Ana Sayfa Düzenleme › Hero Slider" sets it: on a
+ * phone (below `md`) and from a tablet up, each a size down ("sm"), the
+ * shop's own ("md") or a size up ("lg"). On a stage of placed parts (from
+ * `lg`) a button is a fraction of the stage like everything on it, the same
+ * three steps as factors (0.85, 1, 1.2) of its own.
  */
-const PHONE_BUTTON = "max-md:h-10 max-md:gap-1.5 max-md:px-5 max-md:text-[13px]";
+const BUTTON_PHONE: Record<HeroButtonSize, { button: string; icon: string }> = {
+  sm: { button: "max-md:h-9 max-md:gap-1.5 max-md:px-4 max-md:text-xs", icon: "max-md:h-3 max-md:w-3" },
+  md: { button: "max-md:h-10 max-md:gap-1.5 max-md:px-5 max-md:text-[13px]", icon: "max-md:h-3.5 max-md:w-3.5" },
+  lg: { button: "max-md:h-12 max-md:gap-2 max-md:px-7 max-md:text-sm", icon: "max-md:h-4 max-md:w-4" },
+};
+const BUTTON_WIDE: Record<HeroButtonSize, { button: string; icon: string }> = {
+  sm: { button: "md:h-10 md:gap-1.5 md:px-5 md:text-[13px]", icon: "md:h-3.5 md:w-3.5" },
+  md: { button: "md:h-12 md:gap-2 md:px-7 md:text-sm", icon: "md:h-4 md:w-4" },
+  lg: { button: "md:h-14 md:gap-2.5 md:px-9 md:text-base", icon: "md:h-5 md:w-5" },
+};
+const BUTTON_STAGE: Record<HeroButtonSize, { button: string; icon: string }> = {
+  sm: { button: "lg:h-[4.286cqw] lg:gap-[0.714cqw] lg:px-[2.5cqw] lg:text-[1.25cqw] lg:leading-[1.43]", icon: "lg:h-[1.429cqw] lg:w-[1.429cqw]" },
+  md: { button: "lg:h-[5.042cqw] lg:gap-[0.84cqw] lg:px-[2.941cqw] lg:text-[1.471cqw] lg:leading-[1.43]", icon: "lg:h-[1.681cqw] lg:w-[1.681cqw]" },
+  lg: { button: "lg:h-[6.05cqw] lg:gap-[1.008cqw] lg:px-[3.529cqw] lg:text-[1.765cqw] lg:leading-[1.43]", icon: "lg:h-[2.017cqw] lg:w-[2.017cqw]" },
+};
+
+/** A button's and its arrow's size classes for the slider's setting, on a stage of placed parts or not. */
+function buttonSizing(size: HeroButtonSizes, placed: boolean) {
+  const phone = BUTTON_PHONE[size.mobile];
+  const wide = BUTTON_WIDE[size.desktop];
+  const stage = placed ? BUTTON_STAGE[size.desktop] : null;
+  return {
+    button: `${phone.button} ${wide.button} ${stage?.button ?? ""}`,
+    icon: `${phone.icon} ${wide.icon} ${stage?.icon ?? ""}`,
+  };
+}
+
+/** The slider's button sizes: from a tablet up, and on a phone. */
+export interface HeroButtonSizes {
+  desktop: HeroButtonSize;
+  mobile: HeroButtonSize;
+}
+
+/**
+ * The same sizes without a screen prefix, for the panel's preview of each
+ * (keep in step with BUTTON_PHONE and BUTTON_WIDE): what a phone and a wider
+ * screen show.
+ */
+export const BUTTON_PREVIEW: Record<"mobile" | "desktop", Record<HeroButtonSize, string>> = {
+  mobile: { sm: "h-9 gap-1.5 px-4 text-xs", md: "h-10 gap-1.5 px-5 text-[13px]", lg: "h-12 gap-2 px-7 text-sm" },
+  desktop: { sm: "h-10 gap-1.5 px-5 text-[13px]", md: "h-12 gap-2 px-7 text-sm", lg: "h-14 gap-2.5 px-9 text-base" },
+};
+
+/** The shop's own size on both, until the admin picks another. */
+export const DEFAULT_BUTTON_SIZES: HeroButtonSizes = { desktop: "md", mobile: "md" };
 
 /** The wide photo's width on screen: the slider's, 1024px at most. */
 const WIDE_SIZES = "(min-width: 1280px) 1024px, 100vw";
@@ -203,6 +249,7 @@ export function HeroSlideView({
   className = "",
   wrapperProps,
   editor,
+  buttonSize = DEFAULT_BUTTON_SIZES,
   children,
 }: {
   slide: HeroSlide;
@@ -213,6 +260,8 @@ export function HeroSlideView({
   wrapperProps?: HTMLAttributes<HTMLDivElement>;
   /** Present in /admin/hero: parts become draggable and buttons stop being links. */
   editor?: HeroEditorBinding;
+  /** The buttons' size ("Ana Sayfa Düzenleme › Hero Slider"). */
+  buttonSize?: HeroButtonSizes;
   /** Extra layers on the stage (the editor's guides). */
   children?: ReactNode;
 }) {
@@ -266,6 +315,7 @@ export function HeroSlideView({
   // No text and no button: the photo alone, as tall as a slide with words.
   const bare = !has.eyebrow && !has.title && !has.subtitle && !buttons;
   const TextBlock = has.title ? Heading : "div";
+  const sizing = buttonSizing(buttonSize, placed);
 
   return (
     <div
@@ -387,10 +437,10 @@ export function HeroSlideView({
           )}
         >
           {slide.cta && (
-            <HeroButton editor={!!editor} placed={placed} href={slide.cta.href} variant="primary">
+            <HeroButton editor={!!editor} sizing={sizing.button} href={slide.cta.href} variant="primary">
               {slide.cta.label}
               <ArrowRight
-                className={`h-4 w-4 max-md:h-3.5 max-md:w-3.5 transition-transform duration-200 rtl:-scale-x-100 motion-safe:group-hover:translate-x-0.5 rtl:motion-safe:group-hover:-translate-x-0.5 ${placed ? "lg:h-[1.681cqw] lg:w-[1.681cqw]" : ""}`}
+                className={`h-4 w-4 transition-transform duration-200 rtl:-scale-x-100 motion-safe:group-hover:translate-x-0.5 rtl:motion-safe:group-hover:-translate-x-0.5 ${sizing.icon}`}
                 aria-hidden
               />
             </HeroButton>
@@ -398,7 +448,7 @@ export function HeroSlideView({
           {slide.guestCta && (
             // A guest-only button: hidden once signed in on the storefront, but
             // always shown in the editor, since guests are who see it.
-            <HeroButton editor={!!editor} placed={placed} href={slide.guestCta.href} variant="glass" className={editor ? "" : "guest-only"}>
+            <HeroButton editor={!!editor} sizing={sizing.button} href={slide.guestCta.href} variant="glass" className={editor ? "" : "guest-only"}>
               {slide.guestCta.label}
             </HeroButton>
           )}
@@ -410,26 +460,26 @@ export function HeroSlideView({
   );
 }
 
-/** The slide's button at stage scale; a plain span in the editor, so a drag never navigates. */
+/** The slide's button at the slider's size; a plain span in the editor, so a drag never navigates. */
 function HeroButton({
   editor,
-  placed,
+  sizing,
   href,
   variant,
   className = "",
   children,
 }: {
   editor: boolean;
-  placed: boolean;
+  /** buttonSizing's classes. */
+  sizing: string;
   href: string;
   variant: "primary" | "glass";
   className?: string;
   children: ReactNode;
 }) {
-  const scaled = `${PHONE_BUTTON} ${placed ? "lg:h-[5.042cqw] lg:gap-[0.84cqw] lg:px-[2.941cqw] lg:text-[1.471cqw] lg:leading-[1.43]" : ""}`;
-  if (editor) return <span className={`${linkButtonClass(variant)} pointer-events-none ${scaled} ${className}`}>{children}</span>;
+  if (editor) return <span className={`${linkButtonClass(variant)} pointer-events-none ${sizing} ${className}`}>{children}</span>;
   return (
-    <LinkButton href={href} variant={variant} className={`${scaled} ${className}`}>
+    <LinkButton href={href} variant={variant} className={`${sizing} ${className}`}>
       {children}
     </LinkButton>
   );

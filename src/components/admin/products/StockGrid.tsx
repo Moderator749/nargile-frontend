@@ -9,6 +9,7 @@ import {
   type ColorDraft,
   type StockDraft,
 } from "@/components/admin/products/sheetDraft";
+import { stepOnArrowKey } from "@/lib/numberStep";
 
 const totalBox =
   "flex h-10 items-center justify-end rounded-lg border border-slate-300 bg-slate-100 px-3 font-mono text-sm font-bold tabular-nums dark:border-white/15 dark:bg-white/[0.06]";
@@ -37,6 +38,7 @@ function Quotas({
             inputMode="numeric"
             value={stock[stockField]}
             onChange={(e) => onChange({ ...stock, [stockField]: e.target.value })}
+            onKeyDown={(e) => stepOnArrowKey(e, (v) => onChange({ ...stock, [stockField]: v }), { integer: true })}
             placeholder="0"
             aria-label={`${rowLabel}: ${label} stoğu`}
             className={quotaInput}

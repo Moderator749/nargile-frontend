@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-import { HERO_FRAME, HeroBackdrop, HeroSlideView } from "@/components/home/HeroSlideView";
+import { HERO_FRAME, HeroBackdrop, HeroSlideView, type HeroButtonSizes } from "@/components/home/HeroSlideView";
 import { useMessages } from "@/components/i18n/LocaleProvider";
 import { homeMessages } from "@/lib/i18n/messages/home";
 import type { HeroSlide } from "@/lib/home";
@@ -24,7 +24,7 @@ const controlClass =
  * in Arabic either: only the controls mirror (previous at the start, its
  * chevron pointing that way).
  */
-export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
+export function HeroSlider({ slides, buttonSize }: { slides: HeroSlide[]; buttonSize?: HeroButtonSizes }) {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const count = slides.length;
@@ -76,6 +76,7 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
               slide={slide}
               heading={i === 0 ? "h1" : "h2"}
               preloadImage={i === 0}
+              buttonSize={buttonSize}
               wrapperProps={{
                 role: "group",
                 "aria-roledescription": "slide",

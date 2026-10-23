@@ -16,6 +16,7 @@ import { KumbaraShowcase } from "@/components/home/KumbaraShowcase";
 import { LuleShowcase } from "@/components/home/LuleShowcase";
 import { SeoIntro } from "@/components/home/SeoIntro";
 import { StorePerks } from "@/components/home/StorePerks";
+import { advantageSources } from "@/lib/storeAdvantages";
 import { SultanPuanShowcase } from "@/components/home/SultanPuanShowcase";
 import { CategorySidebar } from "@/components/layout/CategorySidebar";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -279,7 +280,7 @@ export default async function HomePage() {
   // each is whole on its own: no section counts on its neighbour.
   const blocks: Record<HomeBlock, () => ReactNode> = {
     // The payment advantages as a quiet bar, no boxes.
-    perks: () => phones("perks", <StorePerks copy={home.perks} />),
+    perks: () => phones("perks", <StorePerks sources={advantageSources(home)} />),
     // The brand ticker on its own. Decorative: a screen reader hears the list
     // once, in the other ticker ("brands").
     brands_top: () =>
@@ -435,7 +436,10 @@ export default async function HomePage() {
                   change over the same 300ms on the same curve, so the slider
                   only slides aside: never wider, never taller. */}
               <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_0px] lg:gap-x-0 lg:transition-[grid-template-columns,column-gap] lg:duration-300 lg:ease-[ease] motion-reduce:transition-none lg:sidebar-closed:grid-cols-[minmax(0,1fr)_264px] lg:sidebar-closed:gap-x-4">
-                <HeroSlider slides={slides} />
+                <HeroSlider
+                  slides={slides}
+                  buttonSize={{ desktop: home.slider.button_size, mobile: home.slider.mobile_button_size }}
+                />
                 {/* Hidden by its own class: a wrapper would take its place in the row's grid. */}
                 <HeroAside box={spotlight} className={hiddenOnPhones.has("promos") ? "max-md:hidden" : ""} />
               </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { sheetInputClass } from "@/components/admin/products/SheetParts";
+import { stepOnArrowKey } from "@/lib/numberStep";
 
 /**
  * "Adet Şartı": free carriage only from this many units. It sits under the
@@ -32,6 +33,7 @@ export function QuantityCondition({
         inputMode="numeric"
         value={value ?? ""}
         disabled={disabled}
+        onKeyDown={(e) => stepOnArrowKey(e, (v) => onChange(Number(v)), { integer: true })}
         onChange={(e) => {
           const digits = e.target.value.replace(/\D/g, "");
           onChange(digits ? Number(digits) : null);

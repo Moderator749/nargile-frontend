@@ -72,19 +72,6 @@ export const productMessages = defineMessages({
     perks: {
       label: "Bireysel alışveriş avantajları",
       heading: "Size Özel Alışveriş Avantajları",
-      freeShipping: (threshold: string) => `${threshold}+ Ücretsiz Kargo & Hızlı Sevk`,
-      freeShippingNote: (threshold: string) => `${threshold} ve üzeri siparişlerde kargo ücretsiz.`,
-      volume: (rates: string) => `Sepette ${rates} İndirim`,
-      volumeNote: "Sepet tutarınıza göre ödeme adımında otomatik ciro indirimi.",
-      transfer: (rates: string) => `Havale / EFT ile ${rates} İndirim`,
-      transferNote: "Ödeme adımında anında otomatik sepet indirimi.",
-      loyalty: "Sultan Puan Kazanın",
-      loyaltyNote: (min: string, max: string, rate: string) =>
-        `${min} – ${max} arası siparişlerde ${rate} Sultan Puan; bir sonraki alışverişinizde indirim olarak kullanın.`,
-      courier: "İstanbul İçi Kurye Aynı Gün Teslimat",
-      courierNote: "Saat 10:00 – 20:00 arası hızlı teslimat seçeneği.",
-      genuine: "%100 Orijinal Ürün & Güvenli Ödeme",
-      genuineNote: "256-bit SSL güvencesiyle distribütör garantili.",
     },
   },
   en: {
@@ -139,19 +126,6 @@ export const productMessages = defineMessages({
     perks: {
       label: "Shopping perks for individual customers",
       heading: "Your Shopping Perks",
-      freeShipping: (threshold: string) => `Free Shipping over ${threshold} & Fast Dispatch`,
-      freeShippingNote: (threshold: string) => `Free shipping on orders of ${threshold} or more.`,
-      volume: (rates: string) => `${rates} Off Your Basket`,
-      volumeNote: "An automatic discount on your basket total, applied at checkout.",
-      transfer: (rates: string) => `${rates} Off with Bank Transfer`,
-      transferNote: "Taken off your cart automatically at checkout.",
-      loyalty: "Earn Sultan Puan",
-      loyaltyNote: (min: string, max: string, rate: string) =>
-        `${rate} back in Sultan Puan on orders of ${min} – ${max}; use it as a discount on your next order.`,
-      courier: "Same-Day Courier Delivery in Istanbul",
-      courierNote: "Fast delivery option between 10:00 and 20:00.",
-      genuine: "100% Genuine Products & Secure Payment",
-      genuineNote: "Distributor-guaranteed, protected by 256-bit SSL.",
     },
   },
   ar: {
@@ -206,19 +180,6 @@ export const productMessages = defineMessages({
     perks: {
       label: "مزايا التسوق للأفراد",
       heading: "مزايا تسوق خاصة بك",
-      freeShipping: (threshold: string) => `شحن مجاني فوق ${threshold} وتجهيز سريع`,
-      freeShippingNote: (threshold: string) => `الشحن مجاني للطلبات بقيمة ${threshold} فأكثر.`,
-      volume: (rates: string) => `خصم ${rates} على السلة`,
-      volumeNote: "خصم تلقائي حسب إجمالي السلة عند الدفع.",
-      transfer: (rates: string) => `خصم ${rates} عند التحويل البنكي`,
-      transferNote: "يُطبَّق الخصم تلقائياً على السلة عند الدفع.",
-      loyalty: "اكسب نقاط Sultan Puan",
-      loyaltyNote: (min: string, max: string, rate: string) =>
-        `${rate} نقاط Sultan Puan على الطلبات بين ${min} و${max}؛ استخدمها كخصم في طلبك القادم.`,
-      courier: "توصيل بمندوب في نفس اليوم داخل إسطنبول",
-      courierNote: "خيار توصيل سريع بين الساعة 10:00 و20:00.",
-      genuine: "منتجات أصلية 100% ودفع آمن",
-      genuineNote: "بضمان الموزع وحماية SSL بتشفير 256-bit.",
     },
   },
 });

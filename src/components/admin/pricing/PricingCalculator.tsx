@@ -23,6 +23,7 @@ import {
   type VatMode,
 } from "@/lib/pricing";
 import { refreshStorefront } from "@/lib/revalidate";
+import { stepOnArrowKey } from "@/lib/numberStep";
 
 // ── The worksheet as typed ───────────────────────────────────────────────────
 
@@ -153,6 +154,7 @@ function PercentBadge({ label, value, onChange, prefix = "%" }: { label: string;
         inputMode="decimal"
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onKeyDown={(e) => stepOnArrowKey(e, (v) => onChange(v))}
         aria-label={label}
         placeholder="0"
         className="w-full min-w-0 border-0 bg-transparent px-0.5 text-right font-mono text-xs font-semibold text-slate-900 focus:outline-none dark:text-zinc-100"
@@ -486,6 +488,7 @@ export function PricingCalculator({
                   inputMode="decimal"
                   value={d.cost}
                   onChange={(e) => set({ cost: e.target.value })}
+                  onKeyDown={(e) => stepOnArrowKey(e, (v) => set({ cost: v }))}
                   placeholder="Maliyet"
                   aria-label="Maliyet fiyatı"
                   className={`${cellInput} font-semibold`}
@@ -588,6 +591,7 @@ export function PricingCalculator({
                     inputMode="decimal"
                     value={d.appliedPercent}
                     onChange={(e) => set({ appliedPercent: e.target.value })}
+                    onKeyDown={(e) => stepOnArrowKey(e, (v) => set({ appliedPercent: v }))}
                     placeholder="0"
                     aria-label="Uygulanacak oran (%)"
                     className={`${cellInput} font-semibold`}
@@ -629,6 +633,7 @@ export function PricingCalculator({
                     inputMode="decimal"
                     value={d.finalTry}
                     onChange={(e) => set({ finalTry: e.target.value })}
+                    onKeyDown={(e) => stepOnArrowKey(e, (v) => set({ finalTry: v }))}
                     placeholder="son karar (TL)"
                     aria-label="Son karar (TL, KDV dahil)"
                     className={`${cellInput} font-semibold text-red-900 dark:text-red-100`}
@@ -656,6 +661,7 @@ export function PricingCalculator({
                   inputMode="decimal"
                   value={d[k]}
                   onChange={(e) => set({ [k]: e.target.value })}
+                  onKeyDown={(e) => stepOnArrowKey(e, (v) => set({ [k]: v }))}
                   className={`${cellInput} w-24 bg-white dark:bg-zinc-950`}
                 />
               </label>
@@ -739,6 +745,7 @@ function ErpCell({ label, value, onChange }: { label: string; value: string; onC
         inputMode="decimal"
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onKeyDown={(e) => stepOnArrowKey(e, (v) => onChange(v))}
         aria-label={label}
         className={`${cellInput} font-semibold`}
       />
@@ -772,6 +779,7 @@ function PriceCell({
         inputMode="decimal"
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onKeyDown={(e) => stepOnArrowKey(e, (v) => onChange(v))}
         placeholder={shown || "—"}
         title={value ? undefined : auto === null ? undefined : `${fmt(auto, currency)} — yazarak değiştirebilirsiniz`}
         aria-label={label}

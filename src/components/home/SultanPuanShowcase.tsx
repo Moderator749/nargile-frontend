@@ -5,14 +5,10 @@ import { GoldShowcase } from "@/components/home/GoldShowcase";
 import { useMessages } from "@/components/i18n/LocaleProvider";
 import { homeMessages } from "@/lib/i18n/messages/home";
 import { fillIn } from "@/lib/homeSectionCopy";
+import { bandText } from "@/lib/storeAdvantages";
 import type { Category, HomeLoyaltyCopy, SultanPuanShowcase as Showcase } from "@/types";
 
-const whole = new Intl.NumberFormat("tr-TR", { maximumFractionDigits: 0 });
 
-/** "20000.00"–"29999.99" → "20.000–29.999 TL": whole liras, the band's inside. */
-export function bandText(min: string, max: string): string {
-  return `${whole.format(Math.ceil(Number(min)))}–${whole.format(Math.floor(Number(max)))} TL`;
-}
 
 /** "10.00" → "%10", "2.50" → "%2,5" (Turkish; the band shows `percent` in the page's language). */
 export function rateText(percent: string): string {

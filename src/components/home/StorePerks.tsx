@@ -1,38 +1,16 @@
 "use client";
 
-import type { LucideIcon } from "lucide-react";
-
 import Link from "@/components/i18n/Link";
 import { useMessages } from "@/components/i18n/LocaleProvider";
 import { useShippingPerks } from "@/hooks/useShippingPerks";
 import { useStoreParameters } from "@/hooks/useStoreParameters";
 import { PERKS_PAGE } from "@/lib/bilgi";
-import { homeIcon } from "@/lib/homeIcons";
 import { homeMessages } from "@/lib/i18n/messages/home";
 import { PAGE_CONTAINER } from "@/lib/layout";
-import type { HomePerks, ParameterTier } from "@/types";
+import { storeAdvantages, type AdvantageKey, type AdvantageSources } from "@/lib/storeAdvantages";
 
-/**
- * "%5 – %8": a ladder's lowest and highest rate that give anything; null with
- * none. Written as formatRate would, in the page's language ("5% – 8%").
- */
-function rateSpan(tiers: ParameterTier[], percent: (n: number) => string): string | null {
-  const rates = tiers.map((t) => Number(t.rate)).filter((r) => r > 0);
-  if (rates.length === 0) return null;
-  const low = Math.min(...rates);
-  const high = Math.max(...rates);
-  const rate = (r: number) => percent(r * 100);
-  return low === high ? rate(low) : `${rate(low)} – ${rate(high)}`;
-}
-
-interface Perk {
-  /** Its section on the perks page. */
-  anchor: string;
-  Icon: LucideIcon;
-  label: string;
-  value: string;
-  note: string;
-}
+/** The bar's own: the three payment advantages. */
+const BAR = new Set<AdvantageKey>(["installments", "volume", "transfer"]);
 
 /**
  * The store's three payment advantages as a quiet bar under the hero row,
@@ -47,45 +25,14 @@ interface Perk {
  * promises, so the bar is left out for a signed-in B2B account
  * (`useShippingPerks`), as the SultanPuan and Kumbara bands are.
  */
-export function StorePerks({ copy }: { copy: HomePerks }) {
+export function StorePerks({ sources }: { sources: AdvantageSources }) {
   const { show } = useShippingPerks();
   const params = useStoreParameters();
   const t = useMessages(homeMessages);
   if (!show) return null;
 
-  const volume = rateSpan(params.volume_tiers, t.percent);
-  const transfer = rateSpan(params.bank_transfer_tiers, t.percent);
-  const perks: Perk[] = [
-    {
-      anchor: "taksit",
-      Icon: homeIcon(copy.installments.icon),
-      label: copy.installments.label,
-      value: copy.installments.value,
-      note: copy.installments.note,
-    },
-    ...(volume
-      ? [
-          {
-            anchor: "sepet-indirimi",
-            Icon: homeIcon(copy.volume.icon),
-            label: copy.volume.label,
-            value: volume,
-            note: copy.volume.note,
-          },
-        ]
-      : []),
-    ...(transfer
-      ? [
-          {
-            anchor: "havale-indirimi",
-            Icon: homeIcon(copy.transfer.icon),
-            label: copy.transfer.label,
-            value: transfer,
-            note: copy.transfer.note,
-          },
-        ]
-      : []),
-  ];
+  // The Avantaj Çubuğu's three, from the list every page states the advantages from.
+  const perks = storeAdvantages(sources, params, t.percent).filter((a) => BAR.has(a.key));
 
   return (
     <section aria-labelledby="magaza-avantajlari-baslik" className="bg-white pt-8 pb-4 md:pt-10 dark:bg-transparent">

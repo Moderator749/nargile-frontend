@@ -12,6 +12,7 @@ import { parseDecimalInput } from "@/lib/format";
 import { refreshStorefront } from "@/lib/revalidate";
 import { transferDiscountHint } from "@/lib/storeParameters";
 import type { CoalRuleBasis, LoyaltyParameters, ParameterTier, StoreParameters } from "@/types";
+import { stepOnArrowKey } from "@/lib/numberStep";
 
 const fieldClass =
   "block h-11 w-full rounded-xl border bg-white px-3.5 text-sm text-slate-900 shadow-sm transition-[border-color,box-shadow] placeholder:text-slate-400 focus:outline-none focus:ring-4 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-600";
@@ -284,6 +285,7 @@ function Field({ label, unit, value, onChange, error, note, srLabel, info, disab
           maxLength={14}
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          onKeyDown={(e) => stepOnArrowKey(e, (v) => onChange(v))}
           disabled={disabled}
           aria-label={srLabel}
           aria-invalid={!!error}

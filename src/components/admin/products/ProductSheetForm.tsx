@@ -45,6 +45,7 @@ import { refreshStorefront } from "@/lib/revalidate";
 import { getApiErrorMessage } from "@/lib/errors";
 import { nameWithCode, productSlug } from "@/lib/slug";
 import type { AdminCategory, Brand, CurrencyType, SavedProductSheet, SheetSegment } from "@/types";
+import { stepOnArrowKey } from "@/lib/numberStep";
 
 /** The crimson of the site's primary buttons (red-600), as a one-click preset. */
 const CRIMSON = "#DC2626";
@@ -540,6 +541,7 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
                   inputMode="decimal"
                   value={opp.price}
                   onChange={(e) => setOpp({ price: e.target.value })}
+                  onKeyDown={(e) => stepOnArrowKey(e, (v) => setOpp({ price: v }))}
                   disabled={!opp.is_opportunity}
                   placeholder="0,00"
                   className={`${sheetInputClass} text-right tabular-nums`}
@@ -552,6 +554,7 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
                   inputMode="numeric"
                   value={opp.stock}
                   onChange={(e) => setOpp({ stock: e.target.value })}
+                  onKeyDown={(e) => stepOnArrowKey(e, (v) => setOpp({ stock: v }), { integer: true })}
                   disabled={!opp.is_opportunity}
                   placeholder="0"
                   className={`${sheetInputClass} text-right tabular-nums`}

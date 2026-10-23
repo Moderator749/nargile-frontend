@@ -1771,8 +1771,20 @@ export interface HomeProductRowCopy {
   more: string;
 }
 
+/** The hero slider's buttons: a size down, the shop's own, a size up. */
+export type HeroButtonSize = "sm" | "md" | "lg";
+
+/** The hero slider's own settings ("Hero Slider" in Ana Sayfa Düzenleme). */
+export interface HomeSlider {
+  /** From a tablet up. */
+  button_size: HeroButtonSize;
+  /** On a phone (below 768px). */
+  mobile_button_size: HeroButtonSize;
+}
+
 export interface Homepage {
   sections: HomeSections;
+  slider: HomeSlider;
   /** The sections' order between the hero and the footer. */
   order: HomeBlock[];
   navigation: { top: HomeNavItem[]; sidebar: HomeNavItem[] };

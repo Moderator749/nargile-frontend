@@ -20,6 +20,7 @@ import { getApiErrorMessage } from "@/lib/errors";
 import { refreshStorefront } from "@/lib/revalidate";
 import { formatDate, formatMoney, parseDecimalInput } from "@/lib/format";
 import type { AdminFlashSale } from "@/types";
+import { stepOnArrowKey } from "@/lib/numberStep";
 
 const HOUR = 3_600_000;
 const DURATIONS = [
@@ -185,6 +186,7 @@ export function AdminFlashSalesView() {
             label="Kampanya fiyatı (KDV dahil, ₺)"
             value={form.price}
             onChange={(e) => set("price", e.target.value)}
+            onKeyDown={(e) => stepOnArrowKey(e, (v) => set("price", v))}
             inputMode="decimal"
             placeholder="ör. 1.249,90"
             hint="Perakende fiyatından düşük olmalı; bayi fiyatı daha düşükse bayi kendi fiyatını öder."

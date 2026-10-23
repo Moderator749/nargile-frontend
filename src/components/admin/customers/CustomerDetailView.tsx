@@ -23,6 +23,7 @@ import { adminAdjustPoints, adminCustomerDetail, adminCustomerWallet } from "@/l
 import { countryName } from "@/lib/countries";
 import { getApiErrorMessage } from "@/lib/errors";
 import type { AccountType, AdminCustomerAddress, AdminCustomerDetail, Wallet } from "@/types";
+import { stepOnArrowKey } from "@/lib/numberStep";
 
 const ICONS: Record<AccountType, typeof User> = {
   INDIVIDUAL: User,
@@ -282,6 +283,7 @@ export function CustomerDetailView({ userId }: { userId: string }) {
             inputMode="numeric"
             value={amount}
             onChange={(e) => setAmount(e.target.value.replace(/[^\d-]/g, ""))}
+            onKeyDown={(e) => stepOnArrowKey(e, (v) => setAmount(v.replace(/[^\d-]/g, "")), { integer: true, negative: true })}
             placeholder="ör. 500 / -200"
           />
           <Input
