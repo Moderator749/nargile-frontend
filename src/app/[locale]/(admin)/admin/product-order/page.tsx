@@ -1,9 +1,6 @@
-import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
-import { AdminProductOrderView } from "@/components/admin/AdminProductOrderView";
-
-export const metadata: Metadata = { title: "Ürün Sıralaması" };
-
+/** "Ürün Sıralaması" is a tab of "Ürünler & Stok" now: old links and bookmarks lead there. */
 export default function Page() {
-  return <AdminProductOrderView />;
+  redirect("/admin/products?sekme=siralama");
 }

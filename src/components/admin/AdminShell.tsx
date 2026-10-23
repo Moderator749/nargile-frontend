@@ -4,7 +4,6 @@ import { useEffect, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  ArrowDownUp,
   Boxes,
   Calculator,
   ClipboardList,
@@ -46,12 +45,9 @@ const NAV: NavItem[] = [
     href: "/admin/products",
     label: "Ürünler & Stok",
     icon: Boxes,
-    // Shown indented under it.
-    children: [
-      { href: "/admin/brands", label: "Markalar", icon: Tags },
-      // A category page's own "Önerilen" order.
-      { href: "/admin/product-order", label: "Ürün Sıralaması", icon: ArrowDownUp },
-    ],
+    // Shown indented under it. A category page's own order is a tab of the
+    // products page ("Kategori Vitrin Sıralaması").
+    children: [{ href: "/admin/brands", label: "Markalar", icon: Tags }],
   },
   // Claude's English and Arabic drafts, waiting to be read and approved.
   { href: "/admin/translations", label: "Çeviri Onayları", icon: Languages },

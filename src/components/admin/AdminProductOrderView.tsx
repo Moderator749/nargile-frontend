@@ -41,9 +41,20 @@ const rankedCount = (rows: CategoryProductOrderRow[]) => rows.filter((r) => r.po
  * it to the top; every move is saved at once. The ranked products lead the
  * page; the rest follow by name — so products added later fall in behind.
  */
-export function AdminProductOrderView() {
+export function AdminProductOrderView({
+  embedded = false,
+  initialCategoryId = null,
+  onCategoryChange,
+}: {
+  /** In "Ürünler & Stok"'s tabs, under their heading: no heading of its own. */
+  embedded?: boolean;
+  /** The category to open on ("Bu Kategoriyi Sırala", or the address). */
+  initialCategoryId?: number | null;
+  /** Told of every category chosen, for the address. */
+  onCategoryChange?: (categoryId: number | null) => void;
+} = {}) {
   const [categories, setCategories] = useState<AdminCategory[] | null>(null);
-  const [categoryId, setCategoryId] = useState<number | null>(null);
+  const [categoryId, setCategoryId] = useState<number | null>(initialCategoryId);
   const [rows, setRows] = useState<CategoryProductOrderRow[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -137,10 +148,12 @@ export function AdminProductOrderView() {
 
   return (
     <>
-      <AdminPageHeader
-        title="Ürün Sıralaması"
-        description="Bir kategori sayfasındaki ürünlerin “Önerilen” sırası. Ürünü tutamaçtan sürükleyin ya da en üste taşıyın; her değişiklik hemen kaydedilir. Sıraya alınmamış ürünler arkadan ada göre gelir."
-      />
+      {!embedded && (
+        <AdminPageHeader
+          title="Ürün Sıralaması"
+          description="Bir kategori sayfasındaki ürünlerin “Önerilen” sırası. Ürünü tutamaçtan sürükleyin ya da en üste taşıyın; her değişiklik hemen kaydedilir. Sıraya alınmamış ürünler arkadan ada göre gelir."
+        />
+      )}
 
       <section className={`${panelClass} overflow-hidden`}>
         <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 sm:flex-row sm:items-center dark:border-white/10">
@@ -154,7 +167,9 @@ export function AdminProductOrderView() {
             onChange={(e) => {
               setRows(null);
               setResult(null);
-              setCategoryId(e.target.value ? Number(e.target.value) : null);
+              const id = e.target.value ? Number(e.target.value) : null;
+              setCategoryId(id);
+              onCategoryChange?.(id);
             }}
             className="h-10 min-w-0 rounded-full border border-slate-200 bg-white px-4 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-4 focus:ring-red-500/15 sm:w-80 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-100"
           >

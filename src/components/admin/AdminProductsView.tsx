@@ -4,10 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import axios from "axios";
-import { Copy, ImageOff, Loader2, PackageX, Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowDownUp, Copy, ImageOff, Loader2, PackageX, Pencil, Plus, Trash2 } from "lucide-react";
 
 import { AdminPageHeader, panelClass } from "@/components/admin/AdminShell";
 import { Pagination } from "@/components/admin/Pagination";
+import { withWorkspaceParams } from "@/components/admin/products/productsTabs";
 import { PRODUCTS_PATH, rememberProductList } from "@/components/admin/products/listReturn";
 import { SortableHeader, type SortState } from "@/components/admin/SortableHeader";
 import { CatalogSearch } from "@/components/catalog/CatalogSearch";
@@ -119,7 +120,15 @@ function urlFromState(category: string, query: string, sort: SortState<ProductSo
   return params.toString();
 }
 
-export function AdminProductsView() {
+export function AdminProductsView({
+  embedded = false,
+  onSortCategory,
+}: {
+  /** In "Ürünler & Stok"'s tabs, under their heading: no heading of its own. */
+  embedded?: boolean;
+  /** "Bu Kategoriyi Sırala": open the category's own order (the other tab). */
+  onSortCategory?: (categoryId: number) => void;
+} = {}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   // Read once: from here on the list owns its state and writes it back into the URL.
@@ -174,10 +183,14 @@ export function AdminProductsView() {
   useEffect(() => {
     const qs = urlFromState(category, query, sort, page);
     rememberProductList(qs);
-    if (qs !== window.location.search.replace(/^\?/, "")) {
-      router.replace(qs ? `${PRODUCTS_PATH}?${qs}` : PRODUCTS_PATH, { scroll: false });
+    // The tabs' own params (`?sekme=`) stay beside the list's.
+    const full = withWorkspaceParams(qs);
+    if (full !== window.location.search.replace(/^\?/, "")) {
+      router.replace(full ? `${PRODUCTS_PATH}?${full}` : PRODUCTS_PATH, { scroll: false });
     }
   }, [router, category, query, sort, page]);
+
+  const sortableCategory = category ? categories.find((c) => c.slug === category) : undefined;
 
   /** A category is browsed in code order: the codes of one family sit together. */
   function chooseCategory(slug: string) {
@@ -314,10 +327,12 @@ export function AdminProductsView() {
 
   return (
     <>
-      <AdminPageHeader
-        title="Ürünler & Stok"
-        description="Perakende stok ve fiyatı izleyin, ürünü yayından alın. Diğer tüm alanlar (fiyat tablosu, kotalar, kurallar, fırsat) ürün formunda."
-      />
+      {!embedded && (
+        <AdminPageHeader
+          title="Ürünler & Stok"
+          description="Perakende stok ve fiyatı izleyin, ürünü yayından alın. Diğer tüm alanlar (fiyat tablosu, kotalar, kurallar, fırsat) ürün formunda."
+        />
+      )}
 
       {/* One control bar over the table: search and category on the left, then the
           actions on the right — new, duplicate, and delete at the far edge. */}
@@ -344,6 +359,18 @@ export function AdminProductsView() {
             </option>
           ))}
         </select>
+        {/* "Akıllı geçiş": the chosen category's own order, a click away. */}
+        {onSortCategory && sortableCategory && (
+          <button
+            type="button"
+            onClick={() => onSortCategory(sortableCategory.id)}
+            title={`“${sortableCategory.name}” kategori sayfasındaki ürün sırasını düzenle`}
+            className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-4 text-sm font-medium text-red-700 transition-colors hover:border-red-400 hover:bg-red-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300 dark:hover:bg-red-500/20"
+          >
+            <ArrowDownUp className="h-4 w-4" aria-hidden />
+            Bu Kategoriyi Sırala
+          </button>
+        )}
 
         {/* The actions sit together at the right edge, ending with the destructive one. */}
         <div className="flex items-center gap-3 lg:ml-auto">

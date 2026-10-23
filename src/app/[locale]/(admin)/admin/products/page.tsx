@@ -1,15 +1,15 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 
-import { AdminProductsView } from "@/components/admin/AdminProductsView";
+import { AdminProductsWorkspace } from "@/components/admin/AdminProductsWorkspace";
 
 export const metadata: Metadata = { title: "Ürünler & Stok" };
 
 export default function Page() {
-  // The list reads its filters from the URL (useSearchParams).
+  // The tabs and the list read their state from the URL (useSearchParams).
   return (
     <Suspense>
-      <AdminProductsView />
+      <AdminProductsWorkspace />
     </Suspense>
   );
 }
