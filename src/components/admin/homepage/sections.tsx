@@ -359,11 +359,11 @@ export function HeroTab() {
         <LayoutGrid className="mt-0.5 h-6 w-6 shrink-0 text-red-600" aria-hidden />
         <span>
           <span className="flex items-center gap-1 font-semibold">
-            Kategori Kutuları{" "}
+            Promo Kutusu{" "}
             <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
           </span>
           <span className="mt-1 block text-sm text-slate-500 dark:text-zinc-400">
-            Slider’ın altındaki iki sıra kutu: görsel, başlık, açıklama ve bağlantı.
+            Slider’ın yanındaki iki kart: Topluluk (Instagram, YouTube bağlantıları) ve Ayrıcalıklar & Avantajlar.
           </span>
         </span>
       </Link>

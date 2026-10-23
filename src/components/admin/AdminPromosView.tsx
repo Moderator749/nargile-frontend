@@ -48,15 +48,15 @@ function validate(v: PromoBoxWrite): string | null {
 }
 
 /**
- * Admin: the promo box beside the hero ("Sosyal & Avantaj"): a crimson band
- * that jumps to the advantages and a dark band with the shop's channels. The
- * first active box whose condition is met is the one shown; the others wait.
+ * Admin: the two cards beside the hero (HeroAsideCards): the community card
+ * with the shop's channels on top, the advantages card under it. The first
+ * active box whose condition is met is the one shown; the others wait.
  */
 export function AdminPromosView() {
   return (
     <ContentEditor
       title="Promo Kutusu"
-      description="Slider'ın yanındaki “Sosyal & Avantaj” kartı: üstte avantajlara giden buton, altta Instagram ve YouTube."
+      description="Slider’ın yanındaki iki kart: üstte Topluluk (Instagram, YouTube), altta Ayrıcalıklar & Avantajlar."
       noun="kutu"
       api={adminPromoBoxes}
       blank={blank}
