@@ -10,8 +10,10 @@ interface QuantityStepperProps {
   value: number;
   onChange: (quantity: number) => void;
   label: string;
-  /** The most that may be ordered (the buyer's stock limit); none when there is no limit to hold to. */
+  /** The most that may be ordered, where it is known (a firm's quota, or a limit already met); none otherwise. */
   max?: number | null;
+  /** The quantity was just taken down to the most there is: say so (never the number). */
+  limitReached?: boolean;
 }
 
 const stepClass =
@@ -21,11 +23,13 @@ const stepClass =
  * +/- buttons around a field the buyer can type into, so a B2B order of "150"
  * is typed, not clicked. Whole numbers from 1 only: anything else is dropped as
  * it is typed. A number counts as soon as it is typed (so "Sepete Ekle" right
- * after takes it); one above `max` is held to `max`, with a warning saying why,
- * and the field shows the corrected number once the buyer leaves it. A cleared
+ * after takes it); one above `max` is held to `max`, with a warning saying why
+ * ("Stok sınırına ulaştınız", never how many there are), and the field shows
+ * the corrected number once the buyer leaves it. Where the limit is not known,
+ * the page holds the quantity to the stock itself and passes `limitReached`. A cleared
  * field goes back to what it was; Escape undoes the typing.
  */
-export function QuantityStepper({ value, onChange, label, max }: QuantityStepperProps) {
+export function QuantityStepper({ value, onChange, label, max, limitReached = false }: QuantityStepperProps) {
   const t = useMessages(cartMessages).stepper;
   const [draft, setDraft] = useState<string | null>(null);
   const before = useRef(value);
@@ -90,9 +94,9 @@ export function QuantityStepper({ value, onChange, label, max }: QuantityStepper
       {/* Under the field, without moving anything around it. */}
       <p
         aria-live="polite"
-        className="pointer-events-none absolute start-0 top-full mt-1 whitespace-nowrap text-[11px] font-medium text-red-600 dark:text-red-400"
+        className="pointer-events-none absolute start-0 top-full mt-1 w-60 max-w-[calc(100vw-4rem)] text-xs font-medium leading-snug text-red-600 dark:text-red-400"
       >
-        {over ? t.maxStock(limit!) : ""}
+        {over || limitReached ? t.stockLimit : ""}
       </p>
     </div>
   );

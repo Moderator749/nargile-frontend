@@ -60,6 +60,7 @@ export const cartMessages = defineMessages({
   tr: {
     meta: {
       title: "Sepetim",
+      checkoutTitle: "Ödeme",
       description: "Sepetinizdeki ürünleri inceleyin, Sultan Puan kullanın ve siparişinizi güvenle tamamlayın.",
     },
     view: {
@@ -70,16 +71,21 @@ export const cartMessages = defineMessages({
       corporateNotice: "Şirketin resmi adresini yukarıdaki Fatura Bilgileri bölümünde doldurun.",
       overStock: (name: string, n: number) => `${name} için stokta en fazla ${n} adet var; adedi düşürün.`,
       soldOut: (name: string) => `${name} tükendi; sepetinizden çıkarın.`,
+      stockShort: (name: string) => `${name} için stok sınırına ulaştınız; adedi azaltın.`,
       consentBlocker: "Gönderim ücretinin teslimatta alıcı tarafından ödeneceğini onaylayın.",
       agreementsBlocker: "Siparişi tamamlamak için her iki sözleşmeyi de onaylayın.",
       paymentPageFailed: "Ödeme sayfası açılamadı. Lütfen tekrar deneyin.",
       checkoutFailed: "Sipariş oluşturulamadı. Lütfen tekrar deneyin.",
       quoteFailed: "Sepet tutarı hesaplanamadı.",
+      goToPayment: "Ödemeye Geç",
+      checkoutBar: "Sepet toplamı ve ödeme",
+      barTotal: "Toplam",
     },
     line: {
       color: "Renk:",
       perUnit: "/ adet",
       code: (sku: string) => `Kod: ${sku}`,
+      soldOut: "Tükendi; lütfen sepetinizden çıkarın",
       havaleDiscount: (amount: string) => `Havale/EFT indirimi −${amount}`,
       havaleEligible: "Havale/EFT ile ödemede indirimli",
       remove: (label: string) => `${label} ürününü sepetten çıkar`,
@@ -95,7 +101,7 @@ export const cartMessages = defineMessages({
       decrease: (label: string) => `${label}: adedi azalt`,
       quantity: (label: string) => `${label}: adet`,
       increase: (label: string) => `${label}: adedi artır`,
-      maxStock: (n: number) => `Stokta en fazla ${n.toLocaleString("tr-TR")} adet var`,
+      stockLimit: "Stok sınırına ulaştınız (Maksimum mevcut adet eklendi)",
     },
     empty: {
       title: "Sepetiniz boş",
@@ -204,6 +210,7 @@ export const cartMessages = defineMessages({
   en: {
     meta: {
       title: "My Cart",
+      checkoutTitle: "Checkout",
       description: "Review the items in your cart, use your Sultan Puan and complete your order securely.",
     },
     view: {
@@ -214,16 +221,21 @@ export const cartMessages = defineMessages({
       corporateNotice: "Fill in the company's official address in the Invoice Details section above.",
       overStock: (name: string, n: number) => `Only ${n} of ${name} in stock; please lower the quantity.`,
       soldOut: (name: string) => `${name} is sold out; please remove it from your cart.`,
+      stockShort: (name: string) => `Stock limit reached for ${name}; please lower the quantity.`,
       consentBlocker: "Please confirm that the shipping fee is paid by the recipient on delivery.",
       agreementsBlocker: "Please accept both agreements to place your order.",
       paymentPageFailed: "The payment page could not be opened. Please try again.",
       checkoutFailed: "Your order could not be placed. Please try again.",
       quoteFailed: "The cart total could not be calculated.",
+      goToPayment: "Go to Payment",
+      checkoutBar: "Cart total and payment",
+      barTotal: "Total",
     },
     line: {
       color: "Colour:",
       perUnit: "/ pc",
       code: (sku: string) => `Code: ${sku}`,
+      soldOut: "Sold out; please remove it from your cart",
       havaleDiscount: (amount: string) => `Bank transfer discount −${amount}`,
       havaleEligible: "Discounted when paid by bank transfer",
       remove: (label: string) => `Remove ${label} from cart`,
@@ -239,7 +251,7 @@ export const cartMessages = defineMessages({
       decrease: (label: string) => `${label}: decrease quantity`,
       quantity: (label: string) => `${label}: quantity`,
       increase: (label: string) => `${label}: increase quantity`,
-      maxStock: (n: number) => `Only ${n.toLocaleString("en-GB")} in stock`,
+      stockLimit: "Stock limit reached (the most available was added)",
     },
     empty: {
       title: "Your cart is empty",
@@ -348,6 +360,7 @@ export const cartMessages = defineMessages({
   ar: {
     meta: {
       title: "سلة التسوق",
+      checkoutTitle: "الدفع",
       description: "راجع المنتجات في سلتك، واستخدم نقاط Sultan Puan، وأكمل طلبك بأمان.",
     },
     view: {
@@ -358,16 +371,21 @@ export const cartMessages = defineMessages({
       corporateNotice: "أدخل العنوان الرسمي للشركة في قسم بيانات الفاتورة أعلاه.",
       overStock: (name: string, n: number) => `المتوفر من ${name} في المخزون ${n} قطعة كحد أقصى؛ يُرجى تقليل الكمية.`,
       soldOut: (name: string) => `نفد ${name} من المخزون؛ يُرجى إزالته من السلة.`,
+      stockShort: (name: string) => `وصلت إلى حد المخزون لـ ${name}؛ يُرجى تقليل الكمية.`,
       consentBlocker: "يُرجى تأكيد أن المستلم سيدفع رسوم الشحن عند التسليم.",
       agreementsBlocker: "يُرجى الموافقة على العقدين لإتمام الطلب.",
       paymentPageFailed: "تعذّر فتح صفحة الدفع. يُرجى المحاولة مرة أخرى.",
       checkoutFailed: "تعذّر إنشاء الطلب. يُرجى المحاولة مرة أخرى.",
       quoteFailed: "تعذّر حساب إجمالي السلة.",
+      goToPayment: "الانتقال إلى الدفع",
+      checkoutBar: "إجمالي السلة والدفع",
+      barTotal: "الإجمالي",
     },
     line: {
       color: "اللون:",
       perUnit: "/ قطعة",
       code: (sku: string) => `الرمز: ${sku}`,
+      soldOut: "نفد من المخزون؛ يُرجى إزالته من السلة",
       // No minus sign: in a right-to-left line it lands on the wrong side of the amount.
       havaleDiscount: (amount: string) => `خصم التحويل البنكي ${amount}`,
       havaleEligible: "مخفّض عند الدفع بالتحويل البنكي",
@@ -384,7 +402,7 @@ export const cartMessages = defineMessages({
       decrease: (label: string) => `${label}: إنقاص الكمية`,
       quantity: (label: string) => `${label}: الكمية`,
       increase: (label: string) => `${label}: زيادة الكمية`,
-      maxStock: (n: number) => `المتوفر ${n.toLocaleString("ar-u-nu-latn")} قطعة فقط`,
+      stockLimit: "وصلت إلى حد المخزون (أُضيفت أقصى كمية متاحة)",
     },
     empty: {
       title: "سلتك فارغة",

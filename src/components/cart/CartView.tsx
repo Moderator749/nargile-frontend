@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ArrowRight } from "lucide-react";
 
 import { useLocale, useMessages } from "@/components/i18n/LocaleProvider";
 import { useLocalePath } from "@/components/i18n/navigation";
@@ -69,6 +70,9 @@ import {
 import { ISTANBUL } from "@/lib/provinces";
 import { productHref } from "@/lib/seo";
 import { useCartLines } from "@/hooks/useCartLines";
+import { checkStock } from "@/lib/catalogApi";
+import { formatMoney } from "@/lib/format";
+import { estimateCart } from "@/lib/cartEstimate";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useCartStore } from "@/store/useCartStore";
 import { useAuthHydrated, useCartHydrated } from "@/store/useHasHydrated";
@@ -91,7 +95,11 @@ function refreshProfile() {
     });
 }
 
-export function CartView() {
+/**
+ * `checkoutStep`: the same page at /checkout, where signing in from the cart lands —
+ * opened at the delivery and payment steps rather than at the top of the cart.
+ */
+export function CartView({ checkoutStep = false }: { checkoutStep?: boolean } = {}) {
   const router = useRouter();
   const to = useLocalePath();
   const locale = useLocale();
@@ -174,6 +182,71 @@ export function CartView() {
     items.map((i) => i.variant_id),
     authHydrated && !user,
   );
+
+  /*
+   * Quantities held to the stock without telling anyone the count: a raised
+   * quantity is asked about (`checkStock`), and taken down to the most there
+   * is when it is more — "Stok sınırına ulaştınız". The most learned for a
+   * line then holds the stepper. A request (an export cart) has no limit.
+   */
+  const updateQuantity = useCartStore((s) => s.updateQuantity);
+  const [stockMax, setStockMax] = useState<Record<string, number>>({});
+  const asked = useRef(0);
+  const holdsToStock = authHydrated && !isExportAccount(user);
+  function changeQuantity(variantId: string, quantity: number) {
+    const before = useCartStore.getState().items.find((i) => i.variant_id === variantId)?.quantity ?? 0;
+    updateQuantity(variantId, quantity);
+    if (!holdsToStock || quantity <= before) return;
+    const ask = ++asked.current;
+    checkStock([{ variant_id: variantId, quantity }])
+      .then(([line]) => {
+        if (!line || ask !== asked.current || !line.capped || line.quantity < 1) return;
+        updateQuantity(variantId, line.quantity);
+        setStockMax((m) => ({ ...m, [variantId]: line.quantity }));
+      })
+      .catch(() => {
+        // Checkout holds the order to the stock anyway.
+      });
+  }
+  // The cart as it was left may hold more than there is now: once, on arrival.
+  const checkedOnArrival = useRef(false);
+  useEffect(() => {
+    if (!cartHydrated || !holdsToStock || checkedOnArrival.current || items.length === 0) return;
+    checkedOnArrival.current = true;
+    checkStock(items.map((i) => ({ variant_id: i.variant_id, quantity: i.quantity })))
+      .then((lines) => {
+        const held = lines.filter((l) => l.capped && l.quantity > 0);
+        held.forEach((l) => updateQuantity(l.variant_id, l.quantity));
+        if (held.length > 0) setStockMax((m) => ({ ...m, ...Object.fromEntries(held.map((l) => [l.variant_id, l.quantity])) }));
+      })
+      .catch(() => {});
+  }, [cartHydrated, holdsToStock, items, updateQuantity]);
+
+  // /checkout is for a signed-in buyer: a visitor signs in first and comes back here.
+  useEffect(() => {
+    if (checkoutStep && authHydrated && !user) router.replace(to("/login?next=/checkout"));
+  }, [checkoutStep, authHydrated, user, router, to]);
+  // The summary in sight or not: the phone's checkout bar shows while it is not.
+  const summary = useRef<HTMLDivElement>(null);
+  const [summaryInView, setSummaryInView] = useState(true);
+  useEffect(() => {
+    const element = summary.current;
+    if (!element) return;
+    // Reached once it is up in the screen, not when its first line peeps over the tab bar.
+    const observer = new IntersectionObserver(([entry]) => setSummaryInView(entry.isIntersecting), {
+      rootMargin: "0px 0px -40% 0px",
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  });
+  // ...and lands at the delivery and payment steps, once the cart is drawn.
+  const steps = useRef<HTMLDivElement>(null);
+  const landed = useRef(false);
+  useEffect(() => {
+    if (!checkoutStep || landed.current || !user || !cartHydrated || !steps.current) return;
+    landed.current = true;
+    steps.current.scrollIntoView({ block: "start" });
+  });
   const accountType: AccountType = user?.account_type ?? "INDIVIDUAL";
   const abroad = shipsAbroad(accountType);
   // The export account: no payment screen, and an order that is a request.
@@ -419,13 +492,14 @@ export function CartView() {
   const needsConsent = !!quote?.shipping.receiver_pays;
   // A line above what the buyer may have (their own list's quota) would be
   // refused at checkout: say which, here. A request has no limit.
-  const overStock = quoteOnly
-    ? undefined
-    : quote?.items.find((i) => i.available_quantity !== undefined && i.quantity > i.available_quantity);
+  // A firm's account is told its quota; a bireysel buyer only that the line is short.
+  const overStock = quoteOnly ? undefined : quote?.items.find((i) => i.stock_short);
   const stockProblem = overStock
-    ? overStock.available_quantity
-      ? t.view.overStock(overStock.product_name, overStock.available_quantity)
-      : t.view.soldOut(overStock.product_name)
+    ? overStock.available_quantity == null
+      ? t.view.stockShort(overStock.product_name)
+      : overStock.available_quantity > 0
+        ? t.view.overStock(overStock.product_name, overStock.available_quantity)
+        : t.view.soldOut(overStock.product_name)
     : null;
   const checkoutBlocker = quoteOnly
     ? // A request asks for one thing the cart cannot supply: how it travels.
@@ -440,7 +514,8 @@ export function CartView() {
 
   async function handleCheckout() {
     if (!isLoggedIn) {
-      router.push(to("/login?next=/cart"));
+      // Signed in (or signed up), they land at the delivery and payment steps.
+      router.push(to("/login?next=/checkout"));
       return;
     }
     if (submitting || checkoutBlocker) return;
@@ -555,12 +630,17 @@ export function CartView() {
                   productHref={product ? productHref(product) : undefined}
                   havaleEligible={line?.havale_eligible}
                   havaleDiscount={line?.havale_discount}
-                  maxQuantity={quoteOnly ? null : (line?.available_quantity ?? guest?.available_quantity)}
+                  maxQuantity={quoteOnly ? null : (stockMax[item.variant_id] ?? line?.available_quantity)}
+                  limitReached={!quoteOnly && stockMax[item.variant_id] === item.quantity}
+                  soldOut={!quoteOnly && guest?.in_stock === false}
+                  onQuantityChange={(q) => changeQuantity(item.variant_id, q)}
                   sku={line?.sku ?? guest?.sku}
                 />
               );
             })}
           </ul>
+          {/* Where /checkout opens: the steps after the lines. */}
+          <div ref={steps} id="odeme-adimlari" className="scroll-mt-28" />
           {/* Fatura first: how the invoice is issued decides what the delivery
               cards below offer. A firm's invoice is already made out to the
               firm, so only a personal order has a choice to make here. */}
@@ -668,6 +748,8 @@ export function CartView() {
           )}
         </section>
 
+        {/* Stretched down the row, so the summary inside can stay in view as the steps scroll. */}
+        <div ref={summary} id="siparis-ozeti" className="scroll-mt-24 lg:self-stretch">
         <OrderSummary
           isLoggedIn={isLoggedIn}
           perks={perks}
@@ -696,7 +778,70 @@ export function CartView() {
           checkoutError={checkoutError}
           blocker={isLoggedIn ? checkoutBlocker : null}
         />
+        </div>
       </div>
+
+      {/* A phone's way to pay from anywhere down the cart: the total and
+          "Ödemeye Geç", over the tab bar while the summary is out of sight.
+          A visitor signs in first (and lands at /checkout); a buyer is taken
+          to the summary, where the order is placed. */}
+      <CheckoutBar
+        shown={!summaryInView}
+        label={t.view.checkoutBar}
+        totalLabel={t.view.barTotal}
+        total={formatMoney(
+          quote ? Number(quote.net_total) : isLoggedIn ? estimatedSubtotal : estimateCart(estimatedSubtotal, params).total,
+        )}
+        action={t.view.goToPayment}
+        onGo={() => (isLoggedIn ? summary.current?.scrollIntoView({ behavior: "smooth", block: "start" }) : handleCheckout())}
+      />
+      <div aria-hidden className="h-20 md:hidden" />
     </main>
+  );
+}
+
+/** The phone's checkout bar over the tab bar: the total and the way to pay. */
+function CheckoutBar({
+  shown,
+  label,
+  totalLabel,
+  total,
+  action,
+  onGo,
+}: {
+  shown: boolean;
+  label: string;
+  totalLabel: string;
+  total: string;
+  action: string;
+  onGo: () => void;
+}) {
+  return (
+    <div
+      role="region"
+      aria-label={label}
+      aria-hidden={!shown}
+      inert={!shown}
+      className={`fixed inset-x-0 bottom-[calc(4rem+1px+env(safe-area-inset-bottom,0px))] z-40 border-t border-slate-200 bg-white/95 px-4 py-2.5 shadow-[0_-8px_16px_-12px_rgb(0_0_0/0.35)] backdrop-blur-md transition-[transform,opacity] duration-200 md:hidden dark:border-white/10 dark:bg-zinc-900/95 ${
+        shown ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-full opacity-0"
+      }`}
+    >
+      <div className="flex items-center gap-3">
+        <div className="min-w-0 flex-1 leading-tight">
+          <p className="text-xs text-slate-500 dark:text-zinc-400">{totalLabel}</p>
+          <p dir="ltr" className="truncate text-lg font-bold tabular-nums text-slate-900 dark:text-zinc-100">
+            {total}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onGo}
+          className="inline-flex h-12 shrink-0 items-center gap-2 rounded-full bg-red-600 px-6 text-sm font-bold text-white transition-colors hover:bg-red-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
+        >
+          {action}
+          <ArrowRight className="h-4 w-4 rtl:-scale-x-100" aria-hidden />
+        </button>
+      </div>
+    </div>
   );
 }

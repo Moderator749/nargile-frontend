@@ -3,6 +3,16 @@ import type { BilgiBlock } from "@/lib/bilgi";
 const listItemClass = "ps-1 marker:text-red-600";
 
 /**
+ * A numbered section's anchor ("6. CAYMA HAKKI" → #madde-6), the same in every
+ * language the document is translated into, so a link can point at a section
+ * (the footer's "İptal & İade Koşulları" at the right of withdrawal).
+ */
+export const sectionId = (heading: string) => {
+  const number = heading.match(/^\s*(\d+)\./);
+  return number ? `madde-${number[1]}` : undefined;
+};
+
+/**
  * A Bilgi document's text, block by block, with headings and lists kept as Word
  * had them. Indents and the notice's bar are logical (ps-, border-s), so an
  * Arabic copy mirrors.
@@ -16,7 +26,8 @@ export function BilgiBody({ blocks }: { blocks: BilgiBlock[] }) {
             return (
               <h2
                 key={index}
-                className="pt-6 text-base font-bold tracking-tight text-neutral-900 first:pt-0 dark:text-white"
+                id={sectionId(block.text)}
+                className="scroll-mt-28 pt-6 text-base font-bold tracking-tight text-neutral-900 first:pt-0 dark:text-white"
               >
                 {block.text}
               </h2>

@@ -1,7 +1,6 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { ChevronRight } from "lucide-react";
 
 import { useLocale } from "@/components/i18n/LocaleProvider";
 import { usePagePath } from "@/components/i18n/navigation";
@@ -63,16 +62,10 @@ export function CategoryList({
               aria-current={current ? "page" : undefined}
               className={current ? CURRENT : item.accent ? ACCENT : ITEM}
             >
+              {/* No trailing ">": a row is a link to its page, and none opens a sub-menu. */}
               <span className="min-w-0 truncate" title={label}>
                 {label}
               </span>
-              {/* Points the way the text reads: left in Arabic. */}
-              <ChevronRight
-                className={`h-3.5 w-3.5 shrink-0 transition-colors rtl:rotate-180 ${
-                  current || item.accent ? "text-red-700 dark:text-red-400" : "text-gray-400 dark:text-neutral-500"
-                }`}
-                aria-hidden
-              />
             </Link>
           </li>
         );

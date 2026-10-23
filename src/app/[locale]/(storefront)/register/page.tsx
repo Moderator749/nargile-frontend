@@ -13,7 +13,17 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: register.metaTitle, description: register.metaDescription, robots: PRIVATE_ROBOTS };
 }
 
-export default async function RegisterPage() {
+/** Only same-site relative paths, as on the sign-in page. */
+function safeNext(next: string | string[] | undefined): string | null {
+  if (typeof next !== "string" || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) {
+    return null;
+  }
+  return next;
+}
+
+export default async function RegisterPage(props: PageProps<"/[locale]/register">) {
+  const { next } = await props.searchParams;
+  const back = safeNext(next);
   const { register: m } = await getMessages(authPageMessages);
   return (
     <AuthCard
@@ -25,7 +35,7 @@ export default async function RegisterPage() {
            account should not have to read their way out of a long form. */
         <>
           <span className="block">{m.haveAccount}</span>
-          <LinkButton href="/login" variant="secondary" className="mt-3">
+          <LinkButton href={back ? `/login?next=${encodeURIComponent(back)}` : "/login"} variant="secondary" className="mt-3">
             {m.signIn}
             <ArrowRight
               className="h-4 w-4 transition-transform duration-200 motion-safe:group-hover:translate-x-0.5 rtl:-scale-x-100 rtl:motion-safe:group-hover:-translate-x-0.5"
@@ -35,7 +45,7 @@ export default async function RegisterPage() {
         </>
       }
     >
-      <RegisterForm />
+      <RegisterForm next={back} />
     </AuthCard>
   );
 }

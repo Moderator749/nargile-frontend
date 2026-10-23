@@ -4,6 +4,7 @@ import { ExportNotice } from "@/components/auth/ExportNotice";
 import { CartToast } from "@/components/cart/CartToast";
 import { AnnouncementPopup } from "@/components/banner/AnnouncementPopup";
 import { MobileTabBar } from "@/components/layout/MobileTabBar";
+import { SearchSheet } from "@/components/search/SearchSheet";
 import { Navbar } from "@/components/layout/Navbar";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { TopBanner } from "@/components/layout/TopBanner";
@@ -36,11 +37,11 @@ export async function StorefrontChrome({ children }: { children: ReactNode }) {
       <Navbar categories={sidebar} links={menu} />
       {children}
       {home.sections.footer && <SiteFooter footer={home.footer} />}
-      {/* The phone's bottom bar, and the room it takes kept free under the
-          page (its height, the home indicator's included), so the footer's
-          last line scrolls clear of it. */}
-      <div aria-hidden className="h-[calc(4rem+1px+env(safe-area-inset-bottom))] shrink-0 md:hidden" />
+      {/* The phone's bottom bar, with the room it takes kept free under the
+          page so the footer's last line scrolls clear of it; and the search
+          sheet its "Ara" opens. */}
       <MobileTabBar />
+      <SearchSheet />
       {/* "… sepete eklendi · Sepete Git", for whatever added it. */}
       <CartToast />
     </>

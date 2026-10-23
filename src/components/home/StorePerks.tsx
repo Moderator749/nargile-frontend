@@ -44,7 +44,7 @@ export function StorePerks({ sources }: { sources: AdvantageSources }) {
           perks.length === 3 ? "md:grid-cols-3" : perks.length === 2 ? "md:grid-cols-2" : "md:grid-cols-1"
         }`}
       >
-        {perks.map(({ anchor, Icon, label, value, note }) => (
+        {perks.map(({ anchor, Icon, label, value, threshold, note }) => (
           <li key={anchor} className="md:px-6 md:first:ps-0 md:last:pe-0 lg:px-10">
             <Link
               href={`${PERKS_PAGE.href}#${anchor}`}
@@ -66,6 +66,12 @@ export function StorePerks({ sources }: { sources: AdvantageSources }) {
                     start level; one from xl, where every figure fits. */}
                 <span className="mt-1 block text-balance text-2xl font-extrabold tracking-tight text-neutral-900 tabular-nums transition-colors duration-200 group-hover:text-red-700 md:min-h-[2lh] xl:min-h-0 dark:text-white dark:group-hover:text-red-400">
                   {value}
+                  {/* From what amount: the rates are not every basket's. */}
+                  {threshold && (
+                    <span className="ms-1.5 whitespace-nowrap text-sm font-bold tracking-normal text-neutral-500 dark:text-neutral-400">
+                      {threshold}
+                    </span>
+                  )}
                 </span>
                 <span className="mt-1 block text-sm leading-relaxed text-neutral-500 dark:text-neutral-400">{note}</span>
               </span>

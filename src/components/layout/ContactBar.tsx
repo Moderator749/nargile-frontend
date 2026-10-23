@@ -38,7 +38,7 @@ export async function ContactBar({ phone, email, whatsappHref }: { phone: string
                 <Icon className="h-5 w-5" aria-hidden />
               </span>
               <span className="min-w-0">
-                <span className="block text-[10px] font-bold uppercase tracking-widest text-neutral-500">{label}</span>
+                <span className="block text-xs font-bold uppercase tracking-widest text-neutral-400">{label}</span>
                 <span className="block truncate text-sm font-semibold tracking-tight">
                   {/* Kept left to right as one piece: in Arabic the digit groups
                       of "0212 553 05 92" would otherwise read in reverse order. */}

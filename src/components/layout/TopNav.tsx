@@ -129,14 +129,15 @@ export function TopNav({ categories, links }: { categories: ResolvedNav[]; links
   // Checkout is a corridor, not a shop floor: the seven categories, the
   // drawer and the column's handle all come off on /cart, and the red button
   // becomes the one thing a customer there might want from a menu — the way
-  // back out. Every other page keeps the bar exactly as it is.
-  if (pathname === "/cart") {
+  // back out, as a quiet outlined link rather than a red button competing with
+  // "Ödemeye Geç". The same on /checkout. Every other page keeps the bar.
+  if (pathname === "/cart" || pathname === "/checkout") {
     return (
       <nav aria-label={t.nav.backToShop} className="border-t border-gray-200 bg-background dark:border-border">
         <div className={`${PAGE_CONTAINER} flex items-center py-2`}>
           <Link
             href="/"
-            className="flex shrink-0 items-center gap-2 rounded-md bg-red-700 px-6 py-2 text-[11px] font-bold uppercase tracking-wider text-white shadow-sm transition-colors hover:bg-red-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            className="flex min-h-11 shrink-0 items-center gap-2 rounded-md border border-gray-300 px-4 text-xs font-semibold text-gray-700 transition-colors hover:border-gray-400 hover:text-gray-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent dark:border-border dark:text-neutral-300 dark:hover:text-white"
           >
             <ArrowLeft className="h-4 w-4 shrink-0 rtl:rotate-180" strokeWidth={2.25} aria-hidden />
             {t.nav.continueShopping}
@@ -164,6 +165,7 @@ export function TopNav({ categories, links }: { categories: ResolvedNav[]; links
           onClick={() => setSidebarCollapsed(!collapsed)}
           aria-expanded={!collapsed}
           aria-label={collapsed ? t.nav.openColumn : t.nav.closeColumn}
+          data-sidebar-toggle
           className={`group hidden shrink-0 items-center gap-2.5 rounded-md bg-red-700 px-6 py-2 text-sm font-bold uppercase tracking-wider text-white shadow-sm transition-colors hover:bg-red-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent lg:flex ${SIDEBAR_WIDTH} ${
             collapsed ? "motion-safe:animate-kategori-glow" : ""
           }`}

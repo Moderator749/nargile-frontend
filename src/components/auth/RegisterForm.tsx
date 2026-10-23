@@ -126,7 +126,8 @@ function MarketingConsent({
   );
 }
 
-export function RegisterForm() {
+/** `next`: where signing in after sign-up should land (the checkout, from the cart). */
+export function RegisterForm({ next: back = null }: { next?: string | null } = {}) {
   const router = useRouter();
   const to = useLocalePath();
   const locale = useLocale();
@@ -163,7 +164,7 @@ export function RegisterForm() {
       // An account exists at once; a firm's prices wait for a person, and an
       // international customer waits to hear from the sales team.
       const next = international ? "export" : business ? "review" : "1";
-      router.replace(to(`/login?registered=${next}`));
+      router.replace(to(`/login?registered=${next}${back ? `&next=${encodeURIComponent(back)}` : ""}`));
     } catch (err) {
       setError(getApiErrorMessage(err, m.failed));
       setSubmitting(false);

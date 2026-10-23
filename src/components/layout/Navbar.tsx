@@ -1,18 +1,18 @@
 "use client";
 
 import { Suspense, useEffect, useRef } from "react";
-import Form from "next/form";
 import { useSearchParams } from "next/navigation";
-import { Menu, PackageSearch, Search, ShoppingCart } from "lucide-react";
+import { Menu, PackageSearch, ShoppingCart } from "lucide-react";
 
 import Link from "@/components/i18n/Link";
 import { Logo } from "@/components/brand/Logo";
-import { useLocalePath, usePagePath } from "@/components/i18n/navigation";
+import { usePagePath } from "@/components/i18n/navigation";
 import { useMessages, useT } from "@/components/i18n/LocaleProvider";
 import { CurrencySelect } from "@/components/layout/CurrencySelect";
 import { LanguageSelect } from "@/components/layout/LanguageSelect";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { TopNav } from "@/components/layout/TopNav";
+import { SearchField } from "@/components/search/SearchField";
 import { UserMenu } from "@/components/layout/UserMenu";
 import { chromeMessages } from "@/lib/i18n/messages/layout";
 import { isAdminRole } from "@/lib/roles";
@@ -31,43 +31,16 @@ interface SearchProps {
   className?: string;
 }
 
-/** Header search: a GET form to /catalog?q=…, with client-side navigation (next/form). */
-function SearchForm({ id, className = "", q }: SearchProps & { q: string }) {
-  const t = useT();
-  const to = useLocalePath();
-  return (
-    <Form action={to("/catalog")} role="search" className={`relative ${className}`}>
-      <label htmlFor={id} className="sr-only">
-        {t.nav.searchLabel}
-      </label>
-      <Search
-        className="pointer-events-none absolute start-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-        strokeWidth={1.75}
-        aria-hidden
-      />
-      <input
-        id={id}
-        name="q"
-        type="search"
-        defaultValue={q}
-        maxLength={100}
-        placeholder={t.nav.searchPlaceholder}
-        className="h-10 w-full rounded-md border border-gray-300 bg-white ps-10 pe-4 text-sm text-foreground shadow-[0_1px_2px_rgb(0_0_0/0.04)] transition-colors placeholder:text-muted-foreground focus:border-red-700 focus:outline-none focus:ring-1 focus:ring-red-700 dark:border-white/10 dark:bg-white/[0.04] dark:focus:border-red-400 dark:focus:bg-background dark:focus:ring-red-400 [&::-webkit-search-cancel-button]:hidden"
-      />
-    </Form>
-  );
-}
-
 function SearchFromUrl(props: SearchProps) {
   const q = useSearchParams().get("q") ?? "";
   // Keyed on ?q: remounts with the current search instead of syncing state.
-  return <SearchForm key={q} {...props} q={q} />;
+  return <SearchField key={q} {...props} q={q} />;
 }
 
 /** Statically rendered pages have no search params at build time: render an empty field until they're known. */
 function HeaderSearch(props: SearchProps) {
   return (
-    <Suspense fallback={<SearchForm {...props} q="" />}>
+    <Suspense fallback={<SearchField {...props} q="" />}>
       <SearchFromUrl {...props} />
     </Suspense>
   );

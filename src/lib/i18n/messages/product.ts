@@ -43,6 +43,7 @@ export const productMessages = defineMessages({
     allOfBrand: (brand: string) => `Tüm ${brand} ürünleri`,
     relatedCategories: "İlgili Kategoriler",
     transfer: (rate: string) => `Havale / EFT ile (${rate} İndirim)`,
+    priceTable: { card: "Kart / Liste Fiyatı", transfer: "Havale / EFT Fiyatı", transferOff: (rate: string) => `${rate} indirimli`, installments: "Taksit Seçeneği" },
     bundle: {
       label: "Birlikte alındığında toplam",
       main: "Ana Ürün",
@@ -100,6 +101,7 @@ export const productMessages = defineMessages({
     allOfBrand: (brand: string) => `All ${brand} products`,
     relatedCategories: "Related Categories",
     transfer: (rate: string) => `with bank transfer (${rate} off)`,
+    priceTable: { card: "Card / List Price", transfer: "Bank Transfer Price", transferOff: (rate: string) => `${rate} off`, installments: "Installments" },
     bundle: {
       label: "Total when bought together",
       main: "This Item",
@@ -156,6 +158,7 @@ export const productMessages = defineMessages({
     allOfBrand: (brand: string) => `جميع منتجات ${brand}`,
     relatedCategories: "أقسام ذات صلة",
     transfer: (rate: string) => `بالتحويل البنكي (خصم ${rate})`,
+    priceTable: { card: "سعر البطاقة / القائمة", transfer: "سعر التحويل البنكي", transferOff: (rate: string) => `خصم ${rate}`, installments: "التقسيط" },
     bundle: {
       label: "الإجمالي عند الشراء معًا",
       main: "المنتج الأساسي",

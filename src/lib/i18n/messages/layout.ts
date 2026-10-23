@@ -70,6 +70,12 @@ export const footerMessages = defineMessages({
     email: "E-Posta",
     whatsapp: "WhatsApp",
     writeNow: "Hemen Yazın",
+    legal: "Yasal bilgiler",
+    kvkk: "KVKK Aydınlatma Metni",
+    distanceSales: "Mesafeli Satış Sözleşmesi",
+    returns: "İptal & İade Koşulları",
+    cookies: "Çerez Politikası",
+    payments: "Ödeme yöntemleri",
   },
   en: {
     homeAria: (brand: string) => `${brand} home`,
@@ -78,6 +84,12 @@ export const footerMessages = defineMessages({
     email: "Email",
     whatsapp: "WhatsApp",
     writeNow: "Message us now",
+    legal: "Legal information",
+    kvkk: "Privacy Notice (KVKK)",
+    distanceSales: "Distance Sales Agreement",
+    returns: "Cancellation & Returns",
+    cookies: "Cookie Policy",
+    payments: "Payment methods",
   },
   ar: {
     homeAria: (brand: string) => `الصفحة الرئيسية لـ ${brand}`,
@@ -86,6 +98,12 @@ export const footerMessages = defineMessages({
     email: "البريد الإلكتروني",
     whatsapp: "WhatsApp",
     writeNow: "راسلنا الآن",
+    legal: "معلومات قانونية",
+    kvkk: "إشعار الخصوصية (KVKK)",
+    distanceSales: "عقد البيع عن بُعد",
+    returns: "الإلغاء والإرجاع",
+    cookies: "سياسة ملفات تعريف الارتباط",
+    payments: "طرق الدفع",
   },
 });
 

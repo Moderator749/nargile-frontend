@@ -63,6 +63,12 @@ const tr = {
     backToShop: "Alışverişe dön",
     catalog: "Katalog",
     deals: "Fırsat Ürünleri",
+    search: "Ara",
+    searchSuggestions: "Arama önerileri",
+    searchProducts: "Ürünler",
+    searchCategories: "Kategoriler",
+    searchAll: (n: number) => `Tüm sonuçları gör (${n.toLocaleString("tr-TR")})`,
+    searchNone: "Eşleşen ürün bulunamadı",
   },
 };
 
@@ -118,6 +124,12 @@ const en: Dictionary = {
     backToShop: "Back to shopping",
     catalog: "Catalog",
     deals: "Deals",
+    search: "Search",
+    searchSuggestions: "Search suggestions",
+    searchProducts: "Products",
+    searchCategories: "Categories",
+    searchAll: (n: number) => `See all results (${n.toLocaleString("en-GB")})`,
+    searchNone: "No matching products",
   },
 };
 
@@ -171,6 +183,12 @@ const ar: Dictionary = {
     backToShop: "العودة إلى التسوق",
     catalog: "الكتالوج",
     deals: "العروض",
+    search: "بحث",
+    searchSuggestions: "اقتراحات البحث",
+    searchProducts: "المنتجات",
+    searchCategories: "الأقسام",
+    searchAll: (n: number) => `عرض كل النتائج (${n.toLocaleString("ar-u-nu-latn")})`,
+    searchNone: "لا توجد منتجات مطابقة",
   },
 };
 

@@ -54,7 +54,7 @@ export function RetailPerks({ params, sources }: { params: StoreParameters; sour
       </p>
 
       <ul className="space-y-3.5 sm:space-y-4">
-        {advantages.map(({ key, anchor, Icon, label, value, note }) => (
+        {advantages.map(({ key, anchor, Icon, label, value, threshold, note }) => (
           <li key={key}>
             <Link
               href={`${PERKS_PAGE.href}#${anchor}`}
@@ -65,6 +65,7 @@ export function RetailPerks({ params, sources }: { params: StoreParameters; sour
                 <span className="block text-[11px] font-bold leading-snug text-neutral-800 transition-colors group-hover:text-red-700 dark:text-neutral-200 dark:group-hover:text-red-400">
                   {label}
                   {value && <span className="text-red-600 dark:text-red-400"> {value}</span>}
+                  {threshold && <span className="font-semibold text-neutral-500 dark:text-neutral-400"> {threshold}</span>}
                 </span>
                 <span className="mt-0.5 block text-[10px] leading-tight text-neutral-500 dark:text-neutral-400">{note}</span>
               </span>

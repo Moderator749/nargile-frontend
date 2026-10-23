@@ -462,13 +462,28 @@ export interface CartItem {
  * Client-side cart line, persisted in the browser. Prices are display-only
  * snapshots; the server re-prices everything in calculate-cart/checkout.
  */
-/** A cart colour before a quote (`GET /products/cart-lines`): its page, its code, its stock. */
+/** A cart colour before a quote (`GET /products/cart-lines`): its page, its code, whether any is left. */
 export interface CartLineInfo {
   variant_id: string;
   product_id: string;
   product_slug: string | null;
   sku: string;
-  available_quantity: number;
+  in_stock: boolean;
+}
+
+/** A quantity held to the stock (`POST /products/stock-check`): as asked, or the most there is (`capped`). */
+export interface StockCheckLine {
+  variant_id: string;
+  quantity: number;
+  capped: boolean;
+}
+
+/** The header search's suggestions (`GET /products/suggest`). */
+export interface SearchSuggestions {
+  /** How many products the full search finds. */
+  total: number;
+  products: CatalogProduct[];
+  categories: { name: string; slug: string }[];
 }
 
 export interface CartLineItem extends CartItem {
@@ -579,8 +594,10 @@ export interface CartItemBreakdown {
   havale_eligible?: boolean;
   /** The havale discount on this line (VAT-inclusive); "0.00" unless paid by transfer. */
   havale_discount?: DecimalString;
-  /** How many the buyer may have (their own list's quota); a line above it cannot be ordered. */
-  available_quantity?: number;
+  /** How many the buyer may have (their own list's quota) — a firm's account only; null for a bireysel buyer. */
+  available_quantity?: number | null;
+  /** More in the cart than can be had; the cart says so before checkout. */
+  stock_short?: boolean;
 }
 
 /** What the "%50 Kuralı" minimum counts: kilograms of coal, or units (adet). */
@@ -1543,7 +1560,7 @@ export interface LoyaltyParameters {
 }
 
 /** Which legal text. PRIVACY_NOTICE is the short framed notice in the cart. */
-export type LegalKey = "PRIVACY_NOTICE" | "PRIVACY" | "DISTANCE_SALES" | "TERMS";
+export type LegalKey = "PRIVACY_NOTICE" | "PRIVACY" | "DISTANCE_SALES" | "TERMS" | "COOKIES";
 
 export interface LegalDocument {
   key: LegalKey;

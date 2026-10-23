@@ -28,6 +28,8 @@ export interface StoreAdvantage {
   label: string;
   /** The figure ("%5 – %8", "3.000 TL"), where it has one. */
   value: string | null;
+  /** From what amount the figure holds, beside it ("(30.000 TL+)"); null where it holds from the first lira. */
+  threshold: string | null;
   note: string;
 }
 
@@ -52,6 +54,24 @@ export function rateSpan(tiers: ParameterTier[], percent: (n: number) => string)
   return low === high ? rate(low) : `${rate(low)} – ${rate(high)}`;
 }
 
+/**
+ * From what amount a ladder's rates hold, said beside them so "%5 – %8" is
+ * not read as every basket's: "(30.000 TL+)" when the first rate starts there;
+ * "(%7: 30.000 TL+)" when the first holds from the first lira and a higher
+ * one starts later; null for a single rate from the first lira.
+ */
+export function tierThreshold(tiers: ParameterTier[], percent: (n: number) => string): string | null {
+  const ladder = tiers
+    .map((t) => ({ threshold: Number(t.threshold), rate: Number(t.rate) }))
+    .filter((t) => t.rate > 0)
+    .sort((a, b) => a.threshold - b.threshold);
+  if (ladder.length === 0) return null;
+  const amount = (n: number) => `${whole.format(n)} TL+`;
+  if (ladder[0].threshold > 1) return `(${amount(ladder[0].threshold)})`;
+  const top = ladder[ladder.length - 1];
+  return ladder.length > 1 ? `(${percent(top.rate * 100)}: ${amount(top.threshold)})` : null;
+}
+
 /** Two of the homepage's lines as one ("20.000–29.999 TL alışverişlerde · Puanınız …"). */
 const joined = (...parts: string[]) => parts.map((p) => p.trim()).filter(Boolean).join(" · ");
 
@@ -71,13 +91,31 @@ export function storeAdvantages(home: AdvantageSources, params: StoreParameters,
       Icon: homeIcon(perks.installments.icon),
       label: perks.installments.label,
       value: perks.installments.value || null,
+      threshold: null,
       note: perks.installments.note,
     });
     const volume = rateSpan(params.volume_tiers, percent);
-    if (volume) out.push({ key: "volume", anchor: "sepet-indirimi", Icon: homeIcon(perks.volume.icon), label: perks.volume.label, value: volume, note: perks.volume.note });
+    if (volume)
+      out.push({
+        key: "volume",
+        anchor: "sepet-indirimi",
+        Icon: homeIcon(perks.volume.icon),
+        label: perks.volume.label,
+        value: volume,
+        threshold: tierThreshold(params.volume_tiers, percent),
+        note: perks.volume.note,
+      });
     const transfer = rateSpan(params.bank_transfer_tiers, percent);
     if (transfer)
-      out.push({ key: "transfer", anchor: "havale-indirimi", Icon: homeIcon(perks.transfer.icon), label: perks.transfer.label, value: transfer, note: perks.transfer.note });
+      out.push({
+        key: "transfer",
+        anchor: "havale-indirimi",
+        Icon: homeIcon(perks.transfer.icon),
+        label: perks.transfer.label,
+        value: transfer,
+        threshold: tierThreshold(params.bank_transfer_tiers, percent),
+        note: perks.transfer.note,
+      });
   }
 
   // The free shipping van, over "Sizin İçin Seçtiklerimiz".
@@ -90,13 +128,14 @@ export function storeAdvantages(home: AdvantageSources, params: StoreParameters,
       label: home.picks.shipping_eyebrow,
       // The van says the threshold in its sentence, not beside the label: so here.
       value: null,
+      threshold: null,
       note: fillIn(home.picks.shipping_text, { tutar: threshold }),
     });
   }
 
   // The courier, by the lüles.
   if (sections.lules) {
-    out.push({ key: "courier", anchor: "istanbul-kurye", Icon: Bike, label: home.lules.courier_eyebrow, value: null, note: home.lules.courier_text });
+    out.push({ key: "courier", anchor: "istanbul-kurye", Icon: Bike, label: home.lules.courier_eyebrow, value: null, threshold: null, note: home.lules.courier_text });
   }
 
   // The SultanPuan band: its rate, earned in its band.
@@ -107,6 +146,7 @@ export function storeAdvantages(home: AdvantageSources, params: StoreParameters,
       Icon: Crown,
       label: "SultanPuan",
       value: percent(Number(loyalty.base_rate) * 100),
+      threshold: null,
       note: joined(fillIn(home.sultanpuan.subtitle, { bant: bandText(loyalty.band_min, loyalty.band_max) }), home.sultanpuan.note),
     });
   }
@@ -122,6 +162,7 @@ export function storeAdvantages(home: AdvantageSources, params: StoreParameters,
       Icon: PiggyBank,
       label: "Kumbara",
       value: amount,
+      threshold: null,
       note: fillIn(home.kumbara.note, { tutar: amount, oran: bonus }),
     });
   }

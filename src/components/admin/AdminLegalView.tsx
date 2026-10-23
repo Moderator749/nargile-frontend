@@ -12,6 +12,7 @@ import { Dialog } from "@/components/ui/Dialog";
 import { adminGetLegalDocuments, adminUpdateLegalDocument } from "@/lib/adminApi";
 import { getApiErrorMessage } from "@/lib/errors";
 import { formatDate } from "@/lib/format";
+import { refreshStorefront } from "@/lib/revalidate";
 import type { LegalDocument, LegalKey } from "@/types";
 
 const fieldClass =
@@ -23,6 +24,7 @@ const PURPOSE: Record<LegalKey, string> = {
   PRIVACY: "Gizlilik kuralları: müşterinin verilerine ne olduğunu anlatan tam metin.",
   DISTANCE_SALES: "Sepette onay kutusundan açılan sözleşme. Onaylanmadan sipariş verilemez.",
   TERMS: "Sepette onay kutusundan açılan şartlar metni. Onaylanmadan sipariş verilemez.",
+  COOKIES: "Çerez Politikası: sitenin alt bilgisindeki bağlantıdan açılan sayfa (/sozlesmeler/cerez-politikasi).",
 };
 
 interface Draft {
@@ -87,6 +89,8 @@ export function AdminLegalView() {
     patch(key, { saving: true, result: null });
     try {
       const saved = await adminUpdateLegalDocument(key, { title: draft.title, body: draft.body });
+      // The footer's pages (/sozlesmeler) are cached with the catalog.
+      void refreshStorefront();
       patch(key, {
         title: saved.title,
         body: saved.body,

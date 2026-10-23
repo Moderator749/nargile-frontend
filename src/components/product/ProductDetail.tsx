@@ -14,12 +14,12 @@ import { RetailPerks, showsRetailPerks } from "@/components/product/RetailPerks"
 import type { AdvantageSources } from "@/lib/storeAdvantages";
 import { isExportAccount } from "@/lib/exportAccount";
 import { ProductGallery } from "@/components/product/ProductGallery";
-import { TransferPrice } from "@/components/product/TransferPrice";
+import { PriceSummary } from "@/components/product/PriceSummary";
 import { useDisplayMoney } from "@/hooks/useDisplayMoney";
 import { useStoreParameters } from "@/hooks/useStoreParameters";
 import { useNow } from "@/hooks/useNow";
 import { countdownParts } from "@/lib/banner";
-import { fetchProduct } from "@/lib/catalogApi";
+import { checkStock, fetchProduct } from "@/lib/catalogApi";
 import { cartLineFor } from "@/lib/cartLine";
 import { showCartToast } from "@/lib/cartToast";
 import { categoryCopy } from "@/lib/categories";
@@ -134,10 +134,34 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
   // Every signed-in segment but Perakende sees the price before VAT as well.
   const vatSplit = loggedIn && !pricesPending && !!user && (user.segment_code ?? "RETAIL") !== "RETAIL";
   const canAdd = !!variant && !!price && !pricesPending && (!soldOut || quoteOnly);
-  // The most this buyer may order of this colour: their list's own quota.
-  // Sent to a signed-in buyer only; a request has none.
-  const maxQuantity = !quoteOnly && variant?.available_quantity ? variant.available_quantity : null;
+  // The most this buyer may order of this colour, where it is known: a firm's
+  // own quota (sent to a firm's account only), or the most a stock check has
+  // already taken a quantity down to. A request has none.
+  const [stockMax, setStockMax] = useState<Record<string, number>>({});
+  const [limitHit, setLimitHit] = useState(false);
+  const learned = variant ? stockMax[variant.id] : undefined;
+  const maxQuantity = quoteOnly ? null : (learned ?? (variant?.available_quantity || null));
   const capped = (q: number) => Math.max(1, maxQuantity !== null ? Math.min(q, maxQuantity) : q);
+  /**
+   * A quantity held to the stock without the count being shown: asked about
+   * (`checkStock`) and taken down to the most there is — "Stok sınırına
+   * ulaştınız". Resolves to the quantity to use.
+   */
+  const asked = useRef(0);
+  async function holdToStock(q: number): Promise<number> {
+    if (!variant || quoteOnly || maxQuantity !== null) return q;
+    const ask = ++asked.current;
+    try {
+      const [line] = await checkStock([{ variant_id: variant.id, quantity: q }]);
+      if (ask !== asked.current || !line?.capped || line.quantity < 1) return q;
+      setStockMax((m) => ({ ...m, [variant.id]: line.quantity }));
+      setDraft(line.quantity);
+      setLimitHit(true);
+      return line.quantity;
+    } catch {
+      return q; // checkout holds the order to the stock anyway
+    }
+  }
 
   const cartHydrated = useCartHydrated();
   const inCartRaw = useCartStore((s) => (variant ? (s.items.find((i) => i.variant_id === variant.id)?.quantity ?? 0) : 0));
@@ -158,16 +182,17 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
     return () => clearTimeout(t);
   }, [added]);
 
-  /** Not in the cart: add `quantity`. In the cart: set it to exactly `quantity`. */
-  function commit() {
+  /** Not in the cart: add `quantity`. In the cart: set it to exactly `quantity`. Either way held to the stock. */
+  async function commit() {
     if (!variant || !price) return;
+    if (inCart === 0 && !canAdd) return;
+    const held = quantity > inCart ? await holdToStock(quantity) : quantity;
     const cart = useCartStore.getState();
     if (inCart > 0) {
-      cart.updateQuantity(variant.id, quantity);
+      cart.updateQuantity(variant.id, held);
     } else {
-      if (!canAdd) return;
       cart.addItem(
-        cartLineFor(product, variant, price, { quantity, isLoggedIn: loggedIn, saleLive: sale.kind === "live" }),
+        cartLineFor(product, variant, price, { quantity: held, isLoggedIn: loggedIn, saleLive: sale.kind === "live" }),
       );
     }
     setDraft(null);
@@ -181,7 +206,10 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
   useEffect(() => {
     const row = buyRow.current;
     if (!row) return;
-    const observer = new IntersectionObserver(([entry]) => setBuyInView(entry.isIntersecting));
+    // In sight means clear of the phone's tab bar (64px and the home indicator), not just under it.
+    const observer = new IntersectionObserver(([entry]) => setBuyInView(entry.isIntersecting), {
+      rootMargin: "0px 0px -88px 0px",
+    });
     observer.observe(row);
     return () => observer.disconnect();
   }, []);
@@ -245,24 +273,22 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
 
           <div className={`mt-6 ${pricesPending ? "public-price" : ""}`}>
             {price ? (
-              <div className="flex flex-wrap items-baseline gap-3 font-mono tabular-nums">
-                <span className="text-3xl font-medium tracking-tight text-foreground">{money.format(price)}</span>
-                {discount > 0 && was && (
-                  <>
-                    <span className="text-base text-muted-foreground line-through">{money.format(was)}</span>
-                    <span className="text-sm font-medium text-accent">{card.discount(discount)}</span>
-                  </>
-                )}
-              </div>
+              // One row per way of paying; the havale row and the installments
+              // are retail promotions, not promised to an account on its own list.
+              <PriceSummary
+                price={price}
+                was={was}
+                discount={discount}
+                retail={perksShown}
+                installments={advantages.sections.perks ? advantages.perks.installments.value || null : null}
+                params={params}
+                rates={money.rates}
+                format={money.format}
+              />
             ) : (
               <p className="text-sm text-muted-foreground">{card.noPrice}</p>
             )}
-            {/* The havale discount is a retail promotion: not promised to an
-                account that pays its tier price whichever way it pays. */}
-            {price && perksShown && (
-              <TransferPrice price={price} params={params} rates={money.rates} format={money.format} />
-            )}
-            <p className="mt-1 text-xs text-muted-foreground">{t.vatIncluded}</p>
+            <p className="mt-1.5 text-xs text-muted-foreground">{t.vatIncluded}</p>
           </div>
 
           <div className="mt-4 flex flex-wrap gap-2">
@@ -318,12 +344,23 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
                 // that was typed for the previous one.
                 setDraft(null);
                 setAdded(false);
+                setLimitHit(false);
               }}
             />
           )}
 
           <div ref={buyRow} className="mt-8 flex flex-wrap items-center gap-3">
-            <QuantityStepper value={quantity} onChange={(q) => setDraft(capped(q))} label={product.name} max={maxQuantity} />
+            <QuantityStepper
+              value={quantity}
+              onChange={(q) => {
+                setDraft(capped(q));
+                setLimitHit(false);
+                if (q > quantity) void holdToStock(q);
+              }}
+              label={product.name}
+              max={maxQuantity}
+              limitReached={limitHit && quantity === maxQuantity}
+            />
             <BuyButton state={buy} onCommit={commit} className="flex-1 sm:flex-none sm:min-w-56" />
           </div>
           <p className="mt-2 flex min-h-11 flex-wrap items-center gap-x-1.5 text-sm text-muted-foreground" aria-live="polite">

@@ -21,9 +21,9 @@ function notice(registered: string | string[] | undefined): RegistrationNotice |
 }
 
 /** Only same-site relative paths, so `?next=` can't be used as an open redirect. */
-function safeRedirect(next: string | string[] | undefined): string {
+function safeNext(next: string | string[] | undefined): string | null {
   if (typeof next !== "string" || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) {
-    return "/catalog";
+    return null;
   }
   return next;
 }
@@ -31,6 +31,8 @@ function safeRedirect(next: string | string[] | undefined): string {
 export default async function LoginPage(props: PageProps<"/[locale]/login">) {
   const { registered, next } = await props.searchParams;
   const { login: m } = await getMessages(authPageMessages);
+  // Carried through sign-up too, so a new account lands where sign-in would have.
+  const back = safeNext(next);
 
   return (
     <AuthCard
@@ -40,7 +42,7 @@ export default async function LoginPage(props: PageProps<"/[locale]/login">) {
         /* The same button the registration page points back with. */
         <>
           <span className="block">{m.noAccount}</span>
-          <LinkButton href="/register" variant="secondary" className="mt-3">
+          <LinkButton href={back ? `/register?next=${encodeURIComponent(back)}` : "/register"} variant="secondary" className="mt-3">
             {m.signUp}
             <ArrowRight
               className="h-4 w-4 transition-transform duration-200 motion-safe:group-hover:translate-x-0.5 rtl:-scale-x-100 rtl:motion-safe:group-hover:-translate-x-0.5"
@@ -50,7 +52,7 @@ export default async function LoginPage(props: PageProps<"/[locale]/login">) {
         </>
       }
     >
-      <LoginForm notice={notice(registered)} redirectTo={safeRedirect(next)} />
+      <LoginForm notice={notice(registered)} redirectTo={back ?? "/catalog"} />
     </AuthCard>
   );
 }

@@ -1,6 +1,6 @@
 import { api } from "@/lib/api";
 import { CATALOG_PAGE_SIZE } from "@/lib/config";
-import type { CartLineInfo, CatalogProduct, CatalogProductDetail, Category } from "@/types";
+import type { CartLineInfo, CatalogProduct, CatalogProductDetail, Category, SearchSuggestions, StockCheckLine } from "@/types";
 
 export { CATALOG_PAGE_SIZE };
 
@@ -43,6 +43,21 @@ export async function fetchCartLines(variantIds: string[], signal?: AbortSignal)
   const params = new URLSearchParams();
   for (const id of variantIds.slice(0, 100)) params.append("ids", id);
   const { data } = await api.get<CartLineInfo[]>(`/products/cart-lines?${params}`, { signal });
+  return data;
+}
+
+/**
+ * Quantities held to the caller's stock: each as asked, or the most there is.
+ * The count itself is never sent, only the quantity a line is taken down to.
+ */
+export async function checkStock(items: { variant_id: string; quantity: number }[]): Promise<StockCheckLine[]> {
+  const { data } = await api.post<StockCheckLine[]>("/products/stock-check", { items: items.slice(0, 100) });
+  return data;
+}
+
+/** The header search's suggestions for what has been typed so far (two letters or more). */
+export async function fetchSuggestions(q: string, signal?: AbortSignal): Promise<SearchSuggestions> {
+  const { data } = await api.get<SearchSuggestions>("/products/suggest", { params: { q }, signal });
   return data;
 }
 

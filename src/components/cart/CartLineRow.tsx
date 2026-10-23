@@ -25,8 +25,14 @@ interface CartLineRowProps {
   productHref?: string;
   /** A B2B line with its list's havale switch on, and what a transfer takes off it now. */
   havaleEligible?: boolean;
-  /** The most of it the buyer may order (the quote's, or for a visitor the retail stock); none when there is no limit to hold to. */
+  /** The most of it the buyer may order, where known (a firm's quota, or a limit already met); none otherwise. */
   maxQuantity?: number | null;
+  /** Just taken down to the most there is: the stepper says so, never the number. */
+  limitReached?: boolean;
+  /** None left of it (a visitor's line): say so, so it is taken out before checkout. */
+  soldOut?: boolean;
+  /** A new quantity, which the cart holds to the stock (CartView). */
+  onQuantityChange: (quantity: number) => void;
   /** The colour's product code, from the quote or the visitor's line lookup. */
   sku?: string | null;
   havaleDiscount?: DecimalString;
@@ -41,6 +47,9 @@ export function CartLineRow({
   havaleEligible = false,
   havaleDiscount,
   maxQuantity,
+  limitReached = false,
+  soldOut = false,
+  onQuantityChange,
   sku,
 }: CartLineRowProps) {
   const t = useMessages(cartMessages).line;
@@ -51,7 +60,6 @@ export function CartLineRow({
   // Shown in the page's language; the stored name stays the line's key.
   const typed = serverColorName ?? item.color_name ?? null;
   const color = typed ? colorLabel(typed, locale) : null;
-  const updateQuantity = useCartStore((s) => s.updateQuantity);
   const removeItem = useCartStore((s) => s.removeItem);
 
   // Two colours of one product are two rows, so the colour belongs in the name a
@@ -86,7 +94,12 @@ export function CartLineRow({
    * screen.
    */
   return (
-    <li className="grid grid-cols-[4.5rem_minmax(0,1fr)_auto] gap-x-3 gap-y-3 py-4 sm:grid-cols-[6rem_minmax(0,1fr)_auto_auto] sm:items-center sm:gap-x-4 sm:py-5">
+    <li
+      className={`grid grid-cols-[4.5rem_minmax(0,1fr)_auto] gap-x-3 gap-y-3 py-4 sm:grid-cols-[6rem_minmax(0,1fr)_auto_auto] sm:items-center sm:gap-x-4 sm:py-5 ${
+        // Room for the stepper's note under it.
+        limitReached ? "pb-12 sm:pb-12" : ""
+      }`}
+    >
       {/* Fixed square: the photo never shifts the row. Supplier photos are shot on white. */}
       {productHref ? (
         <Link href={productHref} tabIndex={-1} aria-hidden className="col-start-1 row-start-1">
@@ -115,6 +128,9 @@ export function CartLineRow({
         <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">
           <span className="whitespace-nowrap">{formatMoney(unitPrice)}</span> <span className="text-xs">{t.perUnit}</span>
         </p>
+        {soldOut && (
+          <p className="mt-1.5 text-xs font-semibold text-red-600 dark:text-red-400">{t.soldOut}</p>
+        )}
         {havaleEligible && (
           <p className="mt-1.5 inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/30">
             {Number(havaleDiscount ?? 0) > 0
@@ -127,9 +143,10 @@ export function CartLineRow({
       <div className="col-span-3 row-start-2 flex min-w-0 items-center justify-between gap-3 sm:col-span-1 sm:col-start-3 sm:row-start-1 sm:justify-end sm:gap-4">
         <QuantityStepper
           value={item.quantity}
-          onChange={(q) => updateQuantity(item.variant_id, q)}
+          onChange={onQuantityChange}
           label={label}
           max={maxQuantity}
+          limitReached={limitReached}
         />
         <p className="whitespace-nowrap text-end text-sm font-semibold tabular-nums text-slate-900 sm:w-28 dark:text-zinc-100">
           {formatMoney(lineTotal)}

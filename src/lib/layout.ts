@@ -17,4 +17,4 @@ export const PAGE_CONTAINER = "mx-auto w-full max-w-7xl px-4 sm:px-6";
  * open category column, four once it is closed and the grid has the width
  * (the column's state is on <html>, see lib/sidebar).
  */
-export const CATALOG_GRID = "grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-3 lg:sidebar-closed:grid-cols-4";
+export const CATALOG_GRID = "grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-3 xl:grid-cols-4 lg:sidebar-closed:grid-cols-4";

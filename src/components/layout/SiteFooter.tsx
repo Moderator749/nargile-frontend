@@ -6,6 +6,7 @@ import { LogoEmblem, LogoWordmark } from "@/components/brand/Logo";
 import { InstagramIcon, YouTubeIcon } from "@/components/icons/SocialIcons";
 import { ContactBar } from "@/components/layout/ContactBar";
 import { footerMessages } from "@/lib/i18n/messages/layout";
+import { DISTANCE_SALES_HREF, RETURNS_HREF, legalHref } from "@/lib/legalPages";
 import { getMessages } from "@/lib/i18n/server";
 import type { HomeFooter, HomeFooterColumn, HomeSocialKind } from "@/types";
 
@@ -57,6 +58,37 @@ function LinkColumn({ id, column }: { id: string; column: HomeFooterColumn }) {
 }
 
 /**
+ * The ways to pay, as small marks on white chips: the card schemes checkout
+ * takes and the payment institution behind the card form. Drawn here (wordmarks
+ * and the Mastercard circles), not images, so they are crisp and load nothing.
+ */
+function PaymentBadges({ label }: { label: string }) {
+  const chip = "flex h-8 items-center justify-center rounded-md bg-white px-3 shadow-sm";
+  return (
+    <ul aria-label={label} className="flex flex-wrap items-center justify-center gap-2">
+      <li className={chip}>
+        <span className="text-[13px] font-extrabold tracking-tight text-[#1b75bb]">
+          Pay<span className="text-[#1e3a5f]">TR</span>
+        </span>
+      </li>
+      <li className={chip}>
+        <span className="text-[15px] font-black italic tracking-tight text-[#1a1f71]">VISA</span>
+      </li>
+      <li className={chip} aria-label="Mastercard">
+        <svg viewBox="0 0 38 24" className="h-5 w-8" aria-hidden>
+          <circle cx="14" cy="12" r="9" fill="#eb001b" />
+          <circle cx="24" cy="12" r="9" fill="#f79e1b" />
+          <path d="M19 4.6a9 9 0 0 1 0 14.8 9 9 0 0 1 0-14.8z" fill="#ff5f00" />
+        </svg>
+      </li>
+      <li className={chip}>
+        <span className="text-[14px] font-extrabold lowercase tracking-tight text-[#00a0a6]">troy</span>
+      </li>
+    </ul>
+  );
+}
+
+/**
  * Near-black with a crimson wash, dark in both themes. Every line of it comes
  * from the footer settings in "Ana Sayfa Düzenleme" (`lib/homepage`), but for
  * the few labels of its own (`footerMessages`).
@@ -91,7 +123,7 @@ export async function SiteFooter({ footer }: { footer: HomeFooter }) {
                 </span>
                 <LogoWordmark className="block h-[18px] md:h-5 lg:h-4" />
                 {footer.tagline && (
-                  <span className="mt-2 block text-[10px] font-semibold tracking-[0.25em] text-neutral-500">
+                  <span className="mt-2 block text-xs font-semibold tracking-[0.25em] text-neutral-400">
                     {footer.tagline}
                   </span>
                 )}
@@ -148,13 +180,35 @@ export async function SiteFooter({ footer }: { footer: HomeFooter }) {
           <LinkColumn id="footer-faq" column={footer.faq} />
         </div>
 
+        {/* The legal texts and the ways to pay: fixed, whatever the columns
+            above hold, since a shop has to show them. */}
+        <div className="flex flex-col items-center gap-5 border-t border-neutral-800 py-8 lg:flex-row lg:justify-between">
+          <nav aria-label={m.legal}>
+            <ul className="flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs font-medium text-neutral-300 lg:justify-start">
+              {[
+                { href: legalHref("PRIVACY"), label: m.kvkk },
+                { href: DISTANCE_SALES_HREF, label: m.distanceSales },
+                { href: RETURNS_HREF, label: m.returns },
+                { href: legalHref("COOKIES"), label: m.cookies },
+              ].map((link) => (
+                <li key={link.href}>
+                  <Link href={link.href} className="inline-flex min-h-6 items-center transition-colors hover:text-white hover:underline">
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+          <PaymentBadges label={m.payments} />
+        </div>
+
         <div className="border-t border-neutral-800 py-8 text-center">
-          <p className="text-xs text-neutral-500">
+          <p className="text-xs text-neutral-400">
             © {new Date().getFullYear()} {footer.copyright}
           </p>
-          {footer.price_note && <p className="mt-1 text-[11px] text-neutral-600">{footer.price_note}</p>}
+          {footer.price_note && <p className="mt-1 text-xs text-neutral-400">{footer.price_note}</p>}
           {footer.warning && (
-            <p className="mx-auto mt-6 max-w-2xl rounded-2xl border border-neutral-800 px-6 py-2 text-center text-[11px] text-neutral-400">
+            <p className="mx-auto mt-6 max-w-2xl rounded-2xl border border-neutral-800 px-6 py-2 text-center text-xs text-neutral-300">
               {footer.warning}
             </p>
           )}

@@ -46,9 +46,9 @@ interface CatalogFilterBarProps {
 /**
  * The category column's switch, where the shopping happens: the same state as
  * the header's "KATEGORİLER" button (lib/sidebar), so hiding the column for a
- * wider grid is in reach from the grid itself. Red and worded like the panel's
- * other actions ("PDF Oluştur"), so it is seen. Desktop only — on a phone the
- * column is a drawer, opened from the header.
+ * wider grid is in reach from the grid itself: "Kategorileri Gizle / Göster",
+ * a quiet outlined button that says what it does. Desktop only — on a phone
+ * the column is a drawer, opened from the header.
  */
 function SidebarToggle() {
   // Catalog pages open with the column showing, which is what the server renders.
@@ -60,7 +60,8 @@ function SidebarToggle() {
       type="button"
       onClick={() => setSidebarCollapsed(!collapsed)}
       aria-expanded={!collapsed}
-      className="hidden h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl border border-red-600 bg-red-600 px-2.5 text-[11px] font-bold uppercase tracking-wide text-white shadow-sm transition-colors duration-200 hover:border-red-500 hover:bg-red-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent lg:inline-flex"
+      data-sidebar-toggle
+      className="hidden h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl border border-neutral-200 bg-white px-3 text-xs font-semibold text-neutral-600 transition-colors duration-200 hover:border-neutral-300 hover:text-neutral-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent lg:inline-flex dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:text-white"
     >
       {/* The column is at the reading direction's start: on the right in Arabic. */}
       <Icon className="h-3.5 w-3.5 rtl:-scale-x-100" aria-hidden />

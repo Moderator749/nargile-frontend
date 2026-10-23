@@ -3,10 +3,11 @@
 // A client component for its label in the page's language. The pages that
 // draw it are server components, and the header imports its widths.
 
-import { Suspense } from "react";
+import { Suspense, useEffect, useRef } from "react";
 
 import { useT } from "@/components/i18n/LocaleProvider";
 import { CategoryList } from "@/components/layout/CategoryList";
+import { isSidebarCollapsed, setSidebarCollapsed } from "@/lib/sidebar";
 import type { ResolvedNav } from "@/lib/storefrontNav";
 
 /**
@@ -52,8 +53,36 @@ export const SIDEBAR_WIDTH_LG = "lg:w-64";
  */
 export function CategorySidebar({ items, fit = false }: { items: ResolvedNav[]; fit?: boolean }) {
   const t = useT();
+  const column = useRef<HTMLElement>(null);
+
+  // Beside the hero (not `fit`: the catalog's column is the page's way
+  // around), the open column is a panel: Escape or a click anywhere else
+  // closes it, as "KATEGORİLER" would. Desktop only; a phone has the drawer.
+  useEffect(() => {
+    if (fit) return;
+    const wide = () => window.matchMedia("(min-width: 64rem)").matches;
+    const close = () => {
+      if (wide() && !isSidebarCollapsed()) setSidebarCollapsed(true);
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") close();
+    };
+    const onPointer = (event: PointerEvent) => {
+      const target = event.target as Element | null;
+      if (!target || column.current?.contains(target) || target.closest("[data-sidebar-toggle]")) return;
+      close();
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onPointer);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onPointer);
+    };
+  }, [fit]);
+
   return (
     <nav
+      ref={column}
       aria-label={t.nav.categories}
       className={`category-sidebar hidden shrink-0 ${SIDEBAR_WIDTH} lg:me-6 lg:sidebar-closed:me-0 lg:block lg:overflow-hidden lg:rounded-xl lg:bg-background ${
         fit

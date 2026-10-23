@@ -13,6 +13,7 @@ import type {
   CatalogProductDetail,
   Category,
   HomeContent,
+  LegalDocument,
   StoreParameters,
   SultanPuanShowcase,
 } from "@/types";
@@ -176,6 +177,11 @@ export async function getFlashSaleProducts(): Promise<CatalogProduct[] | null> {
 }
 
 /** Active brands (menu + marquee); cached with the catalog, refreshed by admin saves. */
+/** The shop's legal texts as edited in "Yasal Metinler" (or as first written), for /sozlesmeler. */
+export function getLegalDocuments(): Promise<LegalDocument[] | null> {
+  return getJson<LegalDocument[]>("/settings/legal");
+}
+
 export function getBrands(): Promise<Brand[] | null> {
   return getJson<Brand[]>("/brands");
 }
