@@ -49,9 +49,11 @@ export function PriceCatalogExport({
         type="button"
         onClick={() => setOpen(true)}
         disabled={products.length === 0}
-        className="inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl border border-red-600 bg-red-600 px-3 text-[11px] font-bold uppercase tracking-wider text-white shadow-sm transition-colors duration-200 hover:border-red-500 hover:bg-red-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40"
+        className="inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl border border-red-600 bg-red-600 px-3 text-[11px] max-md:w-9 max-md:justify-center max-md:px-0 font-bold uppercase tracking-wider text-white shadow-sm transition-colors duration-200 hover:border-red-500 hover:bg-red-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40"
       >
-        <FileDown className="h-3.5 w-3.5" aria-hidden /> {t.download}
+        <FileDown className="h-3.5 w-3.5" aria-hidden />
+        {/* The icon alone in a phone's filter strip; its name stays for screen readers. */}
+        <span className="max-md:sr-only">{t.download}</span>
       </button>
       {open && (
         <ExportDialog

@@ -123,6 +123,10 @@ export function CatalogFilterBar({ value, onChange, bounds, trailing }: CatalogF
     >
       <div className="flex shrink-0 items-center gap-1 md:gap-2">
         <SidebarToggle />
+        {/* A phone has room for a word, not the label: "Fiyat:" (the full one is for screen readers). */}
+        <span aria-hidden className="me-0.5 whitespace-nowrap text-[11px] font-bold uppercase tracking-wide text-neutral-500 md:hidden dark:text-neutral-400">
+          {t.priceShort}
+        </span>
         <span className={`${LABEL} whitespace-nowrap`} id={`${minId}-label`}>
           {t.priceRange}
         </span>
@@ -161,7 +165,8 @@ export function CatalogFilterBar({ value, onChange, bounds, trailing }: CatalogF
         type="button"
         aria-pressed={value.inStock}
         onClick={() => onChange({ inStock: !value.inStock })}
-        className={`flex h-9 shrink-0 select-none items-center gap-1.5 whitespace-nowrap rounded-xl border px-2 text-[11px] md:gap-2 md:px-3 font-bold uppercase tracking-wider transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+        // Not on a phone: the strip keeps the price, the sort and the grid's switch.
+        className={`hidden h-9 shrink-0 md:flex select-none items-center gap-1.5 whitespace-nowrap rounded-xl border px-2 text-[11px] md:gap-2 md:px-3 font-bold uppercase tracking-wider transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
           value.inStock
             ? "border-red-600 bg-red-600 text-white shadow-sm"
             : "border-neutral-200 bg-neutral-50 text-neutral-700 hover:border-red-400/50 hover:text-red-600 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
@@ -176,8 +181,7 @@ export function CatalogFilterBar({ value, onChange, bounds, trailing }: CatalogF
         >
           {value.inStock && <Check className="h-3 w-3" strokeWidth={3} />}
         </span>
-        <span className="md:hidden">{t.inStockShort}</span>
-        <span className="max-md:hidden">{t.inStock}</span>
+        {t.inStock}
       </button>
 
       {/* With something beside the sort (the catalogue button) the group may

@@ -66,24 +66,14 @@ function CategoryDrawer({ categories, links = [] }: { categories: ResolvedNav[];
           <X className="h-4 w-4" aria-hidden />
         </button>
       </div>
+      {/* The top bar's links on a phone (the bar is hidden there), as rows of
+          the same list as the categories under them: one height, one padding,
+          one hairline between every row. */}
       {links.length > 0 && (
-        <nav aria-label={t.nav.mainMenu} className="border-b-4 border-border md:hidden">
-          <ul>
-            {links.map(({ label, href, accent }) => (
-              <li key={`${href}-${label}`} className="border-b border-border last:border-0">
-                <Link
-                  href={href}
-                  onClick={() => setOpen(false)}
-                  className={`flex items-center justify-between gap-2 px-3 py-3 text-[13px] font-semibold uppercase tracking-wide transition-colors hover:bg-foreground/[0.04] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent ${
-                    accent ? "text-red-700 dark:text-red-400" : "text-foreground"
-                  }`}
-                >
-                  <span className="min-w-0 truncate">{navLabel(label, locale)}</span>
-                  <ChevronRight className="h-3.5 w-3.5 shrink-0 text-gray-400 rtl:rotate-180 dark:text-neutral-500" aria-hidden />
-                </Link>
-              </li>
-            ))}
-          </ul>
+        <nav aria-label={t.nav.mainMenu} className="border-b border-border md:hidden">
+          <Suspense fallback={null}>
+            <CategoryList items={links} onNavigate={() => setOpen(false)} />
+          </Suspense>
         </nav>
       )}
       <Suspense fallback={null}>

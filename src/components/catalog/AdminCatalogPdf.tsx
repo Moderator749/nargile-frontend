@@ -54,9 +54,11 @@ export function AdminCatalogPdf({
         onClick={() => setOpen(true)}
         title="Yalnızca adminler görür"
         // The same solid red as the B2B accounts' "Fiyat Kataloğu İndir" in this bar.
-        className="inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl border border-red-600 bg-red-600 px-3 text-[11px] font-bold uppercase tracking-wider text-white shadow-sm transition-colors duration-200 hover:border-red-500 hover:bg-red-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        className="inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl border border-red-600 bg-red-600 px-3 text-[11px] max-md:w-9 max-md:justify-center max-md:px-0 font-bold uppercase tracking-wider text-white shadow-sm transition-colors duration-200 hover:border-red-500 hover:bg-red-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       >
-        <FileDown className="h-3.5 w-3.5" aria-hidden /> PDF Oluştur
+        <FileDown className="h-3.5 w-3.5" aria-hidden />
+        {/* The icon alone in a phone's filter strip; its name stays for screen readers. */}
+        <span className="max-md:sr-only">PDF Oluştur</span>
       </button>
       {open &&
         createPortal(

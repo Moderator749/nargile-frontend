@@ -20,6 +20,8 @@ const ITEM = `${ROW} text-gray-700 hover:bg-white hover:text-red-700 dark:text-n
 
 /** The row the visitor is already on: in red, on the same faint wash. */
 const CURRENT = `${ROW} bg-white text-red-700 dark:bg-white/[0.04] dark:text-red-400`;
+/** An entry the admin marked red ("Kırmızı vurgula": the deals). */
+const ACCENT = `${ROW} text-red-700 hover:bg-white dark:text-red-400 dark:hover:bg-white/[0.04]`;
 
 /**
  * The category column's list.
@@ -59,7 +61,7 @@ export function CategoryList({
               href={item.href}
               onClick={onNavigate}
               aria-current={current ? "page" : undefined}
-              className={current ? CURRENT : ITEM}
+              className={current ? CURRENT : item.accent ? ACCENT : ITEM}
             >
               <span className="min-w-0 truncate" title={label}>
                 {label}
@@ -67,7 +69,7 @@ export function CategoryList({
               {/* Points the way the text reads: left in Arabic. */}
               <ChevronRight
                 className={`h-3.5 w-3.5 shrink-0 transition-colors rtl:rotate-180 ${
-                  current ? "text-red-700 dark:text-red-400" : "text-gray-400 dark:text-neutral-500"
+                  current || item.accent ? "text-red-700 dark:text-red-400" : "text-gray-400 dark:text-neutral-500"
                 }`}
                 aria-hidden
               />
