@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 
 import { CatalogScreen } from "@/components/catalog/CatalogScreen";
-import { brandForCategory } from "@/lib/brandMatch";
 import { localePath } from "@/lib/i18n/config";
 import { getI18n } from "@/lib/i18n/server";
 import { hasCategoryCopy, categoryCopy } from "@/lib/categories";
@@ -83,8 +82,6 @@ export default async function CategoryPage(props: PageProps<"/[locale]/catalog/[
       activeCategory={category}
       products={products}
       brands={brands ?? []}
-      // A category that is a brand's page ("Legend Hookah") wears its logo.
-      logo={brandForCategory(category, brands ?? [])?.logo_url}
       // The admin's introduction, else the shop's written copy where it has
       // one (the meta description's generated fallback is for search
       // results, not the page). Long text is clamped, all of it in the HTML.
