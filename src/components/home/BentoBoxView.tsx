@@ -9,7 +9,7 @@ import type { HomeBentoBox, HomeBoxText } from "@/types";
  * — the same markup in both, so what is placed in the drawer is what ships
  * (as HeroSlideView is for the slider).
  *
- * The box keeps one shape, 3:4, at every width, and everything on it is a
+ * The box keeps one shape, 3:2, at every width, and everything on it is a
  * fraction of its width (`cqw`): a text's x/y is in % of the box, its size in
  * px of a 400px-wide box (the box on a desktop) — so the drawer's smaller
  * preview, a phone and a wide screen all show the same composition, scaled.
@@ -107,7 +107,7 @@ export function BentoBoxView({
   return (
     <div
       {...frameProps}
-      className={`@container relative isolate aspect-[3/4] w-full overflow-hidden rounded-2xl bg-neutral-900 text-white ${className}`}
+      className={`@container relative isolate aspect-[3/2] w-full overflow-hidden rounded-2xl bg-neutral-900 text-white ${className}`}
     >
       <Image
         src={box.image}

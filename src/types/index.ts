@@ -1720,7 +1720,7 @@ export interface HomeBentoBox {
   subtitle: string;
   /** Each text's centre in % of the box; null = stacked at the bottom. */
   layout: Record<HomeBoxText, { x: number; y: number }> | null;
-  /** Px on a 400px-wide box; the box keeps its 3:4 shape, so they scale with it. */
+  /** Px on a 400px-wide box; the box keeps its 3:2 shape, so they scale with it. */
   font_sizes: Partial<Record<HomeBoxText, number | null>> | null;
   text_colors: Partial<Record<HomeBoxText, string | null>> | null;
   /** A dark wash from the bottom, at `overlay_strength` % at its darkest. */

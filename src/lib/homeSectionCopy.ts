@@ -42,7 +42,7 @@ type Words = (typeof homeMessages)["tr"];
 
 /**
  * "Görsel Vitrin"'s starting photos (the shop's own, in public/images), where
- * each leads and its focal point in the tall box; their words are the
+ * each leads and its focal point in the 3:2 box; their words are the
  * messages' `bento.boxes`, in this order.
  */
 const BENTO_BOXES: [string, string, number][] = [

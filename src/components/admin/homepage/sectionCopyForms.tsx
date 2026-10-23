@@ -308,7 +308,7 @@ function BentoBoxEditor({
     onColor: (color: string | null) => onChange({ text_colors: withPart(box.text_colors, part, color) }),
   });
   return (
-    <div className="grid gap-5 @2xl:grid-cols-[1fr_16rem]">
+    <div className="grid gap-5 @2xl:grid-cols-[1fr_20rem]">
       <div className="space-y-4">
         <TextField label="Üst etiket (isteğe bağlı)" value={box.eyebrow} max={60} onChange={(eyebrow) => onChange({ eyebrow })} />
         <TextStyleFields label="Üst etiket" {...style("eyebrow")} />
@@ -352,7 +352,7 @@ function BentoBoxEditor({
       </div>
       <div className="space-y-3 self-start @2xl:sticky @2xl:top-0">
         <div ref={frame} {...canvas.pan} className="cursor-move touch-none select-none">
-          <BentoBoxView box={box} sizes="256px" editor={{ bind: canvas.bind, selected: canvas.selected, resize: canvas.resize }} />
+          <BentoBoxView box={box} sizes="320px" editor={{ bind: canvas.bind, selected: canvas.selected, resize: canvas.resize }} />
         </div>
         <p className="text-[11px] leading-relaxed text-slate-500 dark:text-zinc-500">
           Yazıyı sürükleyip taşıyın; seçili yazıyı kırmızı köşesinden boyutlandırın; fotoğrafı sürükleyip kadrajlayın. Sitedeki kutu
@@ -367,7 +367,7 @@ function BentoBoxEditor({
             <RotateCcw className="h-3.5 w-3.5" aria-hidden /> Konumları sıfırla (alta dizili)
           </button>
         )}
-        <ImageField label="Görsel" value={box.image} onChange={(image) => onChange({ image: image ?? "" })} hint="Dikey (3:4) fotoğraf en iyisi." />
+        <ImageField label="Görsel" value={box.image} onChange={(image) => onChange({ image: image ?? "" })} hint="Yatay (3:2) fotoğraf en iyisi." />
       </div>
     </div>
   );

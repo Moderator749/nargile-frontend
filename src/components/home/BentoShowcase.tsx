@@ -6,14 +6,14 @@ import { PAGE_CONTAINER } from "@/lib/layout";
 import type { HomeBento } from "@/types";
 
 /*
- * How wide a photo to fetch: the box's width, or — for the shop's wide photos
- * cropped into the tall box — its height × 1.6, which is what they are drawn
- * at. A third of the container from `md`, the screen (26rem at most) below.
+ * How wide a photo to fetch: the box's width — a third of the container from
+ * `md`, the screen (26rem at most) below — and a little over, since the shop's
+ * wide photos (1.6:1) are cropped into the 3:2 box by their height.
  */
-const SIZES = "(min-width: 768px) 55vw, 640px";
+const SIZES = "(min-width: 768px) 36vw, 448px";
 
 /**
- * "Görsel Vitrin", over the deals: three tall photo boxes side by side, each
+ * "Görsel Vitrin", over the deals: three 3:2 photo boxes side by side, each
  * a link with words on it placed as the admin placed them (BentoBoxView). One
  * under another on a phone, never wider than 26rem. No top padding: the
  * Kumbara band above already ends in white space.

@@ -30,7 +30,7 @@ export const SECTION_LABELS: Record<keyof HomeSections, { title: string; hint: s
   lules: { title: "Lüle Alırken Kararsız Kalacaksınız", hint: "Lüle ürün satırı ve kurye ayrıcalığı." },
   sultanpuan: { title: "SultanPuan Bandı", hint: "%10 SultanPuan kartı ve ürünleri; program kapalıyken görünmez." },
   kumbara: { title: "Kumbara 20.000 TL", hint: "Yıllık bonus kartı ve marpuçlar; bonus kapalıyken görünmez." },
-  bento: { title: "Görsel Vitrin", hint: "Yan yana üç uzun görsel kutu; üzerlerinde slider gibi yerleştirilen yazılar." },
+  bento: { title: "Görsel Vitrin", hint: "Yan yana üç yatay (3:2) görsel kutu; üzerlerinde slider gibi yerleştirilen yazılar." },
   deals: { title: "Fırsatları Kaçırma", hint: "Kırmızı fırsat vitrini; aktif fırsat olsa bile gizlenir." },
   campaigns: { title: "Kampanya Kutuları", hint: "Büyük fırsat kutusu ve yanındaki üç küçük kutu (mini bento)." },
   promos: { title: "Sektörde Referans Noktası", hint: "Kısa marka tanıtımı ve kataloğa bağlantı." },
