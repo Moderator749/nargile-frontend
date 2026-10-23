@@ -88,7 +88,8 @@ export function storeAdvantages(home: AdvantageSources, params: StoreParameters,
       anchor: "ucretsiz-kargo",
       Icon: Truck,
       label: home.picks.shipping_eyebrow,
-      value: threshold,
+      // The van says the threshold in its sentence, not beside the label: so here.
+      value: null,
       note: fillIn(home.picks.shipping_text, { tutar: threshold }),
     });
   }
