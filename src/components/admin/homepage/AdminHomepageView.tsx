@@ -2,9 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ExternalLink, FolderTree, Languages, Loader2, RotateCcw, Save, Smartphone } from "lucide-react";
+import { ExternalLink, FolderTree, Loader2, RotateCcw, Save, Smartphone } from "lucide-react";
 
 import { AdminCategoriesView } from "@/components/admin/AdminCategoriesView";
 import { AdminPageHeader } from "@/components/admin/AdminShell";
@@ -525,15 +524,6 @@ export function AdminHomepageView() {
                 )}
               </button>
             ))}
-            {/* The homepage texts' English and Arabic live on "Çeviriler", beside the drafts awaiting approval. */}
-            <Link
-              href="/admin/translations?sekme=ceviriler"
-              className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition-colors hover:border-red-400/60 hover:text-slate-900 dark:border-white/10 dark:bg-zinc-900/60 dark:text-zinc-300 dark:hover:text-white"
-            >
-              <Languages className="h-4 w-4 text-red-600" aria-hidden />
-              Çeviriler (EN/AR)
-              <ExternalLink className="h-3.5 w-3.5 text-slate-400" aria-hidden />
-            </Link>
           </div>
 
           {!editing && resultAlert && <div className="mb-4">{resultAlert}</div>}

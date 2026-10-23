@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -19,10 +19,13 @@ import {
   SlidersHorizontal,
   Users,
   Landmark,
+  RotateCcw,
   type LucideIcon,
 } from "lucide-react";
 
+import { SortableList } from "@/components/admin/SortableList";
 import { fetchMe } from "@/lib/authApi";
+import { applySavedOrder, isDefaultOrder } from "@/lib/savedOrder";
 import { isAdminRole } from "@/lib/roles";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useAuthHydrated } from "@/store/useHasHydrated";
@@ -72,6 +75,123 @@ const NAV: NavItem[] = [
   { href: "/admin/notes", label: "Not Defteri", icon: NotebookPen },
   { href: "/admin/pricing", label: "Excel Dosya Aktarımı", icon: FileSpreadsheet },
 ];
+
+/** The menu's order as this admin arranged it, in their browser (no account setting: it is a convenience). */
+const NAV_ORDER_KEY = "admin_sidebar_order";
+const DEFAULT_NAV_ORDER = NAV.map((item) => item.href);
+const NAV_BY_HREF = new Map(NAV.map((item) => [item.href, item]));
+
+function readNavOrder(): string[] {
+  try {
+    const raw = localStorage.getItem(NAV_ORDER_KEY);
+    const saved: unknown = raw ? JSON.parse(raw) : null;
+    return applySavedOrder(DEFAULT_NAV_ORDER, Array.isArray(saved) ? saved.filter((x): x is string => typeof x === "string") : null);
+  } catch {
+    // Storage blocked or the value garbled: the default order.
+    return DEFAULT_NAV_ORDER;
+  }
+}
+
+function writeNavOrder(order: string[] | null) {
+  try {
+    if (order) localStorage.setItem(NAV_ORDER_KEY, JSON.stringify(order));
+    else localStorage.removeItem(NAV_ORDER_KEY);
+  } catch {
+    // Kept for this visit only.
+  }
+}
+
+const NAV_LINK =
+  "group flex min-w-0 flex-1 items-center gap-2.5 whitespace-nowrap rounded-xl px-3 transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500";
+
+/**
+ * "Kontrol Merkezi": the panel's menu, in the order this admin dragged it
+ * into (each row's handle, from `lg`, shown on hover or focus; the keyboard
+ * moves a row too). The order lives in this browser (`admin_sidebar_order`)
+ * and is applied to the menu as it is today (lib/savedOrder): an entry added
+ * in an update takes its default place, one removed is gone. "Sırayı sıfırla"
+ * puts the default back. On a phone the menu is a row swiped sideways, in the
+ * same order, without handles.
+ */
+function AdminNav({ isActive }: { isActive: (href: string, exact?: boolean, also?: readonly string[]) => boolean }) {
+  // Rendered only once the page is live in the browser (AdminShell waits for
+  // the session), so the saved order is read from the first render.
+  const [order, setOrder] = useState<string[]>(() => (typeof window === "undefined" ? DEFAULT_NAV_ORDER : readNavOrder()));
+  const items = order.flatMap((href) => NAV_BY_HREF.get(href) ?? []);
+
+  function reorder(next: NavItem[]) {
+    const hrefs = next.map((item) => item.href);
+    setOrder(hrefs);
+    writeNavOrder(isDefaultOrder(DEFAULT_NAV_ORDER, hrefs) ? null : hrefs);
+  }
+
+  function reset() {
+    setOrder(DEFAULT_NAV_ORDER);
+    writeNavOrder(null);
+  }
+
+  const link = (item: NavItem, sub: boolean) => {
+    const { href, label, icon: Icon, exact, also } = item;
+    const active = isActive(href, exact, also);
+    return (
+      <Link
+        href={href}
+        draggable={false}
+        aria-current={active ? "page" : undefined}
+        className={`${NAV_LINK} ${sub ? "py-2 text-[13px] lg:ps-9" : "py-2.5 text-sm"} ${
+          active
+            ? "bg-red-50 font-semibold text-red-700 dark:bg-red-950/40 dark:text-red-400"
+            : "font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-zinc-400 dark:hover:bg-zinc-800/60 dark:hover:text-white"
+        }`}
+      >
+        <Icon
+          className={`${sub ? "h-3.5 w-3.5" : "h-4 w-4"} shrink-0 transition-colors ${
+            active
+              ? "text-red-600 dark:text-red-400"
+              : "text-slate-400 group-hover:text-slate-600 dark:text-zinc-500 dark:group-hover:text-zinc-300"
+          }`}
+          aria-hidden
+        />
+        {label}
+      </Link>
+    );
+  };
+
+  return (
+    <nav aria-label="Yönetim menüsü" className="lg:mt-4">
+      <SortableList
+        items={items}
+        getId={(item) => item.href}
+        getLabel={(item) => item.label}
+        onReorder={reorder}
+        className="flex gap-1 overflow-x-auto [scrollbar-width:none] lg:flex-col lg:overflow-visible [&::-webkit-scrollbar]:hidden"
+        renderItem={(item, handle) => (
+          <>
+            <div className="group/row flex items-center">
+              {link(item, false)}
+              {/* The handle, from lg only (the phone's row is swiped, not sorted). */}
+              <span className="hidden opacity-0 transition-opacity group-hover/row:opacity-100 focus-within:opacity-100 lg:flex">{handle}</span>
+            </div>
+            {item.children?.map((child) => (
+              <div key={child.href} className="flex">
+                {link(child, true)}
+              </div>
+            ))}
+          </>
+        )}
+      />
+      {!isDefaultOrder(DEFAULT_NAV_ORDER, order) && (
+        <button
+          type="button"
+          onClick={reset}
+          className="mt-3 hidden w-full items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-medium text-slate-400 transition-colors hover:text-slate-700 focus-visible:outline-2 focus-visible:outline-red-500 lg:flex dark:text-zinc-500 dark:hover:text-zinc-200"
+        >
+          <RotateCcw className="h-3 w-3" aria-hidden /> Sırayı sıfırla
+        </button>
+      )}
+    </nav>
+  );
+}
 
 function Gate({ title, body, action }: { title: string; body: string; action?: ReactNode }) {
   return (
@@ -141,41 +261,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
         <p className="hidden px-3 pt-2 pb-2 text-xs font-bold uppercase tracking-wider text-red-600 lg:block dark:text-red-500">
           Kontrol Merkezi
         </p>
-        <nav aria-label="Yönetim menüsü" className="lg:mt-4">
-          <ul className="flex gap-1 overflow-x-auto [scrollbar-width:none] lg:flex-col lg:overflow-visible [&::-webkit-scrollbar]:hidden">
-            {NAV.flatMap((item) => [
-              { ...item, sub: false },
-              ...(item.children ?? []).map((c) => ({ ...c, sub: true })),
-            ]).map(({ href, label, icon: Icon, exact, also, sub }) => {
-              const active = isActive(href, exact, also);
-              return (
-                <li key={href}>
-                  <Link
-                    href={href}
-                    aria-current={active ? "page" : undefined}
-                    className={`group flex items-center gap-2.5 whitespace-nowrap rounded-xl px-3 transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500 ${
-                      sub ? "py-2 text-[13px] lg:ps-9" : "py-2.5 text-sm"
-                    } ${
-                      active
-                        ? "bg-red-50 font-semibold text-red-700 dark:bg-red-950/40 dark:text-red-400"
-                        : "font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-zinc-400 dark:hover:bg-zinc-800/60 dark:hover:text-white"
-                    }`}
-                  >
-                    <Icon
-                      className={`${sub ? "h-3.5 w-3.5" : "h-4 w-4"} shrink-0 transition-colors ${
-                        active
-                          ? "text-red-600 dark:text-red-400"
-                          : "text-slate-400 group-hover:text-slate-600 dark:text-zinc-500 dark:group-hover:text-zinc-300"
-                      }`}
-                      aria-hidden
-                    />
-                    {label}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
+        <AdminNav isActive={isActive} />
       </aside>
       <main className="min-w-0 flex-1">{children}</main>
     </div>
