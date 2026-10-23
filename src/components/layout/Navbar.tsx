@@ -7,7 +7,7 @@ import { Menu, PackageSearch, Search, ShoppingCart } from "lucide-react";
 
 import Link from "@/components/i18n/Link";
 import { Logo } from "@/components/brand/Logo";
-import { useLocalePath } from "@/components/i18n/navigation";
+import { useLocalePath, usePagePath } from "@/components/i18n/navigation";
 import { useMessages, useT } from "@/components/i18n/LocaleProvider";
 import { CurrencySelect } from "@/components/layout/CurrencySelect";
 import { LanguageSelect } from "@/components/layout/LanguageSelect";
@@ -99,6 +99,8 @@ export function Navbar({
   const user = useAuthStore((s) => s.user);
   const cartCount = useCartStore(selectCartCount);
   const openDrawer = useCategoryDrawer((s) => s.setOpen);
+  // Without its language: "/" is the homepage in every language.
+  const pagePath = usePagePath();
   // On a storefront phone the account and the cart are the bottom bar's
   // (MobileTabBar), so the header leaves them to it; the admin panel, which
   // has no bottom bar, keeps both.
@@ -152,7 +154,7 @@ export function Navbar({
       >
         {/* Module 2: logo · search · currency · order tracking · account · cart;
             on a phone: menu · logo · currency · order tracking · theme. */}
-        <div className={`${PAGE_CONTAINER} flex h-16 items-center gap-1.5 sm:gap-2`}>
+        <div className={`${PAGE_CONTAINER} flex h-16 items-center gap-1 sm:gap-2`}>
           {/* A phone's way to the categories: the drawer the menu bar's
               "KATEGORİLER" opens on a tablet. */}
           {showMenu && (
@@ -169,13 +171,27 @@ export function Navbar({
           {/* The logo sits in the category column's width, so what follows it
               starts exactly on that column's line — which is where
               the first entry of the bar below starts. */}
-          <div className={`me-2 shrink-0 lg:me-0 ${SIDEBAR_WIDTH_LG}`}>
+          <div className={`shrink-0 sm:me-2 lg:me-0 ${SIDEBAR_WIDTH_LG}`}>
+            {/* The emblem and the name are one link, with a 44px-tall target
+                above its neighbours, to the homepage in the page's language.
+                On the homepage itself it would go nowhere, so it goes to the
+                top instead; either way it closes the drawer and the search's
+                suggestions first, so a tap always shows an answer. */}
             <Link
               href="/"
+              prefetch
               aria-label={t.nav.homeAria}
-              className="inline-block rounded-sm text-foreground focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+              onClick={(event) => {
+                openDrawer(false);
+                if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+                if (pagePath === "/" && !event.metaKey && !event.ctrlKey && !event.shiftKey) {
+                  event.preventDefault();
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }
+              }}
+              className="relative z-20 flex min-h-[44px] cursor-pointer items-center rounded-sm text-foreground [-webkit-tap-highlight-color:transparent] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
             >
-              <Logo />
+              <Logo emblemOnPhone={!showMenu} />
             </Link>
           </div>
 
@@ -187,7 +203,7 @@ export function Navbar({
           {showMenu && <LanguageSelect className="max-md:hidden" />}
           <CurrencySelect />
 
-          <Link href={trackHref} className={`${iconButton} lg:w-auto lg:gap-1.5 lg:px-3`} title={t.nav.tracking}>
+          <Link href={trackHref} className={`${iconButton} max-sm:h-8 max-sm:w-8 lg:w-auto lg:gap-1.5 lg:px-3`} title={t.nav.tracking}>
             <PackageSearch className="h-[18px] w-[18px]" strokeWidth={1.5} aria-hidden />
             <span className="sr-only lg:not-sr-only lg:text-[13px]">{t.nav.tracking}</span>
           </Link>

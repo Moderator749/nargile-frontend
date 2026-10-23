@@ -45,14 +45,22 @@ export function LogoWordmark({ className, preload = false }: AssetProps) {
  *
  * The wordmark is sized by the room it has, not by the emblem: at 15px tall it
  * is 199px wide, which with the emblem fits the 256px category column on
- * desktop. A phone has no room for it beside the header's tools, so below `sm`
- * only the emblem shows.
+ * desktop. On a phone it takes the width the header's tools leave it — the
+ * viewport less 228px for the page's padding, the menu button, the emblem and
+ * the three tools — up to that same 199px: 132px on a 360px phone, 162px on a
+ * 390px one, the whole of it from 427px. Its height follows its width
+ * (h-auto), so it never wraps. The admin panel's header has two more tools
+ * on a phone (account, cart), so there it keeps the emblem alone
+ * (`emblemOnPhone`).
  */
-export function Logo({ className = "" }: { className?: string }) {
+export function Logo({ className = "", emblemOnPhone = false }: { className?: string; emblemOnPhone?: boolean }) {
   return (
     <span className={`flex items-center gap-0 ${className}`}>
-      <LogoEmblem preload className="h-9 w-9 sm:h-10 sm:w-10" />
-      <LogoWordmark preload className="hidden h-[15px] sm:block" />
+      <LogoEmblem preload className="h-8 w-8 sm:h-10 sm:w-10" />
+      <LogoWordmark
+        preload
+        className={`h-[15px] max-sm:h-auto max-sm:w-[min(199px,calc(100vw_-_228px))] ${emblemOnPhone ? "max-sm:hidden" : ""}`}
+      />
     </span>
   );
 }

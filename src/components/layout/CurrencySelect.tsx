@@ -25,7 +25,7 @@ export function CurrencySelect() {
         value={currency}
         onChange={(e) => setCurrency(e.target.value as DisplayCurrency)}
         title={m.currencyTitle}
-        className="h-9 cursor-pointer appearance-none rounded-full bg-transparent pe-7 ps-3 font-mono text-xs text-muted-foreground transition-colors duration-200 hover:bg-foreground/[0.06] hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        className="h-9 cursor-pointer appearance-none rounded-full bg-transparent pe-6 ps-2 font-mono text-xs sm:pe-7 sm:ps-3 text-muted-foreground transition-colors duration-200 hover:bg-foreground/[0.06] hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       >
         {DISPLAY_CURRENCIES.map((c) => (
           <option key={c} value={c}>
