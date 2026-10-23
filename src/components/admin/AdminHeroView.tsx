@@ -4,6 +4,7 @@ import { useId } from "react";
 
 import { ContentEditor, adminSelectClass, isImageUrl, isSiteOrHttpsLink } from "@/components/admin/ContentEditor";
 import { SlideCanvas } from "@/components/admin/hero/SlideCanvas";
+import { ButtonSizeFields } from "@/components/admin/hero/ButtonSizeFields";
 import { TextStyleFields } from "@/components/admin/hero/TextStyleFields";
 import { Input } from "@/components/ui/Input";
 import { Switch } from "@/components/ui/Switch";
@@ -78,6 +79,8 @@ const blank = (): HeroSlideWrite => ({
   mobile_font_sizes: null,
   mobile_bg_position: null,
   mobile_image: null,
+  button_size_desktop: "md",
+  button_size_mobile: "md",
   is_active: true,
   sort_order: 100,
 });
@@ -104,6 +107,8 @@ const toWrite = (s: HeroSlideContent): HeroSlideWrite => ({
   mobile_font_sizes: s.mobile_font_sizes ?? null,
   mobile_bg_position: s.mobile_bg_position ?? null,
   mobile_image: s.mobile_image ?? null,
+  button_size_desktop: s.button_size_desktop ?? "md",
+  button_size_mobile: s.button_size_mobile ?? "md",
   is_active: s.is_active,
   sort_order: s.sort_order,
 });
@@ -188,6 +193,7 @@ export function AdminHeroView() {
               placeholder="/login?next=/catalog"
             />
           </div>
+          <ButtonSizeFields desktop={v.button_size_desktop} mobile={v.button_size_mobile} onChange={set} />
           <div className="flex items-center justify-between gap-4 rounded-xl border border-slate-200 px-4 py-3 dark:border-white/10">
             <div>
               <p id="slide-overlay" className="text-sm font-medium text-slate-700 dark:text-zinc-300">

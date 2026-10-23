@@ -39,7 +39,7 @@ const ALIGN: Record<HeroTextAlign, { block: string; actions: string }> = {
 };
 
 /**
- * The buttons' size, as "Ana Sayfa Düzenleme › Hero Slider" sets it: on a
+ * The buttons' size, as the slide sets it (/admin/hero): on a
  * phone (below `md`) and from a tablet up, each a size down ("sm"), the
  * shop's own ("md") or a size up ("lg"). On a stage of placed parts (from
  * `lg`) a button is a fraction of the stage like everything on it, the same
@@ -79,7 +79,7 @@ export interface HeroButtonSizes {
 }
 
 /**
- * The same sizes without a screen prefix, for the panel's preview of each
+ * The same sizes without a screen prefix, for the slide editor's choices
  * (keep in step with BUTTON_PHONE and BUTTON_WIDE): what a phone and a wider
  * screen show.
  */
@@ -249,7 +249,6 @@ export function HeroSlideView({
   className = "",
   wrapperProps,
   editor,
-  buttonSize = DEFAULT_BUTTON_SIZES,
   children,
 }: {
   slide: HeroSlide;
@@ -260,8 +259,6 @@ export function HeroSlideView({
   wrapperProps?: HTMLAttributes<HTMLDivElement>;
   /** Present in /admin/hero: parts become draggable and buttons stop being links. */
   editor?: HeroEditorBinding;
-  /** The buttons' size ("Ana Sayfa Düzenleme › Hero Slider"). */
-  buttonSize?: HeroButtonSizes;
   /** Extra layers on the stage (the editor's guides). */
   children?: ReactNode;
 }) {
@@ -315,7 +312,7 @@ export function HeroSlideView({
   // No text and no button: the photo alone, as tall as a slide with words.
   const bare = !has.eyebrow && !has.title && !has.subtitle && !buttons;
   const TextBlock = has.title ? Heading : "div";
-  const sizing = buttonSizing(buttonSize, placed);
+  const sizing = buttonSizing(slide.buttonSize ?? DEFAULT_BUTTON_SIZES, placed);
 
   return (
     <div

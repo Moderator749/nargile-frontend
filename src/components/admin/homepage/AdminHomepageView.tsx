@@ -26,7 +26,6 @@ import {
   DealsTab,
   FooterTab,
   HeroTab,
-  SliderTab,
   MobileTab,
   NavigationTab,
   SectionsTab,
@@ -82,8 +81,8 @@ const EDITORS: Record<
 > = {
   hero: {
     title: "Hero Slider & Kategori Menüleri",
-    hint: "Slaytlar ve kutular kendi sayfalarında; slider butonlarının boyutu ve slider’ın yanındaki ve üstündeki menüler burada.",
-    doc: ["slider", "navigation"],
+    hint: "Slaytlar ve kutular kendi sayfalarında; slider’ın yanındaki ve üstündeki menüler burada.",
+    doc: "navigation",
     sections: ["hero"],
     size: "lg",
   },
@@ -213,7 +212,6 @@ function toPayload(doc: Homepage): Partial<Homepage> {
 const SECTION_NAMES: Record<string, string> = {
   navigation: "Kategori Düzenle",
   deals: "Fırsatlar",
-  slider: "Slider butonları",
   brands: "Markalar Şeridi",
   showcase: "Premium Yelpaze",
   seo_intro: "Alt SEO Metni",
@@ -426,7 +424,6 @@ export function AdminHomepageView() {
         return (
           <div className="space-y-6">
             <HeroTab />
-            <SliderTab value={doc.slider} set={set("slider")} />
             <NavigationTab value={doc.navigation} set={set("navigation")} categories={categories} brands={brands} />
           </div>
         );

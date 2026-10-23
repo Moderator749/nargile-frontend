@@ -138,6 +138,8 @@ const EMPTY: HeroSlideWrite = {
   mobile_font_sizes: null,
   mobile_bg_position: null,
   mobile_image: null,
+  button_size_desktop: "md",
+  button_size_mobile: "md",
   is_active: true,
   sort_order: 0,
 };

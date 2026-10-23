@@ -75,8 +75,6 @@ export const DEFAULT_HOMEPAGE: Homepage = {
     about: true,
     footer: true,
   },
-  // The buttons at the shop's own size until the admin picks another.
-  slider: { button_size: "md", mobile_button_size: "md" },
   order: [...HOME_BLOCKS],
   navigation: { top: TOP_NAV, sidebar: SIDEBAR_NAV },
   deals: {

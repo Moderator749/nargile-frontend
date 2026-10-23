@@ -2,17 +2,7 @@
 // /admin/promos) and served by /home/content; this file maps it to what the
 // components render.
 
-import type {
-  ContentRequirement,
-  HeroLayout,
-  HeroBgPosition,
-  HeroSlideContent,
-  HeroTextAlign,
-  HeroTextColors,
-  HeroTextSizes,
-  PromoBoxContent,
-  SocialWidget,
-} from "@/types";
+import type { ContentRequirement, HeroBgPosition, HeroButtonSize, HeroLayout, HeroSlideContent, HeroTextAlign, HeroTextColors, HeroTextSizes, PromoBoxContent, SocialWidget } from "@/types";
 
 export type Requirement = ContentRequirement;
 
@@ -50,6 +40,8 @@ export interface HeroSlide {
   colors?: HeroTextColors | null;
   /** A phone's own design (below `md`); each part null keeps how a phone has always shown it. */
   mobile?: { layout: HeroLayout | null; sizes: HeroTextSizes | null; bg: HeroBgPosition | null };
+  /** Its buttons' size, from a tablet up and on a phone ("md" = the shop's own). */
+  buttonSize?: { desktop: HeroButtonSize; mobile: HeroButtonSize };
 }
 
 export const toHeroSlide = (s: HeroSlideContent): HeroSlide => ({
@@ -61,6 +53,8 @@ export const toHeroSlide = (s: HeroSlideContent): HeroSlide => ({
   guestCta: s.guest_cta_label && s.guest_cta_href ? { label: s.guest_cta_label, href: s.guest_cta_href } : undefined,
   image: s.image,
   mobileImage: s.mobile_image ?? null,
+  // A slide saved before the sizes existed has the shop's own.
+  buttonSize: { desktop: s.button_size_desktop ?? "md", mobile: s.button_size_mobile ?? "md" },
   align: s.text_align ?? "center",
   focus: { x: s.image_focus_x ?? 50, y: s.image_focus_y ?? 50 },
   zoom: s.image_zoom ?? 100,

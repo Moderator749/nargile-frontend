@@ -57,6 +57,7 @@ export function previewSlide(v: HeroSlideWrite, image: string | null, mobileImag
     sizes: v.font_sizes,
     colors: v.text_colors,
     mobile: { layout: v.mobile_layout, sizes: v.mobile_font_sizes, bg: v.mobile_bg_position },
+    buttonSize: { desktop: v.button_size_desktop ?? "md", mobile: v.button_size_mobile ?? "md" },
   };
 }
 

@@ -436,10 +436,7 @@ export default async function HomePage() {
                   change over the same 300ms on the same curve, so the slider
                   only slides aside: never wider, never taller. */}
               <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_0px] lg:gap-x-0 lg:transition-[grid-template-columns,column-gap] lg:duration-300 lg:ease-[ease] motion-reduce:transition-none lg:sidebar-closed:grid-cols-[minmax(0,1fr)_264px] lg:sidebar-closed:gap-x-4">
-                <HeroSlider
-                  slides={slides}
-                  buttonSize={{ desktop: home.slider.button_size, mobile: home.slider.mobile_button_size }}
-                />
+                <HeroSlider slides={slides} />
                 {/* Hidden by its own class: a wrapper would take its place in the row's grid. */}
                 <HeroAside box={spotlight} className={hiddenOnPhones.has("promos") ? "max-md:hidden" : ""} />
               </div>
