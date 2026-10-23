@@ -1,4 +1,5 @@
 import Link from "@/components/i18n/Link";
+import { SearchTitle } from "@/components/catalog/SearchTitle";
 import { ReadMore } from "@/components/ui/ReadMore";
 import { catalogMessages } from "@/lib/i18n/messages/catalog";
 import { getMessages } from "@/lib/i18n/server";
@@ -17,10 +18,13 @@ export async function CatalogHeading({
   title,
   breadcrumbs,
   intro,
+  searchable = false,
 }: {
   title: string;
   breadcrumbs: Breadcrumb[];
   intro?: string | null;
+  /** The whole catalog, where the header's search lands: the heading names the search while there is one. */
+  searchable?: boolean;
 }) {
   const t = await getMessages(catalogMessages);
   return (
@@ -52,7 +56,7 @@ export async function CatalogHeading({
       </nav>
 
       <h1 className="mt-2 text-xl font-bold uppercase tracking-tight text-neutral-900 sm:text-2xl dark:text-white">
-        {title}
+        {searchable ? <SearchTitle title={title} /> : title}
       </h1>
       {intro && (
         <div className="mt-2 max-w-3xl">

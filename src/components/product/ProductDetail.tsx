@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import axios from "axios";
-import { Check, ChevronRight, Hourglass, ShoppingBag, Truck } from "lucide-react";
+import { ArrowRight, Check, ChevronRight, Hourglass, ShoppingBag, Truck } from "lucide-react";
 
 import Link from "@/components/i18n/Link";
 import { useMessages } from "@/components/i18n/LocaleProvider";
@@ -21,6 +21,7 @@ import { useNow } from "@/hooks/useNow";
 import { countdownParts } from "@/lib/banner";
 import { fetchProduct } from "@/lib/catalogApi";
 import { cartLineFor } from "@/lib/cartLine";
+import { showCartToast } from "@/lib/cartToast";
 import { categoryCopy } from "@/lib/categories";
 import { normalizeHex, readableInk } from "@/lib/color";
 import { saleState } from "@/lib/flashSale";
@@ -62,12 +63,14 @@ function countdown(ms: number, day: (n: number) => string) {
  * pills are the choice of *what* is being bought: everything below them — the
  * stock badge, the cart quantity, the button — reads the selected variant.
  *
+ * The buying comes first, by the gallery: title, price, colour, quantity and
+ * "Sepete Ekle"; the shop's advantages ("Size Özel Alışveriş Avantajları",
+ * all of them, as the homepage states them) under the button. On a phone the
+ * price and the button also ride in a bar over the tab bar (`BuyBar`) while
+ * the page's own button is out of sight.
+ *
  * The category column sits down the left, closed on arrival (see
- * `lib/sidebar`). Opened, it takes the advantages' place rather than squeezing
- * the gallery and the price into thirds: the dock steps out, the title and
- * price have the right column to themselves, and the dock fades back in once
- * the column is closed again. Below `lg` the column is the bar's drawer and
- * nothing here changes.
+ * `lib/sidebar`). Below `lg` the column is the bar's drawer.
  */
 export function ProductDetail({ initialProduct, category, categories, breadcrumbs, sidebar, advantages }: ProductDetailProps) {
   const hydrated = useAuthHydrated();
@@ -82,7 +85,7 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
   const t = useMessages(productMessages);
   const card = useMessages(catalogMessages).card;
   const breadcrumbLabel = useMessages(catalogMessages).breadcrumb;
-  // The dock decides the shape of the row above the colour pills.
+  // The advantages are a retail offer: not shown to a firm's account.
   const perksShown = showsRetailPerks(user);
   // The live rules behind the dock and the havale price line.
   const params = useStoreParameters();
@@ -141,6 +144,13 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
   const inCart = cartHydrated ? inCartRaw : 0;
   const quantity = draft ?? (inCart > 0 ? inCart : 1);
   const changed = inCart > 0 && quantity !== inCart;
+  // What the buy button is for now, here and in the phone's buy bar.
+  const buy: BuyState =
+    inCart > 0
+      ? changed
+        ? { kind: "update", disabled: quantity > inCart && !canAdd }
+        : { kind: "goToCart", justAdded: added }
+      : { kind: "add", disabled: !canAdd, soldOut };
 
   useEffect(() => {
     if (!added) return;
@@ -162,7 +172,19 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
     }
     setDraft(null);
     setAdded(true);
+    showCartToast(inCart > 0 ? { kind: "updated" } : { kind: "added", name: product.name, image: product.image_url });
   }
+
+  // The page's own button in sight or not: the phone's buy bar shows while it is not.
+  const buyRow = useRef<HTMLDivElement>(null);
+  const [buyInView, setBuyInView] = useState(true);
+  useEffect(() => {
+    const row = buyRow.current;
+    if (!row) return;
+    const observer = new IntersectionObserver(([entry]) => setBuyInView(entry.isIntersecting));
+    observer.observe(row);
+    return () => observer.disconnect();
+  }, []);
 
   const Icon = categoryCopy(category?.slug).icon;
   const isHeavy = product.tags?.includes("HEAVY_CARGO") ?? false;
@@ -202,17 +224,7 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
           }
         />
 
-        <div className="flex flex-col">
-          {/* Title, price and stock on the left; the retail terms in the space
-              beside them, which was empty. Without the dock there is nothing to
-              share the row with, so the block keeps the full width — as it
-              does while the category column is open and the dock is out. */}
-          <div
-            className={
-              perksShown ? "grid grid-cols-1 items-start gap-6 md:grid-cols-2 lg:grid-cols-1 lg:sidebar-closed:grid-cols-2" : ""
-            }
-          >
-          <div className="min-w-0">
+        <div className="flex min-w-0 flex-col">
           <p className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground">
             {product.brand ?? category?.name ?? "Nargile Malzemesi"}
           </p>
@@ -291,16 +303,6 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
               </span>
             )}
           </div>
-          </div>
-
-          {/* Out while the category column is open; back, after the column
-              has mostly folded away, once it is closed. */}
-          {perksShown && (
-            <div className="lg:hidden lg:sidebar-closed:block lg:sidebar-closed:motion-safe:animate-perks-in">
-              <RetailPerks params={params} sources={advantages} />
-            </div>
-          )}
-          </div>
 
           {/* One pill per colour, each its own stock. A single-colour product has
               nothing to choose, so it gets no picker. */}
@@ -320,56 +322,35 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
             />
           )}
 
-          <div className="mt-8 flex flex-wrap items-center gap-3">
+          <div ref={buyRow} className="mt-8 flex flex-wrap items-center gap-3">
             <QuantityStepper value={quantity} onChange={(q) => setDraft(capped(q))} label={product.name} max={maxQuantity} />
-            <button
-              type="button"
-              onClick={commit}
-              // Lowering or keeping a cart quantity is always allowed; adding needs stock and prices.
-              disabled={inCart > 0 ? !changed || (quantity > inCart && !canAdd) : !canAdd}
-              className={`inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-full px-7 text-sm font-medium text-white transition-[background-color,transform] duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50 motion-safe:active:scale-[0.98] sm:flex-none ${
-                added ? "bg-emerald-600" : "bg-accent hover:bg-accent-hover"
-              }`}
-            >
-              {added || (inCart > 0 && !changed) ? (
-                <Check className="h-4 w-4" aria-hidden />
-              ) : (
-                <ShoppingBag className="h-4 w-4" aria-hidden />
-              )}
-              {inCart > 0
-                ? changed
-                  ? t.updateCart
-                  : added
-                    ? t.cartUpdated
-                    : t.inCart
-                : soldOut
-                  ? card.soldOut
-                  : added
-                    ? t.addedToCart
-                    : t.addToCart}
-            </button>
+            <BuyButton state={buy} onCommit={commit} className="flex-1 sm:flex-none sm:min-w-56" />
           </div>
-          <p className="mt-3 h-5 text-sm text-muted-foreground" aria-live="polite">
+          <p className="mt-2 flex min-h-11 flex-wrap items-center gap-x-1.5 text-sm text-muted-foreground" aria-live="polite">
             {inCart > 0 && (
               <>
-                {t.inYourCart(inCart)} ·{" "}
-                <Link href="/cart" className="font-medium text-foreground underline-offset-2 hover:underline">
-                  {t.goToCart}
-                </Link>{" "}
-                ·{" "}
+                {t.inYourCart(inCart)} ·
                 <button
                   type="button"
                   onClick={() => {
                     if (variant) useCartStore.getState().removeItem(variant.id);
                     setDraft(null);
                   }}
-                  className="font-medium text-foreground underline-offset-2 hover:underline"
+                  className="inline-flex min-h-11 items-center px-1 font-medium text-foreground underline-offset-2 hover:underline"
                 >
                   {t.removeFromCart}
                 </button>
               </>
             )}
           </p>
+
+          {/* The shop's advantages, every one of them, under the button rather
+              than between the price and it. */}
+          {perksShown && (
+            <div className="mt-6 border-t border-border pt-6">
+              <RetailPerks params={params} sources={advantages} />
+            </div>
+          )}
 
           {/* A three-line preview rather than a wall of text, so "Sepete Ekle"
               stays the first thing below the price. */}
@@ -385,6 +366,118 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
         pricesPending={pricesPending}
         main={{ product, variant, price, saleLive: sale.kind === "live", purchasable: canAdd }}
       />
+      </div>
+
+      {/* A phone's buy bar while the page's own button is out of sight, and the
+          room it takes kept free at the page's foot. */}
+      <BuyBar
+        shown={!buyInView && !!variant}
+        label={t.buyBar}
+        price={price && !pricesPending ? money.format(price) : null}
+        was={discount > 0 && was && !pricesPending ? money.format(was) : null}
+        state={buy}
+        onCommit={commit}
+      />
+      <div aria-hidden className="h-20 md:hidden" />
+    </div>
+  );
+}
+
+type BuyState =
+  | { kind: "add"; disabled: boolean; soldOut: boolean }
+  | { kind: "update"; disabled: boolean }
+  | { kind: "goToCart"; justAdded: boolean };
+
+const BUY_BUTTON =
+  "inline-flex h-12 items-center justify-center gap-2 rounded-full px-7 text-sm font-semibold transition-[background-color,transform] duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-safe:active:scale-[0.98]";
+
+/**
+ * "Sepete Ekle", "Sepeti Güncelle", or — once the colour is in the cart as
+ * asked — "Sepete Git →", a way on rather than a faded, spent button. Just
+ * after adding it says so for a moment, on green, at full strength.
+ */
+function BuyButton({ state, onCommit, className = "" }: { state: BuyState; onCommit: () => void; className?: string }) {
+  const t = useMessages(productMessages);
+  const card = useMessages(catalogMessages).card;
+  if (state.kind === "goToCart") {
+    return (
+      <Link
+        href="/cart"
+        className={`${BUY_BUTTON} ${className} ${
+          state.justAdded ? "bg-emerald-600 text-white" : "bg-zinc-900 text-white hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+        }`}
+      >
+        {state.justAdded ? (
+          <>
+            <Check className="h-4 w-4" aria-hidden /> {t.addedToCart}
+          </>
+        ) : (
+          <>
+            {t.goToCartButton} <ArrowRight className="h-4 w-4 rtl:-scale-x-100" aria-hidden />
+          </>
+        )}
+      </Link>
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={onCommit}
+      // Lowering or keeping a cart quantity is always allowed; adding needs stock and prices.
+      disabled={state.disabled}
+      className={`${BUY_BUTTON} ${className} bg-accent text-white hover:bg-accent-hover disabled:cursor-not-allowed disabled:bg-zinc-200 disabled:text-zinc-500 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-400`}
+    >
+      <ShoppingBag className="h-4 w-4" aria-hidden />
+      {state.kind === "update" ? t.updateCart : state.soldOut ? card.soldOut : t.addToCart}
+    </button>
+  );
+}
+
+/**
+ * The phone's buy bar: the price and the button, over the tab bar, while the
+ * page's own "Sepete Ekle" is scrolled out of sight. It tells the cart's notice
+ * (CartToast) how tall it is, so the notice rises above it.
+ */
+function BuyBar({
+  shown,
+  label,
+  price,
+  was,
+  state,
+  onCommit,
+}: {
+  shown: boolean;
+  label: string;
+  price: string | null;
+  was: string | null;
+  state: BuyState;
+  onCommit: () => void;
+}) {
+  useEffect(() => {
+    if (!shown || !window.matchMedia("(max-width: 47.99rem)").matches) return;
+    const root = document.documentElement;
+    root.style.setProperty("--buy-bar-height", "4.5rem");
+    return () => {
+      root.style.removeProperty("--buy-bar-height");
+    };
+  }, [shown]);
+
+  return (
+    <div
+      role="region"
+      aria-label={label}
+      aria-hidden={!shown}
+      inert={!shown}
+      className={`fixed inset-x-0 bottom-[calc(4rem+1px+env(safe-area-inset-bottom,0px))] z-40 border-t border-border bg-white/95 px-4 py-2.5 shadow-[0_-8px_16px_-12px_rgb(0_0_0/0.35)] backdrop-blur-md transition-[transform,opacity] duration-200 md:hidden dark:bg-background/95 ${
+        shown ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-full opacity-0"
+      }`}
+    >
+      <div className="flex items-center gap-3">
+        <div className="min-w-0 flex-1 leading-tight">
+          {price && <p className="truncate text-lg font-semibold tabular-nums text-foreground">{price}</p>}
+          {was && <p className="truncate text-xs tabular-nums text-muted-foreground line-through">{was}</p>}
+        </div>
+        <BuyButton state={state} onCommit={onCommit} className="shrink-0 px-6" />
       </div>
     </div>
   );

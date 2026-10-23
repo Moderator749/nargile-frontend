@@ -3,7 +3,7 @@ import type { AccountType, AddressKind, BillingEntity, InternationalKind, Segmen
 /** The four cards sign-up offers, plus the two they replaced. */
 export const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
   INDIVIDUAL: "Bireysel",
-  CAFE: "Kafe & Restorant",
+  CAFE: "Kafe & Restoran",
   TOBACCO_SHOP: "Nargile & Tobacco Shop",
   INTERNATIONAL: "Yurt Dışı",
   SOLE_PROPRIETOR: "Şahıs Firması",

@@ -103,16 +103,29 @@ export function applyCatalogFilters(
     return true;
   });
 
-  if (sort === "recommended") return kept;
-  if (sort === "name-asc") return [...kept].sort((a, b) => a.name.localeCompare(b.name, INTL_LOCALE[locale]));
+  return lastIfSoldOut(sorted(kept, sort, now, locale));
+}
+
+function sorted(products: CatalogProduct[], sort: SortKey, now: number | null, locale: Locale): CatalogProduct[] {
+  if (sort === "recommended") return products;
+  if (sort === "name-asc") return [...products].sort((a, b) => a.name.localeCompare(b.name, INTL_LOCALE[locale]));
 
   // Priceless products sink to the bottom either way rather than sorting as 0.
   const direction = sort === "price-asc" ? 1 : -1;
-  return [...kept].sort((a, b) => {
+  return [...products].sort((a, b) => {
     const pa = cardPrice(a, now);
     const pb = cardPrice(b, now);
     if (pa === null) return pb === null ? 0 : 1;
     if (pb === null) return -1;
     return (pa - pb) * direction;
   });
+}
+
+/**
+ * Whatever the order, what cannot be bought goes last, in that same order.
+ * The API already lists them so (`list_products`); this keeps it so when the
+ * grid re-sorts by price or name.
+ */
+function lastIfSoldOut(products: CatalogProduct[]): CatalogProduct[] {
+  return [...products.filter((p) => !soldOut(p)), ...products.filter((p) => soldOut(p))];
 }

@@ -7,8 +7,9 @@ import { panelClass } from "@/components/admin/AdminShell";
 import { ProductThumb } from "@/components/admin/price-import/ProductThumb";
 import { formatDate } from "@/lib/format";
 import type { PriceImportAlias } from "@/types";
+import { foldSearch } from "@/lib/searchFold";
 
-const fold = (text: string) => text.toLocaleLowerCase("tr-TR").replace(/[\s\-_.]/g, "");
+const fold = (text: string) => foldSearch(text).replace(/[\s\-_.]/g, "");
 
 /**
  * "Kayıtlı eşleştirmeler": every workbook name tied to a product, by

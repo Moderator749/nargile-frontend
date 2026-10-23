@@ -25,7 +25,7 @@ export const chromeMessages = defineMessages({
     orders: "Siparişlerim",
     signOut: "Çıkış Yap",
     withCount: (label: string, n: number) => `${label} (${n} ürün)`,
-    welcome: "SULTAN NARGİLE'YE HOŞ GELDİNİZ",
+    welcome: "Sultan Nargile'ye Hoş Geldiniz",
   },
   en: {
     currencyLabel: "Currency (approximate; payment is in TL)",
@@ -41,7 +41,7 @@ export const chromeMessages = defineMessages({
     orders: "My Orders",
     signOut: "Sign Out",
     withCount: (label: string, n: number) => `${label} (${n} ${n === 1 ? "item" : "items"})`,
-    welcome: "WELCOME TO SULTAN NARGILE",
+    welcome: "Welcome to Sultan Nargile",
   },
   ar: {
     currencyLabel: "العملة (تقريبية؛ يتم الدفع بـ TL)",

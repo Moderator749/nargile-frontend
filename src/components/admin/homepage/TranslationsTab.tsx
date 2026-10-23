@@ -11,6 +11,7 @@ import { BUILT_IN_HOME_MEMORY } from "@/lib/homeSectionCopy";
 import { collectTexts, type TextMemory } from "@/lib/homeTranslations";
 import { refreshStorefront } from "@/lib/revalidate";
 import type { Homepage } from "@/types";
+import { foldSearch } from "@/lib/searchFold";
 
 type Lang = "en" | "ar";
 const LANGS: { key: Lang; label: string }[] = [
@@ -70,7 +71,7 @@ export function TranslationsTab({ doc }: { doc: Homepage }) {
   const shown = texts.filter(
     (text) =>
       (filter === "all" || missing(text)) &&
-      (!query.trim() || text.toLocaleLowerCase("tr").includes(query.trim().toLocaleLowerCase("tr"))),
+      (!query.trim() || foldSearch(text).includes(foldSearch(query.trim()))),
   );
   const done = memory ? texts.filter((t) => memory.en[t] && memory.ar[t]).length : 0;
   const dirty = JSON.stringify(memory) !== JSON.stringify(saved);

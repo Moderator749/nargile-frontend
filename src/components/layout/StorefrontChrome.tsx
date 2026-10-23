@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { ExportNotice } from "@/components/auth/ExportNotice";
+import { CartToast } from "@/components/cart/CartToast";
 import { AnnouncementPopup } from "@/components/banner/AnnouncementPopup";
 import { MobileTabBar } from "@/components/layout/MobileTabBar";
 import { Navbar } from "@/components/layout/Navbar";
@@ -40,6 +41,8 @@ export async function StorefrontChrome({ children }: { children: ReactNode }) {
           last line scrolls clear of it. */}
       <div aria-hidden className="h-[calc(4rem+1px+env(safe-area-inset-bottom))] shrink-0 md:hidden" />
       <MobileTabBar />
+      {/* "… sepete eklendi · Sepete Git", for whatever added it. */}
+      <CartToast />
     </>
   );
 }

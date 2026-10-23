@@ -39,8 +39,9 @@ interface CatalogFilterBarProps {
  * grid's two-or-one switch (`DensityToggle`).
  *
  * Everything here narrows what is already on screen (see `lib/catalogFilters`),
- * so the controls are plain inputs rather than links: there is no URL behind
- * them to crawl, and the grid answers immediately.
+ * so the controls are plain inputs rather than links: nothing behind them to
+ * crawl, and the grid answers immediately. The grid writes them into the
+ * address all the same (`lib/catalogFilterParams`), for a reload or a link.
  */
 /**
  * The category column's switch, where the shopping happens: the same state as
@@ -140,7 +141,7 @@ export function CatalogFilterBar({ value, onChange, bounds, trailing }: CatalogF
           value={value.min}
           onChange={(e) => onChange({ min: e.target.value })}
           placeholder={bounds ? String(bounds.min) : "0"}
-          className={`${FIELD} w-10 text-center max-md:px-0.5 md:w-16`}
+          className={`${FIELD} w-[3.25rem] text-center max-md:px-0.5 md:w-16`}
         />
         <span aria-hidden className="text-xs font-bold text-neutral-400">
           –
@@ -155,7 +156,7 @@ export function CatalogFilterBar({ value, onChange, bounds, trailing }: CatalogF
           value={value.max}
           onChange={(e) => onChange({ max: e.target.value })}
           placeholder={bounds ? String(bounds.max) : "1000"}
-          className={`${FIELD} w-10 text-center max-md:px-0.5 md:w-16`}
+          className={`${FIELD} w-[3.25rem] text-center max-md:px-0.5 md:w-16`}
         />
       </div>
 
@@ -197,7 +198,7 @@ export function CatalogFilterBar({ value, onChange, bounds, trailing }: CatalogF
           id={sortId}
           value={value.sort}
           onChange={(e) => onChange({ sort: e.target.value as SortKey })}
-          className={`${FIELD} cursor-pointer pe-8 max-md:w-full max-md:min-w-0 max-md:px-2 max-md:pe-6 max-md:text-[11px] md:w-36`}
+          className={`${FIELD} cursor-pointer pe-8 max-md:w-full max-md:min-w-0 max-md:px-2 max-md:pe-6 md:w-36`}
         >
           {SORT_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>

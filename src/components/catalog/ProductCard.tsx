@@ -18,6 +18,7 @@ import { catalogMessages } from "@/lib/i18n/messages/catalog";
 import { productHref, productImageAlt } from "@/lib/seo";
 import { displayVariant, hasColorChoice, soldOut as allSoldOut } from "@/lib/variants";
 import { useAuthStore } from "@/store/useAuthStore";
+import { showCartToast } from "@/lib/cartToast";
 import { useCartStore } from "@/store/useCartStore";
 import { useCartHydrated } from "@/store/useHasHydrated";
 import type { CatalogProduct, Category } from "@/types";
@@ -153,6 +154,7 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
     useCartStore
       .getState()
       .addItem(cartLineFor(product, variant, price, { quantity: 1, isLoggedIn, saleLive: sale.kind === "live" }));
+    showCartToast({ kind: "added", name: product.name, image: product.image_url });
     setAdded(true);
     clearTimeout(timer.current);
     timer.current = setTimeout(() => setAdded(false), ADDED_FEEDBACK_MS);

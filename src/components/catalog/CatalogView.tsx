@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useMemo, useState, type ReactNode } from "react";
+import { Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
 import { SearchX } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 
@@ -22,6 +22,8 @@ import {
   priceBounds,
   type CatalogFilters,
 } from "@/lib/catalogFilters";
+import { filtersFromParams, filtersToParams } from "@/lib/catalogFilterParams";
+import { publishSearchCount } from "@/lib/searchCount";
 import { catalogMessages } from "@/lib/i18n/messages/catalog";
 import { useAuthStore } from "@/store/useAuthStore";
 import type { CatalogProduct, Category } from "@/types";
@@ -71,14 +73,10 @@ export function CatalogView(props: CatalogViewProps) {
 
         <div className="min-w-0 flex-1">
           {props.heading}
-          {props.brand ? (
-            // A brand page's term is fixed by the route, so there is no URL to wait for.
-            <CatalogGrid {...props} query={props.brand.searchTerm} />
-          ) : (
-            <Suspense fallback={<CatalogGrid {...props} query="" />}>
-              <CatalogGridFromUrl {...props} />
-            </Suspense>
-          )}
+          {/* A brand page's term is fixed by the route; its filters are in the URL all the same. */}
+          <Suspense fallback={<CatalogGrid {...props} query={props.brand?.searchTerm ?? ""} initialFilters={EMPTY_FILTERS} />}>
+            <CatalogGridFromUrl {...props} />
+          </Suspense>
         </div>
       </div>
     </section>
@@ -86,9 +84,11 @@ export function CatalogView(props: CatalogViewProps) {
 }
 
 function CatalogGridFromUrl(props: CatalogViewProps) {
-  const query = (useSearchParams().get("q") ?? "").trim();
-  // Keyed on the term: a new search starts the grid over, filters included.
-  return <CatalogGrid key={query} {...props} query={query} />;
+  const params = useSearchParams();
+  const query = props.brand ? props.brand.searchTerm : (params.get("q") ?? "").trim();
+  // Keyed on the term: a new search starts the grid over. The filters it
+  // opens with are the address's (a reload, the back button, a shared link).
+  return <CatalogGrid key={query} {...props} query={query} initialFilters={filtersFromParams(params)} />;
 }
 
 function CatalogGrid({
@@ -97,11 +97,12 @@ function CatalogGrid({
   initialProducts,
   brand,
   query,
-}: CatalogViewProps & { query: string }) {
+  initialFilters,
+}: CatalogViewProps & { query: string; initialFilters: CatalogFilters }) {
   const user = useAuthStore((s) => s.user);
   const locale = useLocale();
   const t = useMessages(catalogMessages).grid;
-  const [filters, setFilters] = useState<CatalogFilters>(EMPTY_FILTERS);
+  const [filters, setFilters] = useState<CatalogFilters>(initialFilters);
   const catalog = useCatalog({
     category: activeCategory?.slug ?? null,
     query,
@@ -123,10 +124,24 @@ function CatalogGrid({
     () => applyCatalogFilters(catalog.products, filters, now, locale),
     [catalog.products, filters, now, locale],
   );
+  // The page's heading names the search with what it found ("‘lule’ için 48 sonuç").
+  useEffect(() => {
+    if (!searched) return;
+    publishSearchCount(catalog.loading ? null : { query: searched, count: shown.length, more: catalog.hasMore });
+  }, [searched, catalog.loading, shown.length, catalog.hasMore]);
   // A filter can empty a grid that has products behind it: say which it was.
   const filtered = shown.length === 0 && catalog.products.length > 0;
 
-  const patch = (next: Partial<CatalogFilters>) => setFilters((f) => ({ ...f, ...next }));
+  // Written into the address as they change — replaced, not pushed, so the back
+  // button leaves the catalog rather than stepping through every keystroke —
+  // without asking the server for anything: the grid filters on its own.
+  const apply = (next: CatalogFilters) => {
+    setFilters(next);
+    const params = filtersToParams(next, new URLSearchParams(window.location.search));
+    const search = params.toString();
+    window.history.replaceState(window.history.state, "", `${window.location.pathname}${search ? `?${search}` : ""}${window.location.hash}`);
+  };
+  const patch = (next: Partial<CatalogFilters>) => apply({ ...filters, ...next });
   // A phone's two-or-one choice (the filter bar's switch); wider screens keep their columns.
   const density = useCatalogDensity();
   const grid = `${gridClass} ${density === "one" ? "max-md:grid-cols-1" : ""}`;
@@ -191,7 +206,7 @@ function CatalogGrid({
           </p>
           {filtered && (
             <div className="mt-5 w-40">
-              <Button type="button" variant="secondary" onClick={() => setFilters(EMPTY_FILTERS)}>
+              <Button type="button" variant="secondary" onClick={() => apply(EMPTY_FILTERS)}>
                 {t.clearFilters}
               </Button>
             </div>

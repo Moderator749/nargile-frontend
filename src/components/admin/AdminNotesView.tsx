@@ -12,6 +12,7 @@ import { getApiErrorMessage } from "@/lib/errors";
 import { formatDate } from "@/lib/format";
 import { htmlToText } from "@/lib/richText";
 import type { AdminNote } from "@/types";
+import { foldSearch } from "@/lib/searchFold";
 
 // Mirrors the server's bounds (`app/models/note.py`).
 const TITLE_MAX = 120;
@@ -23,7 +24,7 @@ const fieldClass =
 const ghostClass =
   "inline-flex h-10 items-center gap-1.5 rounded-lg px-4 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5";
 
-const fold = (s: string) => s.toLocaleLowerCase("tr-TR");
+const fold = foldSearch;
 
 /** "Başlıksız not" for a note with only a body: its opening words instead. */
 function noteTitle(n: Pick<AdminNote, "title" | "body">): string {

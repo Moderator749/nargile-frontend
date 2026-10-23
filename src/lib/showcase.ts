@@ -12,6 +12,7 @@
  * catalog endpoint does not — see the note in the pull request.
  */
 
+import { foldSearch } from "@/lib/searchFold";
 import { navHref } from "@/lib/storefrontNav";
 import type { Brand, Category, HomeShowcaseTile } from "@/types";
 
@@ -56,6 +57,18 @@ export function tileSlug(tile: Pick<ShowcaseTile, "slug" | "href">): string | nu
   return match ? match[1] : null;
 }
 
+/**
+ * The title the editor gives a tile it has just added ("Kutu ekle"): one still
+ * wearing it was never filled in. Shared with the photo boxes (Görsel Vitrin).
+ */
+export const BLANK_BOX_TITLE = "Yeni kutu";
+
+/** A box the editor added and never filled in: no title, or still its "Yeni kutu". */
+export function isPlaceholderTitle(title: string | null | undefined): boolean {
+  const t = foldSearch((title ?? "").trim());
+  return !t || t === foldSearch(BLANK_BOX_TITLE);
+}
+
 export function resolveShowcase(
   tiles: ShowcaseTile[],
   categories: Category[],
@@ -64,11 +77,16 @@ export function resolveShowcase(
 ): ResolvedTile[] {
   const bySlug = new Map(categories.map((c) => [c.slug, c]));
   const brandBySlug = new Map(brands.map((b) => [b.slug, b]));
-  return tiles.map((tile, i) => ({
-    ...tile,
-    href: navHref(tile, bySlug, brandBySlug),
-    // A photo chosen on the tile wins, then the category's own cover photo
-    // (Menü & Kategoriler), then one borrowed from its products.
-    image: tile.image || bySlug.get(tileSlug(tile) ?? "")?.image_url || artwork[i] || null,
-  }));
+  return (
+    tiles
+      .map((tile, i) => ({
+        ...tile,
+        href: navHref(tile, bySlug, brandBySlug),
+        // A photo chosen on the tile wins, then the category's own cover photo
+        // (Menü & Kategoriler), then one borrowed from its products.
+        image: tile.image || bySlug.get(tileSlug(tile) ?? "")?.image_url || artwork[i] || null,
+      }))
+      // A tile switched off, or added and never filled in, is not the shop's to show.
+      .filter((tile) => tile.enabled !== false && !isPlaceholderTitle(tile.label))
+  );
 }

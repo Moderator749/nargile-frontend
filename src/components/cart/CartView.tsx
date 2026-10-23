@@ -68,6 +68,7 @@ import {
 } from "@/lib/ordersApi";
 import { ISTANBUL } from "@/lib/provinces";
 import { productHref } from "@/lib/seo";
+import { useCartLines } from "@/hooks/useCartLines";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useCartStore } from "@/store/useCartStore";
 import { useAuthHydrated, useCartHydrated } from "@/store/useHasHydrated";
@@ -168,6 +169,11 @@ export function CartView() {
   // What the İstanbul van asks for; the shop can change it from the panel.
   const istanbulMinimum = useIstanbulFreeMinimum();
   const isLoggedIn = authHydrated && !!user;
+  // A visitor has no quote: their lines' pages, codes and stock come from here.
+  const guestLines = useCartLines(
+    items.map((i) => i.variant_id),
+    authHydrated && !user,
+  );
   const accountType: AccountType = user?.account_type ?? "INDIVIDUAL";
   const abroad = shipsAbroad(accountType);
   // The export account: no payment screen, and an order that is a request.
@@ -533,6 +539,12 @@ export function CartView() {
           <ul className="divide-y divide-slate-200 dark:divide-white/10 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-zinc-900 px-4 sm:px-6">
             {items.map((item) => {
               const line = serverLines.get(item.variant_id);
+              const guest = guestLines?.get(item.variant_id);
+              const product = line?.product_id
+                ? { id: line.product_id, slug: line.product_slug }
+                : guest
+                  ? { id: guest.product_id, slug: guest.product_slug }
+                  : null;
               return (
                 <CartLineRow
                   key={item.variant_id}
@@ -540,10 +552,11 @@ export function CartView() {
                   serverUnitPrice={line?.unit_price}
                   serverColorName={line?.color_name}
                   serverImageUrl={line?.image_url}
-                  productHref={line?.product_id ? productHref({ id: line.product_id, slug: line.product_slug }) : undefined}
+                  productHref={product ? productHref(product) : undefined}
                   havaleEligible={line?.havale_eligible}
                   havaleDiscount={line?.havale_discount}
-                  maxQuantity={quoteOnly ? null : line?.available_quantity}
+                  maxQuantity={quoteOnly ? null : (line?.available_quantity ?? guest?.available_quantity)}
+                  sku={line?.sku ?? guest?.sku}
                 />
               );
             })}

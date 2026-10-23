@@ -11,7 +11,8 @@ import { ShippingConsent } from "@/components/cart/ShippingConsent";
 import { TransferDetails } from "@/components/payment/TransferDetails";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
-import { formatMoney, formatMoneyCompact } from "@/lib/format";
+import { estimateCart } from "@/lib/cartEstimate";
+import { formatMoney } from "@/lib/format";
 import type { Locale } from "@/lib/i18n/config";
 import { INTL_LOCALE } from "@/lib/i18n/messages";
 import { cartMessages } from "@/lib/i18n/messages/cart";
@@ -147,6 +148,72 @@ function VolumeNudge({ quote }: { quote: Cart }) {
       <TrendingUp className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
       {t.volumeNudge(formatMoney(remaining), formatRate(next.rate, locale))}
     </p>
+  );
+}
+
+/** How far the cart is from free shipping, as a bar and in words. */
+function FreeShippingProgress({ subtotal, threshold }: { subtotal: number; threshold: number }) {
+  const t = useMessages(cartMessages).summary;
+  if (!(threshold > 0)) return null;
+  const done = subtotal >= threshold;
+  const percent = Math.min(100, Math.max(0, (subtotal / threshold) * 100));
+  const text = done ? t.freeShippingReached : t.toFreeShipping(formatMoney(threshold - subtotal));
+  return (
+    <div className="space-y-1.5 rounded-xl bg-slate-50 px-3 py-2.5 dark:bg-white/5">
+      <p className="flex items-center gap-2 text-[13px] font-medium text-slate-700 dark:text-zinc-200">
+        <Truck className={`h-4 w-4 shrink-0 ${done ? "text-emerald-600 dark:text-emerald-400" : ""}`} aria-hidden />
+        {text}
+      </p>
+      <div
+        role="progressbar"
+        aria-label={text}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(percent)}
+        className="h-1.5 overflow-hidden rounded-full bg-slate-200 dark:bg-white/10"
+      >
+        <div className="h-full rounded-full bg-emerald-500 transition-[width] duration-300" style={{ width: `${percent}%` }} />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * A visitor's summary, before there is a quote (it needs an account): the
+ * subtotal, the basket discount it has reached, shipping, and the estimated
+ * total, by the rules checkout applies to a bireysel order (`estimateCart`).
+ * The server prices the order once they have signed in.
+ */
+function GuestEstimate({ subtotal, params }: { subtotal: number; params: StoreParameters }) {
+  const t = useMessages(cartMessages).summary;
+  const locale = useLocale();
+  const e = estimateCart(subtotal, params);
+  // Within reach only, as for a signed-in cart (VolumeNudge).
+  const nudge = e.nextTier && e.nextTier.remaining <= e.nextTier.threshold / 3 ? e.nextTier : null;
+  return (
+    <>
+      <Row label={t.subtotal} value={formatMoney(e.subtotal)} />
+      {e.volumeDiscount > 0 && (
+        <Row label={t.volumeDiscount(formatRate(e.volumeRate, locale))} value={`−${formatMoney(e.volumeDiscount)}`} tone="discount" />
+      )}
+      <Row label={t.shipping} value={e.freeShipping ? t.free : t.receiverPays} />
+      <div className="flex justify-between gap-4 border-t border-slate-200 pt-3 text-base font-bold dark:border-white/10">
+        <dt>{t.estimatedTotal}</dt>
+        <dd dir="ltr" className="whitespace-nowrap tabular-nums">
+          {formatMoney(e.total)}
+        </dd>
+      </div>
+      <div className="space-y-2 pt-1">
+        <FreeShippingProgress subtotal={e.subtotal} threshold={e.shippingThreshold} />
+        {nudge && (
+          <p className="flex gap-2 rounded-xl bg-emerald-50 px-3 py-2.5 text-xs leading-5 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-200">
+            <TrendingUp className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+            {t.toNextTier(formatMoney(nudge.remaining), formatRate(nudge.rate, locale))}
+          </p>
+        )}
+      </div>
+      <p className="text-[13px] leading-relaxed text-slate-500 dark:text-zinc-400">{t.guestEstimate}</p>
+    </>
   );
 }
 
@@ -328,15 +395,13 @@ export function OrderSummary(props: OrderSummaryProps) {
               <p className="text-xs text-slate-500 dark:text-zinc-400">{t.b2bNote}</p>
             )}
           </>
-        ) : (
+        ) : isLoggedIn ? (
           <>
             <Row label={t.estimatedSubtotal} value={formatMoney(props.estimatedSubtotal)} />
-            <p className="text-xs text-slate-500 dark:text-zinc-400">
-              {isLoggedIn
-                ? t.calculating
-                : t.guestNote(formatMoneyCompact(params.free_shipping_threshold))}
-            </p>
+            <p className="text-xs text-slate-500 dark:text-zinc-400">{t.calculating}</p>
           </>
+        ) : (
+          <GuestEstimate subtotal={props.estimatedSubtotal} params={params} />
         )}
       </dl>
 

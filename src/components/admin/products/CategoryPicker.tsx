@@ -6,8 +6,9 @@ import { Star, X } from "lucide-react";
 import { sheetInputClass, sheetLabelClass } from "@/components/admin/products/SheetParts";
 import { categoryTree } from "@/lib/categories";
 import type { AdminCategory } from "@/types";
+import { foldSearch } from "@/lib/searchFold";
 
-const fold = (s: string) => s.toLocaleLowerCase("tr-TR");
+const fold = foldSearch;
 
 /**
  * "Kategori", several at once: the product is listed under every category

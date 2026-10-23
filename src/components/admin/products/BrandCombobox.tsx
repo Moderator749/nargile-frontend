@@ -7,8 +7,9 @@ import { sheetInputClass } from "@/components/admin/products/SheetParts";
 import { adminCreateBrand } from "@/lib/adminApi";
 import { getApiErrorMessage } from "@/lib/errors";
 import type { Brand } from "@/types";
+import { foldSearch } from "@/lib/searchFold";
 
-const fold = (s: string) => s.trim().toLocaleLowerCase("tr-TR");
+const fold = (s: string) => foldSearch(s.trim());
 
 type Option = { kind: "none" } | { kind: "brand"; brand: Brand } | { kind: "create"; name: string };
 

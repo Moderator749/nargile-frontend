@@ -25,6 +25,8 @@ interface CatalogScreenProps {
   intro?: string | null;
   /** A category's own passage at the page's foot, in place of the shop's "Alt SEO Metni". */
   closing?: { title: string; html: string | null } | null;
+  /** The whole catalog, where the header's search lands (see CatalogHeading). */
+  searchable?: boolean;
 }
 
 /**
@@ -42,6 +44,7 @@ export async function CatalogScreen({
   brand,
   intro,
   closing,
+  searchable,
 }: CatalogScreenProps) {
   const [home, locale] = await Promise.all([getHomepage(), getLocale()]);
   const pageHref = breadcrumbs[breadcrumbs.length - 1].href;
@@ -60,7 +63,7 @@ export async function CatalogScreen({
         activeCategory={activeCategory}
         initialProducts={products}
         brand={brand ? { name: brand.name, searchTerm: brand.search_term } : undefined}
-        heading={<CatalogHeading title={title} breadcrumbs={breadcrumbs} intro={intro} />}
+        heading={<CatalogHeading title={title} breadcrumbs={breadcrumbs} intro={intro} searchable={searchable} />}
         sidebar={<CategorySidebar items={resolveNav(home.navigation.sidebar, categories, brands)} fit />}
       />
 

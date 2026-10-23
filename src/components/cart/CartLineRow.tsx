@@ -25,8 +25,10 @@ interface CartLineRowProps {
   productHref?: string;
   /** A B2B line with its list's havale switch on, and what a transfer takes off it now. */
   havaleEligible?: boolean;
-  /** The most of it the buyer may order (from the server quote); none when there is no limit to hold to. */
+  /** The most of it the buyer may order (the quote's, or for a visitor the retail stock); none when there is no limit to hold to. */
   maxQuantity?: number | null;
+  /** The colour's product code, from the quote or the visitor's line lookup. */
+  sku?: string | null;
   havaleDiscount?: DecimalString;
 }
 
@@ -39,6 +41,7 @@ export function CartLineRow({
   havaleEligible = false,
   havaleDiscount,
   maxQuantity,
+  sku,
 }: CartLineRowProps) {
   const t = useMessages(cartMessages).line;
   const image = serverImageUrl ?? item.image_url ?? null;
@@ -57,72 +60,90 @@ export function CartLineRow({
   const unitPrice = Number(serverUnitPrice ?? item.segment_price ?? item.price);
   const lineTotal = unitPrice * item.quantity;
 
+  // The photo leads to the product as its name does.
+  const photo = (
+    <div className="relative flex h-[4.5rem] w-[4.5rem] shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white text-slate-400 ring-1 ring-black/5 dark:bg-zinc-100 sm:h-24 sm:w-24">
+      {image ? (
+        <Image
+          src={image}
+          alt={label}
+          fill
+          sizes="96px"
+          unoptimized={!canOptimiseImage(image)}
+          className="object-contain p-1.5 mix-blend-multiply"
+        />
+      ) : (
+        <Package className="h-8 w-8" strokeWidth={1.25} aria-hidden />
+      )}
+    </div>
+  );
+
+  /*
+   * Two tiers on a phone: the photo, the name (with its code) and the bin on
+   * top; the quantity and the line's total under them, across the row. One
+   * row from `sm`. Every column may shrink (`minmax(0,1fr)`, `min-w-0`) and the
+   * figures never wrap, so nothing in a line can push the page wider than the
+   * screen.
+   */
   return (
-    <li className="flex gap-4 py-5">
+    <li className="grid grid-cols-[4.5rem_minmax(0,1fr)_auto] gap-x-3 gap-y-3 py-4 sm:grid-cols-[6rem_minmax(0,1fr)_auto_auto] sm:items-center sm:gap-x-4 sm:py-5">
       {/* Fixed square: the photo never shifts the row. Supplier photos are shot on white. */}
-      <div className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white text-slate-400 ring-1 ring-black/5 dark:bg-zinc-100 sm:h-24 sm:w-24">
-        {image ? (
-          <Image
-            src={image}
-            alt={label}
-            fill
-            sizes="96px"
-            unoptimized={!canOptimiseImage(image)}
-            className="object-contain p-1.5 mix-blend-multiply"
-          />
-        ) : (
-          <Package className="h-8 w-8" strokeWidth={1.25} aria-hidden />
+      {productHref ? (
+        <Link href={productHref} tabIndex={-1} aria-hidden className="col-start-1 row-start-1">
+          {photo}
+        </Link>
+      ) : (
+        <div className="col-start-1 row-start-1">{photo}</div>
+      )}
+
+      <div className="col-start-2 row-start-1 min-w-0">
+        <h3 className="line-clamp-2 text-sm font-semibold text-slate-900 dark:text-zinc-100">
+          {productHref ? (
+            <Link href={productHref} className="hover:underline">
+              {item.product_name}
+            </Link>
+          ) : (
+            item.product_name
+          )}
+        </h3>
+        {sku && <p className="mt-0.5 truncate font-mono text-xs text-slate-500 dark:text-zinc-400">{t.code(sku)}</p>}
+        {color && (
+          <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">
+            {t.color} <span className="font-medium text-slate-700 dark:text-zinc-200">{color}</span>
+          </p>
+        )}
+        <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">
+          <span className="whitespace-nowrap">{formatMoney(unitPrice)}</span> <span className="text-xs">{t.perUnit}</span>
+        </p>
+        {havaleEligible && (
+          <p className="mt-1.5 inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/30">
+            {Number(havaleDiscount ?? 0) > 0
+              ? t.havaleDiscount(formatMoney(havaleDiscount!))
+              : t.havaleEligible}
+          </p>
         )}
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col justify-between gap-3 sm:flex-row sm:items-center">
-        <div className="min-w-0">
-          <h3 className="line-clamp-2 text-sm font-semibold text-slate-900 dark:text-zinc-100">
-            {productHref ? (
-              <Link href={productHref} className="hover:underline">
-                {item.product_name}
-              </Link>
-            ) : (
-              item.product_name
-            )}
-          </h3>
-          {color && (
-            <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">
-              {t.color} <span className="font-medium text-slate-700 dark:text-zinc-200">{color}</span>
-            </p>
-          )}
-          <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">
-            {formatMoney(unitPrice)} <span className="text-xs">{t.perUnit}</span>
-          </p>
-          {havaleEligible && (
-            <p className="mt-1.5 inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/30">
-              {Number(havaleDiscount ?? 0) > 0
-                ? t.havaleDiscount(formatMoney(havaleDiscount!))
-                : t.havaleEligible}
-            </p>
-          )}
-        </div>
-
-        <div className="flex items-center justify-between gap-4 sm:justify-end">
-          <QuantityStepper
-            value={item.quantity}
-            onChange={(q) => updateQuantity(item.variant_id, q)}
-            label={label}
-            max={maxQuantity}
-          />
-          <p className="w-28 text-end text-sm font-semibold tabular-nums text-slate-900 dark:text-zinc-100">
-            {formatMoney(lineTotal)}
-          </p>
-          <button
-            type="button"
-            onClick={() => removeItem(item.variant_id)}
-            className="rounded-md p-2 text-slate-400 dark:text-zinc-500 transition-colors hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400"
-            aria-label={t.remove(label)}
-          >
-            <Trash2 className="h-4 w-4" aria-hidden />
-          </button>
-        </div>
+      <div className="col-span-3 row-start-2 flex min-w-0 items-center justify-between gap-3 sm:col-span-1 sm:col-start-3 sm:row-start-1 sm:justify-end sm:gap-4">
+        <QuantityStepper
+          value={item.quantity}
+          onChange={(q) => updateQuantity(item.variant_id, q)}
+          label={label}
+          max={maxQuantity}
+        />
+        <p className="whitespace-nowrap text-end text-sm font-semibold tabular-nums text-slate-900 sm:w-28 dark:text-zinc-100">
+          {formatMoney(lineTotal)}
+        </p>
       </div>
+
+      <button
+        type="button"
+        onClick={() => removeItem(item.variant_id)}
+        className="col-start-3 row-start-1 flex h-11 w-11 items-center justify-center self-start rounded-lg text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600 sm:col-start-4 sm:self-center dark:text-zinc-500 dark:hover:bg-red-500/10 dark:hover:text-red-400"
+        aria-label={t.remove(label)}
+      >
+        <Trash2 className="h-[18px] w-[18px]" aria-hidden />
+      </button>
     </li>
   );
 }

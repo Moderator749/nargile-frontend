@@ -15,7 +15,7 @@ interface QuantityStepperProps {
 }
 
 const stepClass =
-  "flex h-9 w-9 items-center justify-center text-slate-600 dark:text-zinc-400 transition-colors hover:bg-slate-100 dark:hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40";
+  "flex h-11 w-11 items-center justify-center sm:h-9 sm:w-9 text-slate-600 dark:text-zinc-400 transition-colors hover:bg-slate-100 dark:hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40";
 
 /**
  * +/- buttons around a field the buyer can type into, so a B2B order of "150"
@@ -59,7 +59,7 @@ export function QuantityStepper({ value, onChange, label, max }: QuantityStepper
           autoComplete="off"
           aria-label={t.quantity(label)}
           aria-invalid={over || undefined}
-          className={`h-9 w-16 bg-transparent border-x border-slate-300 dark:border-white/15 text-center text-sm font-medium tabular-nums focus:outline-none focus:ring-2 focus:ring-inset ${
+          className={`h-11 w-14 bg-transparent sm:h-9 sm:w-16 border-x border-slate-300 dark:border-white/15 text-center text-sm font-medium tabular-nums focus:outline-none focus:ring-2 focus:ring-inset ${
             over ? "text-red-600 focus:ring-red-500/60 dark:text-red-400" : "focus:ring-red-500/40"
           }`}
           value={draft ?? String(value)}

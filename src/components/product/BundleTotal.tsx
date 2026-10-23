@@ -13,6 +13,7 @@ import { productMessages } from "@/lib/i18n/messages/product";
 import { formatDisplayMoney, loadExchangeRates } from "@/lib/money";
 import { displayVariant, soldOut } from "@/lib/variants";
 import { useAuthStore } from "@/store/useAuthStore";
+import { showCartToast } from "@/lib/cartToast";
 import { useCartStore } from "@/store/useCartStore";
 import { useCurrencyStore } from "@/store/useCurrencyStore";
 import type { CatalogPrice, CatalogProduct, CatalogVariant, ExchangeRates } from "@/types";
@@ -125,6 +126,7 @@ export function BundleTotal({
       })
       .map(({ product, variant, price, saleLive }) => cartLineFor(product, variant, price, { quantity: 1, isLoggedIn, saleLive }));
     useCartStore.getState().addItems(lines);
+    if (lines.length > 0) showCartToast({ kind: "addedMany", count: lines.length });
     setAdded(true);
   }
 

@@ -179,6 +179,14 @@ html[data-auth] .guest-only {
   }
 }
 
+/* The cart's notice (CartToast) rising into place. */
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
 /* The delivery vehicles (DeliveryPerk): wheels turning, the body idling a hair up and down,
    the road's dashes flowing back under it, speed lines streaming off its tail
    and the headlamp's beam breathing. It drives in place: nothing beside it
@@ -464,4 +472,19 @@ html[data-sidebar="collapsed"] .category-sidebar {
 }
 .rich-text a:hover {
   color: var(--accent-hover);
+}
+
+/*
+ * iOS Safari zooms the whole page into a field whose text is under 16px the
+ * moment it is focused, and leaves the visitor to pinch back out. On a phone
+ * every field reads at 16px, whatever its own class says (the search, the
+ * price boxes, the sort, the quantity, the sign-in form). Outside any layer,
+ * so it wins over the utilities.
+ */
+@media (max-width: 47.99rem) {
+  input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="file"]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
 }

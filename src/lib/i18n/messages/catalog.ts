@@ -54,6 +54,8 @@ export const catalogMessages = defineMessages({
       loading: "Ürünler yükleniyor",
       count: (n: number) => `${n} ürün`,
       countFor: (query: string, n: number) => `“${query}” için ${n} ürün`,
+      /** The page's heading while it shows a search: the count once it is known ("48+" with more to load). */
+      searchTitle: (query: string, n: string | null) => (n === null ? `‘${query}’ araması` : `‘${query}’ için ${n} sonuç`),
       segmentPrices: (segment: SegmentType) => `${TR_SEGMENT[segment]} fiyatları gösteriliyor`,
       retry: "Tekrar dene",
       noMatchFilters: "Seçtiğiniz filtrelere uyan ürün yok.",
@@ -160,6 +162,8 @@ export const catalogMessages = defineMessages({
       loading: "Loading products",
       count: (n: number) => enCount(n, "product", "products"),
       countFor: (query: string, n: number) => `${enCount(n, "product", "products")} for “${query}”`,
+      searchTitle: (query: string, n: string | null) =>
+        n === null ? `Search: ‘${query}’` : `${n} ${n === "1" ? "result" : "results"} for ‘${query}’`,
       segmentPrices: (segment: SegmentType) => `Showing ${EN_SEGMENT[segment]} prices`,
       retry: "Try again",
       noMatchFilters: "No products match your filters.",
@@ -262,6 +266,7 @@ export const catalogMessages = defineMessages({
       loading: "جارٍ تحميل المنتجات",
       count: (n: number) => `${n} منتج`,
       countFor: (query: string, n: number) => `${n} منتج لـ «${query}»`,
+      searchTitle: (query: string, n: string | null) => (n === null ? `بحث: «${query}»` : `${n} نتيجة لـ «${query}»`),
       segmentPrices: (segment: SegmentType) => `يتم عرض أسعار ${AR_SEGMENT_PRICES[segment]}`,
       retry: "حاول مرة أخرى",
       noMatchFilters: "لا توجد منتجات تطابق الفلاتر المختارة.",

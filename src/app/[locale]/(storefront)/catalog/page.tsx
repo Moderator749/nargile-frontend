@@ -41,6 +41,7 @@ export default async function CatalogPage() {
       activeCategory={null}
       products={products}
       brands={brands ?? []}
+      searchable
     />
   );
 }

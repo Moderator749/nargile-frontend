@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useLayoutEffect, useRef, useSyncExternalStore } from "react";
-import { ArrowLeft, ChevronDown, ChevronRight, LayoutGrid, X } from "lucide-react";
+import { ArrowLeft, ChevronDown, LayoutGrid, X } from "lucide-react";
 
 import { usePagePath } from "@/components/i18n/navigation";
 import { useLocale, useT } from "@/components/i18n/LocaleProvider";
@@ -27,7 +27,6 @@ import { useCategoryDrawer } from "@/store/useCategoryDrawer";
  */
 function CategoryDrawer({ categories, links = [] }: { categories: ResolvedNav[]; links?: ResolvedNav[] }) {
   const t = useT();
-  const locale = useLocale();
   const open = useCategoryDrawer((s) => s.open);
   const setOpen = useCategoryDrawer((s) => s.setOpen);
   const dialog = useRef<HTMLDialogElement>(null);

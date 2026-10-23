@@ -1,15 +1,15 @@
 "use client";
 
 import { Search, X } from "lucide-react";
+import { foldSearch } from "@/lib/searchFold";
 
-/** The text as compared: Turkish lower case, spaces, hyphens and dots aside ("LH031-V1" = "lh031 v1"). */
-export const foldSearch = (text: string | null | undefined) =>
-  (text ?? "").toLocaleLowerCase("tr-TR").replace(/[\s\-_.]/g, "");
+/** The text as compared: Turkish letters folded ("komur" = "Kömür"), spaces, hyphens and dots aside ("LH031-V1" = "lh031 v1"). */
+export const foldRecord = (text: string | null | undefined) => foldSearch(text).replace(/[\s\-_.]/g, "");
 
-/** Whether any of the texts contains the query, as `foldSearch` compares them. */
+/** Whether any of the texts contains the query, as `foldRecord` compares them. */
 export function matchesSearch(query: string, ...texts: (string | null | undefined)[]): boolean {
-  const q = foldSearch(query);
-  return !q || texts.some((t) => foldSearch(t).includes(q));
+  const q = foldRecord(query);
+  return !q || texts.some((t) => foldRecord(t).includes(q));
 }
 
 /**

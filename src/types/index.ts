@@ -462,6 +462,15 @@ export interface CartItem {
  * Client-side cart line, persisted in the browser. Prices are display-only
  * snapshots; the server re-prices everything in calculate-cart/checkout.
  */
+/** A cart colour before a quote (`GET /products/cart-lines`): its page, its code, its stock. */
+export interface CartLineInfo {
+  variant_id: string;
+  product_id: string;
+  product_slug: string | null;
+  sku: string;
+  available_quantity: number;
+}
+
 export interface CartLineItem extends CartItem {
   product_name: string;
   /** The colour that was added; null/absent on a colourless product. */

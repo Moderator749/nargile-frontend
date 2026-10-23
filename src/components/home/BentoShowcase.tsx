@@ -3,6 +3,7 @@ import { BentoBoxView } from "@/components/home/BentoBoxView";
 import { homeMessages } from "@/lib/i18n/messages/home";
 import { getMessages } from "@/lib/i18n/server";
 import { PAGE_CONTAINER } from "@/lib/layout";
+import { isPlaceholderTitle } from "@/lib/showcase";
 import type { HomeBento } from "@/types";
 
 /*
@@ -20,11 +21,13 @@ const SIZES = "(min-width: 768px) 36vw, 448px";
  */
 export async function BentoShowcase({ copy }: { copy: HomeBento }) {
   const t = (await getMessages(homeMessages)).bento;
-  if (copy.boxes.length === 0) return null;
+  // A photo box with no photo, or one added and never titled past "Yeni kutu", is not shown.
+  const boxes = copy.boxes.filter((box) => box.image?.trim() && !(box.title && isPlaceholderTitle(box.title)));
+  if (boxes.length === 0) return null;
   return (
     <section aria-label={t.label} className="w-full bg-white pb-10 md:pb-14 dark:bg-transparent">
       <ul className={`${PAGE_CONTAINER} grid grid-cols-1 gap-4 md:grid-cols-3`}>
-        {copy.boxes.map((box, i) => (
+        {boxes.map((box, i) => (
           <li key={i} className="max-md:mx-auto max-md:w-full max-md:max-w-[26rem]">
             <Link
               href={box.href}

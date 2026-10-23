@@ -1,6 +1,6 @@
 import { api } from "@/lib/api";
 import { CATALOG_PAGE_SIZE } from "@/lib/config";
-import type { CatalogProduct, CatalogProductDetail, Category } from "@/types";
+import type { CartLineInfo, CatalogProduct, CatalogProductDetail, Category } from "@/types";
 
 export { CATALOG_PAGE_SIZE };
 
@@ -32,6 +32,17 @@ export async function fetchProductsByIds(ids: string[], signal?: AbortSignal): P
   const params = new URLSearchParams({ limit: String(Math.min(ids.length, 100)) });
   for (const id of ids) params.append("ids", id);
   const { data } = await api.get<CatalogProduct[]>(`/products?${params}`, { signal });
+  return data;
+}
+
+/**
+ * A cart's colours as the cart page shows them before there is a quote: page,
+ * code and the stock of the caller's own quota, asked for live.
+ */
+export async function fetchCartLines(variantIds: string[], signal?: AbortSignal): Promise<CartLineInfo[]> {
+  const params = new URLSearchParams();
+  for (const id of variantIds.slice(0, 100)) params.append("ids", id);
+  const { data } = await api.get<CartLineInfo[]>(`/products/cart-lines?${params}`, { signal });
   return data;
 }
 

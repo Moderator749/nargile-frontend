@@ -407,7 +407,7 @@ export const registrationMessages = defineMessages<{
     accountType: "Hesap türü",
     accountTypes: {
       INDIVIDUAL: "Bireysel",
-      CAFE: "Kafe & Restorant",
+      CAFE: "Kafe & Restoran",
       TOBACCO_SHOP: "Nargile & Tobacco Shop",
       // In English, on purpose: whoever this card is for cannot read the others.
       INTERNATIONAL: "Yurt Dışı / International",
