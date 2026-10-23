@@ -1,8 +1,13 @@
 "use client";
 
-import { useId } from "react";
+import { useId, useRef } from "react";
 import Link from "next/link";
-import { SlidersHorizontal } from "lucide-react";
+import { RotateCcw, SlidersHorizontal } from "lucide-react";
+
+import { TextStyleFields } from "@/components/admin/hero/TextStyleFields";
+import { useBoxCanvas } from "@/components/admin/homepage/useBoxCanvas";
+import { BentoBoxView } from "@/components/home/BentoBoxView";
+import { Switch } from "@/components/ui/Switch";
 
 import {
   IconSelect,
@@ -15,8 +20,8 @@ import {
 } from "@/components/admin/homepage/fields";
 import type {
   Category,
-  HomeBentoLayout,
-  HomeBentoTile,
+  HomeBentoBox,
+  HomeBoxText,
   HomeBrandBlurb,
   HomeCampaignBox,
   HomeLoyaltyCopy,
@@ -273,123 +278,111 @@ export function CampaignsForm({
 
 // ── Görsel Vitrin ────────────────────────────────────────────────────────────
 
-/** Each arrangement's boxes, as the storefront lays them out; "tall" ones are 3:4, the rest wide. */
-const BENTO_LAYOUTS: Record<HomeBentoLayout, { title: string; boxes: { name: string; tall: boolean }[]; photo: string }> = {
-  bento: {
-    title: "Bento: 3 dikey + 2 yatay kutu",
-    boxes: [
-      { name: "Dikey 1", tall: true },
-      { name: "Dikey 2", tall: true },
-      { name: "Dikey 3", tall: true },
-      { name: "Yatay üst", tall: false },
-      { name: "Yatay alt", tall: false },
-    ],
-    photo: "",
-  },
-  row: {
-    title: "3 yatay kutu (16:9), yan yana",
-    boxes: [
-      { name: "Yatay 1", tall: false },
-      { name: "Yatay 2", tall: false },
-      { name: "Yatay 3", tall: false },
-    ],
-    photo: "16:9 yatay fotoğraf: kutuya kırpılmadan oturur.",
-  },
-};
-
-/** The crop the storefront will show: the photo in the box's shape (3:4 or 16:9), centred where the slider says. */
-function CropPreview({ tile, tall }: { tile: HomeBentoTile; tall: boolean }) {
-  return (
-    <div
-      className={`relative shrink-0 overflow-hidden rounded-lg bg-slate-100 ring-1 ring-black/5 dark:bg-white/5 ${tall ? "h-24 w-[4.5rem]" : "aspect-video w-32"}`}
-    >
-      {tile.image && (
-        // eslint-disable-next-line @next/next/no-img-element -- a small live preview of an admin's photo
-        <img src={tile.image} alt="" className="h-full w-full object-cover" style={{ objectPosition: `${tile.focus_x}% 50%` }} />
-      )}
-    </div>
-  );
+/** A per-text setting with one text's value changed (null: back to the box's own); null when none is left. */
+function withPart<V>(values: Partial<Record<HomeBoxText, V | null>> | null, part: HomeBoxText, value: V | null) {
+  const next = Object.fromEntries(
+    Object.entries({ ...values, [part]: value }).filter(([, v]) => v !== null && v !== undefined),
+  ) as Partial<Record<HomeBoxText, V>>;
+  return Object.keys(next).length ? next : null;
 }
 
-function BentoBoxFields({
-  tile,
-  index,
-  layout,
+/** A box's words, placement, size, colour and wash, edited on its own live preview (as a hero slide's). */
+function BentoBoxEditor({
+  box,
   categories,
   onChange,
 }: {
-  tile: HomeBentoTile;
-  index: number;
-  layout: HomeBentoLayout;
+  box: HomeBentoBox;
   categories: Category[];
-  onChange: (patch: Partial<HomeBentoTile>) => void;
+  onChange: (patch: Partial<HomeBentoBox>) => void;
 }) {
-  const focusId = useId();
-  const { boxes, photo } = BENTO_LAYOUTS[layout];
-  const tall = boxes[index]?.tall ?? false;
+  const frame = useRef<HTMLDivElement>(null);
+  const canvas = useBoxCanvas({ box, set: onChange, frame });
+  const overlayId = useId();
+  const strengthId = useId();
+  const style = (part: HomeBoxText) => ({
+    size: box.font_sizes?.[part] ?? null,
+    color: box.text_colors?.[part] ?? null,
+    // Back to the box's own size (the only way: sizes are set by dragging).
+    onSize: () => onChange({ font_sizes: withPart(box.font_sizes, part, null) }),
+    onColor: (color: string | null) => onChange({ text_colors: withPart(box.text_colors, part, color) }),
+  });
   return (
-    <div className="grid gap-4 border-t border-slate-200 pt-4 first:border-t-0 first:pt-0 @2xl:grid-cols-[1fr_15rem] dark:border-white/10">
-      <div className="space-y-3">
-        <p className="text-xs font-semibold text-slate-700 dark:text-zinc-300">
-          Kutu {index + 1} · {boxes[index]?.name}
-        </p>
-        <LinkField categories={categories} value={tile.href} onChange={(href) => onChange({ href })} />
+    <div className="grid gap-5 @2xl:grid-cols-[1fr_16rem]">
+      <div className="space-y-4">
+        <TextField label="Üst etiket (isteğe bağlı)" value={box.eyebrow} max={60} onChange={(eyebrow) => onChange({ eyebrow })} />
+        <TextStyleFields label="Üst etiket" {...style("eyebrow")} />
+        <TextArea label="Başlık (isteğe bağlı)" value={box.title} max={120} rows={2} onChange={(title) => onChange({ title })} />
+        <TextStyleFields label="Başlık" {...style("title")} />
+        <TextArea label="Alt metin (isteğe bağlı)" value={box.subtitle} max={240} rows={2} onChange={(subtitle) => onChange({ subtitle })} />
+        <TextStyleFields label="Alt metin" {...style("subtitle")} />
+        <div className="rounded-xl border border-slate-200 p-3 dark:border-white/10">
+          <div className="flex items-center justify-between gap-3">
+            <p id={overlayId} className="text-sm font-medium">
+              Koyu katman
+              <span className="block text-[11px] font-normal text-slate-500 dark:text-zinc-500">Açık fotoğrafta beyaz yazı okunsun diye alttan koyulaşır.</span>
+            </p>
+            <Switch checked={box.overlay} onChange={(overlay) => onChange({ overlay })} labelledBy={overlayId} />
+          </div>
+          {box.overlay && (
+            <div className="mt-3 space-y-1">
+              <label htmlFor={strengthId} className="block text-xs font-medium text-slate-600 dark:text-zinc-400">
+                Koyuluk: %{box.overlay_strength}
+              </label>
+              <input
+                id={strengthId}
+                type="range"
+                min={10}
+                max={90}
+                value={box.overlay_strength}
+                onChange={(e) => onChange({ overlay_strength: Number(e.target.value) })}
+                className="w-full accent-red-600"
+              />
+            </div>
+          )}
+        </div>
+        <LinkField categories={categories} value={box.href} onChange={(href) => onChange({ href })} />
         <TextField
           label="Görselin açıklaması (alt)"
-          value={tile.alt}
+          value={box.alt}
           max={120}
           onChange={(alt) => onChange({ alt })}
-          hint="Kutuda yazı yok: ekran okuyucular ve arama motorları bunu okur."
+          hint="Ekran okuyucular ve arama motorları için: fotoğrafta ne var."
         />
-        <div className="flex items-center gap-4">
-          <div className="min-w-0 flex-1 space-y-1">
-            <label htmlFor={focusId} className="block text-xs font-medium text-slate-600 dark:text-zinc-400">
-              Odak (yatay): %{tile.focus_x}
-            </label>
-            <input
-              id={focusId}
-              type="range"
-              min={0}
-              max={100}
-              value={tile.focus_x}
-              onChange={(e) => onChange({ focus_x: Number(e.target.value) })}
-              className="w-full accent-red-600"
-            />
-            <p className="text-[11px] text-slate-500 dark:text-zinc-500">Fotoğrafın hangi kısmı kutuda görünsün.</p>
-          </div>
-          <CropPreview tile={tile} tall={tall} />
-        </div>
       </div>
-      <ImageField
-        label="Görsel"
-        value={tile.image}
-        onChange={(image) => onChange({ image: image ?? "" })}
-        hint={photo || (tall ? "Dikey kutu: 3:4 veya 2:3 dikey fotoğraf en iyisi." : "Yatay kutu: 16:9 veya 2:1 yatay fotoğraf en iyisi.")}
-      />
+      <div className="space-y-3 self-start @2xl:sticky @2xl:top-0">
+        <div ref={frame} {...canvas.pan} className="cursor-move touch-none select-none">
+          <BentoBoxView box={box} sizes="256px" editor={{ bind: canvas.bind, selected: canvas.selected, resize: canvas.resize }} />
+        </div>
+        <p className="text-[11px] leading-relaxed text-slate-500 dark:text-zinc-500">
+          Yazıyı sürükleyip taşıyın; seçili yazıyı kırmızı köşesinden boyutlandırın; fotoğrafı sürükleyip kadrajlayın. Sitedeki kutu
+          bunun büyütülmüşüdür.
+        </p>
+        {box.layout && (
+          <button
+            type="button"
+            onClick={() => onChange({ layout: null })}
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white"
+          >
+            <RotateCcw className="h-3.5 w-3.5" aria-hidden /> Konumları sıfırla (alta dizili)
+          </button>
+        )}
+        <ImageField label="Görsel" value={box.image} onChange={(image) => onChange({ image: image ?? "" })} hint="Dikey (3:4) fotoğraf en iyisi." />
+      </div>
     </div>
   );
 }
 
 export function BentoForm({ value, set, categories }: { value: Homepage["bento"]; set: Set<"bento">; categories: Category[] }) {
-  const setTab = (t: number, patch: Partial<Homepage["bento"]["tabs"][number]>) =>
-    set({ tabs: value.tabs.map((tab, i) => (i === t ? { ...tab, ...patch } : tab)) });
   return (
     <div className="space-y-6">
-      {value.tabs.map((tab, t) => (
-        <Panel key={t} title={`Sekme ${t + 1} · ${BENTO_LAYOUTS[tab.layout].title}`} hint="Sekmeye geçince görünüm yana kayarak bu sekmenin kutularına geçer.">
-          <TextField label="Sekme adı" value={tab.label} max={30} onChange={(label) => setTab(t, { label })} />
-          <div className="space-y-4 pt-2">
-            {tab.tiles.map((tile, i) => (
-              <BentoBoxFields
-                key={i}
-                tile={tile}
-                index={i}
-                layout={tab.layout}
-                categories={categories}
-                onChange={(patch) => setTab(t, { tiles: tab.tiles.map((x, j) => (j === i ? { ...x, ...patch } : x)) })}
-              />
-            ))}
-          </div>
+      {value.boxes.map((box, i) => (
+        <Panel key={i} title={`Kutu ${i + 1}`} hint={["Solda", "Ortada", "Sağda"][i] ?? undefined}>
+          <BentoBoxEditor
+            box={box}
+            categories={categories}
+            onChange={(patch) => set({ boxes: value.boxes.map((b, j) => (j === i ? { ...b, ...patch } : b)) })}
+          />
         </Panel>
       ))}
     </div>

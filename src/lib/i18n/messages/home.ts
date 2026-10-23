@@ -105,16 +105,11 @@ export const homeMessages = defineMessages({
     },
     bento: {
       label: "Öne Çıkan Koleksiyonlar",
-      newest: "Yeni Gelenler",
-      popular: "Popüler",
-      newestAlts: [
-        "Oduman nargile takımı",
-        "Klasik nargile takımları",
-        "Legend Hookah nargile takımı",
-        "Altın detaylı nargile takımı",
-        "Nargile aksesuarları",
+      boxes: [
+        { alt: "Nargile kömürleri", eyebrow: "Doğal Hindistan Cevizi", title: "Nargile\nKömürleri", subtitle: "Uzun yanan, kokusuz kömürler" },
+        { alt: "Bitkisel nargile aromaları", eyebrow: "Tütünsüz Tatlar", title: "Bitkisel\nÜrünler", subtitle: "Doğal, aromatik karışımlar" },
+        { alt: "Nargile malzemeleri", eyebrow: "Her Şey Tek Yerde", title: "Nargile\nMalzemeleri", subtitle: "Lüle, marpuç, közlük ve dahası" },
       ],
-      popularAlts: ["Nargile kömürleri", "Bitkisel nargile aromaları", "Nargile malzemeleri"],
     },
     campaigns: {
       heading: "Kampanyalar",
@@ -237,16 +232,11 @@ export const homeMessages = defineMessages({
     },
     bento: {
       label: "Featured collections",
-      newest: "New Arrivals",
-      popular: "Popular",
-      newestAlts: [
-        "Oduman hookah set",
-        "Classic hookah sets",
-        "Legend Hookah set",
-        "Hookah set with gold details",
-        "Hookah accessories",
+      boxes: [
+        { alt: "Hookah charcoal", eyebrow: "Natural Coconut", title: "Hookah\nCharcoal", subtitle: "Long-burning, odourless coals" },
+        { alt: "Herbal hookah flavours", eyebrow: "Tobacco-Free Flavours", title: "Herbal\nBlends", subtitle: "Natural, aromatic mixes" },
+        { alt: "Hookah supplies", eyebrow: "All in One Place", title: "Hookah\nSupplies", subtitle: "Bowls, hoses, heat managers and more" },
       ],
-      popularAlts: ["Hookah charcoal", "Herbal hookah flavours", "Hookah supplies"],
     },
     campaigns: {
       heading: "Promotions",
@@ -369,16 +359,11 @@ export const homeMessages = defineMessages({
     },
     bento: {
       label: "مجموعات مميزة",
-      newest: "وصل حديثًا",
-      popular: "الأكثر رواجًا",
-      newestAlts: [
-        "طقم أرجيلة أودومان",
-        "أطقم أرجيلة كلاسيكية",
-        "طقم أرجيلة ليجند",
-        "طقم أرجيلة بتفاصيل ذهبية",
-        "إكسسوارات الأرجيلة",
+      boxes: [
+        { alt: "فحم الأرجيلة", eyebrow: "جوز هند طبيعي", title: "فحم\nالأرجيلة", subtitle: "فحم طويل الاشتعال بلا رائحة" },
+        { alt: "نكهات أرجيلة عشبية", eyebrow: "نكهات بلا تبغ", title: "منتجات\nعشبية", subtitle: "خلطات طبيعية عطرية" },
+        { alt: "مستلزمات الأرجيلة", eyebrow: "كل شيء في مكان واحد", title: "مستلزمات\nالأرجيلة", subtitle: "رؤوس وخراطيم ومنظمات حرارة والمزيد" },
       ],
-      popularAlts: ["فحم الأرجيلة", "نكهات أرجيلة عشبية", "مستلزمات الأرجيلة"],
     },
     campaigns: {
       heading: "العروض",

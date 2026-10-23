@@ -41,26 +41,15 @@ export const PLACEHOLDERS = { tutar: "{tutar}", oran: "{oran}", bant: "{bant}" }
 type Words = (typeof homeMessages)["tr"];
 
 /**
- * "Görsel Vitrin"'s starting photos (the shop's own, in public/images) and
- * where each leads: "Yeni Gelenler" a bento (three tall boxes, then two
- * wide), "Popüler" a row of three 16:9 boxes. `focus_x` keeps a wide photo's
- * subject in a tall box. Their words are the messages' alts, in this order.
+ * "Görsel Vitrin"'s starting photos (the shop's own, in public/images), where
+ * each leads and its focal point in the tall box; their words are the
+ * messages' `bento.boxes`, in this order.
  */
-const BENTO_NEWEST: [string, string, number][] = [
-  ["/images/avantaj-oduman.jpg", "/catalog/oduman", 24],
-  ["/images/avantaj-cat-nargile.jpg", "/catalog/klasik-takimlar", 50],
-  ["/images/avantaj-legend.jpg", "/catalog/legend", 72],
-  ["/images/avantaj-hero-1.jpg", "/catalog", 20],
-  ["/images/avantaj-hero-3.jpg", "/catalog/malzemeler", 70],
-];
-const BENTO_POPULAR: [string, string, number][] = [
-  ["/images/avantaj-cat-komur.jpg", "/catalog/komurler", 50],
-  ["/images/avantaj-cat-tutun.jpg", "/catalog/bitkisel-urunler", 50],
+const BENTO_BOXES: [string, string, number][] = [
+  ["/images/avantaj-cat-komur.jpg", "/catalog/komurler", 42],
+  ["/images/avantaj-cat-tutun.jpg", "/catalog/bitkisel-urunler", 55],
   ["/images/avantaj-cat-aksesuar.jpg", "/catalog/malzemeler", 50],
 ];
-
-const bentoTiles = (tiles: [string, string, number][], alts: readonly string[]) =>
-  tiles.map(([image, href, focus_x], i) => ({ image, href, focus_x, alt: alts[i] ?? "" }));
 
 type Emphasis = { before: string; strong: string; after: string };
 const joined = (e: Emphasis) => `${e.before}${e.strong}${e.after}`;
@@ -106,10 +95,18 @@ function copyIn(w: Words): SectionCopy {
       call: w.loyalty.kumbaraCall,
     },
     bento: {
-      tabs: [
-        { label: w.bento.newest, layout: "bento", tiles: bentoTiles(BENTO_NEWEST, w.bento.newestAlts) },
-        { label: w.bento.popular, layout: "row", tiles: bentoTiles(BENTO_POPULAR, w.bento.popularAlts) },
-      ],
+      boxes: BENTO_BOXES.map(([image, href, focus_x], i) => ({
+        image,
+        href,
+        focus_x,
+        focus_y: 50,
+        ...w.bento.boxes[i],
+        layout: null,
+        font_sizes: null,
+        text_colors: null,
+        overlay: true,
+        overlay_strength: 55,
+      })),
     },
     campaigns: {
       lead: {

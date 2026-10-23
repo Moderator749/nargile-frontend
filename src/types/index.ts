@@ -1702,21 +1702,35 @@ export interface HomeCampaigns {
   minis: HomeCampaignBox[];
 }
 
-/** One photo box of "Görsel Vitrin": no words on it, so `alt` speaks for it. */
-export interface HomeBentoTile {
+/** A text on a "Görsel Vitrin" box, as on a hero slide. */
+export type HomeBoxText = "eyebrow" | "title" | "subtitle";
+
+/** One box of "Görsel Vitrin": a photo with words on it, placed and styled as a hero slide's. */
+export interface HomeBentoBox {
   image: string;
   href: string;
+  /** For screen readers and search engines; the words on the box may not name the photo. */
   alt: string;
-  /** Where the crop centres across the photo, 0–100 (0 = its left edge). */
+  /** The photo's focal point, 0–100 (0 = its left / top edge). */
   focus_x: number;
+  focus_y: number;
+  /** Each optional; line breaks kept. */
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+  /** Each text's centre in % of the box; null = stacked at the bottom. */
+  layout: Record<HomeBoxText, { x: number; y: number }> | null;
+  /** Px on a 400px-wide box; the box keeps its 3:4 shape, so they scale with it. */
+  font_sizes: Partial<Record<HomeBoxText, number | null>> | null;
+  text_colors: Partial<Record<HomeBoxText, string | null>> | null;
+  /** A dark wash from the bottom, at `overlay_strength` % at its darkest. */
+  overlay: boolean;
+  overlay_strength: number;
 }
 
-/** A tab's arrangement: "bento" = three tall boxes and two wide stacked beside them (5); "row" = three 16:9 boxes (3). */
-export type HomeBentoLayout = "bento" | "row";
-
 export interface HomeBento {
-  /** Always two, each in its own arrangement. */
-  tabs: { label: string; layout: HomeBentoLayout; tiles: HomeBentoTile[] }[];
+  /** Always three, side by side. */
+  boxes: HomeBentoBox[];
 }
 
 export interface HomeStatement {

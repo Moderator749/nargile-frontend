@@ -104,7 +104,7 @@ const EDITORS: Record<
   kumbara: { title: "Kumbara Bandı", hint: "Bandın yazıları.", doc: "kumbara", sections: ["kumbara"], size: "md" },
   bento: {
     title: "Görsel Vitrin",
-    hint: "“Yeni Gelenler” 5 kutulu bento, “Popüler” 3 yatay 16:9 kutu: görsel, bağlantı ve açıklama.",
+    hint: "Üç uzun kutu: görsel, üzerindeki yazılar (slider gibi sürükle, boyutlandır, renklendir), koyu katman ve bağlantı.",
     doc: "bento",
     sections: ["bento"],
     size: "lg",
@@ -267,12 +267,11 @@ function checkLinks(doc: Homepage, categories: Category[]): string | null {
   const boxes = [doc.campaigns.lead, ...doc.campaigns.minis];
   const box = boxes.findIndex((b) => bad(b.href) || !b.href);
   if (box >= 0) return `Kampanya Kutuları, ${box === 0 ? "büyük kutu" : `küçük kutu ${box}`}: bağlantı / ile ya da https:// ile başlamalı.`;
-  for (const [t, tab] of doc.bento.tabs.entries()) {
-    if (!tab.label.trim()) return `Görsel Vitrin, sekme ${t + 1}: sekme adı gerekli.`;
-    const i = tab.tiles.findIndex((x) => !x.image?.trim());
-    if (i >= 0) return `Görsel Vitrin, “${tab.label}” kutu ${i + 1}: görsel gerekli.`;
-    const j = tab.tiles.findIndex((x) => bad(x.href) || !x.href);
-    if (j >= 0) return `Görsel Vitrin, “${tab.label}” kutu ${j + 1}: bağlantı / ile ya da https:// ile başlamalı.`;
+  for (const [i, box] of doc.bento.boxes.entries()) {
+    if (!box.image?.trim()) return `Görsel Vitrin, kutu ${i + 1}: görsel gerekli.`;
+    if (bad(box.href) || !box.href) return `Görsel Vitrin, kutu ${i + 1}: bağlantı / ile ya da https:// ile başlamalı.`;
+    const color = Object.values(box.text_colors ?? {}).find((c) => c && !/^#[0-9a-fA-F]{6}$/.test(c));
+    if (color) return `Görsel Vitrin, kutu ${i + 1}: “${color}” geçerli bir renk değil (#RRGGBB).`;
   }
   if (bad(doc.lules.href) || !doc.lules.href) return "Lüle bölümü: “Tümünü gör” bağlantısı / ile ya da https:// ile başlamalı.";
   return null;
