@@ -324,6 +324,8 @@ export interface BrandWrite {
   slug?: string | null;
   search_term?: string | null;
   description?: string | null;
+  /** Only `null` means anything: it takes the logo off. A logo is put on by its own upload. */
+  logo_url?: null;
   is_active: boolean;
   sort_order: number;
 }

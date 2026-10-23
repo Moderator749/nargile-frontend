@@ -64,6 +64,8 @@ export function AdminBrandsView() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY);
   const [editing, setEditing] = useState<Brand | null>(null);
+  // "Logoyu kaldır" in the form: the preview empties at once, "Güncelle" saves it.
+  const [dropLogo, setDropLogo] = useState(false);
   const [saving, setSaving] = useState(false);
   const [busyId, setBusyId] = useState<number | null>(null);
   const [result, setResult] = useState<{ kind: "success" | "error"; text: string } | null>(null);
@@ -101,13 +103,16 @@ export function AdminBrandsView() {
     setSaving(true);
     try {
       // A new brand goes to the end of the list.
-      const body = editing ? toBody(form) : { ...toBody(form), sort_order: Math.max(0, ...(brands ?? []).map((b) => b.sort_order)) + 10 };
+      const body = editing
+        ? { ...toBody(form), ...(dropLogo ? { logo_url: null } : {}) }
+        : { ...toBody(form), sort_order: Math.max(0, ...(brands ?? []).map((b) => b.sort_order)) + 10 };
       const saved = editing ? await adminUpdateBrand(editing.id, body) : await adminCreateBrand(body);
       upsert(saved);
       void refreshStorefront();
       // Stay on the saved brand so its logo can be dropped in right away.
       setEditing(saved);
       setForm(fromBrand(saved));
+      setDropLogo(false);
       setResult({ kind: "success", text: `Kaydedildi: ${saved.name}.` });
     } catch (err) {
       setResult({ kind: "error", text: getApiErrorMessage(err, "Marka kaydedilemedi.") });
@@ -163,6 +168,21 @@ export function AdminBrandsView() {
     void run(brand, () => adminUploadBrandLogo(brand.id, file), "Logo yüklenemedi (PNG, JPEG veya WebP).");
   }
 
+  /** The row's ✕: takes the logo off at once, after asking. */
+  function removeLogo(b: Brand) {
+    if (!window.confirm(`"${b.name}" logosu kaldırılsın mı? Şeritte yerine marka adı görünür.`)) return;
+    if (editing?.id === b.id) setDropLogo(false);
+    void run(b, () => adminDeleteBrandLogo(b.id), "Logo kaldırılamadı.");
+  }
+
+  /** Start editing a brand (or none): nothing pending carries over. */
+  function edit(b: Brand | null) {
+    setEditing(b);
+    setForm(b ? fromBrand(b) : EMPTY);
+    setDropLogo(false);
+    setResult(null);
+  }
+
   async function remove(b: Brand) {
     if (!window.confirm(`"${b.name}" markası silinsin mi?`)) return;
     await run(
@@ -170,10 +190,7 @@ export function AdminBrandsView() {
       async () => {
         await adminDeleteBrand(b.id);
         setBrands((list) => (list ?? []).filter((x) => x.id !== b.id));
-        if (editing?.id === b.id) {
-          setEditing(null);
-          setForm(EMPTY);
-        }
+        if (editing?.id === b.id) edit(null);
       },
       "Silinemedi.",
     );
@@ -252,7 +269,7 @@ export function AdminBrandsView() {
                     {b.logo_url && (
                       <button
                         type="button"
-                        onClick={() => void run(b, () => adminDeleteBrandLogo(b.id), "Logo kaldırılamadı.")}
+                        onClick={() => removeLogo(b)}
                         disabled={busyId === b.id}
                         aria-label={`Logoyu kaldır: ${b.name}`}
                         title="Logoyu kaldır"
@@ -263,11 +280,7 @@ export function AdminBrandsView() {
                     )}
                     <button
                       type="button"
-                      onClick={() => {
-                        setEditing(b);
-                        setForm(fromBrand(b));
-                        setResult(null);
-                      }}
+                      onClick={() => edit(b)}
                       aria-label={`Düzenle: ${b.name}`}
                       className={iconBtn}
                     >
@@ -289,10 +302,7 @@ export function AdminBrandsView() {
             {editing && (
               <button
                 type="button"
-                onClick={() => {
-                  setEditing(null);
-                  setForm(EMPTY);
-                }}
+                onClick={() => edit(null)}
                 className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-800 dark:text-zinc-400"
               >
                 <X className="h-3.5 w-3.5" aria-hidden /> Vazgeç
@@ -330,13 +340,32 @@ export function AdminBrandsView() {
             <Switch checked={form.active} onChange={(v) => set("active", v)} labelledBy="brand-form-active" />
           </div>
           {editing ? (
-            <ImageDropZone
-              label="Logo"
-              preview={editing.logo_url}
-              busy={busyId === editing.id}
-              onFile={(file) => void run(editing, () => adminUploadBrandLogo(editing.id, file), "Logo yüklenemedi (PNG, JPEG veya WebP).")}
-              onReject={(text) => setResult({ kind: "error", text })}
-            />
+            <div className="space-y-2">
+              <ImageDropZone
+                label="Logo"
+                preview={dropLogo ? null : editing.logo_url}
+                busy={busyId === editing.id}
+                onFile={(file) => {
+                  // A new logo replaces the old one: nothing is left to take off.
+                  setDropLogo(false);
+                  void run(editing, () => adminUploadBrandLogo(editing.id, file), "Logo yüklenemedi (PNG, JPEG veya WebP).");
+                }}
+                onReject={(text) => setResult({ kind: "error", text })}
+                onClear={() => {
+                  setDropLogo(true);
+                  setResult(null);
+                }}
+                clearLabel="Logoyu kaldır"
+              />
+              {dropLogo && (
+                <p role="status" className="flex flex-wrap items-center gap-x-2 text-xs text-amber-700 dark:text-amber-400">
+                  Logo “Güncelle” ile kaldırılacak; şeritte marka adı görünecek.
+                  <button type="button" onClick={() => setDropLogo(false)} className="font-medium underline underline-offset-2">
+                    Geri al
+                  </button>
+                </p>
+              )}
+            </div>
           ) : (
             <p className="rounded-xl border border-dashed border-slate-300 p-4 text-xs text-slate-500 dark:border-white/15 dark:text-zinc-400">
               Logo yüklemek için markayı kaydedin; ardından buraya sürükleyip bırakabilirsiniz.

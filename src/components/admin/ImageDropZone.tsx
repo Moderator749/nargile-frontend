@@ -2,7 +2,7 @@
 
 import { useRef, useState, type DragEvent } from "react";
 import Image from "next/image";
-import { ImageUp, Loader2 } from "lucide-react";
+import { ImageUp, Loader2, Trash2 } from "lucide-react";
 
 const ACCEPTED = ["image/png", "image/jpeg", "image/webp"];
 const MAX_BYTES = 1024 * 1024;
@@ -17,13 +17,26 @@ interface ImageDropZoneProps {
   busy?: boolean;
   disabled?: boolean;
   label?: string;
+  /** Offered while there is a preview: a "remove" button beside it. */
+  onClear?: () => void;
+  /** That button's words (default "Kaldır"). */
+  clearLabel?: string;
 }
 
 /**
  * Image upload by drag & drop or click. Highlights while a file is dragged over
  * it and checks type and size client-side (the server checks the bytes again).
  */
-export function ImageDropZone({ onFile, onReject, preview, busy = false, disabled = false, label = "Görsel" }: ImageDropZoneProps) {
+export function ImageDropZone({
+  onFile,
+  onReject,
+  preview,
+  busy = false,
+  disabled = false,
+  label = "Görsel",
+  onClear,
+  clearLabel = "Kaldır",
+}: ImageDropZoneProps) {
   const input = useRef<HTMLInputElement>(null);
   // dragenter/leave also fire for child elements: count them so the highlight doesn't flicker.
   const depth = useRef(0);
@@ -92,6 +105,17 @@ export function ImageDropZone({ onFile, onReject, preview, busy = false, disable
           </button>
           . PNG, JPEG, WebP · en fazla 1 MB.
         </p>
+        {onClear && preview && !busy && (
+          <button
+            type="button"
+            onClick={onClear}
+            disabled={disabled}
+            className="mt-2 inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-red-700 ring-1 ring-red-200 transition-colors hover:bg-red-50 focus-visible:outline-2 focus-visible:outline-red-500 disabled:opacity-40 dark:text-red-300 dark:ring-red-500/30 dark:hover:bg-red-500/10"
+          >
+            <Trash2 className="h-3.5 w-3.5" aria-hidden />
+            {clearLabel}
+          </button>
+        )}
       </div>
       <input
         ref={input}
