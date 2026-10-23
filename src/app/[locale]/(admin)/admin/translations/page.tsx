@@ -1,9 +1,15 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 
-import { AdminTranslationDraftsView } from "@/components/admin/AdminTranslationDraftsView";
+import { AdminTranslationsWorkspace } from "@/components/admin/AdminTranslationsWorkspace";
 
-export const metadata: Metadata = { title: "Çeviri Onayları" };
+export const metadata: Metadata = { title: "Çeviriler" };
 
 export default function Page() {
-  return <AdminTranslationDraftsView />;
+  // The tab is read from the URL (useSearchParams).
+  return (
+    <Suspense>
+      <AdminTranslationsWorkspace />
+    </Suspense>
+  );
 }

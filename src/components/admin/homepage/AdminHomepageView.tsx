@@ -2,12 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ExternalLink, FolderTree, Languages, Loader2, RotateCcw, Save, Smartphone } from "lucide-react";
 
 import { AdminCategoriesView } from "@/components/admin/AdminCategoriesView";
 import { AdminPageHeader } from "@/components/admin/AdminShell";
-import { TranslationsTab } from "@/components/admin/homepage/TranslationsTab";
 import {
   BentoForm,
   BrandShowcaseForm,
@@ -60,8 +60,7 @@ type EditorKey =
   | "seo"
   | "footer"
   | "mobile"
-  | "catalog"
-  | "translations";
+  | "catalog";
 
 /**
  * Each editor the drawer opens: what it is called, the part of the document
@@ -153,8 +152,6 @@ const EDITORS: Record<
   footer: { title: "Footer", hint: "İletişim, kolonlar ve sosyal medya; tüm sayfalarda.", doc: "footer", sections: ["footer"], size: "lg" },
   mobile: { title: "Mobil Yönetim", hint: "Telefonda (768px altı) gizlenecek bölümler.", doc: "mobile", size: "md" },
   catalog: { title: "Katalog Kategorileri", hint: "Her değişiklik kendi kaydedilir.", size: "lg" },
-  // The homepage texts in English and Arabic; saves on its own.
-  translations: { title: "Çeviriler (EN/AR)", hint: "Ana sayfa metinlerinin İngilizcesi ve Arapçası; kendi kaydedilir.", size: "lg" },
 };
 
 /** The pencil on a section's row opens these; a section missing here has nothing to set. */
@@ -183,7 +180,6 @@ const SECTION_EDITOR: Partial<Record<keyof HomeSections, EditorKey>> = {
 const PAGE_EDITORS: { key: EditorKey; Icon: typeof Smartphone }[] = [
   { key: "mobile", Icon: Smartphone },
   { key: "catalog", Icon: FolderTree },
-  { key: "translations", Icon: Languages },
 ];
 
 /** Deep links (/admin/homepage?tab=katalog-kategorileri), e.g. from the retired /admin/categories. */
@@ -191,7 +187,6 @@ const TAB_PARAM: Record<string, EditorKey> = {
   "katalog-kategorileri": "catalog",
   "kategori-duzenle": "hero",
   "mobil-yonetim": "mobile",
-  ceviriler: "translations",
 };
 
 const KEYS = Object.keys(DEFAULT_HOMEPAGE) as (keyof Homepage)[];
@@ -295,7 +290,8 @@ export function AdminHomepageView() {
   const [doc, setDoc] = useState<Homepage | null>(null);
   // Open on the editor a link asked for, else on the list.
   const router = useRouter();
-  const requested = TAB_PARAM[useSearchParams().get("tab") ?? ""];
+  const tabParam = useSearchParams().get("tab");
+  const requested = TAB_PARAM[tabParam ?? ""];
   const [editing, setEditing] = useState<EditorKey | null>(requested ?? null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -412,13 +408,18 @@ export function AdminHomepageView() {
     setEditing(key);
   }
 
+  // The old link to the translations drawer (?tab=ceviriler) leads to "Çeviriler".
+  useEffect(() => {
+    if (tabParam === "ceviriler") router.replace("/admin/translations?sekme=ceviriler");
+  }, [tabParam, router]);
+
   /** Closing keeps the edits: they stay marked on the row and in the save bar until saved. */
   function close() {
     setEditing(null);
     if (requested) router.replace("/admin/homepage", { scroll: false });
   }
 
-  function editor(key: EditorKey, doc: Homepage, saved: Homepage) {
+  function editor(key: EditorKey, doc: Homepage) {
     switch (key) {
       case "hero":
         return (
@@ -441,8 +442,6 @@ export function AdminHomepageView() {
         return <MobileTab value={doc.mobile} set={set("mobile")} />;
       case "catalog":
         return <AdminCategoriesView onChange={reloadCategories} />;
-      case "translations":
-        return <TranslationsTab doc={saved} />;
       case "perks":
         return <PerksForm value={doc.perks} set={set("perks")} />;
       case "picks":
@@ -526,6 +525,15 @@ export function AdminHomepageView() {
                 )}
               </button>
             ))}
+            {/* The homepage texts' English and Arabic live on "Çeviriler", beside the drafts awaiting approval. */}
+            <Link
+              href="/admin/translations?sekme=ceviriler"
+              className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition-colors hover:border-red-400/60 hover:text-slate-900 dark:border-white/10 dark:bg-zinc-900/60 dark:text-zinc-300 dark:hover:text-white"
+            >
+              <Languages className="h-4 w-4 text-red-600" aria-hidden />
+              Çeviriler (EN/AR)
+              <ExternalLink className="h-3.5 w-3.5 text-slate-400" aria-hidden />
+            </Link>
           </div>
 
           {!editing && resultAlert && <div className="mb-4">{resultAlert}</div>}
@@ -591,7 +599,7 @@ export function AdminHomepageView() {
                     Bu bölüm şu an mağazada gizli. Düzenleyebilirsiniz; listedeki anahtarıyla açınca görünür.
                   </p>
                 )}
-                {editor(editing, doc, saved)}
+                {editor(editing, doc)}
               </div>
             )}
           </Drawer>

@@ -50,7 +50,8 @@ const NAV: NavItem[] = [
     children: [{ href: "/admin/brands", label: "Markalar", icon: Tags }],
   },
   // Claude's English and Arabic drafts, waiting to be read and approved.
-  { href: "/admin/translations", label: "Çeviri Onayları", icon: Languages },
+  // The homepage's English and Arabic texts and Claude's drafts awaiting approval, as two tabs.
+  { href: "/admin/translations?sekme=ceviriler", label: "Çeviriler", icon: Languages, also: ["/admin/translations"] },
   { href: "/admin/customers", label: "Müşteriler", icon: Users },
   // The hub; its editors that keep pages of their own light it up too.
   {

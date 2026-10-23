@@ -17,26 +17,40 @@ const LANGUAGE = { en: "İngilizce", ar: "Arapça" } as const;
  * the translation, but stay out of search results until approved — in the
  * product sheet's "Çeviriler" (or the category editor), with "Onayla".
  */
-export function AdminTranslationDraftsView() {
+export function AdminTranslationDraftsView({
+  embedded = false,
+  onCount,
+}: {
+  /** In "Çeviriler"'s tabs, under their heading: no heading of its own. */
+  embedded?: boolean;
+  /** Told how many wait, for the tab's badge. */
+  onCount?: (count: number) => void;
+} = {}) {
   const [rows, setRows] = useState<TranslationDraftRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
     adminTranslationDrafts(controller.signal)
-      .then(setRows)
+      .then((list) => {
+        setRows(list);
+        onCount?.(list.length);
+      })
       .catch((err) => {
         if (!controller.signal.aborted) setError(getApiErrorMessage(err, "Liste yüklenemedi."));
       });
     return () => controller.abort();
-  }, []);
+    // `onCount` is a state setter where it is passed: stable, so this loads once.
+  }, [onCount]);
 
   return (
     <>
-      <AdminPageHeader
-        title="Çeviri Onayları"
-        description="Claude’un yazdığı İngilizce ve Arapça çeviriler. Sayfalarda görünürler ama siz onaylayana kadar arama motorlarına kapalıdırlar: açın, okuyun, gerekirse düzeltin ve “Onayla”ya basıp kaydedin."
-      />
+      {!embedded && (
+        <AdminPageHeader
+          title="Çeviri Onayları"
+          description="Claude’un yazdığı İngilizce ve Arapça çeviriler. Sayfalarda görünürler ama siz onaylayana kadar arama motorlarına kapalıdırlar: açın, okuyun, gerekirse düzeltin ve “Onayla”ya basıp kaydedin."
+        />
+      )}
       {error && <Alert variant="error">{error}</Alert>}
       {!rows ? (
         !error && <div className="h-48 rounded-2xl bg-slate-100 motion-safe:animate-pulse dark:bg-white/5" aria-busy />
