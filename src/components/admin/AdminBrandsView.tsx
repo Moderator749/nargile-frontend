@@ -6,6 +6,7 @@ import { ImageUp, Pencil, Trash2, X } from "lucide-react";
 
 import { AdminPageHeader, panelClass } from "@/components/admin/AdminShell";
 import { ImageDropZone } from "@/components/admin/ImageDropZone";
+import { SortableList } from "@/components/admin/SortableList";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -15,6 +16,7 @@ import {
   adminDeleteBrand,
   adminDeleteBrandLogo,
   adminListBrands,
+  adminReorderBrands,
   adminUpdateBrand,
   adminUploadBrandLogo,
 } from "@/lib/adminApi";
@@ -30,25 +32,29 @@ interface FormState {
   name: string;
   slug: string;
   searchTerm: string;
-  sortOrder: string;
+  description: string;
+  /** Kept as it is: the order is set by dragging the list. */
+  sortOrder: number;
   active: boolean;
 }
 
-const EMPTY: FormState = { name: "", slug: "", searchTerm: "", sortOrder: "0", active: true };
+const EMPTY: FormState = { name: "", slug: "", searchTerm: "", description: "", sortOrder: 0, active: true };
 
 const toBody = (f: FormState): BrandWrite => ({
   name: f.name.trim(),
   slug: f.slug.trim() || null,
   search_term: f.searchTerm.trim() || null,
+  description: f.description.trim() || null,
   is_active: f.active,
-  sort_order: Math.max(0, Number.parseInt(f.sortOrder, 10) || 0),
+  sort_order: f.sortOrder,
 });
 
 const fromBrand = (b: Brand): FormState => ({
   name: b.name,
   slug: b.slug,
   searchTerm: b.search_term,
-  sortOrder: String(b.sort_order),
+  description: b.description ?? "",
+  sortOrder: b.sort_order,
   active: b.is_active,
 });
 
@@ -94,7 +100,9 @@ export function AdminBrandsView() {
     if (saving || !form.name.trim()) return;
     setSaving(true);
     try {
-      const saved = editing ? await adminUpdateBrand(editing.id, toBody(form)) : await adminCreateBrand(toBody(form));
+      // A new brand goes to the end of the list.
+      const body = editing ? toBody(form) : { ...toBody(form), sort_order: Math.max(0, ...(brands ?? []).map((b) => b.sort_order)) + 10 };
+      const saved = editing ? await adminUpdateBrand(editing.id, body) : await adminCreateBrand(body);
       upsert(saved);
       void refreshStorefront();
       // Stay on the saved brand so its logo can be dropped in right away.
@@ -119,6 +127,20 @@ export function AdminBrandsView() {
       setResult({ kind: "error", text: getApiErrorMessage(err, fallback) });
     } finally {
       setBusyId(null);
+    }
+  }
+
+  /** A new order, dragged: shown at once, saved behind it, put back if it fails. */
+  async function reorder(next: Brand[]) {
+    const before = brands;
+    setBrands(next);
+    setResult(null);
+    try {
+      setBrands(await adminReorderBrands(next.map((b) => b.id)));
+      void refreshStorefront();
+    } catch (err) {
+      setBrands(before);
+      setResult({ kind: "error", text: getApiErrorMessage(err, "Sıra kaydedilemedi.") });
     }
   }
 
@@ -161,7 +183,7 @@ export function AdminBrandsView() {
     <>
       <AdminPageHeader
         title="Markalar"
-        description="Menüdeki “Markalar” ve ana sayfadaki kayan marka şeridi. Logosu olmayan marka adıyla gösterilir."
+        description="Markalar menüsü, marka sayfaları (/marka/…) ve ürün formundaki marka listesi. Sırayı tutamaçtan sürükleyerek değiştirin; her taşıma hemen kaydedilir."
       />
 
       {/* One hidden picker shared by every row. */}
@@ -189,9 +211,17 @@ export function AdminBrandsView() {
           ) : brands.length === 0 ? (
             <p className="px-5 py-10 text-center text-sm text-slate-500 dark:text-zinc-400">Henüz marka yok.</p>
           ) : (
-            <ul className="divide-y divide-slate-200 dark:divide-white/10">
-              {brands.map((b) => (
-                <li key={b.id} className="flex flex-wrap items-center gap-4 px-5 py-4" aria-busy={busyId === b.id || undefined}>
+            <SortableList
+              items={brands}
+              getId={(b) => String(b.id)}
+              getLabel={(b) => b.name}
+              onReorder={(next) => void reorder(next)}
+              disabled={busyId !== null}
+              className="divide-y divide-slate-200 dark:divide-white/10"
+              renderItem={(b, handle, index) => (
+                <div className="flex flex-wrap items-center gap-4 py-4 pe-5 ps-2" aria-busy={busyId === b.id || undefined}>
+                  {handle}
+                  <span className="w-5 shrink-0 text-right font-mono text-xs text-slate-400 tabular-nums">{index + 1}</span>
                   {/* Fixed preview box: matches how the marquee renders the logo. */}
                   <div className="flex h-14 w-32 shrink-0 items-center justify-center rounded-xl bg-slate-50 px-3 dark:bg-white/5">
                     {b.logo_url ? (
@@ -203,7 +233,7 @@ export function AdminBrandsView() {
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{b.name}</p>
                     <p className="truncate text-xs text-slate-500 dark:text-zinc-400">
-                      Arama: “{b.search_term}” · Sıra #{b.sort_order}
+                      /marka/{b.slug} · Arama: “{b.search_term}”{b.description ? " · açıklamalı" : ""}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -247,9 +277,9 @@ export function AdminBrandsView() {
                       <Trash2 className="h-4 w-4" aria-hidden />
                     </button>
                   </div>
-                </li>
-              ))}
-            </ul>
+                </div>
+              )}
+            />
           )}
         </section>
 
@@ -278,10 +308,24 @@ export function AdminBrandsView() {
             hint="Marka bağlantısı katalogda bu kelimeyi arar (ürün adlarında geçmeli)."
           />
           <Input label="Adres (slug)" value={form.slug} onChange={(e) => set("slug", e.target.value)} placeholder="boş: addan üretilir" />
-          <Input label="Sıra" type="number" min={0} value={form.sortOrder} onChange={(e) => set("sortOrder", e.target.value)} />
+          <div className="space-y-1.5">
+            <label htmlFor="brand-description" className="flex items-baseline justify-between text-sm font-medium text-slate-700 dark:text-zinc-300">
+              Açıklama
+              <span className="text-xs font-normal text-slate-400 tabular-nums">{form.description.length}/1000</span>
+            </label>
+            <textarea
+              id="brand-description"
+              value={form.description}
+              maxLength={1000}
+              rows={4}
+              onChange={(e) => set("description", e.target.value)}
+              placeholder="Marka sayfasının başında, ürünlerin üstünde gösterilir."
+              className="block w-full resize-y rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20 dark:border-white/15 dark:bg-zinc-900 dark:text-zinc-100"
+            />
+          </div>
           <div className="flex items-center justify-between rounded-xl border border-slate-200 p-4 dark:border-white/10">
             <p id="brand-form-active" className="text-sm font-medium">
-              Menüde ve şeritte göster
+              Yayında (menü ve marka sayfası)
             </p>
             <Switch checked={form.active} onChange={(v) => set("active", v)} labelledBy="brand-form-active" />
           </div>

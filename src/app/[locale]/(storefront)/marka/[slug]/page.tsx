@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { CatalogScreen } from "@/components/catalog/CatalogScreen";
-import { LOCALES } from "@/lib/i18n/config";
+import { DEFAULT_LOCALE, LOCALES } from "@/lib/i18n/config";
 import { getI18n } from "@/lib/i18n/server";
-import { brandCanonical, brandDescription, brandHref, pageMetadata } from "@/lib/seo";
+import { brandCanonical, brandDescription, brandHref, metaDescription, pageMetadata } from "@/lib/seo";
 import { getBrands, getCategories, getPublicProducts, required } from "@/lib/server/catalog";
 
 // A day, as the catalog (CATALOG_REVALIDATE); admin edits refresh it immediately.
@@ -28,6 +28,10 @@ async function load(slug: string) {
   return { brands, brand, products };
 }
 
+/** The admin's own words about the brand ("Markalar"): written in Turkish, so the Turkish page's only. */
+const ownDescription = (brand: { description?: string | null }, locale: string) =>
+  locale === DEFAULT_LOCALE && !!brand.description?.trim();
+
 export async function generateMetadata(props: PageProps<"/[locale]/marka/[slug]">): Promise<Metadata> {
   const { slug } = await props.params;
   const [{ brand, products }, categories, { locale, t }] = await Promise.all([load(slug), getCategories(), getI18n()]);
@@ -35,7 +39,7 @@ export async function generateMetadata(props: PageProps<"/[locale]/marka/[slug]"
 
   return pageMetadata({
     title: t.meta.brandTitle(brand.name),
-    description: brandDescription(brand, products, locale),
+    description: ownDescription(brand, locale) ? metaDescription(brand.description) : brandDescription(brand, products, locale),
     href: brandCanonical(brand.slug, categories),
     locale,
     // A brand's page is in a language when its products are: a page of
@@ -51,12 +55,13 @@ export async function generateMetadata(props: PageProps<"/[locale]/marka/[slug]"
 
 export default async function BrandPage(props: PageProps<"/[locale]/marka/[slug]">) {
   const { slug } = await props.params;
-  const [{ brands, brand, products }, categories, { t }] = await Promise.all([load(slug), getCategories(), getI18n()]);
+  const [{ brands, brand, products }, categories, { locale, t }] = await Promise.all([load(slug), getCategories(), getI18n()]);
   if (!brand) notFound();
 
   return (
     <CatalogScreen
       title={t.meta.brandHeading(brand.name)}
+      intro={ownDescription(brand, locale) ? brand.description : null}
       breadcrumbs={[
         { name: t.nav.home, href: "/" },
         { name: brand.name, href: brandHref(brand.slug) },

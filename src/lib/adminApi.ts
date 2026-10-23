@@ -32,6 +32,7 @@ import type {
   BankAccount,
   BankAccountWrite,
   Brand,
+  CategoryProductOrderRow,
   BrandWrite,
   CategoryWrite,
   CustomerSort,
@@ -326,6 +327,26 @@ export async function adminCreateBrand(body: BrandWrite): Promise<Brand> {
 
 export async function adminUpdateBrand(id: number, body: BrandWrite): Promise<Brand> {
   const { data } = await api.put<Brand>(`/admin/brands/${id}`, body);
+  return data;
+}
+
+/** Every brand, first to last, as dragged: the menu's and the marquee's order. */
+export async function adminReorderBrands(ids: number[]): Promise<Brand[]> {
+  const { data } = await api.put<Brand[]>("/admin/brands/order", { ids });
+  return data;
+}
+
+/** The products a category's page lists, in its order (the ranked first). */
+export async function adminCategoryProductOrder(categoryId: number, signal?: AbortSignal): Promise<CategoryProductOrderRow[]> {
+  const { data } = await api.get<CategoryProductOrderRow[]>(`/admin/categories/${categoryId}/product-order`, { signal });
+  return data;
+}
+
+/** Rank these first on the category's page, in this order; the rest follow by name. */
+export async function adminSetCategoryProductOrder(categoryId: number, productIds: string[]): Promise<CategoryProductOrderRow[]> {
+  const { data } = await api.put<CategoryProductOrderRow[]>(`/admin/categories/${categoryId}/product-order`, {
+    product_ids: productIds,
+  });
   return data;
 }
 

@@ -4,6 +4,7 @@ import { useEffect, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  ArrowDownUp,
   Boxes,
   Calculator,
   ClipboardList,
@@ -19,6 +20,8 @@ import {
   SlidersHorizontal,
   Users,
   Landmark,
+  Tags,
+  type LucideIcon,
 } from "lucide-react";
 
 import { fetchMe } from "@/lib/authApi";
@@ -26,10 +29,30 @@ import { isAdminRole } from "@/lib/roles";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useAuthHydrated } from "@/store/useHasHydrated";
 
-const NAV = [
+interface NavItem {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  exact?: boolean;
+  /** Other pages that light this entry up. */
+  also?: readonly string[];
+  children?: NavItem[];
+}
+
+const NAV: NavItem[] = [
   { href: "/admin", label: "Genel Bakış", icon: LayoutDashboard, exact: true },
   { href: "/admin/orders", label: "Siparişler", icon: ClipboardList },
-  { href: "/admin/products", label: "Ürünler & Stok", icon: Boxes },
+  {
+    href: "/admin/products",
+    label: "Ürünler & Stok",
+    icon: Boxes,
+    // Shown indented under it.
+    children: [
+      { href: "/admin/brands", label: "Markalar", icon: Tags },
+      // A category page's own "Önerilen" order.
+      { href: "/admin/product-order", label: "Ürün Sıralaması", icon: ArrowDownUp },
+    ],
+  },
   // Claude's English and Arabic drafts, waiting to be read and approved.
   { href: "/admin/translations", label: "Çeviri Onayları", icon: Languages },
   { href: "/admin/customers", label: "Müşteriler", icon: Users },
@@ -38,7 +61,7 @@ const NAV = [
     href: "/admin/homepage",
     label: "Ana Sayfa Düzenleme",
     icon: House,
-    also: ["/admin/hero", "/admin/promos", "/admin/brands", "/admin/flash-sales"],
+    also: ["/admin/hero", "/admin/promos", "/admin/flash-sales"],
   },
   // The special-day strip and the landing popup.
   { href: "/admin/banner", label: "Duyurular", icon: Megaphone },
@@ -125,21 +148,26 @@ export function AdminShell({ children }: { children: ReactNode }) {
         </p>
         <nav aria-label="Yönetim menüsü" className="lg:mt-4">
           <ul className="flex gap-1 overflow-x-auto [scrollbar-width:none] lg:flex-col lg:overflow-visible [&::-webkit-scrollbar]:hidden">
-            {NAV.map(({ href, label, icon: Icon, exact, also }) => {
+            {NAV.flatMap((item) => [
+              { ...item, sub: false },
+              ...(item.children ?? []).map((c) => ({ ...c, sub: true })),
+            ]).map(({ href, label, icon: Icon, exact, also, sub }) => {
               const active = isActive(href, exact, also);
               return (
                 <li key={href}>
                   <Link
                     href={href}
                     aria-current={active ? "page" : undefined}
-                    className={`group flex items-center gap-2.5 whitespace-nowrap rounded-xl px-3 py-2.5 text-sm transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500 ${
+                    className={`group flex items-center gap-2.5 whitespace-nowrap rounded-xl px-3 transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500 ${
+                      sub ? "py-2 text-[13px] lg:ps-9" : "py-2.5 text-sm"
+                    } ${
                       active
                         ? "bg-red-50 font-semibold text-red-700 dark:bg-red-950/40 dark:text-red-400"
                         : "font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-zinc-400 dark:hover:bg-zinc-800/60 dark:hover:text-white"
                     }`}
                   >
                     <Icon
-                      className={`h-4 w-4 shrink-0 transition-colors ${
+                      className={`${sub ? "h-3.5 w-3.5" : "h-4 w-4"} shrink-0 transition-colors ${
                         active
                           ? "text-red-600 dark:text-red-400"
                           : "text-slate-400 group-hover:text-slate-600 dark:text-zinc-500 dark:group-hover:text-zinc-300"

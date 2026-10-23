@@ -8,6 +8,7 @@ import { ArrowLeft, Check, Package, Plus, RotateCw, Save } from "lucide-react";
 
 import { RichTextEditor } from "@/components/admin/RichTextEditor";
 import { AdminPageHeader, panelClass } from "@/components/admin/AdminShell";
+import { BrandCombobox } from "@/components/admin/products/BrandCombobox";
 import { CategoryPicker } from "@/components/admin/products/CategoryPicker";
 import { ColorTags } from "@/components/admin/products/ColorTags";
 import { MediaFields } from "@/components/admin/products/MediaFields";
@@ -175,10 +176,9 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
       ) as SheetDraft["prices"],
     }));
 
+  // A brand typed in before the list existed, or since removed from it, is
+  // kept and shown (the combobox flags it), so saving does not drop it.
   const brand = matchBrand(draft.brand, brands);
-  // A brand typed in before the list existed, or since removed from it: kept
-  // and shown, so saving does not drop it, until another one is picked.
-  const unlistedBrand = draft.brand.trim() && !brand ? draft.brand.trim() : null;
 
   const problem = useMemo(() => draftProblem(draft), [draft]);
   const total = draftStockTotal(draft);
@@ -280,23 +280,14 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
             <SheetField id="sheet-brand" label="Marka">
               {/* The sidebar's brand entries search for the brand's term, which
                   the name carries — so a brand picked here lists the product there. */}
-              <select
+              <BrandCombobox
                 id="sheet-brand"
-                value={brand?.name ?? unlistedBrand ?? ""}
-                onChange={(e) => set("brand", e.target.value)}
-                className={sheetInputClass}
-              >
-                <option value="">Markasız</option>
-                {brands
-                  .filter((b) => b.is_active || b.id === brand?.id)
-                  .map((b) => (
-                    <option key={b.id} value={b.name}>
-                      {b.name}
-                      {!b.is_active ? " (pasif)" : ""}
-                    </option>
-                  ))}
-                {unlistedBrand && <option value={unlistedBrand}>{unlistedBrand} (listede yok)</option>}
-              </select>
+                value={draft.brand.trim()}
+                brand={brand}
+                brands={brands}
+                onChange={(name) => set("brand", name)}
+                onCreated={(b) => setBrands((list) => [...list, b])}
+              />
             </SheetField>
             <div className="xl:col-span-2">
               <CategoryPicker

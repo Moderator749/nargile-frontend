@@ -254,8 +254,22 @@ export interface Brand {
   search_term: string;
   /** Absolute URL of the uploaded logo; null = show the name as a wordmark. */
   logo_url: string | null;
+  /** A line or two for the brand's page (/marka/<slug>); null = none. */
+  description?: string | null;
   is_active: boolean;
   sort_order: number;
+}
+
+/** One product of a category page, as the order editor ("Ürün Sıralaması") lists it. */
+export interface CategoryProductOrderRow {
+  product_id: UUID;
+  name: string;
+  base_code: string;
+  brand: string | null;
+  image_url: string | null;
+  is_published: boolean;
+  /** Its place in the admin's order; null when not ranked (it follows the ranked, by name). */
+  position: number | null;
 }
 
 /** The languages a product or category is translated into besides Turkish. */
@@ -309,6 +323,7 @@ export interface BrandWrite {
   name: string;
   slug?: string | null;
   search_term?: string | null;
+  description?: string | null;
   is_active: boolean;
   sort_order: number;
 }
