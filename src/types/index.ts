@@ -1249,6 +1249,13 @@ export interface PromoBoxContent {
   href: string;
   requires: ContentRequirement | null;
   widget: SocialWidget | null;
+  /** The community card's photo (a site path or an http(s) URL); null = the shop's own. */
+  top_card_image_url: string | null;
+  /** Where its crop centres across it, 0–100 (0 = its left edge). */
+  top_card_focus_x: number;
+  /** The advantages card's photo; null = the shop's own. */
+  bottom_card_image_url: string | null;
+  bottom_card_focus_x: number;
   is_active: boolean;
   sort_order: number;
 }

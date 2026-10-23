@@ -1,5 +1,8 @@
 "use client";
 
+import { useId } from "react";
+
+import { ImageField } from "@/components/admin/homepage/fields";
 import { HeroAsideCards } from "@/components/home/HeroAsideCards";
 import { useMessages } from "@/components/i18n/LocaleProvider";
 import { Input } from "@/components/ui/Input";
@@ -9,6 +12,47 @@ import type { PromoBoxWrite, SocialWidget } from "@/types";
 
 const legend = "px-1 text-sm font-medium text-slate-700 dark:text-zinc-300";
 const fixed = "text-xs text-slate-500 dark:text-zinc-400";
+
+/** A card's background photo: upload (or an address), remove, and where its crop centres across it. */
+function CardPhotoFields({
+  image,
+  focus,
+  onImage,
+  onFocus,
+}: {
+  image: string | null;
+  focus: number;
+  onImage: (image: string | null) => void;
+  onFocus: (focus: number) => void;
+}) {
+  const id = useId();
+  return (
+    <div className="space-y-2 rounded-lg bg-slate-50 p-3 dark:bg-white/[0.03]">
+      <ImageField
+        label="Arka plan fotoğrafı"
+        value={image}
+        onChange={onImage}
+        hint="Boş: sitenin kendi fotoğrafı. Yazılar soldadır; fotoğrafın konusu sağda kalsın."
+      />
+      {image && (
+        <div className="space-y-1">
+          <label htmlFor={id} className="block text-xs font-medium text-slate-600 dark:text-zinc-400">
+            Odak (yatay): %{focus}
+          </label>
+          <input
+            id={id}
+            type="range"
+            min={0}
+            max={100}
+            value={focus}
+            onChange={(e) => onFocus(Number(e.target.value))}
+            className="w-full accent-red-600"
+          />
+        </div>
+      )}
+    </div>
+  );
+}
 
 /**
  * The fields of the two cards beside the hero, in the order the homepage
@@ -61,6 +105,12 @@ export function SocialFields({
           <Input label="YouTube etiketi" value={widget.youtube_label} maxLength={40} onChange={(e) => setWidget({ youtube_label: e.target.value })} />
         </div>
         <p className={fixed}>Boş bırakılan kanal gösterilmez. Bağlantılar yeni sekmede açılır.</p>
+        <CardPhotoFields
+          image={v.top_card_image_url}
+          focus={v.top_card_focus_x}
+          onImage={(top_card_image_url) => set({ top_card_image_url })}
+          onFocus={(top_card_focus_x) => set({ top_card_focus_x })}
+        />
       </fieldset>
       <fieldset className="space-y-3 rounded-xl border border-slate-200 p-4 dark:border-white/10">
         <legend className={legend}>Alt kart — Ayrıcalıklar & Avantajlar</legend>
@@ -91,6 +141,12 @@ export function SocialFields({
             hint="Kartın tamamı bu adrese gider."
           />
         </div>
+        <CardPhotoFields
+          image={v.bottom_card_image_url}
+          focus={v.bottom_card_focus_x}
+          onImage={(bottom_card_image_url) => set({ bottom_card_image_url })}
+          onFocus={(bottom_card_focus_x) => set({ bottom_card_focus_x })}
+        />
       </fieldset>
     </div>
   );
@@ -109,6 +165,10 @@ export function SocialPreview({ value: v }: { value: PromoBoxWrite }) {
     text: v.text ?? undefined,
     href: v.href || "/",
     widget: v.widget,
+    photos: {
+      top: v.top_card_image_url?.trim() ? { src: v.top_card_image_url.trim(), focusX: v.top_card_focus_x } : null,
+      bottom: v.bottom_card_image_url?.trim() ? { src: v.bottom_card_image_url.trim(), focusX: v.bottom_card_focus_x } : null,
+    },
   };
   return (
     <div className="space-y-2">

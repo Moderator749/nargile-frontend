@@ -114,12 +114,33 @@ export interface PromoBox {
   href: string;
   /** The channel links and the jump button's text. */
   widget: SocialWidget | null;
+  /** Each card's own photo and its crop, where the admin set one. */
+  photos?: { top: CardPhoto | null; bottom: CardPhoto | null };
 }
+
+/** A card's photo beside the hero, and where its crop centres across it (0–100). */
+export interface CardPhoto {
+  src: string;
+  focusX: number;
+}
+
+const cardPhoto = (src: string | null | undefined, focusX: number | undefined): CardPhoto | null =>
+  src?.trim() ? { src: src.trim(), focusX: focusX ?? 50 } : null;
 
 /** The box beside the hero: the first active one whose requirement is met (the API sends them in order). */
 export function heroPromo(boxes: PromoBoxContent[], has: Record<Requirement, boolean>): PromoBox | undefined {
   const b = boxes.find((box) => box.is_active && meets(box.requires, has));
-  return b && { id: String(b.id), eyebrow: b.eyebrow, title: b.title, text: b.text ?? undefined, href: b.href, widget: b.widget };
+  return (
+    b && {
+      id: String(b.id),
+      eyebrow: b.eyebrow,
+      title: b.title,
+      text: b.text ?? undefined,
+      href: b.href,
+      widget: b.widget,
+      photos: { top: cardPhoto(b.top_card_image_url, b.top_card_focus_x), bottom: cardPhoto(b.bottom_card_image_url, b.bottom_card_focus_x) },
+    }
+  );
 }
 
 // ── Images ────────────────────────────────────────────────────────────────────

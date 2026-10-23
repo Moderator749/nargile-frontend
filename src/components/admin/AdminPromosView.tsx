@@ -21,6 +21,10 @@ const blank = (): PromoBoxWrite => ({
   href: "/bilgi/ayricaliklar-ve-avantajlar",
   requires: null,
   widget: DEFAULT_WIDGET,
+  top_card_image_url: null,
+  top_card_focus_x: 50,
+  bottom_card_image_url: null,
+  bottom_card_focus_x: 50,
   is_active: true,
   sort_order: 100,
 });
@@ -32,6 +36,10 @@ const toWrite = (b: PromoBoxContent): PromoBoxWrite => ({
   href: b.href,
   requires: b.requires,
   widget: b.widget ?? DEFAULT_WIDGET,
+  top_card_image_url: b.top_card_image_url ?? null,
+  top_card_focus_x: b.top_card_focus_x ?? 50,
+  bottom_card_image_url: b.bottom_card_image_url ?? null,
+  bottom_card_focus_x: b.bottom_card_focus_x ?? 50,
   is_active: b.is_active,
   sort_order: b.sort_order,
 });

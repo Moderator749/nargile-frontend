@@ -5,7 +5,7 @@ import { ArrowUpRight } from "lucide-react";
 import { InstagramIcon, YouTubeIcon } from "@/components/icons/SocialIcons";
 import { SmoothAnchor } from "@/components/home/SmoothAnchor";
 import { PERKS_PAGE } from "@/lib/bilgi";
-import type { PromoBox } from "@/lib/home";
+import { canOptimiseImage, type CardPhoto, type PromoBox } from "@/lib/home";
 import type { homeMessages } from "@/lib/i18n/messages/home";
 
 /** The words the cards need: the homepage messages of the page's language. */
@@ -66,15 +66,19 @@ const TITLE = "mt-1.5 text-balance text-xl font-extrabold leading-tight text-whi
 /**
  * The photograph behind a card, under a veil that is darkest at the start,
  * where the words are, and clears towards the subject at the end.
+ *
+ * The shop's own photo is mirrored as BACKDROPS says; one the admin chose
+ * ("Promo Kutusu") is shown as it is, cropped where its focus says.
  */
-function Backdrop({ src, flip, zoom }: { src: string; flip?: boolean; zoom?: boolean }) {
+function Backdrop({ src, flip, zoom, photo }: { src: string; flip?: boolean; zoom?: boolean; photo?: CardPhoto | null }) {
+  const mirror = photo ? "" : flip ? "ltr:-scale-x-100" : "rtl:-scale-x-100";
   return (
     <>
       {/* The mirror is on a wrapper: on the image itself the hover zoom would
           set the same `scale` and turn it back. */}
-      <span aria-hidden className={`absolute inset-0 -z-10 ${flip ? "ltr:-scale-x-100" : "rtl:-scale-x-100"}`}>
+      <span aria-hidden className={`absolute inset-0 -z-10 ${mirror}`}>
         <Image
-          src={src}
+          src={photo?.src ?? src}
           alt=""
           fill
           sizes="(min-width: 1280px) 420px, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
@@ -82,7 +86,9 @@ function Backdrop({ src, flip, zoom }: { src: string; flip?: boolean; zoom?: boo
           // lazy loader; no preload either, which would compete with the
           // hero's own (the page's LCP).
           loading="eager"
-          className={`object-cover ${flip ? "object-left" : "object-right"} ${
+          unoptimized={photo ? !canOptimiseImage(photo.src) : false}
+          style={photo ? { objectPosition: `${photo.focusX}% 50%` } : undefined}
+          className={`object-cover ${photo ? "" : flip ? "object-left" : "object-right"} ${
             zoom ? "transition-transform duration-700 ease-out motion-safe:group-hover:scale-105" : ""
           }`}
         />
@@ -153,7 +159,7 @@ export function HeroAsideCards({
       } ${className}`}
     >
       <div className={CARD}>
-        <Backdrop {...BACKDROPS.channels} />
+        <Backdrop {...BACKDROPS.channels} photo={box?.photos?.top} />
         <div>
           <p className={`${OVERLINE} text-white/70`}>{box?.text || t.followUs}</p>
           <h2 className={TITLE}>{t.aside.channelsTitle}</h2>
@@ -184,7 +190,7 @@ export function HeroAsideCards({
         href={advantagesHref(box?.href)}
         className={`group ${CARD} transition-shadow duration-300 hover:shadow-xl hover:shadow-black/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent`}
       >
-        <Backdrop {...BACKDROPS.advantages} zoom />
+        <Backdrop {...BACKDROPS.advantages} photo={box?.photos?.bottom} zoom />
         <div>
           <p className={`${OVERLINE} text-red-400`}>{eyebrow}</p>
           <h2 className={TITLE}>{box?.title || t.aside.advantagesTitle}</h2>
