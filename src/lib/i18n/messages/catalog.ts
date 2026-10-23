@@ -26,6 +26,8 @@ export const catalogMessages = defineMessages({
   tr: {
     /** The trail above a heading, for screen readers. */
     breadcrumb: "Sayfa konumu",
+    /** Over a category's introduction where a phone shows it, under the products. */
+    about: (name: string) => `${name} Hakkında`,
     segments: TR_SEGMENT,
     filters: {
       showCategories: "Kategorileri Göster",
@@ -54,6 +56,9 @@ export const catalogMessages = defineMessages({
       loading: "Ürünler yükleniyor",
       count: (n: number) => `${n} ürün`,
       countFor: (query: string, n: number) => `“${query}” için ${n} ürün`,
+      /** Shown of the listing's whole, while there are more to load: "48 / 312 ürün". */
+      countOf: (n: number, total: number) => `${n} / ${total} ürün`,
+      countForOf: (query: string, n: number, total: number) => `“${query}” için ${n} / ${total} ürün`,
       /** The page's heading while it shows a search: the count once it is known ("48+" with more to load). */
       searchTitle: (query: string, n: string | null) => (n === null ? `‘${query}’ araması` : `‘${query}’ için ${n} sonuç`),
       segmentPrices: (segment: SegmentType) => `${TR_SEGMENT[segment]} fiyatları gösteriliyor`,
@@ -67,6 +72,7 @@ export const catalogMessages = defineMessages({
       comingSoon: "Yakında yeni ürünler eklenecek.",
       clearFilters: "Filtreleri temizle",
       loadMore: "Daha fazla ürün göster",
+      loadingMore: "Ürünler yükleniyor…",
       loadError: "Ürünler yüklenemedi. Lütfen tekrar deneyin.",
       /** The PDF catalogue's collection line. */
       searchCollection: (query: string) => `“${query}” araması`,
@@ -134,6 +140,7 @@ export const catalogMessages = defineMessages({
   },
   en: {
     breadcrumb: "Breadcrumb",
+    about: (name: string) => `About ${name}`,
     segments: EN_SEGMENT,
     filters: {
       showCategories: "Show Categories",
@@ -162,6 +169,8 @@ export const catalogMessages = defineMessages({
       loading: "Loading products",
       count: (n: number) => enCount(n, "product", "products"),
       countFor: (query: string, n: number) => `${enCount(n, "product", "products")} for “${query}”`,
+      countOf: (n: number, total: number) => `${n} / ${enCount(total, "product", "products")}`,
+      countForOf: (query: string, n: number, total: number) => `${n} / ${enCount(total, "product", "products")} for “${query}”`,
       searchTitle: (query: string, n: string | null) =>
         n === null ? `Search: ‘${query}’` : `${n} ${n === "1" ? "result" : "results"} for ‘${query}’`,
       segmentPrices: (segment: SegmentType) => `Showing ${EN_SEGMENT[segment]} prices`,
@@ -175,6 +184,7 @@ export const catalogMessages = defineMessages({
       comingSoon: "New products are on their way.",
       clearFilters: "Clear filters",
       loadMore: "Show more products",
+      loadingMore: "Loading products…",
       loadError: "Products could not be loaded. Please try again.",
       searchCollection: (query: string) => `Search: “${query}”`,
       allProducts: "All products",
@@ -238,6 +248,7 @@ export const catalogMessages = defineMessages({
   },
   ar: {
     breadcrumb: "مسار التنقل",
+    about: (name: string) => `حول ${name}`,
     segments: AR_SEGMENT,
     filters: {
       view: "طريقة العرض",
@@ -266,6 +277,8 @@ export const catalogMessages = defineMessages({
       loading: "جارٍ تحميل المنتجات",
       count: (n: number) => `${n} منتج`,
       countFor: (query: string, n: number) => `${n} منتج لـ «${query}»`,
+      countOf: (n: number, total: number) => `${n} / ${total} منتج`,
+      countForOf: (query: string, n: number, total: number) => `${n} / ${total} منتج لـ «${query}»`,
       searchTitle: (query: string, n: string | null) => (n === null ? `بحث: «${query}»` : `${n} نتيجة لـ «${query}»`),
       segmentPrices: (segment: SegmentType) => `يتم عرض أسعار ${AR_SEGMENT_PRICES[segment]}`,
       retry: "حاول مرة أخرى",
@@ -278,6 +291,7 @@ export const catalogMessages = defineMessages({
       comingSoon: "ستُضاف منتجات جديدة قريباً.",
       clearFilters: "مسح الفلاتر",
       loadMore: "عرض المزيد من المنتجات",
+      loadingMore: "جارٍ تحميل المنتجات…",
       loadError: "تعذّر تحميل المنتجات. يرجى المحاولة مرة أخرى.",
       searchCollection: (query: string) => `بحث: «${query}»`,
       allProducts: "جميع المنتجات",

@@ -10,6 +10,7 @@ import { QuantityStepper } from "@/components/cart/QuantityStepper";
 import { formatMoney } from "@/lib/format";
 import { cartMessages } from "@/lib/i18n/messages/cart";
 import { canOptimiseImage } from "@/lib/home";
+import { showCartToast } from "@/lib/cartToast";
 import { useCartStore } from "@/store/useCartStore";
 import type { CartLineItem, DecimalString } from "@/types";
 
@@ -65,6 +66,22 @@ export function CartLineRow({
   // Two colours of one product are two rows, so the colour belongs in the name a
   // screen reader hears on the stepper and the remove button.
   const label = color ? `${item.product_name} (${color})` : item.product_name;
+  // Taken out with a way back: "‘…’ sepetten kaldırıldı · Geri Al" puts the
+  // line back where it was, at the quantity it had.
+  function remove() {
+    const before = useCartStore.getState().items;
+    const index = before.findIndex((i) => i.variant_id === item.variant_id);
+    const line = before[index];
+    removeItem(item.variant_id);
+    if (!line) return;
+    showCartToast({
+      kind: "removed",
+      name: label,
+      image,
+      undo: () => useCartStore.getState().restoreItem(line, index),
+    });
+  }
+
   const unitPrice = Number(serverUnitPrice ?? item.segment_price ?? item.price);
   const lineTotal = unitPrice * item.quantity;
 
@@ -155,7 +172,7 @@ export function CartLineRow({
 
       <button
         type="button"
-        onClick={() => removeItem(item.variant_id)}
+        onClick={remove}
         className="col-start-3 row-start-1 flex h-11 w-11 items-center justify-center self-start rounded-lg text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600 sm:col-start-4 sm:self-center dark:text-zinc-500 dark:hover:bg-red-500/10 dark:hover:text-red-400"
         aria-label={t.remove(label)}
       >

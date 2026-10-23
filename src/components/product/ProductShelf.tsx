@@ -20,6 +20,7 @@ export function ProductShelf({
   isLoggedIn,
   pricesPending,
   footer,
+  itemFooter,
 }: {
   /** The heading's id, for the section's aria-labelledby. */
   id: string;
@@ -31,6 +32,8 @@ export function ProductShelf({
   pricesPending: boolean;
   /** Under the cards: e.g. a link to the whole category. */
   footer?: ReactNode;
+  /** Under one card: e.g. its tick in "Birlikte İyi Gider"'s set. */
+  itemFooter?: (product: CatalogProduct) => ReactNode;
 }) {
   if (products.length === 0) return null;
   const categoryById = new Map(categories.map((c) => [c.id, c]));
@@ -42,7 +45,7 @@ export function ProductShelf({
       <ul className="mx-auto mt-8 flex flex-wrap justify-center gap-3 sm:gap-6">
         {products.map((product) => (
           // Two side by side on a phone; four of these fit one row on xl and wrap evenly below it.
-          <li key={product.id} className="flex w-[calc(50%-0.375rem)] sm:w-[20rem] sm:max-w-sm xl:w-[17.5rem] [&>*]:flex-1">
+          <li key={product.id} className="flex w-[calc(50%-0.375rem)] flex-col sm:w-[20rem] sm:max-w-sm xl:w-[17.5rem] [&>article]:flex-1">
             <ProductCard
               product={product}
               category={product.category_id != null ? categoryById.get(product.category_id) : undefined}
@@ -50,6 +53,8 @@ export function ProductShelf({
               publicPrices={pricesPending}
               pricesPending={pricesPending}
             />
+            {/* The same height under every card, ticked or not, so the cards stay level. */}
+            {itemFooter && <div className="flex min-h-11 justify-center pt-1">{itemFooter(product)}</div>}
           </li>
         ))}
       </ul>

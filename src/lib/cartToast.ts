@@ -2,13 +2,16 @@ import { useSyncExternalStore } from "react";
 
 /**
  * "… sepete eklendi · Sepete Git": the one notice every add-to-cart gives —
- * the product page's button, a card's "+", "Hepsini Sepete Ekle" — shown by
- * `CartToast`, mounted once in the shop's chrome. A new one replaces the last.
+ * the product page's button, a card's "+", "Seçilenleri Sepete Ekle" — shown
+ * by `CartToast`, mounted once in the shop's chrome. A new one replaces the
+ * last. On the cart page, a line taken out says so with the way back
+ * ("… sepetten kaldırıldı · Geri Al").
  */
 export type CartToastMessage =
   | { kind: "added"; name: string; image?: string | null }
   | { kind: "addedMany"; count: number }
-  | { kind: "updated" };
+  | { kind: "updated" }
+  | { kind: "removed"; name: string; image?: string | null; undo: () => void };
 
 export interface CartToastState {
   id: number;

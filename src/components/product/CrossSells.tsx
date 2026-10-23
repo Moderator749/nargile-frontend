@@ -1,7 +1,10 @@
 "use client";
 
+import { useState } from "react";
+
 import { useMessages } from "@/components/i18n/LocaleProvider";
-import { BundleTotal, type BundleMain } from "@/components/product/BundleTotal";
+import { BundleCheck } from "@/components/product/BundleCheck";
+import { BundleTotal, bundleable, type BundleMain } from "@/components/product/BundleTotal";
 import { ProductShelf } from "@/components/product/ProductShelf";
 import { productMessages } from "@/lib/i18n/messages/product";
 import type { CatalogProduct, Category } from "@/types";
@@ -12,8 +15,10 @@ import type { CatalogProduct, Category } from "@/types";
  *
  * They arrive with the product and are priced for the same viewer, so a dealer
  * sees dealer prices here too, and nothing is shown while the viewer's own prices
- * are still loading rather than flashing the public ones. Under the cards, the
- * product and its extras added up, and put in the cart in one go (`BundleTotal`).
+ * are still loading rather than flashing the public ones. Under each card that
+ * can go in the cart, a tick says whether it is part of the set (all ticked to
+ * begin with); under the cards, the ticked ones added up and put in the cart in
+ * one go (`BundleTotal`).
  */
 export function CrossSells({
   products,
@@ -30,17 +35,48 @@ export function CrossSells({
   /** The product itself, as its page has it: the chosen colour, at the price shown. */
   main: BundleMain;
 }) {
-  const t = useMessages(productMessages);
+  const messages = useMessages(productMessages);
+  const t = messages.bundle;
+  const extras = products ?? [];
+  // The ones taken out, so a product is in the set until the visitor says otherwise.
+  const [left, setLeft] = useState<ReadonlySet<string>>(() => new Set());
+  const toggle = (id: string) =>
+    setLeft((was) => {
+      const next = new Set(was);
+      if (!next.delete(id)) next.add(id);
+      return next;
+    });
+
   return (
     <ProductShelf
       id="cross-sells-heading"
-      title={t.crossSells}
-      products={products ?? []}
+      title={messages.crossSells}
+      products={extras}
       categories={categories}
       isLoggedIn={isLoggedIn}
       pricesPending={pricesPending}
+      itemFooter={
+        pricesPending
+          ? undefined
+          : (product) =>
+              bundleable(product) ? (
+                <BundleCheck
+                  checked={!left.has(product.id)}
+                  onToggle={() => toggle(product.id)}
+                  label={t.include}
+                  ariaLabel={t.includeFor(product.name)}
+                />
+              ) : null
+      }
       footer={
-        pricesPending ? undefined : <BundleTotal main={main} extras={products ?? []} isLoggedIn={isLoggedIn} />
+        pricesPending ? undefined : (
+          <BundleTotal
+            main={main}
+            extras={extras.filter((p) => !left.has(p.id))}
+            offered={extras.filter(bundleable).length}
+            isLoggedIn={isLoggedIn}
+          />
+        )
       }
     />
   );

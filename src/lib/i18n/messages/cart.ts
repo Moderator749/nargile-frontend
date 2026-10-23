@@ -96,6 +96,9 @@ export const cartMessages = defineMessages({
       updated: "Sepetiniz güncellendi",
       goToCart: "Sepete Git",
       close: "Bildirimi kapat",
+      removed: (name: string) => `‘${name}’ sepetten kaldırıldı`,
+      undo: "Geri Al",
+      undoFor: (name: string) => `${name}: sepete geri al`,
     },
     stepper: {
       decrease: (label: string) => `${label}: adedi azalt`,
@@ -246,6 +249,9 @@ export const cartMessages = defineMessages({
       updated: "Your cart was updated",
       goToCart: "Go to Cart",
       close: "Dismiss",
+      removed: (name: string) => `‘${name}’ removed from your cart`,
+      undo: "Undo",
+      undoFor: (name: string) => `${name}: put back in the cart`,
     },
     stepper: {
       decrease: (label: string) => `${label}: decrease quantity`,
@@ -397,6 +403,9 @@ export const cartMessages = defineMessages({
       updated: "تم تحديث سلتك",
       goToCart: "الذهاب إلى السلة",
       close: "إغلاق",
+      removed: (name: string) => `أُزيل ‘${name}’ من السلة`,
+      undo: "تراجع",
+      undoFor: (name: string) => `${name}: إعادة إلى السلة`,
     },
     stepper: {
       decrease: (label: string) => `${label}: إنقاص الكمية`,

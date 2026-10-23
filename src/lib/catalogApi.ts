@@ -1,6 +1,6 @@
 import { api } from "@/lib/api";
 import { CATALOG_PAGE_SIZE } from "@/lib/config";
-import type { CartLineInfo, CatalogProduct, CatalogProductDetail, Category, SearchSuggestions, StockCheckLine } from "@/types";
+import type { CartLineInfo, CatalogProduct, CatalogSummary, CatalogProductDetail, Category, SearchSuggestions, StockCheckLine } from "@/types";
 
 export { CATALOG_PAGE_SIZE };
 
@@ -19,6 +19,22 @@ export async function fetchProducts(
 ): Promise<CatalogProduct[]> {
   const { data } = await api.get<CatalogProduct[]>("/products", {
     params: { skip, limit, category: category || undefined, q: q || undefined },
+    signal,
+  });
+  return data;
+}
+
+/**
+ * A listing as a whole, where the grid has it a page at a time: how many
+ * products it has, and its cheapest and dearest as the cards price them for
+ * the caller.
+ */
+export async function fetchCatalogSummary(
+  { category, q }: Pick<CatalogQuery, "category" | "q">,
+  signal?: AbortSignal,
+): Promise<CatalogSummary> {
+  const { data } = await api.get<CatalogSummary>("/products/summary", {
+    params: { category: category || undefined, q: q || undefined },
     signal,
   });
   return data;

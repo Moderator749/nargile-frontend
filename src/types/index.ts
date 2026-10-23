@@ -478,6 +478,14 @@ export interface StockCheckLine {
   capped: boolean;
 }
 
+/** A listing as a whole (`GET /products/summary`): its size, and its price range for the caller. */
+export interface CatalogSummary {
+  total: number;
+  /** The cheapest and dearest card price, VAT included, in TRY; null with no priced product. */
+  price_min: DecimalString | null;
+  price_max: DecimalString | null;
+}
+
 /** The header search's suggestions (`GET /products/suggest`). */
 export interface SearchSuggestions {
   /** How many products the full search finds. */

@@ -18,13 +18,12 @@ import { PriceSummary } from "@/components/product/PriceSummary";
 import { useDisplayMoney } from "@/hooks/useDisplayMoney";
 import { useStoreParameters } from "@/hooks/useStoreParameters";
 import { useNow } from "@/hooks/useNow";
-import { countdownParts } from "@/lib/banner";
 import { checkStock, fetchProduct } from "@/lib/catalogApi";
 import { cartLineFor } from "@/lib/cartLine";
 import { showCartToast } from "@/lib/cartToast";
 import { categoryCopy } from "@/lib/categories";
 import { normalizeHex, readableInk } from "@/lib/color";
-import { saleState } from "@/lib/flashSale";
+import { formatCountdown, saleState } from "@/lib/flashSale";
 import { catalogMessages } from "@/lib/i18n/messages/catalog";
 import { productMessages } from "@/lib/i18n/messages/product";
 import { productImageAlt, type Breadcrumb } from "@/lib/seo";
@@ -46,13 +45,6 @@ interface ProductDetailProps {
   sidebar?: ReactNode;
   /** The homepage's advantages, as it words them, for "Size Özel Alışveriş Avantajları". */
   advantages: AdvantageSources;
-}
-
-/** "2g 14:03:22", the days in the page's language. */
-function countdown(ms: number, day: (n: number) => string) {
-  const { days, hours, minutes, seconds } = countdownParts(ms);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${days > 0 ? day(days) : ""}${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
 }
 
 /**
@@ -304,7 +296,7 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
                 {card.deal} <Hourglass className="h-3.5 w-3.5 shrink-0" aria-hidden />
                 {sale.endsAt !== null && (
                   <span className="font-mono tabular-nums" role="timer" aria-label={card.timeLeft}>
-                    {now === null ? "--:--:--" : countdown(sale.endsAt - now, card.days)}
+                    {now === null ? "--:--:--" : formatCountdown(sale.endsAt - now, card.days)}
                   </span>
                 )}
               </span>

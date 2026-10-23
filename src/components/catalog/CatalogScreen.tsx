@@ -1,4 +1,4 @@
-import { CatalogHeading } from "@/components/catalog/CatalogHeading";
+import { CatalogHeading, CatalogIntro } from "@/components/catalog/CatalogHeading";
 import { CategoryClosing } from "@/components/catalog/CategoryClosing";
 import { SeoIntro } from "@/components/home/SeoIntro";
 import { CatalogView } from "@/components/catalog/CatalogView";
@@ -63,15 +63,16 @@ export async function CatalogScreen({
         activeCategory={activeCategory}
         initialProducts={products}
         brand={brand ? { name: brand.name, searchTerm: brand.search_term } : undefined}
-        heading={<CatalogHeading title={title} breadcrumbs={breadcrumbs} intro={intro} searchable={searchable} />}
+        heading={<CatalogHeading title={title} breadcrumbs={breadcrumbs} searchable={searchable} compact />}
+        intro={intro ? <CatalogIntro title={title} html={intro} /> : undefined}
         sidebar={<CategorySidebar items={resolveNav(home.navigation.sidebar, categories, brands)} fit />}
       />
 
       {/* The shop in a few plain paragraphs, straight under the grid (its own
           top padding is the gap), so every listing page ends the same way
           above the footer. A category's own
-          description is not repeated here: it already opens the page, under
-          its heading. */}
+          description is not repeated here: it is in the grid's column, under
+          its heading (under the products on a phone). */}
       {closing ? <CategoryClosing title={closing.title} html={closing.html} /> : <SeoIntro copy={home.seo_intro} />}
     </main>
   );

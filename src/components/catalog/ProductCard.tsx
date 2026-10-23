@@ -8,12 +8,11 @@ import { useMessages } from "@/components/i18n/LocaleProvider";
 import { ProductImage } from "@/components/catalog/ProductImage";
 import { useDisplayMoney } from "@/hooks/useDisplayMoney";
 import { useNow } from "@/hooks/useNow";
-import { countdownParts } from "@/lib/banner";
 import { categoryCopy } from "@/lib/categories";
 import { cartLineFor } from "@/lib/cartLine";
 import { isExportAccount } from "@/lib/exportAccount";
 import { normalizeHex, readableInk } from "@/lib/color";
-import { saleState } from "@/lib/flashSale";
+import { formatCountdown, saleState } from "@/lib/flashSale";
 import { catalogMessages } from "@/lib/i18n/messages/catalog";
 import { productHref, productImageAlt } from "@/lib/seo";
 import { displayVariant, hasColorChoice, soldOut as allSoldOut } from "@/lib/variants";
@@ -85,16 +84,6 @@ const stepBtn =
   "relative flex h-9 w-8 items-center justify-center rounded-full transition-colors duration-200 before:absolute before:-inset-y-1.5 before:inset-x-0 before:content-[''] hover:bg-black/[0.06] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-white/10";
 
 /**
- * "2g 14:03:22" / "14:03:22" — monospaced, so the badge never changes width as
- * it ticks. `day` writes the days in the page's language ("2g ", "2d ").
- */
-function formatCountdown(ms: number, day: (n: number) => string): string {
-  const { days, hours, minutes, seconds } = countdownParts(ms);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${days > 0 ? day(days) : ""}${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
-}
-
-/**
  * Every card's hover: its edge turns the shop's red, flat — the hover the
  * "Oyun & Eğlence" and lüle rows had of their own, now the site's.
  */
@@ -117,6 +106,7 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
   const quoteOnly = isExportAccount(useAuthStore((s) => s.user));
   const isHeavy = product.tags?.includes("HEAVY_CARGO") ?? false;
   const Icon = categoryCopy(category?.slug).icon;
+  const maker = product.brand?.trim() || category?.name || "";
   const money = useDisplayMoney();
   const t = useMessages(catalogMessages).card;
 
@@ -297,15 +287,16 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
 
       <div className={bodyClass}>
         {/* The metadata above the name, stacked (never side by side: a long brand
-            or code would crowd the other out on a phone): the brand, then the
-            product code B2B buyers order by. One fixed line each, so neither
-            ever shifts the card. */}
+            or code would crowd the other out on a phone): the brand — the
+            category's name only for a product with none — then the product
+            code B2B buyers order by. One fixed line each, so neither ever
+            shifts the card. */}
         <div className="flex flex-col gap-0.5">
           <p className="h-4 truncate text-xs uppercase leading-4 tracking-wider text-muted-foreground @max-[13rem]:text-[10px]">
-            {product.brand ?? category?.name ?? ""}
+            {maker}
             {needsColorChoice && (
               <>
-                {(product.brand ?? category?.name) && " · "}
+                {maker && " · "}
                 {t.colours(product.variants.length)}
               </>
             )}

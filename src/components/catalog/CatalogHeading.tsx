@@ -6,9 +6,9 @@ import { getMessages } from "@/lib/i18n/server";
 import type { Breadcrumb } from "@/lib/seo";
 
 /**
- * The category's name, the one line of trail above it and, where the shop has
- * written one, its introduction — two lines and "Devamını Oku", so the grid
- * still starts above the fold.
+ * The page's name and the one line of trail above it. A listing's is
+ * `compact` on a phone — one line each — so the first row of products is in
+ * view as the page opens.
  *
  * The trail stays — in 11px rather than the old banner — because the page
  * emits BreadcrumbList structured data, and that markup is supposed to
@@ -17,18 +17,19 @@ import type { Breadcrumb } from "@/lib/seo";
 export async function CatalogHeading({
   title,
   breadcrumbs,
-  intro,
   searchable = false,
+  compact = false,
 }: {
   title: string;
   breadcrumbs: Breadcrumb[];
-  intro?: string | null;
+  /** A product listing's: the name on one line on a phone. */
+  compact?: boolean;
   /** The whole catalog, where the header's search lands: the heading names the search while there is one. */
   searchable?: boolean;
 }) {
   const t = await getMessages(catalogMessages);
   return (
-    <header className="mb-4">
+    <header className={compact ? "mb-3 md:mb-4" : "mb-4"}>
       <nav aria-label={t.breadcrumb}>
         <ol className="flex flex-wrap items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
           {breadcrumbs.map((crumb, i) => {
@@ -55,14 +56,35 @@ export async function CatalogHeading({
         </ol>
       </nav>
 
-      <h1 className="mt-2 text-xl font-bold uppercase tracking-tight text-neutral-900 sm:text-2xl dark:text-white">
+      {/* A listing's long name is cut short on a phone (all of it in the title and the trail). */}
+      <h1
+        title={compact && !searchable ? title : undefined}
+        className={`font-bold uppercase tracking-tight text-neutral-900 dark:text-white ${
+          compact
+            ? "mt-1 truncate text-lg leading-tight md:mt-2 md:whitespace-normal md:text-2xl"
+            : "mt-2 text-xl sm:text-2xl"
+        }`}
+      >
         {searchable ? <SearchTitle title={title} /> : title}
       </h1>
-      {intro && (
-        <div className="mt-2 max-w-3xl">
-          <ReadMore id="kategori-aciklamasi" html={intro} lines={2} className="text-sm text-muted-foreground" />
-        </div>
-      )}
     </header>
+  );
+}
+
+/**
+ * Where the shop has written one, the category's introduction: two lines and
+ * "Devamını Oku". Under the heading from `md` up; on a phone it waits under
+ * the products, its name over it, so the grid starts right under the title
+ * (CatalogView places it). All of it is in the HTML either way.
+ */
+export async function CatalogIntro({ title, html }: { title: string; html: string }) {
+  const t = await getMessages(catalogMessages);
+  return (
+    <section aria-label={t.about(title)} className="max-w-3xl">
+      <p aria-hidden className="mb-2 text-[11px] font-medium uppercase tracking-[0.25em] text-muted-foreground md:hidden">
+        {t.about(title)}
+      </p>
+      <ReadMore id="kategori-aciklamasi" html={html} lines={2} className="text-sm text-muted-foreground" />
+    </section>
   );
 }

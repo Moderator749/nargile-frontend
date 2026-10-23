@@ -1,5 +1,6 @@
 // "Fırsat Ürünleri" state for a product/variant at a given moment.
 
+import { countdownParts } from "@/lib/banner";
 import type { CatalogPrice, CatalogProduct, CatalogVariant } from "@/types";
 
 /** The page listing every live deal; the homepage funnel's "Fırsatları Gör" leads there. */
@@ -33,4 +34,15 @@ export function saleState(
   if (Number.isNaN(endsAt)) return { kind: "live", price: sale.price, endsAt: null };
   if (now !== null && now >= endsAt) return { kind: "missed" };
   return { kind: "live", price: sale.price, endsAt };
+}
+
+/**
+ * A live deal's clock, the same on its card and its product page: "2g
+ * 14:03:22" / "14:03:22", the days in the page's language (`day`: "2g ",
+ * "2d "). Shown in a monospaced face, so it never changes width as it ticks.
+ */
+export function formatCountdown(ms: number, day: (n: number) => string): string {
+  const { days, hours, minutes, seconds } = countdownParts(ms);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${days > 0 ? day(days) : ""}${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
 }

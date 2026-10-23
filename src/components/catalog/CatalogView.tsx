@@ -23,6 +23,7 @@ import {
   type CatalogFilters,
 } from "@/lib/catalogFilters";
 import { filtersFromParams, filtersToParams } from "@/lib/catalogFilterParams";
+import { listingTotal } from "@/lib/catalogTotal";
 import { publishSearchCount } from "@/lib/searchCount";
 import { catalogMessages } from "@/lib/i18n/messages/catalog";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -31,6 +32,8 @@ import { CATALOG_GRID, PAGE_CONTAINER } from "@/lib/layout";
 
 /** Cards whose photos load eagerly: the first row at the widest grid. */
 const EAGER_CARDS = 4;
+/** Grey cards standing in for the next page while it loads: a row at the widest grid, two on a phone. */
+const LOADING_CARDS = 4;
 
 const gridClass = CATALOG_GRID;
 
@@ -40,6 +43,8 @@ interface CatalogViewProps {
   initialProducts: CatalogProduct[] | null;
   /** The category's name and its trail, server-rendered. */
   heading: ReactNode;
+  /** The category's introduction: under the heading, or under the products on a phone. */
+  intro?: ReactNode;
   /**
    * A brand page: the grid is this brand's search, whatever the URL says, and
    * `initialProducts` are its server-rendered first page.
@@ -71,12 +76,21 @@ export function CatalogView(props: CatalogViewProps) {
         {/* Kategoriler, beside the grid and open at all times. */}
         {props.sidebar}
 
-        <div className="min-w-0 flex-1">
+        <div className="flex min-w-0 flex-1 flex-col">
           {props.heading}
+          {/* On a phone the introduction goes after the products (`order-last`),
+              so the first row of cards is in view under the title. */}
+          {props.intro && (
+            <div className="max-md:order-last max-md:mt-10 max-md:border-t max-md:border-border max-md:pt-6 md:-mt-2 md:mb-4">
+              {props.intro}
+            </div>
+          )}
           {/* A brand page's term is fixed by the route; its filters are in the URL all the same. */}
-          <Suspense fallback={<CatalogGrid {...props} query={props.brand?.searchTerm ?? ""} initialFilters={EMPTY_FILTERS} />}>
-            <CatalogGridFromUrl {...props} />
-          </Suspense>
+          <div>
+            <Suspense fallback={<CatalogGrid {...props} query={props.brand?.searchTerm ?? ""} initialFilters={EMPTY_FILTERS} />}>
+              <CatalogGridFromUrl {...props} />
+            </Suspense>
+          </div>
         </div>
       </div>
     </section>
@@ -119,16 +133,34 @@ function CatalogGrid({
 
   // Sales expire while the page is open; the filters price what the cards price.
   const now = useNow(catalog.products.some((p) => p.variants.some((v) => v.flash_sale)));
-  const bounds = useMemo(() => priceBounds(catalog.products, now), [catalog.products, now]);
+  // The price boxes' hints: the whole listing's cheapest and dearest once the
+  // API has said, else the loaded cards'.
+  const { summary } = catalog;
+  const loadedBounds = useMemo(() => priceBounds(catalog.products, now), [catalog.products, now]);
+  const bounds =
+    summary?.price_min != null && summary.price_max != null
+      ? { min: Math.floor(Number(summary.price_min)), max: Math.ceil(Number(summary.price_max)) }
+      : loadedBounds;
   const shown = useMemo(
     () => applyCatalogFilters(catalog.products, filters, now, locale),
     [catalog.products, filters, now, locale],
   );
+  // "48 / 312 ürün" while a page of a longer listing is on screen.
+  const total = listingTotal({
+    total: summary?.total ?? null,
+    loaded: catalog.products.length,
+    shown: shown.length,
+    hasMore: catalog.hasMore,
+  });
   // The page's heading names the search with what it found ("‘lule’ için 48 sonuç").
   useEffect(() => {
     if (!searched) return;
-    publishSearchCount(catalog.loading ? null : { query: searched, count: shown.length, more: catalog.hasMore });
-  }, [searched, catalog.loading, shown.length, catalog.hasMore]);
+    publishSearchCount(
+      catalog.loading
+        ? null
+        : { query: searched, count: total ?? shown.length, more: total === null && catalog.hasMore },
+    );
+  }, [searched, catalog.loading, shown.length, total, catalog.hasMore]);
   // A filter can empty a grid that has products behind it: say which it was.
   const filtered = shown.length === 0 && catalog.products.length > 0;
 
@@ -166,7 +198,15 @@ function CatalogGrid({
 
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <h2 id="products-heading" className="text-[11px] font-medium uppercase tracking-[0.25em] text-muted-foreground">
-          {catalog.loading ? t.loading : searched ? t.countFor(searched, shown.length) : t.count(shown.length)}
+          {catalog.loading
+            ? t.loading
+            : total !== null
+              ? searched
+                ? t.countForOf(searched, shown.length, total)
+                : t.countOf(shown.length, total)
+              : searched
+                ? t.countFor(searched, shown.length)
+                : t.count(shown.length)}
         </h2>
         {segment && segment !== "RETAIL" && (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-700 ring-1 ring-inset ring-red-200 dark:bg-red-500/10 dark:text-red-300 dark:ring-red-500/30">
@@ -233,6 +273,15 @@ function CatalogGrid({
                 </div>
               </li>
             ))}
+            {/* The next page's place, held by grey cards while it loads. */}
+            {catalog.loadingMore &&
+              Array.from({ length: Math.min(LOADING_CARDS, summary ? Math.max(summary.total - catalog.products.length, 1) : LOADING_CARDS) }, (_, i) => (
+                <li key={`loading-${i}`} className="flex" aria-hidden>
+                  <div className="flex w-full flex-col [&>div]:flex-1">
+                    <ProductCardSkeleton />
+                  </div>
+                </li>
+              ))}
           </ul>
 
           {catalog.error && (
@@ -243,7 +292,7 @@ function CatalogGrid({
           {catalog.hasMore && (
             <div className="mx-auto mt-10 max-w-xs">
               <Button type="button" variant="secondary" onClick={catalog.loadMore} loading={catalog.loadingMore}>
-                {t.loadMore}
+                {catalog.loadingMore ? t.loadingMore : t.loadMore}
               </Button>
             </div>
           )}

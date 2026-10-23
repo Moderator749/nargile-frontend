@@ -30,6 +30,8 @@ interface ProductImageProps {
 const DEFAULT_IMAGE_CLASS =
   "object-contain p-8 mix-blend-multiply transition-transform duration-500 ease-out motion-safe:group-hover:scale-105";
 
+const DEFAULT_SURFACE = "bg-white dark:bg-zinc-100";
+
 /** Product photo filling its (fixed-aspect) parent; falls back on missing or broken images. */
 export function ProductImage({
   src,
@@ -37,16 +39,22 @@ export function ProductImage({
   fallback,
   sizes,
   imageClassName = DEFAULT_IMAGE_CLASS,
-  surfaceClassName = "bg-white dark:bg-zinc-100",
+  surfaceClassName,
   eager = false,
 }: ProductImageProps) {
   // Remember which src failed, so a different product's image gets its own try.
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  // And which one has arrived: until then the default surface is a grey,
+  // pulsing placeholder, so a card that has just appeared (the next page, a
+  // new search) is not an empty white box.
+  const [loadedSrc, setLoadedSrc] = useState<string | null>(null);
   if (!src || failedSrc === src) return fallback;
+  const surface =
+    surfaceClassName ?? (loadedSrc === src ? DEFAULT_SURFACE : "bg-[#f5f5f7] motion-safe:animate-pulse dark:bg-zinc-200");
 
   return (
     // Supplier photos are shot on white; the card is white too, so they sit seamlessly.
-    <div className={`relative h-full ${surfaceClassName}`}>
+    <div className={`relative h-full ${surface}`}>
       <Image
         src={src}
         alt={alt}
@@ -55,6 +63,7 @@ export function ProductImage({
         loading={eager ? "eager" : "lazy"}
         fetchPriority={eager ? "high" : undefined}
         onError={() => setFailedSrc(src)}
+        onLoad={() => setLoadedSrc(src)}
         className={imageClassName}
       />
     </div>

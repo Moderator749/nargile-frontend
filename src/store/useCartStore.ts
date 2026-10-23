@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
+import { withRestored } from "@/lib/cartRestore";
 import type { CartLineItem, UUID } from "@/types";
 
 interface CartState {
@@ -10,6 +11,8 @@ interface CartState {
   /** Several lines in one update (one save, one re-render): "Hepsini Sepete Ekle". */
   addItems: (items: CartLineItem[]) => void;
   removeItem: (variantId: UUID) => void;
+  /** A removed line back where it was ("Geri Al"); left as it is if it has been added again since. */
+  restoreItem: (item: CartLineItem, index: number) => void;
   updateQuantity: (variantId: UUID, quantity: number) => void;
   setLoyaltyPointsToRedeem: (points: number) => void;
   clearCart: () => void;
@@ -48,6 +51,12 @@ export const useCartStore = create<CartState>()(
         set((state) => ({
           items: state.items.filter((i) => i.variant_id !== variantId),
         })),
+
+      restoreItem: (item, index) =>
+        set((state) => {
+          const items = withRestored(state.items, item, index);
+          return items === state.items ? state : { items };
+        }),
 
       updateQuantity: (variantId, quantity) =>
         set((state) => {

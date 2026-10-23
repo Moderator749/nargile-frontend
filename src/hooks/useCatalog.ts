@@ -4,12 +4,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
 
 import { useMessages } from "@/components/i18n/LocaleProvider";
-import { CATALOG_PAGE_SIZE, fetchProducts } from "@/lib/catalogApi";
+import { CATALOG_PAGE_SIZE, fetchCatalogSummary, fetchProducts } from "@/lib/catalogApi";
 import { catalogMessages } from "@/lib/i18n/messages/catalog";
 import { getApiErrorMessage } from "@/lib/errors";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useAuthHydrated } from "@/store/useHasHydrated";
-import type { CatalogProduct } from "@/types";
+import type { CatalogProduct, CatalogSummary } from "@/types";
 
 interface CatalogPage {
   key: string;
@@ -79,6 +79,19 @@ export function useCatalog({
     return () => controller.abort();
   }, [key, seedIsFinal, category, query, pageSize, loadError]);
 
+  // The listing as a whole — its size and price range for this viewer — asked
+  // for beside the first page, so "48 / 312 ürün" is known before "Daha Fazla".
+  const [summary, setSummary] = useState<{ key: string; data: CatalogSummary } | null>(null);
+  useEffect(() => {
+    if (key === null) return;
+    const controller = new AbortController();
+    fetchCatalogSummary({ category, q: query }, controller.signal)
+      .then((data) => setSummary({ key, data }))
+      // Without it the grid counts what it has, as it always did.
+      .catch(() => undefined);
+    return () => controller.abort();
+  }, [key, category, query]);
+
   const fetched = page && page.key === key ? page : null;
   // While a new search loads, keep the previous results — but only the same
   // viewer's, so prices from another account (e.g. before logout) never show.
@@ -131,6 +144,8 @@ export function useCatalog({
     hasMore: view?.hasMore ?? false,
     loadingMore,
     loadMore,
+    /** The listing as a whole for this viewer; null until it is known. */
+    summary: summary && summary.key === key ? summary.data : null,
     retry: () => setAttempt((a) => a + 1),
   };
 }

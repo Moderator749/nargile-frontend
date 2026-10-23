@@ -816,6 +816,16 @@ function CheckoutBar({
   action: string;
   onGo: () => void;
 }) {
+  // A notice (a removal's "Geri Al") rises over the bar while it is up, as over a product page's.
+  useEffect(() => {
+    if (!shown || !window.matchMedia("(max-width: 47.99rem)").matches) return;
+    const root = document.documentElement;
+    root.style.setProperty("--buy-bar-height", "4.375rem");
+    return () => {
+      root.style.removeProperty("--buy-bar-height");
+    };
+  }, [shown]);
+
   return (
     <div
       role="region"
