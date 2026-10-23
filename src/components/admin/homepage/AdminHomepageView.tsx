@@ -9,6 +9,7 @@ import { AdminCategoriesView } from "@/components/admin/AdminCategoriesView";
 import { AdminPageHeader } from "@/components/admin/AdminShell";
 import { TranslationsTab } from "@/components/admin/homepage/TranslationsTab";
 import {
+  BentoForm,
   BrandShowcaseForm,
   CampaignsForm,
   LoyaltyForm,
@@ -47,6 +48,7 @@ type EditorKey =
   | "lules"
   | "sultanpuan"
   | "kumbara"
+  | "bento"
   | "deals"
   | "campaigns"
   | "statement"
@@ -100,6 +102,13 @@ const EDITORS: Record<
   },
   sultanpuan: { title: "SultanPuan Bandı", hint: "Bandın yazıları.", doc: "sultanpuan", sections: ["sultanpuan"], size: "md" },
   kumbara: { title: "Kumbara Bandı", hint: "Bandın yazıları.", doc: "kumbara", sections: ["kumbara"], size: "md" },
+  bento: {
+    title: "Görsel Vitrin",
+    hint: "İki sekme, her birinde beş görsel kutu: görsel, bağlantı ve açıklama.",
+    doc: "bento",
+    sections: ["bento"],
+    size: "lg",
+  },
   deals: { title: "Fırsatları Kaçırma", hint: "Fırsat vitrininin başlığı ve alt metni.", doc: "deals", sections: ["deals"], size: "md" },
   campaigns: {
     title: "Kampanya Kutuları",
@@ -149,6 +158,7 @@ const SECTION_EDITOR: Partial<Record<keyof HomeSections, EditorKey>> = {
   lules: "lules",
   sultanpuan: "sultanpuan",
   kumbara: "kumbara",
+  bento: "bento",
   deals: "deals",
   campaigns: "campaigns",
   promos: "statement",
@@ -206,6 +216,7 @@ const SECTION_NAMES: Record<string, string> = {
   sultanpuan: "SultanPuan Bandı",
   kumbara: "Kumbara Bandı",
   campaigns: "Kampanya Kutuları",
+  bento: "Görsel Vitrin",
   statement: "Sektörde Referans Noktası",
   brand_showcase: "Markalarımız",
   kozlukler: "Közlükler",
@@ -256,6 +267,13 @@ function checkLinks(doc: Homepage, categories: Category[]): string | null {
   const boxes = [doc.campaigns.lead, ...doc.campaigns.minis];
   const box = boxes.findIndex((b) => bad(b.href) || !b.href);
   if (box >= 0) return `Kampanya Kutuları, ${box === 0 ? "büyük kutu" : `küçük kutu ${box}`}: bağlantı / ile ya da https:// ile başlamalı.`;
+  for (const [t, tab] of doc.bento.tabs.entries()) {
+    if (!tab.label.trim()) return `Görsel Vitrin, sekme ${t + 1}: sekme adı gerekli.`;
+    const i = tab.tiles.findIndex((x) => !x.image?.trim());
+    if (i >= 0) return `Görsel Vitrin, “${tab.label}” kutu ${i + 1}: görsel gerekli.`;
+    const j = tab.tiles.findIndex((x) => bad(x.href) || !x.href);
+    if (j >= 0) return `Görsel Vitrin, “${tab.label}” kutu ${j + 1}: bağlantı / ile ya da https:// ile başlamalı.`;
+  }
   if (bad(doc.lules.href) || !doc.lules.href) return "Lüle bölümü: “Tümünü gör” bağlantısı / ile ya da https:// ile başlamalı.";
   return null;
 }
@@ -445,6 +463,8 @@ export function AdminHomepageView() {
         );
       case "campaigns":
         return <CampaignsForm value={doc.campaigns} set={set("campaigns")} categories={categories} />;
+      case "bento":
+        return <BentoForm value={doc.bento} set={set("bento")} categories={categories} />;
       case "statement":
         return <StatementForm value={doc.statement} set={set("statement")} />;
       case "brand_showcase":

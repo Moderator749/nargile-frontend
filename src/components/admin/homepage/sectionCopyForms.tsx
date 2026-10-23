@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import Link from "next/link";
 import { SlidersHorizontal } from "lucide-react";
 
@@ -14,6 +15,7 @@ import {
 } from "@/components/admin/homepage/fields";
 import type {
   Category,
+  HomeBentoTile,
   HomeBrandBlurb,
   HomeCampaignBox,
   HomeLoyaltyCopy,
@@ -262,6 +264,105 @@ export function CampaignsForm({
             categories={categories}
             onChange={(patch) => set({ ...value, minis: value.minis.map((m, j) => (j === i ? { ...m, ...patch } : m)) })}
           />
+        </Panel>
+      ))}
+    </div>
+  );
+}
+
+// ── Görsel Vitrin ────────────────────────────────────────────────────────────
+
+const BENTO_BOXES = ["Dikey 1", "Dikey 2", "Dikey 3", "Yatay üst", "Yatay alt"];
+
+/** The crop the storefront will show: the photo in the box's shape, centred where the slider says. */
+function CropPreview({ tile, tall }: { tile: HomeBentoTile; tall: boolean }) {
+  return (
+    <div
+      className={`relative shrink-0 overflow-hidden rounded-lg bg-slate-100 ring-1 ring-black/5 dark:bg-white/5 ${tall ? "h-24 w-[4.5rem]" : "h-[4.5rem] w-32"}`}
+    >
+      {tile.image && (
+        // eslint-disable-next-line @next/next/no-img-element -- a small live preview of an admin's photo
+        <img src={tile.image} alt="" className="h-full w-full object-cover" style={{ objectPosition: `${tile.focus_x}% 50%` }} />
+      )}
+    </div>
+  );
+}
+
+function BentoBoxFields({
+  tile,
+  index,
+  categories,
+  onChange,
+}: {
+  tile: HomeBentoTile;
+  index: number;
+  categories: Category[];
+  onChange: (patch: Partial<HomeBentoTile>) => void;
+}) {
+  const focusId = useId();
+  const tall = index < 3;
+  return (
+    <div className="grid gap-4 border-t border-slate-200 pt-4 first:border-t-0 first:pt-0 @2xl:grid-cols-[1fr_15rem] dark:border-white/10">
+      <div className="space-y-3">
+        <p className="text-xs font-semibold text-slate-700 dark:text-zinc-300">
+          Kutu {index + 1} · {BENTO_BOXES[index]}
+        </p>
+        <LinkField categories={categories} value={tile.href} onChange={(href) => onChange({ href })} />
+        <TextField
+          label="Görselin açıklaması (alt)"
+          value={tile.alt}
+          max={120}
+          onChange={(alt) => onChange({ alt })}
+          hint="Kutuda yazı yok: ekran okuyucular ve arama motorları bunu okur."
+        />
+        <div className="flex items-center gap-4">
+          <div className="min-w-0 flex-1 space-y-1">
+            <label htmlFor={focusId} className="block text-xs font-medium text-slate-600 dark:text-zinc-400">
+              Odak (yatay): %{tile.focus_x}
+            </label>
+            <input
+              id={focusId}
+              type="range"
+              min={0}
+              max={100}
+              value={tile.focus_x}
+              onChange={(e) => onChange({ focus_x: Number(e.target.value) })}
+              className="w-full accent-red-600"
+            />
+            <p className="text-[11px] text-slate-500 dark:text-zinc-500">Fotoğrafın hangi kısmı kutuda görünsün.</p>
+          </div>
+          <CropPreview tile={tile} tall={tall} />
+        </div>
+      </div>
+      <ImageField
+        label="Görsel"
+        value={tile.image}
+        onChange={(image) => onChange({ image: image ?? "" })}
+        hint={tall ? "Dikey kutu: 3:4 veya 2:3 dikey fotoğraf en iyisi." : "Yatay kutu: 16:9 veya 2:1 yatay fotoğraf en iyisi."}
+      />
+    </div>
+  );
+}
+
+export function BentoForm({ value, set, categories }: { value: Homepage["bento"]; set: Set<"bento">; categories: Category[] }) {
+  const setTab = (t: number, patch: Partial<Homepage["bento"]["tabs"][number]>) =>
+    set({ tabs: value.tabs.map((tab, i) => (i === t ? { ...tab, ...patch } : tab)) });
+  return (
+    <div className="space-y-6">
+      {value.tabs.map((tab, t) => (
+        <Panel key={t} title={`Sekme ${t + 1}`} hint="Sekmeye geçince beş kutunun görselleri birlikte değişir.">
+          <TextField label="Sekme adı" value={tab.label} max={30} onChange={(label) => setTab(t, { label })} />
+          <div className="space-y-4 pt-2">
+            {tab.tiles.map((tile, i) => (
+              <BentoBoxFields
+                key={i}
+                tile={tile}
+                index={i}
+                categories={categories}
+                onChange={(patch) => setTab(t, { tiles: tab.tiles.map((x, j) => (j === i ? { ...x, ...patch } : x)) })}
+              />
+            ))}
+          </div>
         </Panel>
       ))}
     </div>

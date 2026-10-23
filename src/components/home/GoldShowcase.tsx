@@ -53,9 +53,9 @@ const TONES = {
     card: "",
   },
   silver: {
-    // Light grey over the offer and the cards' tops, fading from halfway
-    // down into the white below, so the band ends without an edge.
-    band: "bg-gradient-to-b from-zinc-100 from-45% to-white to-100% dark:from-white/[0.04] dark:from-45% dark:to-transparent dark:to-100%",
+    // Light grey behind the offer only, white by a third of the way down: the
+    // cards stand on white, and the band ends without an edge.
+    band: "bg-gradient-to-b from-zinc-100 from-18% to-white to-32% dark:from-white/[0.04] dark:from-18% dark:to-transparent dark:to-32%",
     subtitle: "text-zinc-600 dark:text-zinc-300",
     note: "text-zinc-700 dark:text-zinc-300",
     count: "text-zinc-500 dark:text-zinc-400",

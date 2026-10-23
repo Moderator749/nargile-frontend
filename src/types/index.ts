@@ -1548,6 +1548,8 @@ export interface HomeSections {
   lules: boolean;
   sultanpuan: boolean;
   kumbara: boolean;
+  /** "Görsel Vitrin": two tabs of photo boxes over the deals. */
+  bento: boolean;
   deals: boolean;
   campaigns: boolean;
   /** "Sektörde Referans Noktası" (the key is older than the section). */
@@ -1571,6 +1573,7 @@ export type HomeBlock =
   | "lules"
   | "sultanpuan"
   | "kumbara"
+  | "bento"
   | "deals"
   | "campaigns"
   | "promos"
@@ -1699,6 +1702,20 @@ export interface HomeCampaigns {
   minis: HomeCampaignBox[];
 }
 
+/** One photo box of "Görsel Vitrin": no words on it, so `alt` speaks for it. */
+export interface HomeBentoTile {
+  image: string;
+  href: string;
+  alt: string;
+  /** Where the crop centres across the photo, 0–100 (0 = its left edge). */
+  focus_x: number;
+}
+
+export interface HomeBento {
+  /** Always two; each with five boxes: three tall, then two wide stacked beside them. */
+  tabs: { label: string; tiles: HomeBentoTile[] }[];
+}
+
 export interface HomeStatement {
   heading: string;
   lead: string;
@@ -1745,6 +1762,7 @@ export interface Homepage {
   sultanpuan: HomeLoyaltyCopy;
   kumbara: HomeLoyaltyCopy;
   campaigns: HomeCampaigns;
+  bento: HomeBento;
   /** "Sektörde Referans Noktası" (the `promos` switch). */
   statement: HomeStatement;
   brand_showcase: HomeBrandShowcase;
@@ -1760,6 +1778,7 @@ export type HomeMobileSection =
   | "lules"
   | "sultanpuan"
   | "kumbara"
+  | "bento"
   | "campaigns"
   | "brand_statement"
   | "brand_showcase"

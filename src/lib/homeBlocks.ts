@@ -17,6 +17,7 @@ export const HOME_BLOCKS: readonly HomeBlock[] = [
   "lules",
   "sultanpuan",
   "kumbara",
+  "bento",
   "deals",
   "campaigns",
   "promos",
