@@ -59,7 +59,12 @@ const fromBrand = (b: Brand): FormState => ({
 });
 
 /** Admin: brands for the "Markalar" menu and the homepage logo marquee. */
-export function AdminBrandsView() {
+export function AdminBrandsView({
+  embedded = false,
+}: {
+  /** In "Ürünler & Stok"'s tabs, under their heading: no heading of its own. */
+  embedded?: boolean;
+} = {}) {
   const [brands, setBrands] = useState<Brand[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY);
@@ -198,10 +203,12 @@ export function AdminBrandsView() {
 
   return (
     <>
-      <AdminPageHeader
-        title="Markalar"
-        description="Ana sayfadaki kayan marka şeridi (logolarıyla), marka sayfaları (/marka/…) ve ürün formundaki marka listesi. Sırayı tutamaçtan sürükleyerek değiştirin; her taşıma hemen kaydedilir. Logo için şeffaf arka planlı PNG en iyi sonucu verir."
-      />
+      {!embedded && (
+        <AdminPageHeader
+          title="Markalar"
+          description="Ana sayfadaki kayan marka şeridi (logolarıyla), marka sayfaları (/marka/…) ve ürün formundaki marka listesi. Sırayı tutamaçtan sürükleyerek değiştirin; her taşıma hemen kaydedilir. Logo için şeffaf arka planlı PNG en iyi sonucu verir."
+        />
+      )}
 
       {/* One hidden picker shared by every row. */}
       <input

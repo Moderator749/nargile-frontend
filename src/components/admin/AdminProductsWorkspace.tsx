@@ -2,15 +2,20 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowDownUp, Boxes } from "lucide-react";
+import { ArrowDownUp, Boxes, Tags } from "lucide-react";
 
 import { AdminPageHeader } from "@/components/admin/AdminShell";
+import { AdminBrandsView } from "@/components/admin/AdminBrandsView";
 import { AdminProductOrderView } from "@/components/admin/AdminProductOrderView";
 import { AdminProductsView } from "@/components/admin/AdminProductsView";
 import { PRODUCTS_PATH } from "@/components/admin/products/listReturn";
-import { ORDER_CATEGORY_PARAM, ORDER_TAB, TAB_PARAM, withTabParams } from "@/components/admin/products/productsTabs";
+import { BRANDS_TAB, ORDER_CATEGORY_PARAM, ORDER_TAB, TAB_PARAM, withTabParams } from "@/components/admin/products/productsTabs";
 
-type Tab = "list" | "order";
+type Tab = "list" | "order" | "brands";
+
+/** Each tab's value in the address (`?sekme=`); the list has none. */
+const PARAM_OF: Record<Tab, string | null> = { list: null, order: ORDER_TAB, brands: BRANDS_TAB };
+const tabOf = (param: string | null): Tab => (param === ORDER_TAB ? "order" : param === BRANDS_TAB ? "brands" : "list");
 
 const TABS: { value: Tab; label: string; Icon: typeof Boxes; description: string }[] = [
   {
@@ -27,12 +32,20 @@ const TABS: { value: Tab; label: string; Icon: typeof Boxes; description: string
     description:
       "Bir kategori sayfasındaki ürünlerin “Önerilen” sırası. Ürünü tutamaçtan sürükleyin ya da en üste taşıyın; her değişiklik hemen kaydedilir. Sıraya alınmamış ürünler arkadan ada göre gelir.",
   },
+  {
+    value: "brands",
+    label: "Markalar",
+    Icon: Tags,
+    description:
+      "Ana sayfadaki kayan marka şeridi (logolarıyla), marka sayfaları (/marka/…) ve ürün formundaki marka listesi. Sırayı tutamaçtan sürükleyerek değiştirin; her taşıma hemen kaydedilir. Logo için şeffaf arka planlı PNG en iyi sonucu verir.",
+  },
 ];
 
 /**
- * "Ürünler & Stok": the product list and a category page's own order, as two
- * tabs under one heading. The tab is in the address (`?sekme=siralama`), so a
- * refresh or a shared link opens it again.
+ * "Ürünler & Stok": the product list, a category page's own order and the
+ * brands, as three tabs under one heading. The tab is in the address
+ * (`?sekme=siralama`, `?sekme=markalar`), so a refresh or a shared link opens
+ * it again.
  *
  * Each tab keeps its own state: once opened, a tab stays mounted (hidden
  * while the other is shown), so the list's search, category, sort and page
@@ -43,7 +56,8 @@ const TABS: { value: Tab; label: string; Icon: typeof Boxes; description: string
 export function AdminProductsWorkspace() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [tab, setTab] = useState<Tab>(searchParams.get(TAB_PARAM) === ORDER_TAB ? "order" : "list");
+  const [tab, setTab] = useState<Tab>(tabOf(searchParams.get(TAB_PARAM)));
+  const [brandsMounted, setBrandsMounted] = useState(tab === "brands");
   // The order tab mounts when first opened, on the category it was asked for;
   // "Bu Kategoriyi Sırala" opens it afresh (`n`) on the list's category.
   const [order, setOrder] = useState(() => {
@@ -58,7 +72,8 @@ export function AdminProductsWorkspace() {
   function show(next: Tab) {
     setTab(next);
     if (next === "order") setOrder((o) => ({ ...o, mounted: true }));
-    go(withTabParams({ [TAB_PARAM]: next === "order" ? ORDER_TAB : null }));
+    if (next === "brands") setBrandsMounted(true);
+    go(withTabParams({ [TAB_PARAM]: PARAM_OF[next] }));
   }
 
   /** "Bu Kategoriyi Sırala": the order tab, on this category. */
@@ -109,6 +124,11 @@ export function AdminProductsWorkspace() {
             initialCategoryId={order.categoryId}
             onCategoryChange={(id) => go(withTabParams({ [ORDER_CATEGORY_PARAM]: id ? String(id) : null }))}
           />
+        </div>
+      )}
+      {brandsMounted && (
+        <div id="products-panel-brands" role="tabpanel" aria-labelledby="products-tab-brands" hidden={tab !== "brands"}>
+          <AdminBrandsView embedded />
         </div>
       )}
     </>

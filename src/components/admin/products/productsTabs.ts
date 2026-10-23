@@ -1,11 +1,13 @@
 /**
- * "Ürünler & Stok"'s two tabs, in its address: `?sekme=siralama` opens
- * "Kategori Vitrin Sıralaması" (absent: the product list), and
- * `sirala-kategori=<id>` the category it orders. The list writes its own
- * filters into the same address; these are kept beside them.
+ * "Ürünler & Stok"'s tabs, in its address: `?sekme=siralama` opens
+ * "Kategori Vitrin Sıralaması", `?sekme=markalar` "Markalar" (absent: the
+ * product list), and `sirala-kategori=<id>` the category the order shows.
+ * The list writes its own filters into the same address; these are kept
+ * beside them.
  */
 export const TAB_PARAM = "sekme";
 export const ORDER_TAB = "siralama";
+export const BRANDS_TAB = "markalar";
 export const ORDER_CATEGORY_PARAM = "sirala-kategori";
 
 const WORKSPACE_PARAMS = [TAB_PARAM, ORDER_CATEGORY_PARAM] as const;

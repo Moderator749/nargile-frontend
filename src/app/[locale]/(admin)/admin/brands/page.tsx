@@ -1,9 +1,6 @@
-import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
-import { AdminBrandsView } from "@/components/admin/AdminBrandsView";
-
-export const metadata: Metadata = { title: "Markalar" };
-
+/** "Markalar" is a tab of "Ürünler & Stok" now: old links and bookmarks lead there. */
 export default function Page() {
-  return <AdminBrandsView />;
+  redirect("/admin/products?sekme=markalar");
 }

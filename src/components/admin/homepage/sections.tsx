@@ -417,7 +417,7 @@ export function BrandsTab({ brands }: { brands: Brand[] }) {
   return (
     <div className="space-y-6">
       <EditorLink
-        href="/admin/brands"
+        href="/admin/products?sekme=markalar"
         title="Markalar"
         text="Şerit, Markalar sayfasındaki yayındaki markaları oradaki sırayla kaydırır: logosu olan logosuyla, olmayan adıyla. Her biri kendi marka sayfasına bağlanır."
         Icon={Tags}

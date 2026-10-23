@@ -19,7 +19,6 @@ import {
   SlidersHorizontal,
   Users,
   Landmark,
-  Tags,
   type LucideIcon,
 } from "lucide-react";
 
@@ -45,9 +44,8 @@ const NAV: NavItem[] = [
     href: "/admin/products",
     label: "Ürünler & Stok",
     icon: Boxes,
-    // Shown indented under it. A category page's own order is a tab of the
-    // products page ("Kategori Vitrin Sıralaması").
-    children: [{ href: "/admin/brands", label: "Markalar", icon: Tags }],
+    // A category page's own order and the brands are tabs of it
+    // ("Kategori Vitrin Sıralaması", "Markalar").
   },
   // Claude's English and Arabic drafts, waiting to be read and approved.
   // The homepage's English and Arabic texts and Claude's drafts awaiting approval, as two tabs.

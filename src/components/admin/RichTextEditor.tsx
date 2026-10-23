@@ -77,7 +77,7 @@ export function RichTextEditor({
     editorProps: {
       attributes: {
         id,
-        class: "rich-text min-w-0 px-3 py-2 text-sm text-slate-900 outline-none dark:text-zinc-100",
+        class: "rich-text min-w-0 px-3.5 py-2.5 text-sm leading-relaxed text-slate-900 outline-none dark:text-zinc-100",
         style: `min-height: ${minHeight}`,
         role: "textbox",
         "aria-multiline": "true",
@@ -97,12 +97,18 @@ export function RichTextEditor({
     if (next !== current) editor.commands.setContent(next, { emitUpdate: false });
   }, [editor, value]);
 
+  // Whether it holds anything, followed as it is typed in or filled from
+  // outside: the editor does not re-render this component on its own, so a
+  // value read at render went stale and left the hint over the text.
+  const empty = useEditorState({ editor, selector: ({ editor: e }) => e?.isEmpty ?? true });
+
   return (
     <div className="overflow-hidden rounded-lg border border-slate-300 bg-white shadow-sm focus-within:border-red-500 focus-within:ring-2 focus-within:ring-red-500/20 dark:border-white/15 dark:bg-zinc-900">
       {editor && <Toolbar editor={editor} id={id} />}
       <div className="relative">
-        {editor?.isEmpty && placeholder && (
-          <p className="pointer-events-none absolute left-3 top-2 text-sm text-slate-400" aria-hidden>
+        {/* The hint while there is nothing, set exactly where the first line starts. */}
+        {empty && placeholder && (
+          <p className="pointer-events-none absolute inset-x-3.5 top-2.5 text-sm leading-relaxed text-slate-400" aria-hidden>
             {placeholder}
           </p>
         )}
