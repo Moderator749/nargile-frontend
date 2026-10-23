@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { revalidateTag } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 import { API_URL } from "@/lib/config";
 import { isAdminRole } from "@/lib/roles";
@@ -16,6 +16,19 @@ function sameSecret(given: string, expected: string): boolean {
 }
 
 /**
+ * The catalog's data everywhere — expire: 0, so the next visitor gets fresh
+ * data, never the stale menu — and, by name, the pages a brand or homepage
+ * edit shows on: every brand and category page and the homepage, in every
+ * language, prerendered ones included.
+ */
+function refresh() {
+  revalidateTag("catalog", { expire: 0 });
+  revalidatePath("/[locale]", "page");
+  revalidatePath("/[locale]/marka/[slug]", "page");
+  revalidatePath("/[locale]/catalog/[category]", "page");
+}
+
+/**
  * POST /api/revalidate — called by the admin panel after a catalog/menu/brand
  * edit, so the storefront shows it on the next request instead of after the
  * day-long cache window. Only admins (verified with the backend) may trigger
@@ -27,7 +40,7 @@ export async function POST(request: NextRequest) {
   const secret = process.env.REVALIDATE_SECRET;
   const given = request.headers.get("x-revalidate-secret");
   if (secret && secret.length >= 32 && given && sameSecret(given, secret)) {
-    revalidateTag("catalog", { expire: 0 });
+    refresh();
     return Response.json({ revalidated: true });
   }
 
@@ -41,7 +54,6 @@ export async function POST(request: NextRequest) {
   const user = (await me.json()) as User;
   if (!isAdminRole(user.role)) return Response.json({ revalidated: false }, { status: 403 });
 
-  // expire: 0 — the next visitor gets fresh data, never the stale menu.
-  revalidateTag("catalog", { expire: 0 });
+  refresh();
   return Response.json({ revalidated: true });
 }

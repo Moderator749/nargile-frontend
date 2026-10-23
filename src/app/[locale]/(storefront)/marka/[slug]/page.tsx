@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 
 import { CatalogScreen } from "@/components/catalog/CatalogScreen";
-import { DEFAULT_LOCALE, LOCALES } from "@/lib/i18n/config";
+import { brandForSlug } from "@/lib/brandMatch";
+import { DEFAULT_LOCALE, LOCALES, localePath } from "@/lib/i18n/config";
 import { textToHtml } from "@/lib/richText";
 import { getI18n } from "@/lib/i18n/server";
 import { brandCanonical, brandDescription, brandHref, metaDescription, pageMetadata } from "@/lib/seo";
@@ -24,7 +25,8 @@ export async function generateStaticParams() {
 async function load(slug: string) {
   // Throws when the API is down, so an outage is never a 404.
   const brands = required(await getBrands(), "/brands");
-  const brand = brands.find((b) => b.slug === slug && b.is_active) ?? null;
+  // Another spelling of a brand ("legend-hookah", "mr.wood") finds it too; the page then moves to its own address.
+  const brand = brandForSlug(slug, brands) ?? null;
   const products = brand ? await getPublicProducts(undefined, undefined, 0, brand.search_term) : null;
   return { brands, brand, products };
 }
@@ -58,6 +60,7 @@ export default async function BrandPage(props: PageProps<"/[locale]/marka/[slug]
   const { slug } = await props.params;
   const [{ brands, brand, products }, categories, { locale, t }] = await Promise.all([load(slug), getCategories(), getI18n()]);
   if (!brand) notFound();
+  if (brand.slug !== slug) permanentRedirect(localePath(locale, brandHref(brand.slug)));
 
   return (
     <CatalogScreen

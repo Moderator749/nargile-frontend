@@ -20,6 +20,8 @@ interface CatalogScreenProps {
   brands?: Brand[];
   /** A brand page: the grid shows this brand's search instead of a category. */
   brand?: Brand;
+  /** The logo beside the heading: a brand page's own, or the brand a category stands for. */
+  logo?: string | null;
   /** The page's introduction under its heading; clamped, the full text in the page. */
   intro?: string | null;
 }
@@ -38,6 +40,7 @@ export async function CatalogScreen({
   brands = [],
   brand,
   intro,
+  logo = brand?.logo_url,
 }: CatalogScreenProps) {
   const [home, locale] = await Promise.all([getHomepage(), getLocale()]);
   const pageHref = breadcrumbs[breadcrumbs.length - 1].href;
@@ -56,7 +59,7 @@ export async function CatalogScreen({
         activeCategory={activeCategory}
         initialProducts={products}
         brand={brand ? { name: brand.name, searchTerm: brand.search_term } : undefined}
-        heading={<CatalogHeading title={title} breadcrumbs={breadcrumbs} intro={intro} logo={brand?.logo_url} />}
+        heading={<CatalogHeading title={title} breadcrumbs={breadcrumbs} intro={intro} logo={logo} />}
         sidebar={<CategorySidebar items={resolveNav(home.navigation.sidebar, categories, brands)} fit />}
       />
 
