@@ -56,7 +56,7 @@ export async function CatalogScreen({
         activeCategory={activeCategory}
         initialProducts={products}
         brand={brand ? { name: brand.name, searchTerm: brand.search_term } : undefined}
-        heading={<CatalogHeading title={title} breadcrumbs={breadcrumbs} intro={intro} />}
+        heading={<CatalogHeading title={title} breadcrumbs={breadcrumbs} intro={intro} logo={brand?.logo_url} />}
         sidebar={<CategorySidebar items={resolveNav(home.navigation.sidebar, categories, brands)} fit />}
       />
 

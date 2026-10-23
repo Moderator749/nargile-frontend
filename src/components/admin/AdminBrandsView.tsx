@@ -183,7 +183,7 @@ export function AdminBrandsView() {
     <>
       <AdminPageHeader
         title="Markalar"
-        description="Markalar menüsü, marka sayfaları (/marka/…) ve ürün formundaki marka listesi. Sırayı tutamaçtan sürükleyerek değiştirin; her taşıma hemen kaydedilir."
+        description="Ana sayfadaki kayan marka şeridi (logolarıyla), marka sayfaları (/marka/…) ve ürün formundaki marka listesi. Sırayı tutamaçtan sürükleyerek değiştirin; her taşıma hemen kaydedilir. Logo için şeffaf arka planlı PNG en iyi sonucu verir."
       />
 
       {/* One hidden picker shared by every row. */}

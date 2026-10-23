@@ -24,7 +24,6 @@ import {
   ListEditor,
   LinkField,
   Panel,
-  StringList,
   TextArea,
   TextField,
 } from "@/components/admin/homepage/fields";
@@ -412,24 +411,37 @@ export function DealsTab({ value, set }: { value: Homepage["deals"]; set: Set<"d
   );
 }
 
-export function BrandsTab({ value, set }: { value: Homepage["brands"]; set: Set<"brands"> }) {
+/** The ticker shows the brands list ("Markalar") itself: edited there, previewed here. */
+export function BrandsTab({ brands }: { brands: Brand[] }) {
+  const shown = brands.filter((b) => b.is_active);
   return (
     <div className="space-y-6">
       <EditorLink
         href="/admin/brands"
-        title="Markalar (katalog)"
-        text="Marka kayıtları, logoları ve arama terimleri: menülerdeki marka bağlantıları ve katalog araması bunları kullanır."
+        title="Markalar"
+        text="Şerit, Markalar sayfasındaki yayındaki markaları oradaki sırayla kaydırır: logosu olan logosuyla, olmayan adıyla. Her biri kendi marka sayfasına bağlanır."
         Icon={Tags}
       />
-      <Panel title="Markalar Şeridi" hint="Kapsülde kayan marka adları, bu sırayla. En fazla 40.">
-        <StringList
-          items={value.items}
-          onChange={(items) => set({ items })}
-          max={40}
-          maxLength={40}
-          addLabel="Marka ekle"
-          placeholder="ör. Oduman"
-        />
+      <Panel title="Şeritte görünenler" hint={`${shown.length} marka, bu sırayla. Eklemek, çıkarmak ya da sıralamak için Markalar sayfasını kullanın.`}>
+        {shown.length === 0 ? (
+          <p className="text-sm text-slate-500 dark:text-zinc-400">Yayında marka yok: şerit gizlenir.</p>
+        ) : (
+          <ul className="flex flex-wrap gap-2">
+            {shown.map((b) => (
+              <li
+                key={b.id}
+                className="flex h-10 items-center rounded-lg bg-slate-50 px-3 text-xs font-semibold uppercase tracking-wider text-slate-500 ring-1 ring-slate-200 dark:bg-white/5 dark:text-zinc-400 dark:ring-white/10"
+              >
+                {b.logo_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- a small uploaded logo
+                  <img src={b.logo_url} alt={b.name} title={b.name} className="h-6 w-auto max-w-24 object-contain grayscale" />
+                ) : (
+                  b.name
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
       </Panel>
     </div>
   );

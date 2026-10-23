@@ -126,7 +126,7 @@ const EDITORS: Record<
   games: { title: "Oyun & Eğlence", hint: "Ürün satırının yazıları.", doc: "games", sections: ["games"], size: "md" },
   brands: {
     title: "Markalar Şeridi",
-    hint: "Üst ve alt şerit aynı adları kaydırır.",
+    hint: "Markalar listesinden gelir; üst ve alt şerit aynıdır.",
     doc: "brands",
     sections: ["brands_top", "brands"],
     size: "md",
@@ -403,7 +403,7 @@ export function AdminHomepageView() {
       case "deals":
         return <DealsTab value={doc.deals} set={set("deals")} />;
       case "brands":
-        return <BrandsTab value={doc.brands} set={set("brands")} />;
+        return <BrandsTab brands={brands} />;
       case "showcase":
         return <ShowcaseTab value={doc.showcase} set={set("showcase")} categories={categories} brands={brands} />;
       case "seo":

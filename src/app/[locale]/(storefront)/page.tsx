@@ -5,7 +5,7 @@ import { BrandStatement } from "@/components/home/BrandStatement";
 import { CatalogShowcase } from "@/components/home/CatalogShowcase";
 import { CategoryRow } from "@/components/home/CategoryRow";
 import { BrandShowcase } from "@/components/home/BrandShowcase";
-import { BrandTicker } from "@/components/home/BrandTicker";
+import { BrandTicker, tickerBrands } from "@/components/home/BrandTicker";
 import { CampaignBanners } from "@/components/home/CampaignBanners";
 import { DealsFunnel } from "@/components/home/DealsFunnel";
 import { FeaturedProductsShowcase } from "@/components/home/FeaturedProductsShowcase";
@@ -225,6 +225,7 @@ export default async function HomePage() {
     ]);
   const allCategories = categories ?? [];
   const sidebar = resolveNav(home.navigation.sidebar, allCategories, brands ?? []);
+  const ticker = tickerBrands(brands, home.brands.items);
   const showcase = resolveShowcase(home.showcase.tiles, allCategories, brands ?? [], artwork);
   // The deals funnel is the page's only deals section, and it is there only
   // when there is a deal to put in it.
@@ -281,7 +282,7 @@ export default async function HomePage() {
     // The brand ticker on its own. Decorative: a screen reader hears the list
     // once, in the other ticker ("brands").
     brands_top: () =>
-      phones("brand_ticker", <BrandTicker brands={home.brands.items} decorative className="pb-2 pt-4 sm:pt-5" />),
+      phones("brand_ticker", <BrandTicker brands={ticker} decorative className="pb-2 pt-4 sm:pt-5" />),
     // "Sizin İçin Seçtiklerimiz": two tabbed product lists in one row that
     // slides sideways.
     picks: () => <FeaturedProductsShowcase lists={picks} categories={allCategories} copy={home.picks} />,
@@ -323,7 +324,7 @@ export default async function HomePage() {
         </div>,
       ),
     // The brand ticker. No heading — the names are the content.
-    brands: () => phones("brand_ticker", <BrandTicker brands={home.brands.items} />),
+    brands: () => phones("brand_ticker", <BrandTicker brands={ticker} />),
     // "Markalarımız": one heading over a band per brand, alternating sides.
     brand_showcase: () =>
       brandRows.some((row) => row.length > 0) &&

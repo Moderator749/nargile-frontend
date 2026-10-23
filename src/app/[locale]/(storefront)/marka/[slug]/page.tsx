@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { CatalogScreen } from "@/components/catalog/CatalogScreen";
 import { DEFAULT_LOCALE, LOCALES } from "@/lib/i18n/config";
+import { textToHtml } from "@/lib/richText";
 import { getI18n } from "@/lib/i18n/server";
 import { brandCanonical, brandDescription, brandHref, metaDescription, pageMetadata } from "@/lib/seo";
 import { getBrands, getCategories, getPublicProducts, required } from "@/lib/server/catalog";
@@ -61,7 +62,8 @@ export default async function BrandPage(props: PageProps<"/[locale]/marka/[slug]
   return (
     <CatalogScreen
       title={t.meta.brandHeading(brand.name)}
-      intro={ownDescription(brand, locale) ? brand.description : null}
+      // Plain text as the admin wrote it: escaped into paragraphs, never markup.
+      intro={ownDescription(brand, locale) ? textToHtml(brand.description ?? "") : null}
       breadcrumbs={[
         { name: t.nav.home, href: "/" },
         { name: brand.name, href: brandHref(brand.slug) },

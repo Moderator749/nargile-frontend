@@ -17,10 +17,13 @@ export async function CatalogHeading({
   title,
   breadcrumbs,
   intro,
+  logo,
 }: {
   title: string;
   breadcrumbs: Breadcrumb[];
   intro?: string | null;
+  /** A brand page's logo, beside its name. */
+  logo?: string | null;
 }) {
   const t = await getMessages(catalogMessages);
   return (
@@ -51,9 +54,17 @@ export async function CatalogHeading({
         </ol>
       </nav>
 
-      <h1 className="mt-2 text-xl font-bold uppercase tracking-tight text-neutral-900 sm:text-2xl dark:text-white">
-        {title}
-      </h1>
+      <div className="mt-2 flex items-center gap-4">
+        {logo && (
+          // On a white tile in both themes: an uploaded logo may be a JPEG
+          // with its own white ground, which would otherwise show as a box.
+          <span className="flex h-14 w-24 shrink-0 items-center justify-center rounded-xl bg-white p-2 ring-1 ring-neutral-200 sm:h-16 sm:w-28 dark:ring-white/10">
+            {/* eslint-disable-next-line @next/next/no-img-element -- an uploaded logo, shown as it is */}
+            <img src={logo} alt="" className="max-h-full max-w-full object-contain" />
+          </span>
+        )}
+        <h1 className="text-xl font-bold uppercase tracking-tight text-neutral-900 sm:text-2xl dark:text-white">{title}</h1>
+      </div>
       {intro && (
         <div className="mt-2 max-w-3xl">
           <ReadMore id="kategori-aciklamasi" html={intro} lines={2} className="text-sm text-muted-foreground" />

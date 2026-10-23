@@ -1,10 +1,26 @@
+import Link from "@/components/i18n/Link";
 import { homeMessages } from "@/lib/i18n/messages/home";
 import { getLocale, getMessages } from "@/lib/i18n/server";
+import { brandHref } from "@/lib/seo";
+import type { Brand } from "@/types";
 
 const SECONDS_PER_BRAND = 3;
 
+/** A brand on the ticker: its logo where "Markalar" has one, else its name; a link to its page where it has one. */
+export type TickerBrand = Pick<Brand, "name"> & Partial<Pick<Brand, "slug" | "logo_url">>;
+
 /**
- * The brand ticker: a single line of names (from "Ana Sayfa Düzenleme") sliding
+ * What the ticker shows: the active brands of "Markalar", in its order. The
+ * homepage's own list of names stands in only when that list cannot be read.
+ */
+export function tickerBrands(brands: Brand[] | null | undefined, fallback: string[]): TickerBrand[] {
+  if (brands) return brands.filter((b) => b.is_active);
+  return fallback.map((name) => ({ name }));
+}
+
+/**
+ * The brand ticker: a single line of brands ("Markalar") — logos, or names
+ * where there is none — sliding
  * under "Sektörde Referans Noktası", over "Markalarımız", on a flat track with
  * square ends and no surface of its own, so it sits in the page rather than
  * on it; a hairline above and below frames it. The band behind it is white in
@@ -36,7 +52,7 @@ export async function BrandTicker({
   decorative = false,
   className = "pb-2 pt-4 sm:pt-5",
 }: {
-  brands: string[];
+  brands: TickerBrand[];
   /** A second copy on the page: no landmark, nothing for a screen reader. */
   decorative?: boolean;
   /** The band's vertical padding. */
@@ -60,15 +76,42 @@ export async function BrandTicker({
       {half.map((brand, i) => {
         // Screen readers meet each name once; the repeats are decoration.
         const primary = copy === 0 && i < brands.length;
+        // The repeats, and the decorative ticker, are not in the tab order either.
+        const reachable = primary && !decorative;
+        const face = brand.logo_url ? (
+          // A plain img: small logos, uploaded as they are; next/image would
+          // add a resize pass per logo for nothing. Grey and quiet until
+          // pointed at, as the names are; a white silhouette on the dark theme.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={brand.logo_url}
+            alt={reachable ? brand.name : ""}
+            loading="lazy"
+            decoding="async"
+            className="h-6 w-auto max-w-[7.5rem] object-contain opacity-60 grayscale transition duration-200 group-hover/brand:opacity-100 group-hover/brand:grayscale-0 sm:h-7 dark:opacity-70 dark:brightness-0 dark:invert dark:group-hover/brand:opacity-100"
+          />
+        ) : (
+          <span className="transition-colors duration-200 group-hover/brand:text-neutral-900 dark:group-hover/brand:text-white">
+            {brand.name.toLocaleUpperCase(upper)}
+          </span>
+        );
         return (
           <li
-            key={`${brand}-${i}`}
+            key={`${brand.slug ?? brand.name}-${i}`}
             aria-hidden={primary ? undefined : true}
             className={`flex items-center gap-8 whitespace-nowrap ${primary ? "" : "motion-reduce:hidden"}`}
           >
-            <span className="cursor-pointer select-none transition-colors duration-200 hover:text-neutral-900 dark:hover:text-white">
-              {brand.toLocaleUpperCase(upper)}
-            </span>
+            {brand.slug ? (
+              <Link
+                href={brandHref(brand.slug)}
+                tabIndex={reachable ? undefined : -1}
+                className="group/brand flex items-center select-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-red-500"
+              >
+                {face}
+              </Link>
+            ) : (
+              <span className="group/brand flex select-none items-center">{face}</span>
+            )}
             {/* A jewel dot rather than a typed bullet: it sits on the
                 x-height's centre at any size and carries a faint glow. */}
             <span
