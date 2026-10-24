@@ -46,8 +46,9 @@ export function LogoWordmark({ className, preload = false }: AssetProps) {
  * The wordmark is sized by the room it has, not by the emblem: at 15px tall it
  * is 199px wide, which with the emblem fits the 256px category column on
  * desktop. On a phone it takes the width the header's tools leave it — the
- * viewport less 228px for the page's padding, the menu button, the emblem and
- * the three tools — up to that same 199px: 132px on a 360px phone, 162px on a
+ * viewport less 228px — the row's 12px padding each side, the 40px menu
+ * button, the 32px emblem, the 68px currency and 40px tracking, and the four
+ * 6px gaps — up to that same 199px: 132px on a 360px phone, 162px on a
  * 390px one, the whole of it from 427px. Its height follows its width
  * (h-auto), so it never wraps. The admin panel's header has two more tools
  * on a phone (account, cart), so there it keeps the emblem alone

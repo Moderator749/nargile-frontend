@@ -23,8 +23,9 @@ import { SIDEBAR_WIDTH_LG } from "@/components/layout/CategorySidebar";
 import type { ResolvedNav } from "@/lib/storefrontNav";
 import { PAGE_CONTAINER } from "@/lib/layout";
 
+// 40px on a phone, the thumb's; 36px from md, under a pointer.
 const iconButton =
-  "relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors duration-200 hover:bg-foreground/[0.06] hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+  "relative flex h-10 w-10 md:h-9 md:w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors duration-200 hover:bg-foreground/[0.06] hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
 interface SearchProps {
   id: string;
@@ -125,9 +126,11 @@ export function Navbar({
         // category column's grey, framing the page with the column.
         className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white text-foreground md:border-b-0 dark:border-border dark:bg-background"
       >
-        {/* Module 2: logo · search · currency · order tracking · account · cart;
-            on a phone: menu · logo · currency · order tracking · theme. */}
-        <div className={`${PAGE_CONTAINER} flex h-16 items-center gap-1 sm:gap-2`}>
+        {/* Module 2: logo · search · currency · order tracking · theme · account · cart;
+            on a phone: menu · logo · currency · order tracking — the theme and
+            the language are in the menu's drawer there. A phone's row keeps
+            12px clear at each edge and clips anything that would cross it. */}
+        <div className={`${PAGE_CONTAINER} flex h-16 items-center gap-1.5 max-md:overflow-x-clip max-md:px-3 sm:gap-2`}>
           {/* A phone's way to the categories: the drawer the menu bar's
               "KATEGORİLER" opens on a tablet. */}
           {showMenu && (
@@ -136,7 +139,7 @@ export function Navbar({
               onClick={() => openDrawer(true)}
               aria-label={t.nav.categories}
               aria-controls="category-drawer"
-              className={`${iconButton} -ms-2 text-foreground md:hidden`}
+              className={`${iconButton} text-foreground md:hidden`}
             >
               <Menu className="h-[22px] w-[22px]" strokeWidth={1.75} aria-hidden />
             </button>
@@ -144,7 +147,7 @@ export function Navbar({
           {/* The logo sits in the category column's width, so what follows it
               starts exactly on that column's line — which is where
               the first entry of the bar below starts. */}
-          <div className={`shrink-0 sm:me-2 lg:me-0 ${SIDEBAR_WIDTH_LG}`}>
+          <div className={`min-w-0 md:shrink-0 sm:me-2 lg:me-0 ${SIDEBAR_WIDTH_LG}`}>
             {/* The emblem and the name are one link, with a 44px-tall target
                 above its neighbours, to the homepage in the page's language.
                 On the homepage itself it would go nowhere, so it goes to the
@@ -176,7 +179,7 @@ export function Navbar({
           {showMenu && <LanguageSelect className="max-md:hidden" />}
           <CurrencySelect />
 
-          <Link href={trackHref} className={`${iconButton} max-sm:h-8 max-sm:w-8 lg:w-auto lg:gap-1.5 lg:px-3`} title={t.nav.tracking}>
+          <Link href={trackHref} className={`${iconButton} lg:w-auto lg:gap-1.5 lg:px-3`} title={t.nav.tracking}>
             <PackageSearch className="h-[18px] w-[18px]" strokeWidth={1.5} aria-hidden />
             <span className="sr-only lg:not-sr-only lg:text-[13px]">{t.nav.tracking}</span>
           </Link>
@@ -191,7 +194,8 @@ export function Navbar({
             </Link>
           ))}
 
-          <ThemeToggle />
+          {/* A storefront phone has it in the drawer; the admin panel has no drawer. */}
+          <ThemeToggle className={`h-9 w-9 ${showMenu ? "max-md:hidden" : ""}`} />
 
           {user ? (
             <div className={desktopOnly}>

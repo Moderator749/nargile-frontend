@@ -9,7 +9,11 @@ import { DISPLAY_CURRENCIES, useCurrencyStore, type DisplayCurrency } from "@/st
 // Lira as the shop writes it beside every price: "TL".
 const SYMBOL: Record<DisplayCurrency, string> = { TRY: "TL", USD: "$ USD", EUR: "€ EUR" };
 
-/** Display currency (TCMB rates, approximate). Checkout always charges TRY. */
+/**
+ * Display currency (TCMB rates, approximate). Checkout always charges TRY.
+ * On a phone a fixed 68px — "$ USD", the widest, fits — rather than the width
+ * of its longest option, so the header's row can count on it.
+ */
 export function CurrencySelect() {
   const currency = useCurrencyStore((s) => s.currency);
   const setCurrency = useCurrencyStore((s) => s.setCurrency);
@@ -25,7 +29,7 @@ export function CurrencySelect() {
         value={currency}
         onChange={(e) => setCurrency(e.target.value as DisplayCurrency)}
         title={m.currencyTitle}
-        className="h-9 min-w-[3.25rem] cursor-pointer appearance-none rounded-full bg-transparent pe-6 ps-3 text-end font-mono text-xs [text-align-last:end] sm:min-w-[3.75rem] sm:pe-7 text-muted-foreground transition-colors duration-200 hover:bg-foreground/[0.06] hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        className="h-10 w-[4.25rem] cursor-pointer appearance-none rounded-full bg-transparent pe-6 ps-2 text-end font-mono text-xs [text-align-last:end] md:h-9 md:w-auto md:min-w-[3.75rem] md:ps-3 md:pe-7 text-muted-foreground transition-colors duration-200 hover:bg-foreground/[0.06] hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       >
         {DISPLAY_CURRENCIES.map((c) => (
           <option key={c} value={c}>

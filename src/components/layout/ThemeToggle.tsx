@@ -9,7 +9,8 @@ import { getResolvedTheme, setPreference, subscribeTheme, type ResolvedTheme } f
 
 const serverSnapshot = (): ResolvedTheme | null => null;
 
-export function ThemeToggle() {
+/** Light or dark. `className` places and sizes it (36px in the header, 40px in a phone's drawer). */
+export function ThemeToggle({ className = "h-9 w-9" }: { className?: string }) {
   const theme = useSyncExternalStore(subscribeTheme, getResolvedTheme, serverSnapshot);
   const next = theme === "dark" ? "light" : "dark";
   const m = useMessages(chromeMessages);
@@ -21,7 +22,7 @@ export function ThemeToggle() {
       // Before hydration the theme is unknown on the server: render a neutral, same-size button.
       aria-label={theme ? (theme === "dark" ? m.themeToLight : m.themeToDark) : m.themeToggle}
       title={theme ? (theme === "dark" ? m.themeLight : m.themeDark) : undefined}
-      className="relative flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors duration-200 hover:bg-foreground/[0.06] hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+      className={`relative flex shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors duration-200 hover:bg-foreground/[0.06] hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${className}`}
     >
       {/* Both icons stacked; CSS on <html> (not JS, not a forced-dark section) picks one, so no flash. */}
       <Sun

@@ -6,6 +6,7 @@ import { ArrowLeft, ChevronDown, LayoutGrid, X } from "lucide-react";
 import { usePagePath } from "@/components/i18n/navigation";
 import { useLocale, useT } from "@/components/i18n/LocaleProvider";
 import { LanguageSelect } from "@/components/layout/LanguageSelect";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import Link from "@/components/i18n/Link";
 import { CategoryList } from "@/components/layout/CategoryList";
 import { SIDEBAR_WIDTH } from "@/components/layout/CategorySidebar";
@@ -78,10 +79,14 @@ function CategoryDrawer({ categories, links = [] }: { categories: ResolvedNav[];
       <Suspense fallback={null}>
         <CategoryList items={categories} onNavigate={() => setOpen(false)} />
       </Suspense>
-      {/* A phone's language picker: the header has no room for it there. */}
+      {/* A phone's language picker and theme switch: the header has no room for them there. */}
       <div className="flex items-center justify-between gap-3 border-t border-border px-3 py-2.5 md:hidden">
         <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{t.nav.language}</p>
         <LanguageSelect id="drawer-language" />
+      </div>
+      <div className="flex items-center justify-between gap-3 border-t border-border px-3 py-2 md:hidden">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{t.nav.theme}</p>
+        <ThemeToggle className="h-10 w-10" />
       </div>
     </dialog>
   );
