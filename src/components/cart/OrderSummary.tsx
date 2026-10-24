@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Building2, Lock, Send, Ship, TrendingUp, Truck } from "lucide-react";
+import { Building2, Check, Lock, Send, Ship, TrendingUp, Truck } from "lucide-react";
 
 import { LegalConsent, type Agreements } from "@/components/cart/LegalConsent";
 import { useLocale, useMessages } from "@/components/i18n/LocaleProvider";
@@ -82,8 +82,11 @@ const kg = (value: string, locale: Locale) =>
 /**
  * Explains the shipping line: when the shop pays the carrier, and when the buyer
  * pays it on delivery ("karşı ödemeli") instead — the cart is never charged
- * carriage. The coal note only appears for coal-dominant carts under the coal
- * minimum. Every figure comes from the quote, i.e. from the live parameters.
+ * carriage. Below the free shipping threshold, and once past it, that is the
+ * same card the cart shows a visitor (`FreeShippingProgress`), so the cart and
+ * the checkout step read alike. The coal note only appears for coal-dominant
+ * carts under the coal minimum. Every figure comes from the quote, i.e. from
+ * the live parameters.
  */
 function ShippingNote({ quote }: { quote: Cart }) {
   const t = useMessages(cartMessages).summary;
@@ -99,7 +102,17 @@ function ShippingNote({ quote }: { quote: Cart }) {
       </div>
     );
   }
-  const remaining = Number(s.free_threshold) - Number(quote.subtotal);
+  const threshold = Number(s.free_threshold);
+  if ((s.reason === "free" || s.reason === "below_threshold") && threshold > 0) {
+    return (
+      <FreeShippingProgress
+        subtotal={Number(quote.subtotal)}
+        threshold={threshold}
+        done={s.reason === "free"}
+        note={s.reason === "below_threshold" ? t.receiverPaysNote : undefined}
+      />
+    );
+  }
   const message =
     s.reason === "free"
       ? null
@@ -108,7 +121,7 @@ function ShippingNote({ quote }: { quote: Cart }) {
           // carriage, so there is no threshold to nudge towards.
           t.tierPrice
         : s.reason === "below_threshold"
-          ? t.belowThreshold(formatMoney(remaining))
+          ? t.receiverPaysNote
           : s.coal_rule_basis === "quantity"
             ? t.coalQuantity(s.coal_min_quantity, s.coal_quantity)
             : t.coalKg(kg(s.coal_min_kg, locale), kg(s.coal_weight_kg, locale));
@@ -151,29 +164,74 @@ function VolumeNudge({ quote }: { quote: Cart }) {
   );
 }
 
-/** How far the cart is from free shipping, as a bar and in words. */
-function FreeShippingProgress({ subtotal, threshold }: { subtotal: number; threshold: number }) {
+const wholeLira = (n: number, locale: Locale) =>
+  Math.floor(n).toLocaleString(INTL_LOCALE[locale], { maximumFractionDigits: 0 });
+
+/**
+ * How far the cart is from free shipping — one card for the cart and the
+ * checkout step alike, a visitor's estimate or a buyer's quote. Before the
+ * threshold: a truck, "Ücretsiz kargoya X kaldı", "950 / 3.000 TL" and a bar
+ * in the shop's red that grows in from its start. Past it, the card turns
+ * green with a tick: "Tebrikler! Kargonuz Ücretsiz".
+ */
+function FreeShippingProgress({
+  subtotal,
+  threshold,
+  done = subtotal >= threshold,
+  note,
+}: {
+  subtotal: number;
+  threshold: number;
+  /** Free already, by the quote's word; by the amount where there is no quote. */
+  done?: boolean;
+  /** A line under the bar (who pays the carrier meanwhile). */
+  note?: string;
+}) {
   const t = useMessages(cartMessages).summary;
+  const locale = useLocale();
   if (!(threshold > 0)) return null;
-  const done = subtotal >= threshold;
-  const percent = Math.min(100, Math.max(0, (subtotal / threshold) * 100));
+  const percent = done ? 100 : Math.min(100, Math.max(0, (subtotal / threshold) * 100));
   const text = done ? t.freeShippingReached : t.toFreeShipping(formatMoney(threshold - subtotal));
   return (
-    <div className="space-y-1.5 rounded-xl bg-slate-50 px-3 py-2.5 dark:bg-white/5">
-      <p className="flex items-center gap-2 text-[13px] font-medium text-slate-700 dark:text-zinc-200">
-        <Truck className={`h-4 w-4 shrink-0 ${done ? "text-emerald-600 dark:text-emerald-400" : ""}`} aria-hidden />
-        {text}
-      </p>
+    <div
+      className={`rounded-xl border px-3.5 py-3 transition-colors duration-300 ${
+        done
+          ? "border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-500/40 dark:bg-emerald-500/10 dark:text-emerald-200"
+          : "border-slate-200 bg-white text-slate-800 dark:border-white/10 dark:bg-white/5 dark:text-zinc-100"
+      }`}
+    >
+      <div className="flex items-center gap-2.5">
+        <span
+          aria-hidden
+          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+            done ? "bg-emerald-600 text-white dark:bg-emerald-500" : "bg-red-50 text-red-600 dark:bg-red-500/15 dark:text-red-400"
+          }`}
+        >
+          {done ? <Check className="h-4 w-4" strokeWidth={3} /> : <Truck className="h-4 w-4" strokeWidth={2} />}
+        </span>
+        <p className="min-w-0 flex-1 text-[13px] font-semibold leading-snug">{text}</p>
+        {!done && (
+          <span dir="ltr" className="shrink-0 font-mono text-[11px] tabular-nums text-slate-500 dark:text-zinc-400">
+            {t.freeShippingOf(wholeLira(subtotal, locale), wholeLira(threshold, locale))}
+          </span>
+        )}
+      </div>
       <div
         role="progressbar"
         aria-label={text}
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={Math.round(percent)}
-        className="h-1.5 overflow-hidden rounded-full bg-slate-200 dark:bg-white/10"
+        className={`mt-2.5 h-2 overflow-hidden rounded-full ${done ? "bg-emerald-200/70 dark:bg-emerald-500/20" : "bg-slate-100 dark:bg-white/10"}`}
       >
-        <div className="h-full rounded-full bg-emerald-500 transition-[width] duration-300" style={{ width: `${percent}%` }} />
+        <div
+          className={`h-full origin-left rounded-full transition-[width,background-color] duration-500 ease-out motion-safe:animate-[bar-in_700ms_ease-out] rtl:origin-right ${
+            done ? "bg-emerald-500" : "bg-gradient-to-r from-red-500 to-red-600"
+          }`}
+          style={{ width: `${percent}%` }}
+        />
       </div>
+      {note && <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-zinc-400">{note}</p>}
     </div>
   );
 }

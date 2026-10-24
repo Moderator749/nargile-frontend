@@ -180,6 +180,13 @@ html[data-auth] .guest-only {
 }
 
 /* The cart's notice (CartToast) rising into place. */
+/* A progress bar's fill growing in from its start, once, as it appears (the free shipping card). */
+@keyframes bar-in {
+  from {
+    transform: scaleX(0);
+  }
+}
+
 @keyframes toast-in {
   from {
     opacity: 0;

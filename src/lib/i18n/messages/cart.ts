@@ -162,7 +162,9 @@ export const cartMessages = defineMessages({
       shipping: "Kargo",
       estimatedTotal: "Tahmini toplam",
       toFreeShipping: (remaining: string) => `Ücretsiz kargoya ${remaining} kaldı`,
-      freeShippingReached: "Kargonuz ücretsiz",
+      freeShippingReached: "Tebrikler! Kargonuz Ücretsiz",
+      /** Under the bar: how far along, in whole liras ("950 / 3.000 TL"). */
+      freeShippingOf: (have: string, of: string) => `${have} / ${of} TL`,
       toNextTier: (remaining: string, rate: string) => `${remaining} daha ekleyin, ${rate} sepet indirimi kazanın`,
       guestEstimate:
         "Bireysel alışveriş kurallarıyla tahmini tutardır; kesin tutar giriş yaptıktan sonra hesaplanır. Firma hesaplarında kendi fiyat listeniz geçerlidir. Kömür ağırlıklı sepetlerde ücretsiz kargo koşulludur.",
@@ -197,8 +199,7 @@ export const cartMessages = defineMessages({
       internationalNote: "Uluslararası navlun ve gümrük bedeli sipariş sonrasında belirlenir, ayrıca faturalandırılır.",
       tierPrice:
         "Gönderim ücreti sipariş tutarınıza eklenmez; teslimatta kargo görevlisine ödenir. Fiyat listenize kargo dahil değildir.",
-      belowThreshold: (remaining: string) =>
-        `Gönderim ücreti sipariş tutarınıza eklenmez; teslimatta kargo görevlisine ödenir. ${remaining} daha ekleyin, kargonuz ücretsiz olsun.`,
+      receiverPaysNote: "Gönderim ücreti sipariş tutarınıza eklenmez; teslimatta kargo görevlisine ödenir.",
       coalQuantity: (min: number, have: number) =>
         `Kömür ağırlıklı siparişlerde ücretsiz kargo için en az ${min} adet kömür gereklidir. Sepetinizde ${have} adet var; gönderim ücreti teslimatta alıcı tarafından ödenir.`,
       coalKg: (min: string, have: string) =>
@@ -315,7 +316,8 @@ export const cartMessages = defineMessages({
       shipping: "Shipping",
       estimatedTotal: "Estimated total",
       toFreeShipping: (remaining: string) => `${remaining} away from free shipping`,
-      freeShippingReached: "Your shipping is free",
+      freeShippingReached: "Congratulations! Your shipping is free",
+      freeShippingOf: (have: string, of: string) => `${have} / ${of} TL`,
       toNextTier: (remaining: string, rate: string) => `Add ${remaining} more for a ${rate} basket discount`,
       guestEstimate:
         "An estimate by the rules for individual orders; the exact amount is worked out once you sign in. Business accounts are charged their own price list. Free shipping on coal-heavy carts has conditions.",
@@ -350,8 +352,7 @@ export const cartMessages = defineMessages({
       internationalNote: "International freight and customs charges are set after the order and invoiced separately.",
       tierPrice:
         "Shipping is not added to your order total; you pay the courier on delivery. Your price list does not include shipping.",
-      belowThreshold: (remaining: string) =>
-        `Shipping is not added to your order total; you pay the courier on delivery. Add ${remaining} more for free shipping.`,
+      receiverPaysNote: "Shipping is not added to your order total; you pay the courier on delivery.",
       coalQuantity: (min: number, have: number) =>
         `Orders made up mostly of charcoal need at least ${min} pcs of charcoal for free shipping. Your cart has ${have} pcs; the recipient pays for shipping on delivery.`,
       coalKg: (min: string, have: string) =>
@@ -469,7 +470,8 @@ export const cartMessages = defineMessages({
       shipping: "الشحن",
       estimatedTotal: "المجموع التقديري",
       toFreeShipping: (remaining: string) => `يتبقى ${remaining} للشحن المجاني`,
-      freeShippingReached: "الشحن مجاني",
+      freeShippingReached: "تهانينا! الشحن مجاني",
+      freeShippingOf: (have: string, of: string) => `${have} / ${of} TL`,
       toNextTier: (remaining: string, rate: string) => `أضف ${remaining} لتحصل على خصم سلة ${rate}`,
       guestEstimate:
         "مبلغ تقديري وفق قواعد الطلبات الفردية؛ يُحسب المبلغ النهائي بعد تسجيل الدخول. تُطبَّق على حسابات الشركات قائمة أسعارها الخاصة. الشحن المجاني لسلال الفحم مشروط.",
@@ -503,8 +505,7 @@ export const cartMessages = defineMessages({
       freightNote: "تُدفع رسوم مستودع الشحن للمستودع عند استلام البضاعة.",
       internationalNote: "تُحدَّد تكاليف الشحن الدولي والجمارك بعد الطلب وتُفوتَر بشكل منفصل.",
       tierPrice: "لا تُضاف رسوم الشحن إلى إجمالي طلبك؛ تُدفع لمندوب الشحن عند التسليم. قائمة أسعارك لا تشمل الشحن.",
-      belowThreshold: (remaining: string) =>
-        `لا تُضاف رسوم الشحن إلى إجمالي طلبك؛ تُدفع لمندوب الشحن عند التسليم. أضف منتجات بقيمة ${remaining} ليصبح الشحن مجانيًا.`,
+      receiverPaysNote: "لا تُضاف رسوم الشحن إلى إجمالي طلبك؛ تُدفع لمندوب الشحن عند التسليم.",
       coalQuantity: (min: number, have: number) =>
         `تحتاج الطلبات التي يغلب عليها الفحم إلى ${min} قطعة فحم على الأقل للشحن المجاني. في سلتك ${have} قطعة؛ يدفع المستلم رسوم الشحن عند التسليم.`,
       coalKg: (min: string, have: string) =>
