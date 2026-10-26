@@ -125,6 +125,12 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
   const quoteOnly = isExportAccount(user);
   // Every signed-in segment but Perakende sees the price before VAT as well.
   const vatSplit = loggedIn && !pricesPending && !!user && (user.segment_code ?? "RETAIL") !== "RETAIL";
+  // Its own price only: nothing until that has arrived. The split is the API's
+  // own, by the product's VAT rate; with no VAT (export) there is no "+ KDV".
+  const netPrice =
+    vatSplit && price && Number(price.vat_rate) > 0
+      ? `${money.format({ ...price, price_incl_tax: price.price_excl_tax })} ${t.plusVat}`
+      : null;
   const canAdd = !!variant && !!price && !pricesPending && (!soldOut || quoteOnly);
   // The most this buyer may order of this colour, where it is known: a firm's
   // own quota (sent to a firm's account only), or the most a stock check has
@@ -252,14 +258,14 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
             {product.name}
           </h1>
           {variant && <p className="mt-2 font-mono text-xs text-muted-foreground">{t.productCode(variant.sku)}</p>}
-          {/* A business account also reads its price before VAT, as it books it —
-              muted, beside the gross price below rather than competing with it.
-              Its own price only: nothing until that has arrived. The split is the
-              API's own, by the product's VAT rate; with no VAT (export) there is
-              no "+ KDV" to state. */}
-          {vatSplit && price && Number(price.vat_rate) > 0 && (
-            <p className="mt-3 font-mono text-sm font-medium tabular-nums text-zinc-500 dark:text-zinc-400">
-              {money.format({ ...price, price_incl_tax: price.price_excl_tax })} {t.plusVat}
+          {/* A business account's price before VAT sits in the price table,
+              beside the gross price (`net`); the price it is reduced from, and
+              by how much, move up here under the code. Without a "+ KDV" line
+              (export: no VAT) the table keeps them, as for everyone else. */}
+          {netPrice && discount > 0 && was && (
+            <p className="mt-3 flex flex-wrap items-baseline gap-x-2.5 font-mono text-sm tabular-nums">
+              <span className="text-muted-foreground line-through">{money.format(was)}</span>
+              <span className="text-xs font-bold text-accent">{card.discount(discount)}</span>
             </p>
           )}
 
@@ -276,6 +282,7 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
                 params={params}
                 rates={money.rates}
                 format={money.format}
+                net={netPrice}
               />
             ) : (
               <p className="text-sm text-muted-foreground">{card.noPrice}</p>

@@ -15,6 +15,10 @@ import type { CatalogPrice, ExchangeRates, StoreParameters } from "@/types";
  *
  * The havale row and the installments are retail promotions (`retail`): an
  * account on its own price list pays that whichever way it pays.
+ *
+ * A business account reads its price before VAT beside the gross one, as it
+ * books it (`net`, "4.320,83 TL + KDV"); its struck price and discount are then
+ * shown above the table, under the product code, instead of here.
  */
 export function PriceSummary({
   price,
@@ -25,6 +29,7 @@ export function PriceSummary({
   params,
   rates,
   format,
+  net = null,
 }: {
   price: CatalogPrice;
   was: CatalogPrice | null;
@@ -35,6 +40,8 @@ export function PriceSummary({
   params: StoreParameters;
   rates: ExchangeRates | null;
   format: (price: CatalogPrice) => string;
+  /** The price before VAT, formatted with its "+ KDV"; takes the struck price's place. */
+  net?: string | null;
 }) {
   const locale = useLocale();
   const t = useMessages(productMessages).priceTable;
@@ -48,11 +55,16 @@ export function PriceSummary({
       <div className={row}>
         <dt className={label}>{t.card}</dt>
         <dd className="flex flex-wrap items-baseline gap-x-2.5 tabular-nums">
-          {discount > 0 && was && (
-            <>
-              <span className="text-sm text-muted-foreground line-through">{format(was)}</span>
-              <span className="text-xs font-bold text-accent">{card.discount(discount)}</span>
-            </>
+          {net ? (
+            <span className="font-mono text-sm font-medium text-zinc-500 dark:text-zinc-400">{net}</span>
+          ) : (
+            discount > 0 &&
+            was && (
+              <>
+                <span className="text-sm text-muted-foreground line-through">{format(was)}</span>
+                <span className="text-xs font-bold text-accent">{card.discount(discount)}</span>
+              </>
+            )
           )}
           <span className="text-2xl font-bold tracking-tight text-foreground">{format(price)}</span>
         </dd>
