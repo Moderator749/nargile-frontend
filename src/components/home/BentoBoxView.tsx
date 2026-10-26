@@ -87,8 +87,11 @@ export function BentoBoxView({
   const part = (name: HomeBoxText, own: string) => {
     const px = box.font_sizes?.[name] ?? BOX_DEFAULT_PX[name];
     const color = box.text_colors?.[name];
+    // A placed text is already `absolute`, which holds its resize handle; `relative` would
+    // win over it (later in the stylesheet) and put the drawer's text back in the flow,
+    // off the point the homepage shows it at.
     const editing = editor
-      ? `relative cursor-grab touch-none select-none outline-dashed outline-1 outline-offset-4 active:cursor-grabbing ${
+      ? `${placed ? "" : "relative"} cursor-grab touch-none select-none outline-dashed outline-1 outline-offset-4 active:cursor-grabbing ${
           editor.selected === name ? "outline-2 outline-red-500" : "outline-white/40 hover:outline-white/80"
         }`
       : "";
