@@ -411,7 +411,11 @@ export const adminHeroSlides = {
   ...contentApi<HeroSlideContent, HeroSlideWrite>("/admin/hero-slides"),
   ...imageApi<HeroSlideContent>("/admin/hero-slides"),
 };
-export const adminPromoBoxes = contentApi<PromoBoxContent, PromoBoxWrite>("/admin/promo-boxes");
+/** "Promo Kutusu": the one box the homepage shows; null before its first save. */
+export const adminPromoBox = {
+  get: async (signal?: AbortSignal) => (await api.get<PromoBoxContent | null>("/admin/promo-box", { signal })).data,
+  save: async (body: PromoBoxWrite) => (await api.put<PromoBoxContent>("/admin/promo-box", body)).data,
+};
 
 // ── Orders: mark paid / cancel; customers & wallets; bank accounts ────────────
 

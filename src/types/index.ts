@@ -1300,7 +1300,14 @@ export interface SocialWidget {
   anchor_label: string;
 }
 
-/** The promo box beside the hero ("Sosyal & Avantaj"): its top band jumps to `href`, its bottom band lists the channels. */
+/** Where a promo card's dark veil starts ("Gölge Yönü"); "left" mirrors in Arabic. */
+export type PromoShade = "left" | "right" | "top" | "bottom";
+
+/**
+ * "Promo Kutusu": the two cards beside the hero, as one box — the community
+ * card on top (`text`, `top_title`, the channels), the advantages card under
+ * it (`eyebrow`, `title`, `bottom_text`, the link).
+ */
 export interface PromoBoxContent {
   id: number;
   eyebrow: string;
@@ -1316,6 +1323,12 @@ export interface PromoBoxContent {
   /** The advantages card's photo; null = the shop's own. */
   bottom_card_image_url: string | null;
   bottom_card_focus_x: number;
+  /** The community card's title; null = the site's own, in each language. */
+  top_title: string | null;
+  /** The line under the advantages card's title; null = the site's own. */
+  bottom_text: string | null;
+  top_shade: PromoShade;
+  bottom_shade: PromoShade;
   is_active: boolean;
   sort_order: number;
 }

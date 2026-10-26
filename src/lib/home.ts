@@ -2,7 +2,7 @@
 // /admin/promos) and served by /home/content; this file maps it to what the
 // components render.
 
-import type { ContentRequirement, HeroBgPosition, HeroButtonSize, HeroLayout, HeroSlideContent, HeroTextAlign, HeroTextColors, HeroTextSizes, PromoBoxContent, SocialWidget } from "@/types";
+import type { ContentRequirement, HeroBgPosition, HeroButtonSize, HeroLayout, HeroSlideContent, HeroTextAlign, HeroTextColors, HeroTextSizes, PromoBoxContent, PromoShade, SocialWidget } from "@/types";
 
 export type Requirement = ContentRequirement;
 
@@ -110,6 +110,11 @@ export interface PromoBox {
   widget: SocialWidget | null;
   /** Each card's own photo and its crop, where the admin set one. */
   photos?: { top: CardPhoto | null; bottom: CardPhoto | null };
+  /** The community card's title and the advantages card's line; absent = the site's own copy. */
+  topTitle?: string;
+  bottomText?: string;
+  /** Where each card's dark veil starts ("Gölge Yönü"); absent = from the left. */
+  shades?: { top: PromoShade; bottom: PromoShade };
 }
 
 /** A card's photo beside the hero, and where its crop centres across it (0–100). */
@@ -133,6 +138,9 @@ export function heroPromo(boxes: PromoBoxContent[], has: Record<Requirement, boo
       href: b.href,
       widget: b.widget,
       photos: { top: cardPhoto(b.top_card_image_url, b.top_card_focus_x), bottom: cardPhoto(b.bottom_card_image_url, b.bottom_card_focus_x) },
+      topTitle: b.top_title ?? undefined,
+      bottomText: b.bottom_text ?? undefined,
+      shades: { top: b.top_shade ?? "left", bottom: b.bottom_shade ?? "left" },
     }
   );
 }
