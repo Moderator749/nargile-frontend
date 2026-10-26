@@ -317,6 +317,8 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
         <SheetSection title="Görseller ve Video">
           <MediaFields
             imageUrls={draft.image_urls}
+            // The page's address, as it is or as it will be: the photo's file is named for it.
+            imageName={draft.slug?.trim() || generatedSlug}
             youtubeUrl={draft.youtube_video_url}
             onImagesChange={(urls) => set("image_urls", urls)}
             onYoutubeChange={(url) => set("youtube_video_url", url)}

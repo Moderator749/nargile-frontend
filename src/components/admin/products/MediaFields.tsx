@@ -11,11 +11,14 @@ import { SheetField, sheetInputClass, sheetLabelClass } from "@/components/admin
  */
 export function MediaFields({
   imageUrls,
+  imageName,
   youtubeUrl,
   onImagesChange,
   onYoutubeChange,
 }: {
   imageUrls: string[];
+  /** The product's slug, which an uploaded photo's file is named for. */
+  imageName?: string;
   youtubeUrl: string;
   onImagesChange: (urls: string[]) => void;
   onYoutubeChange: (url: string) => void;
@@ -24,7 +27,7 @@ export function MediaFields({
     <div className="space-y-4">
       <div>
         <span className={sheetLabelClass}>Görseller</span>
-        <GalleryUploader urls={imageUrls} onChange={onImagesChange} />
+        <GalleryUploader urls={imageUrls} onChange={onImagesChange} name={imageName} />
         <p className="mt-1.5 text-[11px] text-slate-500 dark:text-zinc-400">
           İlk görsel kapak olarak kullanılır; sıralama ürün sayfasındaki galeri sırasıdır.
         </p>

@@ -21,9 +21,12 @@ const MAX_FILES = 12;
 export function GalleryUploader({
   urls,
   onChange,
+  name,
 }: {
   urls: string[];
   onChange: (urls: string[]) => void;
+  /** What the photos' files are named for: the product's slug. */
+  name?: string;
 }) {
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
@@ -51,7 +54,7 @@ export function GalleryUploader({
 
     setBusy(true);
     try {
-      const stored = await adminUploadImages(accepted);
+      const stored = await adminUploadImages(accepted, name);
       onChange([...urls, ...stored.map((f) => f.url)]);
     } catch (err) {
       setError(getApiErrorMessage(err, "Görsel yüklenemedi."));

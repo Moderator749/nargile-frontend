@@ -149,10 +149,15 @@ export async function adminSetProductPublished(productId: string, isPublished: b
   return data.is_published;
 }
 
-/** Stores images under the API's media root and returns their public URLs. */
-export async function adminUploadImages(files: File[]): Promise<UploadedImage[]> {
+/**
+ * Stores images under the API's media root and returns their public URLs.
+ * With `name` (a product's slug) each file is named for it, "<name>-<hash>.webp",
+ * for image search; never the file's own name.
+ */
+export async function adminUploadImages(files: File[], name?: string): Promise<UploadedImage[]> {
   const form = new FormData();
   for (const file of files) form.append("files", file);
+  if (name?.trim()) form.append("name", name.trim());
   // Overrides the client's JSON default; the browser adds the multipart boundary.
   const { data } = await api.post<UploadedImage[]>("/admin/uploads", form, {
     headers: { "Content-Type": "multipart/form-data" },
