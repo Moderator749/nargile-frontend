@@ -63,6 +63,12 @@ const mediaClass =
 // column from xl (≈ 240px), three from lg (≈ a quarter of the screen), two
 // from sm, two on a phone. The browser picks the srcset width from this.
 const IMAGE_SIZES = "(min-width: 1280px) 260px, (min-width: 1024px) 25vw, 50vw";
+// The photo fills ~90% of its square: a thin margin (12px, 8px on a narrow
+// card) rather than the gallery's 32px, which left a phone card's hookah at
+// barely 60% of the box. `contain` keeps a tall hookah and a wide box whole;
+// the hover's 5% zoom still fits inside the margin.
+const IMAGE_CLASS =
+  "object-contain p-3 mix-blend-multiply transition-transform duration-500 ease-out motion-safe:group-hover:scale-105 @max-[13rem]:p-2";
 const bodyClass = "flex flex-1 flex-col px-6 pb-6 pt-1 @max-[13rem]:px-3 @max-[13rem]:pb-3.5";
 // Minimal status pills: frosted glass, crimson only for a live deal.
 const badgeClass =
@@ -162,6 +168,7 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
             src={product.image_url}
             alt={productImageAlt(product, category)}
             sizes={IMAGE_SIZES}
+            imageClassName={IMAGE_CLASS}
             eager={eager}
             fallback={
               <div className="flex h-full items-center justify-center bg-gradient-to-b from-white to-[#f5f5f7] text-zinc-300 dark:from-zinc-100 dark:to-zinc-200 dark:text-zinc-400">
