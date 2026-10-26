@@ -1,4 +1,7 @@
+import Image from "next/image";
+
 import Link from "@/components/i18n/Link";
+import { canOptimiseImage } from "@/lib/home";
 import { homeMessages } from "@/lib/i18n/messages/home";
 import { getLocale, getMessages } from "@/lib/i18n/server";
 import { brandHref } from "@/lib/seo";
@@ -79,15 +82,20 @@ export async function BrandTicker({
         // The repeats, and the decorative ticker, are not in the tab order either.
         const reachable = primary && !decorative;
         const face = brand.logo_url ? (
-          // A plain img: small logos, uploaded as they are; next/image would
-          // add a resize pass per logo for nothing. Grey and quiet until
-          // pointed at, as the names are; a white silhouette on the dark theme.
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          // Through next/image: an uploaded logo is often a full-size PNG
+          // (50–85 KB) shown 28px tall, and resized to the strip's size and
+          // sent as WebP/AVIF it is a few KB — the same file for every repeat
+          // of the band. `width`/`height` are the box it is drawn in; the
+          // logo keeps its own proportions inside it (object-contain). Grey
+          // and quiet until pointed at, as the names are; a white silhouette
+          // on the dark theme.
+          <Image
             src={brand.logo_url}
             alt={reachable ? brand.name : ""}
+            width={120}
+            height={28}
             loading="lazy"
-            decoding="async"
+            unoptimized={!canOptimiseImage(brand.logo_url)}
             className="h-6 w-auto max-w-[7.5rem] object-contain opacity-60 grayscale transition duration-200 group-hover/brand:opacity-100 group-hover/brand:grayscale-0 sm:h-7 dark:opacity-70 dark:brightness-0 dark:invert dark:group-hover/brand:opacity-100"
           />
         ) : (
