@@ -111,6 +111,14 @@ export const homeMessages = defineMessages({
         { alt: "Nargile malzemeleri", eyebrow: "Her Şey Tek Yerde", title: "Nargile\nMalzemeleri", subtitle: "Lüle, marpuç, közlük ve dahası" },
       ],
     },
+    bento2: {
+      label: "Nargile Takımları ve Markalar",
+      boxes: [
+        { alt: "Altın ve siyah nargile takımları", eyebrow: "Klasik & Modern", title: "Nargile\nTakımları", subtitle: "Her zevke bir takım" },
+        { alt: "Legend Hookah çelik nargile takımı", eyebrow: "Premium Seri", title: "Legend\nHookah", subtitle: "Çelik gövde, usta işçiliği" },
+        { alt: "Oduman kristal gövdeli nargile takımı", eyebrow: "Kristal Gövde", title: "Oduman\nNargile", subtitle: "Koleksiyonu keşfedin" },
+      ],
+    },
     campaigns: {
       heading: "Kampanyalar",
       leadEyebrow: "Sınırlı Stok",
@@ -238,6 +246,14 @@ export const homeMessages = defineMessages({
         { alt: "Hookah supplies", eyebrow: "All in One Place", title: "Hookah\nSupplies", subtitle: "Bowls, hoses, heat managers and more" },
       ],
     },
+    bento2: {
+      label: "Hookah sets and brands",
+      boxes: [
+        { alt: "Gold and black hookah sets", eyebrow: "Classic & Modern", title: "Hookah\nSets", subtitle: "A set for every taste" },
+        { alt: "Legend Hookah steel hookah set", eyebrow: "Premium Series", title: "Legend\nHookah", subtitle: "Steel body, master craftsmanship" },
+        { alt: "Oduman hookah set with a crystal base", eyebrow: "Crystal Base", title: "Oduman\nHookah", subtitle: "Discover the collection" },
+      ],
+    },
     campaigns: {
       heading: "Promotions",
       leadEyebrow: "Limited Stock",
@@ -363,6 +379,14 @@ export const homeMessages = defineMessages({
         { alt: "فحم الأرجيلة", eyebrow: "جوز هند طبيعي", title: "فحم\nالأرجيلة", subtitle: "فحم طويل الاشتعال بلا رائحة" },
         { alt: "نكهات أرجيلة عشبية", eyebrow: "نكهات بلا تبغ", title: "منتجات\nعشبية", subtitle: "خلطات طبيعية عطرية" },
         { alt: "مستلزمات الأرجيلة", eyebrow: "كل شيء في مكان واحد", title: "مستلزمات\nالأرجيلة", subtitle: "رؤوس وخراطيم ومنظمات حرارة والمزيد" },
+      ],
+    },
+    bento2: {
+      label: "أطقم الأرجيلة والعلامات التجارية",
+      boxes: [
+        { alt: "أطقم أرجيلة ذهبية وسوداء", eyebrow: "كلاسيكي وعصري", title: "أطقم\nالأرجيلة", subtitle: "طقم لكل ذوق" },
+        { alt: "طقم أرجيلة ليجند هوكا من الفولاذ", eyebrow: "سلسلة فاخرة", title: "ليجند\nهوكا", subtitle: "هيكل فولاذي وصنعة متقنة" },
+        { alt: "طقم أرجيلة أودومان بقاعدة كريستال", eyebrow: "قاعدة كريستال", title: "أرجيلة\nأودومان", subtitle: "اكتشف المجموعة" },
       ],
     },
     campaigns: {

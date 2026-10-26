@@ -373,7 +373,8 @@ function BentoBoxEditor({
   );
 }
 
-export function BentoForm({ value, set, categories }: { value: Homepage["bento"]; set: Set<"bento">; categories: Category[] }) {
+/** "Görsel Vitrin" and "Görsel Vitrin 2": the same three boxes, each section its own. */
+export function BentoForm({ value, set, categories }: { value: Homepage["bento"]; set: Set<"bento" | "bento2">; categories: Category[] }) {
   return (
     <div className="space-y-6">
       {value.boxes.map((box, i) => (

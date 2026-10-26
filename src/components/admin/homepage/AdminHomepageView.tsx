@@ -48,6 +48,7 @@ type EditorKey =
   | "sultanpuan"
   | "kumbara"
   | "bento"
+  | "bento2"
   | "deals"
   | "campaigns"
   | "statement"
@@ -114,6 +115,13 @@ const EDITORS: Record<
     sections: ["bento"],
     size: "lg",
   },
+  bento2: {
+    title: "Görsel Vitrin 2",
+    hint: "SultanPuan ile Kumbara arasındaki üç kutu, ilki gibi: görsel, üzerindeki yazılar, koyu katman ve bağlantı.",
+    doc: "bento2",
+    sections: ["bento2"],
+    size: "lg",
+  },
   deals: { title: "Fırsatları Kaçırma", hint: "Fırsat vitrininin başlığı ve alt metni.", doc: "deals", sections: ["deals"], size: "md" },
   campaigns: {
     title: "Kampanya Kutuları",
@@ -162,6 +170,7 @@ const SECTION_EDITOR: Partial<Record<keyof HomeSections, EditorKey>> = {
   sultanpuan: "sultanpuan",
   kumbara: "kumbara",
   bento: "bento",
+  bento2: "bento2",
   deals: "deals",
   campaigns: "campaigns",
   promos: "statement",
@@ -218,6 +227,7 @@ const SECTION_NAMES: Record<string, string> = {
   kumbara: "Kumbara Bandı",
   campaigns: "Kampanya Kutuları",
   bento: "Görsel Vitrin",
+  bento2: "Görsel Vitrin 2",
   statement: "Sektörde Referans Noktası",
   brand_showcase: "Markalarımız",
   kozlukler: "Közlükler",
@@ -268,11 +278,13 @@ function checkLinks(doc: Homepage, categories: Category[]): string | null {
   const boxes = [doc.campaigns.lead, ...doc.campaigns.minis];
   const box = boxes.findIndex((b) => bad(b.href) || !b.href);
   if (box >= 0) return `Kampanya Kutuları, ${box === 0 ? "büyük kutu" : `küçük kutu ${box}`}: bağlantı / ile ya da https:// ile başlamalı.`;
-  for (const [i, box] of doc.bento.boxes.entries()) {
-    if (!box.image?.trim()) return `Görsel Vitrin, kutu ${i + 1}: görsel gerekli.`;
-    if (bad(box.href) || !box.href) return `Görsel Vitrin, kutu ${i + 1}: bağlantı / ile ya da https:// ile başlamalı.`;
-    const color = Object.values(box.text_colors ?? {}).find((c) => c && !/^#[0-9a-fA-F]{6}$/.test(c));
-    if (color) return `Görsel Vitrin, kutu ${i + 1}: “${color}” geçerli bir renk değil (#RRGGBB).`;
+  for (const [name, boxes] of [["Görsel Vitrin", doc.bento.boxes], ["Görsel Vitrin 2", doc.bento2.boxes]] as const) {
+    for (const [i, box] of boxes.entries()) {
+      if (!box.image?.trim()) return `${name}, kutu ${i + 1}: görsel gerekli.`;
+      if (bad(box.href) || !box.href) return `${name}, kutu ${i + 1}: bağlantı / ile ya da https:// ile başlamalı.`;
+      const color = Object.values(box.text_colors ?? {}).find((c) => c && !/^#[0-9a-fA-F]{6}$/.test(c));
+      if (color) return `${name}, kutu ${i + 1}: “${color}” geçerli bir renk değil (#RRGGBB).`;
+    }
   }
   if (bad(doc.lules.href) || !doc.lules.href) return "Lüle bölümü: “Tümünü gör” bağlantısı / ile ya da https:// ile başlamalı.";
   return null;
@@ -472,6 +484,8 @@ export function AdminHomepageView() {
         return <CampaignsForm value={doc.campaigns} set={set("campaigns")} categories={categories} />;
       case "bento":
         return <BentoForm value={doc.bento} set={set("bento")} categories={categories} />;
+      case "bento2":
+        return <BentoForm value={doc.bento2} set={set("bento2")} categories={categories} />;
       case "statement":
         return <StatementForm value={doc.statement} set={set("statement")} />;
       case "brand_showcase":

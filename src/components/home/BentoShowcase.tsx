@@ -14,13 +14,14 @@ import type { HomeBento } from "@/types";
 const SIZES = "(min-width: 768px) 36vw, 448px";
 
 /**
- * "Görsel Vitrin", over the deals: three 3:2 photo boxes side by side, each
- * a link with words on it placed as the admin placed them (BentoBoxView). One
- * under another on a phone, never wider than 26rem. No top padding: the
- * Kumbara band above already ends in white space.
+ * "Görsel Vitrin", over the deals, and "Görsel Vitrin 2", between SultanPuan
+ * and Kumbara: three 3:2 photo boxes side by side, each a link with words on
+ * it placed as the admin placed them (BentoBoxView). One under another on a
+ * phone, never wider than 26rem. No top padding: the loyalty band above each
+ * by default already ends in white space.
  */
-export async function BentoShowcase({ copy }: { copy: HomeBento }) {
-  const t = (await getMessages(homeMessages)).bento;
+export async function BentoShowcase({ copy, slot = "bento" }: { copy: HomeBento; slot?: "bento" | "bento2" }) {
+  const t = (await getMessages(homeMessages))[slot];
   // A photo box with no photo, or one added and never titled past "Yeni kutu", is not shown.
   const boxes = copy.boxes.filter((box) => box.image?.trim() && !(box.title && isPlaceholderTitle(box.title)));
   if (boxes.length === 0) return null;

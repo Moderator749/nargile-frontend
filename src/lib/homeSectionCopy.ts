@@ -28,6 +28,7 @@ export type SectionCopy = Pick<
   | "sultanpuan"
   | "kumbara"
   | "bento"
+  | "bento2"
   | "campaigns"
   | "statement"
   | "brand_showcase"
@@ -50,6 +51,28 @@ const BENTO_BOXES: [string, string, number][] = [
   ["/images/avantaj-cat-tutun.jpg", "/catalog/bitkisel-urunler", 55],
   ["/images/avantaj-cat-aksesuar.jpg", "/catalog/malzemeler", 50],
 ];
+
+/** "Görsel Vitrin 2"'s, as the first's: the messages' `bento2.boxes`. */
+const BENTO2_BOXES: [string, string, number][] = [
+  ["/images/avantaj-cat-nargile.jpg", "/catalog/klasik-takimlar", 50],
+  ["/images/avantaj-legend.jpg", "/catalog/legend", 68],
+  ["/images/avantaj-oduman.jpg", "/catalog/oduman", 28],
+];
+
+/** A photo box with its words stacked at the bottom, on a 55% wash: where a box starts. */
+const bentoBoxes = (boxes: [string, string, number][], words: Words["bento"]["boxes"]) =>
+  boxes.map(([image, href, focus_x], i) => ({
+    image,
+    href,
+    focus_x,
+    focus_y: 50,
+    ...words[i],
+    layout: null,
+    font_sizes: null,
+    text_colors: null,
+    overlay: true,
+    overlay_strength: 55,
+  }));
 
 type Emphasis = { before: string; strong: string; after: string };
 const joined = (e: Emphasis) => `${e.before}${e.strong}${e.after}`;
@@ -94,20 +117,8 @@ function copyIn(w: Words): SectionCopy {
       note: w.loyalty.kumbaraNote(PLACEHOLDERS.tutar, PLACEHOLDERS.oran),
       call: w.loyalty.kumbaraCall,
     },
-    bento: {
-      boxes: BENTO_BOXES.map(([image, href, focus_x], i) => ({
-        image,
-        href,
-        focus_x,
-        focus_y: 50,
-        ...w.bento.boxes[i],
-        layout: null,
-        font_sizes: null,
-        text_colors: null,
-        overlay: true,
-        overlay_strength: 55,
-      })),
-    },
+    bento: { boxes: bentoBoxes(BENTO_BOXES, w.bento.boxes) },
+    bento2: { boxes: bentoBoxes(BENTO2_BOXES, w.bento2.boxes) },
     campaigns: {
       lead: {
         eyebrow: w.campaigns.leadEyebrow,

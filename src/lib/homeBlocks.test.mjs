@@ -30,3 +30,11 @@ test("sections the saved order lacks go straight before the one they precede by 
   // The last by default goes last when it is missing.
   assert.equal(resolveBlockOrder(HOME_BLOCKS.slice(0, -1)).at(-1), "about");
 });
+
+test("an order saved before the second showcase puts it between SultanPuan and Kumbara", () => {
+  // The live order on 2026-10-26, from before "bento2" existed.
+  const saved = ["perks", "brands_top", "picks", "lules", "sultanpuan", "kumbara", "bento", "deals", "campaigns", "promos", "brands", "games", "kozlukler", "brand_showcase", "showcase", "about"];
+  const order = resolveBlockOrder(saved);
+  assert.deepEqual(order.slice(4, 8), ["sultanpuan", "bento2", "kumbara", "bento"]);
+  assert.deepEqual(order.filter((id) => id !== "bento2"), saved);
+});

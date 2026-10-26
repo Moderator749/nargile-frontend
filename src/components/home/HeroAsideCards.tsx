@@ -120,7 +120,8 @@ function Backdrop({
           }`}
         />
       </span>
-      <span aria-hidden className={`absolute inset-0 -z-10 from-black/85 via-black/55 to-black/25 ${VEIL[shade]}`} />
+      {/* Clear at its far end: a veil dark all over (it once ended at 25%) looked the same from every side. */}
+      <span aria-hidden className={`pointer-events-none absolute inset-0 -z-10 from-black/85 via-black/40 to-transparent ${VEIL[shade]}`} />
     </>
   );
 }

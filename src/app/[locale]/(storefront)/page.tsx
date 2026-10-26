@@ -307,8 +307,10 @@ export default async function HomePage() {
         "kumbara",
         <KumbaraShowcase products={showable(marpuclar, KUMBARA_COUNT)} categories={allCategories} copy={home.kumbara} />,
       ),
-    // "Görsel Vitrin": two tabs of photo boxes, over the deals.
+    // "Görsel Vitrin": three photo boxes, over the deals.
     bento: () => phones("bento", <BentoShowcase copy={home.bento} />),
+    // "Görsel Vitrin 2": three more, with their own words, between SultanPuan and Kumbara.
+    bento2: () => phones("bento2", <BentoShowcase copy={home.bento2} slot="bento2" />),
     // "Fırsatları Kaçırma": the page's only deals section, a dark band. It
     // renders nothing when none are running.
     deals: () => (
