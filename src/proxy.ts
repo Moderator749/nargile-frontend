@@ -76,8 +76,7 @@ const UNAVAILABLE_PAGE = `<!doctype html>
 <meta name="robots" content="noindex"><title>Geçici bir sorun | Nargile Malzemesi</title>
 <style>body{margin:0;min-height:100vh;display:grid;place-items:center;font-family:system-ui,sans-serif;background:#fff;color:#171717;text-align:center;padding:16px;box-sizing:border-box}
 p{color:#737373;max-width:28rem;margin:12px auto 0;line-height:1.5}a{display:inline-block;margin:24px 6px 0;padding:12px 24px;border-radius:999px;font-weight:600;text-decoration:none}
-.retry{background:#dc2626;color:#fff}.home{color:#171717;box-shadow:inset 0 0 0 1px #e5e5e5}
-@media (prefers-color-scheme:dark){body{background:#000;color:#fafafa}p{color:#a3a3a3}.home{color:#fafafa;box-shadow:inset 0 0 0 1px #404040}}</style></head>
+.retry{background:#dc2626;color:#fff}.home{color:#171717;box-shadow:inset 0 0 0 1px #e5e5e5}</style></head>
 <body><main><strong style="color:#dc2626;font-size:12px;letter-spacing:.25em">NARGİLE MALZEMESİ</strong>
 <h1 style="margin:8px 0 0;font-size:28px">Sayfa şu anda yüklenemedi</h1>
 <p>Bağlantıda kısa süreli bir sorun yaşadık. Birkaç saniye sonra yeniden deneyebilir ya da alışverişe ana sayfadan devam edebilirsiniz.</p>

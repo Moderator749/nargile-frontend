@@ -1,7 +1,9 @@
 // Light/dark theme engine: no dependency, no flash.
-// The stored preference is "light" | "dark"; absent means "follow the system".
+// Light unless the visitor chose dark with the toggle: the stored preference is
+// "light" | "dark", and absent means light. The operating system's setting
+// (prefers-color-scheme) is never read, so a first visit, a private window or
+// a cleared browser always opens on the white theme.
 
-export type ThemePreference = "light" | "dark" | "system";
 export type ResolvedTheme = "light" | "dark";
 
 export const THEME_KEY = "theme";
@@ -9,22 +11,10 @@ const CHANGE_EVENT = "themechange";
 
 /**
  * Inline, pre-paint script for layout.tsx: applies the `dark` class and native
- * color-scheme before first paint, so there is never a wrong-theme flash.
+ * color-scheme before first paint, so there is never a wrong-theme flash. Only
+ * a stored "dark" turns it on.
  */
-export const THEME_SCRIPT = `try{var t=localStorage.getItem(${JSON.stringify(THEME_KEY)});var d=t==="dark"||(t!=="light"&&matchMedia("(prefers-color-scheme: dark)").matches);var e=document.documentElement;e.classList.toggle("dark",d);e.style.colorScheme=d?"dark":"light"}catch(_){}`;
-
-function systemTheme(): ResolvedTheme {
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-}
-
-export function getPreference(): ThemePreference {
-  try {
-    const t = window.localStorage.getItem(THEME_KEY);
-    return t === "light" || t === "dark" ? t : "system";
-  } catch {
-    return "system";
-  }
-}
+export const THEME_SCRIPT = `try{var d=localStorage.getItem(${JSON.stringify(THEME_KEY)})==="dark";var e=document.documentElement;e.classList.toggle("dark",d);e.style.colorScheme=d?"dark":"light"}catch(_){}`;
 
 export function getResolvedTheme(): ResolvedTheme {
   return document.documentElement.classList.contains("dark") ? "dark" : "light";
@@ -37,26 +27,26 @@ function apply(theme: ResolvedTheme) {
   window.dispatchEvent(new Event(CHANGE_EVENT));
 }
 
-export function setPreference(pref: ThemePreference) {
+/** The toggle's choice, remembered in this browser and applied at once. */
+export function setPreference(theme: ResolvedTheme) {
   try {
-    if (pref === "system") window.localStorage.removeItem(THEME_KEY);
-    else window.localStorage.setItem(THEME_KEY, pref);
+    window.localStorage.setItem(THEME_KEY, theme);
   } catch {
     // Storage blocked: the choice still applies for this page view.
   }
-  apply(pref === "system" ? systemTheme() : pref);
+  apply(theme);
 }
 
-/** Subscribe to theme changes (user toggle, or OS change while following the system). */
+/** Subscribe to theme changes (the toggle, here or in another tab). */
 export function subscribeTheme(onChange: () => void): () => void {
-  const media = window.matchMedia("(prefers-color-scheme: dark)");
-  const onSystem = () => {
-    if (getPreference() === "system") apply(systemTheme());
+  // Another tab's toggle: follow it, as this one's own would.
+  const onStorage = (e: StorageEvent) => {
+    if (e.key === THEME_KEY || e.key === null) apply(e.newValue === "dark" ? "dark" : "light");
   };
-  media.addEventListener("change", onSystem);
   window.addEventListener(CHANGE_EVENT, onChange);
+  window.addEventListener("storage", onStorage);
   return () => {
-    media.removeEventListener("change", onSystem);
     window.removeEventListener(CHANGE_EVENT, onChange);
+    window.removeEventListener("storage", onStorage);
   };
 }
