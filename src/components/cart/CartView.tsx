@@ -490,9 +490,9 @@ export function CartView({ checkoutStep = false }: { checkoutStep?: boolean } = 
     method,
   );
   const needsConsent = !!quote?.shipping.receiver_pays;
-  // A line above what the buyer may have (their own list's quota) would be
-  // refused at checkout: say which, here. A request has no limit.
-  // A firm's account is told its quota; a bireysel buyer only that the line is short.
+  // A line above the shop's stock would be refused at checkout: say which,
+  // here. A request has no limit. A firm's account is told the count; a
+  // bireysel buyer only that the line is short.
   const overStock = quoteOnly ? undefined : quote?.items.find((i) => i.stock_short);
   const stockProblem = overStock
     ? overStock.available_quantity == null

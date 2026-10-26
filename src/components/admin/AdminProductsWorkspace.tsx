@@ -23,7 +23,7 @@ const TABS: { value: Tab; label: string; Icon: typeof Boxes; description: string
     label: "Ürün & Stok Listesi",
     Icon: Boxes,
     description:
-      "Perakende stok ve fiyatı izleyin, ürünü yayından alın. Diğer tüm alanlar (fiyat tablosu, kotalar, kurallar, fırsat) ürün formunda.",
+      "Stok ve perakende fiyatı izleyin, ürünü yayından alın. Diğer tüm alanlar (fiyat tablosu, kurallar, fırsat) ürün formunda.",
   },
   {
     value: "order",

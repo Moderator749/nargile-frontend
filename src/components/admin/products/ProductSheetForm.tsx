@@ -92,7 +92,7 @@ const VOLUME_DISCOUNT_HINT =
 
 /**
  * "Ürün Ekle / Düzenle" — the admin's product sheet, one screen for everything
- * the Excel blueprint holds: product info, the colours and their stock quotas,
+ * the Excel blueprint holds: product info, the colours and their stock,
  * the price matrix, the description and SEO overrides, the commercial rules and
  * the Fırsat block. One save writes them all.
  */
@@ -260,7 +260,7 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
     <>
       <AdminPageHeader
         title={editing ? "Ürün Düzenle" : "Ürün Ekle"}
-        description="Ürün bilgisi, renk bazlı stok kotaları, fiyat tablosu, açıklama, SEO, kurallar ve fırsat tek formda; kaydet dediğinizde hepsi birlikte yazılır."
+        description="Ürün bilgisi, renk bazlı stok, fiyat tablosu, açıklama, SEO, kurallar ve fırsat tek formda; kaydet dediğinizde hepsi birlikte yazılır."
       />
 
       <div className="space-y-4">
@@ -419,8 +419,8 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
           title="Stok"
           hint={
             draft.colors.length > 0
-              ? `${draft.colors.length} renk · her renk kendi kotalarını taşır · toplam ${total.toLocaleString("tr-TR")}`
-              : "Her müşteri grubunun kendi kotası; toplam otomatik hesaplanır."
+              ? `${draft.colors.length} renk · her rengin kendi stoğu · toplam ${total.toLocaleString("tr-TR")}`
+              : "Tek ortak stok: perakende, bayi, toptan ve kafe aynı stoktan satın alır."
           }
         >
           <StockGrid

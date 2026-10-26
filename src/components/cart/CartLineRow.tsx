@@ -26,7 +26,7 @@ interface CartLineRowProps {
   productHref?: string;
   /** A B2B line with its list's havale switch on, and what a transfer takes off it now. */
   havaleEligible?: boolean;
-  /** The most of it the buyer may order, where known (a firm's quota, or a limit already met); none otherwise. */
+  /** The most of it the buyer may order, where known (the stock count a firm is told, or a limit already met); none otherwise. */
   maxQuantity?: number | null;
   /** Just taken down to the most there is: the stepper says so, never the number. */
   limitReached?: boolean;

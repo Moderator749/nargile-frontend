@@ -10,7 +10,7 @@ interface QuantityStepperProps {
   value: number;
   onChange: (quantity: number) => void;
   label: string;
-  /** The most that may be ordered, where it is known (a firm's quota, or a limit already met); none otherwise. */
+  /** The most that may be ordered, where it is known (the stock count a firm is told, or a limit already met); none otherwise. */
   max?: number | null;
   /** The quantity was just taken down to the most there is: say so (never the number). */
   limitReached?: boolean;

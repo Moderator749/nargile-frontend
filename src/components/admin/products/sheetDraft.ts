@@ -21,12 +21,12 @@ import type {
 
 /** Price-matrix rows, in sheet order. */
 export const SHEET_CURRENCIES: CurrencyType[] = ["USD", "EUR", "TRY"];
-/** Price-matrix and stock columns, in sheet order. */
-export const SHEET_COLUMNS: { segment: SheetSegment; label: string; stockField: keyof StockDraft }[] = [
-  { segment: "DEALER", label: "Bayi", stockField: "bayi" },
-  { segment: "WHOLESALE", label: "Toptan", stockField: "toptan" },
-  { segment: "CAFE", label: "Kafe", stockField: "kafe" },
-  { segment: "RETAIL", label: "Perakende", stockField: "perakende" },
+/** Price-matrix columns, in sheet order. Stock is one number for all of them. */
+export const SHEET_COLUMNS: { segment: SheetSegment; label: string }[] = [
+  { segment: "DEALER", label: "Bayi" },
+  { segment: "WHOLESALE", label: "Toptan" },
+  { segment: "CAFE", label: "Kafe" },
+  { segment: "RETAIL", label: "Perakende" },
 ];
 
 export const CURRENCY_LABEL: Record<CurrencyType, string> = { TRY: "TL", USD: "USD", EUR: "EUR" };
@@ -83,14 +83,12 @@ function savedVatRate(sheet: SavedProductSheet): VatRate {
   return 20;
 }
 
+/** "Mevcut Stok Adedi" as typed: the one stock every buyer draws from. */
 export interface StockDraft {
-  bayi: string;
-  toptan: string;
-  kafe: string;
-  perakende: string;
+  quantity: string;
 }
 
-const emptyStock = (): StockDraft => ({ bayi: "", toptan: "", kafe: "", perakende: "" });
+const emptyStock = (): StockDraft => ({ quantity: "" });
 
 /**
  * One colour pill and the stock row it owns — the same object, so the "STOK"
@@ -175,7 +173,7 @@ export interface SheetDraft {
   /** "Birlikte satılanlar", as cards so the grid can draw them without a lookup. */
   crossSells: CrossSellCard[];
   isPublished: boolean;
-  /** The quotas of a product with no colours; ignored once `colors` is non-empty. */
+  /** The stock of a product with no colours; ignored once `colors` is non-empty. */
   stock: StockDraft;
   /** [currency][segment] → the two sides of one cell. */
   prices: Record<CurrencyType, Record<SheetSegment, CellDraft>>;
@@ -255,14 +253,7 @@ export function emptyDraft(): SheetDraft {
 }
 
 const stockDraft = (stock: SheetStock | undefined): StockDraft =>
-  stock
-    ? {
-        bayi: String(stock.bayi),
-        toptan: String(stock.toptan),
-        kafe: String(stock.kafe),
-        perakende: String(stock.perakende),
-      }
-    : emptyStock();
+  stock ? { quantity: String(stock.quantity) } : emptyStock();
 
 /** An ISO instant as a `datetime-local` value in the admin's own timezone. */
 export function toLocalInput(iso: string | null | undefined): string {
@@ -349,22 +340,16 @@ export function draftFromSheet(sheet: SavedProductSheet): SheetDraft {
   };
 }
 
-const toStock = (stock: StockDraft): SheetStock => ({
-  bayi: count(stock.bayi),
-  toptan: count(stock.toptan),
-  kafe: count(stock.kafe),
-  perakende: count(stock.perakende),
-});
+const toStock = (stock: StockDraft): SheetStock => ({ quantity: count(stock.quantity) });
 
 const count = (raw: string) => {
   const n = Number.parseInt(raw.replace(/\D/g, ""), 10);
   return Number.isFinite(n) && n > 0 ? n : 0;
 };
 
-export const stockTotal = (stock: StockDraft) =>
-  count(stock.bayi) + count(stock.toptan) + count(stock.kafe) + count(stock.perakende);
+export const stockTotal = (stock: StockDraft) => count(stock.quantity);
 
-/** "Toplam Stok": every quota of every colour, or of the one standard row. */
+/** "Toplam Stok": every colour's stock, or the one standard row's. */
 export const draftStockTotal = (draft: SheetDraft) =>
   draft.colors.length > 0
     ? draft.colors.reduce((sum, color) => sum + stockTotal(color.stock), 0)

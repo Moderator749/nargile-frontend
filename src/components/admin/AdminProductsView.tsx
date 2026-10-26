@@ -92,7 +92,7 @@ function Thumbnail({ product }: { product: AdminProduct }) {
 /**
  * "Ürünler & Stok": the retail view of the catalogue — photo, code and name,
  * retail stock and price — with the publish switch and a way into the full sheet.
- * Everything else about a product (prices per segment, quotas, rules, fırsat,
+ * Everything else about a product (prices per segment, rules, fırsat,
  * weight) is edited in the sheet.
  */
 const SORTS: readonly ProductSort[] = ["code", "name", "stock", "price"];
@@ -215,8 +215,8 @@ export function AdminProductsView({
     return row ? formatMoney(row.price_incl_tax) : "—";
   }
 
-  /** The retail quota of every colour together — what the shop can actually sell. */
-  function retailStock(product: AdminProduct): number {
+  /** The stock of every colour together — the one stock every buyer draws from. */
+  function stockOf(product: AdminProduct): number {
     return product.variants.reduce(
       (sum, v) => sum + (v.inventory.find((i) => i.warehouse_type === "RETAIL_STOCK")?.quantity ?? 0),
       0,
@@ -330,7 +330,7 @@ export function AdminProductsView({
       {!embedded && (
         <AdminPageHeader
           title="Ürünler & Stok"
-          description="Perakende stok ve fiyatı izleyin, ürünü yayından alın. Diğer tüm alanlar (fiyat tablosu, kotalar, kurallar, fırsat) ürün formunda."
+          description="Stok ve perakende fiyatı izleyin, ürünü yayından alın. Diğer tüm alanlar (fiyat tablosu, kurallar, fırsat) ürün formunda."
         />
       )}
 
@@ -524,7 +524,7 @@ export function AdminProductsView({
                         </div>
                       </td>
                       <td className="px-3 py-2.5 text-center">
-                        {variant ? <StockPill quantity={retailStock(product)} colors={product.variants.length} /> : "—"}
+                        {variant ? <StockPill quantity={stockOf(product)} colors={product.variants.length} /> : "—"}
                       </td>
                       <td className="px-3 py-2.5 text-right tabular-nums">{retailPrice(variant)}</td>
                       <td className="px-3 py-2.5">

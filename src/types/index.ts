@@ -414,8 +414,8 @@ export interface CatalogVariant {
   /** Live sale that beats `price` for this caller; null/absent when none. */
   flash_sale?: FlashSaleInfo | null;
   /**
-   * Whether the caller can buy it: stock in their own list's quota (a B2B list
-   * never draws on the retail stock). Absent (older API) means unknown → treated as in stock.
+   * Whether it can be bought: stock in the shop's one stock, the same for every
+   * buyer. Absent (older API) means unknown → treated as in stock.
    */
   in_stock?: boolean;
   /** How many of it the caller may order — sent to a signed-in caller only; absent or null = no limit to show. */
@@ -602,7 +602,7 @@ export interface CartItemBreakdown {
   havale_eligible?: boolean;
   /** The havale discount on this line (VAT-inclusive); "0.00" unless paid by transfer. */
   havale_discount?: DecimalString;
-  /** How many the buyer may have (their own list's quota) — a firm's account only; null for a bireysel buyer. */
+  /** How many the buyer may have (the shop's one stock) — a firm's account only; null for a bireysel buyer. */
   available_quantity?: number | null;
   /** More in the cart than can be had; the cart says so before checkout. */
   stock_short?: boolean;
@@ -961,15 +961,13 @@ export interface AdminVariant {
 /** Sheet column order: Bayi, Toptan, Kafe, Perakende. */
 export type SheetSegment = "DEALER" | "WHOLESALE" | "CAFE" | "RETAIL";
 
+/** "Mevcut Stok Adedi": the one stock every buyer draws from, whatever their price list. */
 export interface SheetStock {
-  bayi: number;
-  toptan: number;
-  kafe: number;
-  perakende: number;
+  quantity: number;
 }
 
 /**
- * One colour of the product, with the four quotas that colour sells from.
+ * One colour of the product, with its stock.
  *
  * `color` is null on the single "Standart" variant a colourless product has.
  * `id` names a variant that already exists, which is how renaming a colour keeps
@@ -1081,12 +1079,12 @@ export interface ProductSheet {
   weight_kg?: DecimalString | null;
   is_published: boolean;
   /**
-   * The four quotas as one block. On a colourless product it *is* the stock; on a
-   * coloured one the server reads it back as the total across the colours, and
-   * `variants` is what a save sets.
+   * On a colourless product it *is* the stock; on a coloured one the server
+   * reads it back as the total across the colours, and `variants` is what a
+   * save sets.
    */
   stock: SheetStock;
-  /** One block of quotas per colour, in `color_names` order. */
+  /** One stock per colour, in `color_names` order. */
   variants: SheetVariant[];
   prices: SheetPriceRow[];
   rules: SheetRules;

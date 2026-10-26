@@ -53,7 +53,7 @@ export async function fetchProductsByIds(ids: string[], signal?: AbortSignal): P
 
 /**
  * A cart's colours as the cart page shows them before there is a quote: page,
- * code and the stock of the caller's own quota, asked for live.
+ * code and whether the shop's stock has any, asked for live.
  */
 export async function fetchCartLines(variantIds: string[], signal?: AbortSignal): Promise<CartLineInfo[]> {
   const params = new URLSearchParams();

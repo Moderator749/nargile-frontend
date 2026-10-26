@@ -10,7 +10,7 @@ import { foldColor, newColor, type ColorDraft } from "@/components/admin/product
  * "Renk" as pills: type a colour, press Enter (or comma) to add it.
  *
  * Each pill is a buyable variant with its own stock, so adding one adds a row to
- * the "STOK" table below and removing one takes that row (and its quotas) away.
+ * the "STOK" table below and removing one takes that row (and its stock) away.
  * The rows travel with the pills — same objects — so the two cannot disagree.
  */
 export function ColorTags({

@@ -88,9 +88,9 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
     fetchProduct(initialProduct.id, controller.signal)
       .then((product) => setOwn({ token, product }))
       .catch((err: unknown) => {
-        // Never the guest's copy instead: its stock is the Perakende quota and
-        // its price retail, neither of them a B2B buyer's. Prices stay masked
-        // and "Sepete Ekle" off, as while it loads.
+        // Never the guest's copy instead: its price is retail, not a B2B
+        // buyer's, and it is the cached page's. Prices stay masked and
+        // "Sepete Ekle" off, as while it loads.
         if (!axios.isCancel(err)) setOwn({ token, product: null });
       });
     return () => controller.abort();
@@ -116,8 +116,8 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
       ? Math.round((1 - Number(price.price_incl_tax) / Number(was.price_incl_tax)) * 100)
       : 0;
   // This colour's stock, not the product's: another colour may well be in stock.
-  // Unknown for a signed-in buyer until their own copy is in — the page's copy
-  // carries the Perakende quota, which is never a B2B list's.
+  // The shop has one stock for every buyer; for a signed-in one it is read off
+  // their own (live) copy, so it is unknown until that is in.
   const soldOut = !pricesPending && !!variant && !variantInStock(variant);
   // An export cart is a request for a quote, not a claim on the warehouse: it
   // may ask for a colour that is out of stock, and for more of it than exists.
@@ -132,8 +132,8 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
       ? `${money.format({ ...price, price_incl_tax: price.price_excl_tax })} ${t.plusVat}`
       : null;
   const canAdd = !!variant && !!price && !pricesPending && (!soldOut || quoteOnly);
-  // The most this buyer may order of this colour, where it is known: a firm's
-  // own quota (sent to a firm's account only), or the most a stock check has
+  // The most this buyer may order of this colour, where it is known: the
+  // stock count (sent to a firm's account only), or the most a stock check has
   // already taken a quantity down to. A request has none.
   const [stockMax, setStockMax] = useState<Record<string, number>>({});
   const [limitHit, setLimitHit] = useState(false);

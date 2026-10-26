@@ -105,8 +105,9 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
   const needsColorChoice = hasColorChoice(product);
   const regular = variant?.price ?? null;
   const listPrice = variant?.list_price ?? null;
-  // Not read off the guest's copy for a signed-in buyer: that is the Perakende
-  // quota, never a B2B list's. Unknown (not sold out) until their own arrives.
+  // The stock is the shop's one stock, the same for everyone; a signed-in
+  // buyer's comes with their own (live) copy, so it is unknown (not sold out)
+  // until that arrives, as their prices are.
   const soldOut = !pricesPending && allSoldOut(product);
   // Subscribed, not read once: the card re-renders when the account changes.
   const quoteOnly = isExportAccount(useAuthStore((s) => s.user));

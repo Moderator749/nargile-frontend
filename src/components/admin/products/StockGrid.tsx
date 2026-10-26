@@ -1,59 +1,73 @@
 "use client";
 
-import { Palette } from "lucide-react";
+import { Minus, Palette, Plus } from "lucide-react";
 
-import { SheetField, sheetInputClass, sheetLabelClass } from "@/components/admin/products/SheetParts";
-import {
-  SHEET_COLUMNS,
-  stockTotal,
-  type ColorDraft,
-  type StockDraft,
-} from "@/components/admin/products/sheetDraft";
-import { stepOnArrowKey } from "@/lib/numberStep";
+import { SheetField, sheetInputClass } from "@/components/admin/products/SheetParts";
+import { stockTotal, type ColorDraft, type StockDraft } from "@/components/admin/products/sheetDraft";
+import { steppedValue, stepOnArrowKey } from "@/lib/numberStep";
 
-const totalBox =
-  "flex h-10 items-center justify-end rounded-lg border border-slate-300 bg-slate-100 px-3 font-mono text-sm font-bold tabular-nums dark:border-white/15 dark:bg-white/[0.06]";
-const quotaInput = `${sheetInputClass} text-right tabular-nums`;
+const stepButton =
+  "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/15 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-white/5";
 
-/** The four quota boxes of one row: two abreast on a phone, four on a desktop. */
-function Quotas({
-  idPrefix,
+/**
+ * "Mevcut Stok Adedi": the one stock every buyer draws from — Perakende and the
+ * Bayi / Toptan / Kafe lists alike — with − / + beside the box (and ↑ / ↓ in
+ * it, ×10 with Shift).
+ */
+function StockCount({
+  id,
   rowLabel,
   stock,
   onChange,
 }: {
-  idPrefix: string;
-  /** Names each box for a screen reader, which has no column header to lean on. */
+  id: string;
+  /** Names the box for a screen reader on a coloured product ("Siyah"). */
   rowLabel: string;
   stock: StockDraft;
   onChange: (stock: StockDraft) => void;
 }) {
+  const set = (quantity: string) => onChange({ quantity });
+  const step = (delta: number) => {
+    const next = steppedValue(stock.quantity, delta);
+    if (next !== null) set(next);
+  };
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-      {SHEET_COLUMNS.map(({ label, stockField }) => (
-        <SheetField key={stockField} id={`${idPrefix}-${stockField}`} label={label}>
-          <input
-            id={`${idPrefix}-${stockField}`}
-            type="text"
-            inputMode="numeric"
-            value={stock[stockField]}
-            onChange={(e) => onChange({ ...stock, [stockField]: e.target.value })}
-            onKeyDown={(e) => stepOnArrowKey(e, (v) => onChange({ ...stock, [stockField]: v }), { integer: true })}
-            placeholder="0"
-            aria-label={`${rowLabel}: ${label} stoğu`}
-            className={quotaInput}
-          />
-        </SheetField>
-      ))}
-    </div>
+    <SheetField id={id} label="Mevcut Stok Adedi">
+      <div className="flex max-w-60 items-center gap-2">
+        <button
+          type="button"
+          onClick={() => step(-1)}
+          disabled={stockTotal(stock) === 0}
+          aria-label={`${rowLabel}: stoğu bir azalt`}
+          className={stepButton}
+        >
+          <Minus className="h-4 w-4" aria-hidden />
+        </button>
+        <input
+          id={id}
+          type="text"
+          inputMode="numeric"
+          value={stock.quantity}
+          onChange={(e) => set(e.target.value)}
+          onKeyDown={(e) => stepOnArrowKey(e, set, { integer: true })}
+          placeholder="0"
+          aria-label={`${rowLabel}: mevcut stok adedi`}
+          className={`${sheetInputClass} text-center font-mono text-base font-semibold tabular-nums`}
+        />
+        <button type="button" onClick={() => step(1)} aria-label={`${rowLabel}: stoğu bir artır`} className={stepButton}>
+          <Plus className="h-4 w-4" aria-hidden />
+        </button>
+      </div>
+    </SheetField>
   );
 }
 
 /**
- * "STOK" — the four segment quotas, once per colour.
+ * "STOK" — the stock, once per colour. Every customer group buys from it; only
+ * their prices differ (the price table below).
  *
  * Stock lives on the variant and a variant is a colour, so a product with colour
- * pills gets a block each and a colourless one gets a single block. Adding or
+ * pills gets a box each and a colourless one gets a single box. Adding or
  * removing a pill in "Ürün Bilgileri" adds or removes a block here, because both
  * read the very same rows.
  */
@@ -64,25 +78,13 @@ export function StockGrid({
   onStockChange,
 }: {
   colors: ColorDraft[];
-  /** The quotas of a colourless product; unused once `colors` is non-empty. */
+  /** The stock of a colourless product; unused once `colors` is non-empty. */
   stock: StockDraft;
   onColorsChange: (colors: ColorDraft[]) => void;
   onStockChange: (stock: StockDraft) => void;
 }) {
   if (colors.length === 0) {
-    return (
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-4">
-        <div className="flex-1">
-          <Quotas idPrefix="stock" rowLabel="Stok" stock={stock} onChange={onStockChange} />
-        </div>
-        <div className="sm:w-32">
-          <span className={sheetLabelClass}>Toplam Stok</span>
-          <output className={totalBox} aria-live="polite">
-            {stockTotal(stock).toLocaleString("tr-TR")}
-          </output>
-        </div>
-      </div>
-    );
+    return <StockCount id="stock" rowLabel="Ürün" stock={stock} onChange={onStockChange} />;
   }
 
   const setColorStock = (key: string, next: StockDraft) =>
@@ -95,19 +97,14 @@ export function StockGrid({
           key={color.key}
           className="rounded-xl border border-slate-200 bg-slate-50/60 p-3 dark:border-white/10 dark:bg-white/[0.03]"
         >
-          <div className="mb-2 flex items-baseline justify-between gap-3">
-            <h3 className="flex min-w-0 items-center gap-1.5 text-sm font-semibold text-slate-800 dark:text-zinc-100">
-              <Palette className="h-3.5 w-3.5 shrink-0 text-slate-400 dark:text-zinc-500" aria-hidden />
-              <span className="truncate" title={color.label}>
-                {color.label}
-              </span>
-            </h3>
-            <p className="shrink-0 font-mono text-xs tabular-nums text-slate-500 dark:text-zinc-400">
-              Toplam <span className="font-bold text-slate-800 dark:text-zinc-100">{stockTotal(color.stock).toLocaleString("tr-TR")}</span>
-            </p>
-          </div>
-          <Quotas
-            idPrefix={`stock-${color.key}`}
+          <h3 className="mb-2 flex min-w-0 items-center gap-1.5 text-sm font-semibold text-slate-800 dark:text-zinc-100">
+            <Palette className="h-3.5 w-3.5 shrink-0 text-slate-400 dark:text-zinc-500" aria-hidden />
+            <span className="truncate" title={color.label}>
+              {color.label}
+            </span>
+          </h3>
+          <StockCount
+            id={`stock-${color.key}`}
             rowLabel={color.label}
             stock={color.stock}
             onChange={(next) => setColorStock(color.key, next)}

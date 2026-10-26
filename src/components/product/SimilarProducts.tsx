@@ -49,8 +49,8 @@ export function SimilarProducts({
         setOwn({ token, products: products.flatMap((p) => byId.get(p.id) ?? []) });
       })
       .catch((err: unknown) => {
-        // Not the guest's copies: their stock is the Perakende quota. The shelf
-        // stays masked, its buttons off, as while it loads.
+        // Not the guest's copies: their prices are retail. The shelf stays
+        // masked, its buttons off, as while it loads.
         if (!axios.isCancel(err)) setOwn({ token, products: null });
       });
     return () => controller.abort();
