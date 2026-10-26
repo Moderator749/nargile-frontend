@@ -27,6 +27,15 @@ async function allProducts(): Promise<CatalogProduct[]> {
 
 type Entry = MetadataRoute.Sitemap[number];
 
+/** A product's photos as absolute addresses, cover first; at most the 10 a page shows. */
+function productPhotos(product: CatalogProduct): string[] {
+  const photos = product.image_urls?.length ? product.image_urls : product.image_url ? [product.image_url] : [];
+  return photos
+    .slice(0, 10)
+    .map((src) => (src.startsWith("/") ? `${SITE_URL}${src}` : src))
+    .filter((src) => /^https?:\/\//.test(src));
+}
+
 /**
  * One page in every language it is really in: an entry per language, each
  * listing all of them (x-default the Turkish) — the sitemap form of the
@@ -54,8 +63,8 @@ const latest = (dates: (string | null | undefined)[]): Date | undefined => {
 
 /**
  * The storefront's indexable pages, and nothing else: the homepage, the
- * catalog, the deals page, every category and every published product, the brands that have
- * a page of their own, and the information pages.
+ * catalog, the deals page, every category and every published product (with its
+ * photos), the brands that have a page of their own, and the information pages.
  *
  * `lastModified` is only given where it is known — a product's last edit, a
  * category's or brand's newest product — because a date that is always "now"
@@ -100,7 +109,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         }),
       ),
     ...products.flatMap((p) =>
-      inLanguages(productHref(p), p.locales, { lastModified: latest([p.updated_at]), changeFrequency: "weekly", priority: 0.6 }),
+      inLanguages(productHref(p), p.locales, {
+        lastModified: latest([p.updated_at]),
+        changeFrequency: "weekly",
+        priority: 0.6,
+        // Its gallery, so the photos are found for image search as well
+        // (<image:image>), the shop's own address in front of a bare path.
+        ...(productPhotos(p).length > 0 ? { images: productPhotos(p) } : {}),
+      }),
     ),
     // The Bilgi Sayfaları, the FAQ and the blog, in every language (each has
     // its English and Arabic, lib/content).

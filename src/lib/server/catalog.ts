@@ -250,6 +250,23 @@ export function getProduct(ref: string): Promise<CatalogProductDetail | null> {
  * through the panel. If the API cannot be reached, the server's own defaults.
  */
 export async function getStoreParameters(): Promise<StoreParameters> {
+  return getLiveStoreParameters();
+}
+
+/**
+ * The retail free-shipping limit (TRY) for the product pages' structured data,
+ * from the catalog's cache rather than live: a product page stays cached
+ * (ISR), and the panel's save of the parameters refreshes the cache anyway
+ * (`refreshStorefront`). Null when the API cannot say — then no free-shipping
+ * claim is made at all.
+ */
+export async function getFreeShippingFrom(): Promise<number | null> {
+  const params = await getJson<StoreParameters>("/settings/parameters");
+  const limit = Number(params?.free_shipping_threshold);
+  return params && Number.isFinite(limit) && limit >= 0 ? limit : null;
+}
+
+async function getLiveStoreParameters(): Promise<StoreParameters> {
   try {
     const res = await fetch(`${API_URL}/settings/parameters`, { cache: "no-store" });
     return res.ok ? ((await res.json()) as StoreParameters) : DEFAULT_STORE_PARAMETERS;

@@ -12,7 +12,7 @@ import { getI18n } from "@/lib/i18n/server";
 import { breadcrumbJsonLd, metaDescription, pageMetadata, productHref, productJsonLd, type Breadcrumb } from "@/lib/seo";
 import { PAGE_CONTAINER } from "@/lib/layout";
 import { pickSimilar, relatedCategories } from "@/lib/related";
-import { getBrands, getCategories, getCategoryProducts, getProduct } from "@/lib/server/catalog";
+import { getBrands, getCategories, getCategoryProducts, getFreeShippingFrom, getProduct } from "@/lib/server/catalog";
 import { getHomepage } from "@/lib/server/homepage";
 import { advantageSources } from "@/lib/storeAdvantages";
 import { nameWithCode } from "@/lib/slug";
@@ -92,9 +92,10 @@ export default async function ProductPage(props: PageProps<"/[locale]/product/[s
   // Internal links under the product: its category's other products, and the
   // categories (and brand) a shopper goes on to. Cached reads, the category's
   // list shared by every product page of that category.
-  const [categoryList, brands] = await Promise.all([
+  const [categoryList, brands, freeShippingFrom] = await Promise.all([
     category ? getCategoryProducts(category.slug) : Promise.resolve([]),
     getBrands(),
+    getFreeShippingFrom(),
   ]);
   const similar = pickSimilar(categoryList, product);
   const related = relatedCategories(product, categories, brands ?? [], undefined, locale);
@@ -109,7 +110,7 @@ export default async function ProductPage(props: PageProps<"/[locale]/product/[s
   return (
     // White, the same white the product photos are shot on.
     <main className="flex flex-1 flex-col bg-white dark:bg-background">
-      <JsonLd data={productJsonLd(product, category, locale)} />
+      <JsonLd data={productJsonLd(product, category, locale, { freeShippingFrom })} />
       <JsonLd data={breadcrumbJsonLd(crumbs, locale)} />
       <ProductDetail
         initialProduct={product}

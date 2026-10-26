@@ -215,6 +215,47 @@ export function brandDescription(brand: Brand, products: CatalogProduct[] | null
   return metaDescription(`${lead} ${meta.brandGenuine(brand.name)} ${meta.shopPromise}`);
 }
 
+// ── The shop's terms, as search engines read them ─────────────────────────────
+
+/**
+ * The returns the "Mesafeli Satış Sözleşmesi" (section 6) grants: 14 days from
+ * delivery, by mail, the carriage paid by the shop when the parcel goes back
+ * with its contracted carrier. Stated on the organization and on every offer,
+ * which is where Google's merchant listings read it ("Ücretsiz iade · 14 gün"
+ * under a result). The sözleşme's hygiene exceptions (an opened lüle, a
+ * marpuç) are the law's own and stay on that page.
+ */
+export function returnPolicyJsonLd(locale: Locale = DEFAULT_LOCALE) {
+  return {
+    "@type": "MerchantReturnPolicy",
+    applicableCountry: "TR",
+    returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
+    merchantReturnDays: 14,
+    returnMethod: "https://schema.org/ReturnByMail",
+    returnFees: "https://schema.org/FreeReturn",
+    // The path, not lib/bilgi: that module carries every document's text, and
+    // this one is in the product cards' bundle.
+    merchantReturnLink: absolute("/bilgi/mesafeli-satis-sozlesmesi", locale),
+  };
+}
+
+/**
+ * Free delivery in Turkey, stated only where it is certain for the product
+ * on its own: a retail cart ships on the shop from `freeFrom` (the panel's
+ * "ücretsiz kargo limiti"), so one unit at or above it does — unless it counts
+ * as coal, whose carts the "%50 Kuralı" can still send karşı ödemeli. Below
+ * the limit the carriage is paid on delivery at the carrier's rate, which no
+ * fixed figure here could honestly state, so nothing is said.
+ */
+function freeShippingJsonLd(price: number, coal: boolean, freeFrom: number | null) {
+  if (freeFrom === null || coal || !(price >= freeFrom)) return undefined;
+  return {
+    "@type": "OfferShippingDetails",
+    shippingRate: { "@type": "MonetaryAmount", value: 0, currency: "TRY" },
+    shippingDestination: { "@type": "DefinedRegion", addressCountry: "TR" },
+  };
+}
+
 // ── Site-wide structured data ─────────────────────────────────────────────────
 
 /** The shop as an OnlineStore, with what the footer says about reaching it. */
@@ -256,6 +297,7 @@ export function organizationJsonLd(footer: HomeFooter | undefined, locale: Local
         }
       : {}),
     ...(sameAs.length > 0 ? { sameAs } : {}),
+    hasMerchantReturnPolicy: returnPolicyJsonLd(locale),
   };
 }
 
@@ -350,62 +392,99 @@ export function productListJsonLd(
   };
 }
 
+/** What the product page's markup needs to know about the shop's terms. */
+export interface ProductTerms {
+  /** The retail free-shipping limit in TRY; null when it is not known. */
+  freeShippingFrom: number | null;
+}
+
 /**
  * A product detail page. The offer is the public price an anonymous visitor
- * (and crawler) sees: a live flash sale's price until it ends, else RETAIL.
+ * (and crawler) sees: a live flash sale's price until it ends, else RETAIL —
+ * never a Bayi / Toptan / Kafe price, which only a signed-in firm sees. The
+ * stock is the shop's one stock, the same for everyone, so a colour's
+ * availability is the page's.
  *
- * A product with colours is one `Product` with one `Offer` per colour — which is
- * what they are: separately stocked things at the same price under one name. The
- * colour goes in as `name` and `color` on the offer, and its own availability,
- * so a sold-out colour is not advertised as in stock. Google penalises markup
- * that disagrees with the page, and the page says exactly this.
+ * One colour (or none): a `Product` with its `Offer`. Several: a
+ * `ProductGroup` varying by colour, each colour a `Product` with its own SKU,
+ * colour and offer — Google's form for variants, which lets a result show the
+ * colours and a sold-out colour be told apart. Every variant is on this one
+ * page (the picker chooses between them), so they share its address. Google
+ * penalises markup that disagrees with the page, and the page says exactly this.
  */
-export function productJsonLd(product: CatalogProduct, category: Category | undefined, locale: Locale = DEFAULT_LOCALE) {
+export function productJsonLd(
+  product: CatalogProduct,
+  category: Category | undefined,
+  locale: Locale = DEFAULT_LOCALE,
+  terms: ProductTerms = { freeShippingFrom: null },
+) {
   const lead = displayVariant(product);
   const sale = lead?.flash_sale;
   // Every colour carries the sheet's one price matrix, so the lead colour's
   // price is the product's; `priceValidUntil` likewise comes from its sale.
   const price = sale?.price ?? lead?.list_price;
+  const url = absolute(productHref(product), locale);
+  const images = productImages(product);
   const availability = (inStock: boolean) =>
     inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock";
+  const shipping = price
+    ? freeShippingJsonLd(Number(price.price_incl_tax), product.is_cart_rule_applied ?? true, terms.freeShippingFrom)
+    : undefined;
+  const returns = returnPolicyJsonLd(locale);
 
-  const offer = (variant: (typeof product.variants)[number]) => ({
+  const offer = (inStock: boolean, variant?: (typeof product.variants)[number]) => ({
     "@type": "Offer",
     price: price!.price_incl_tax,
     priceCurrency: price!.currency,
-    url: absolute(productHref(product), locale),
-    sku: variant.sku,
-    availability: availability(variant.in_stock !== false),
+    url,
+    ...(variant ? { sku: variant.sku } : {}),
+    availability: availability(inStock),
     itemCondition: "https://schema.org/NewCondition",
     seller: { "@id": `${SITE_URL}/#organization` },
-    ...(variant.color_name ? { name: colorLabel(variant.color_name, locale), color: colorLabel(variant.color_name, locale) } : {}),
     ...(sale?.ends_at ? { priceValidUntil: sale.ends_at.slice(0, 10) } : {}),
+    ...(shipping ? { shippingDetails: shipping } : {}),
+    hasMerchantReturnPolicy: returns,
   });
 
-  return {
+  const common = {
     "@context": "https://schema.org",
-    "@type": "Product",
     name: product.name,
-    url: absolute(productHref(product), locale),
-    mpn: product.base_code,
-    ...(lead ? { sku: lead.sku } : {}),
-    ...(productImages(product).length > 0 ? { image: productImages(product) } : {}),
+    url,
+    ...(images.length > 0 ? { image: images } : {}),
     ...(product.description ? { description: htmlToText(product.description) } : {}),
     ...(product.brand ? { brand: { "@type": "Brand", name: product.brand } } : {}),
     ...(category ? { category: category.name } : {}),
+  };
+
+  if (product.variants.length > 1) {
+    return {
+      ...common,
+      "@type": "ProductGroup",
+      productGroupID: product.base_code,
+      variesBy: ["https://schema.org/color"],
+      hasVariant: product.variants.map((variant) => {
+        const colour = variant.color_name ? colorLabel(variant.color_name, locale) : null;
+        return {
+          "@type": "Product",
+          name: colour ? `${product.name} - ${colour}` : product.name,
+          sku: variant.sku,
+          mpn: variant.sku,
+          url,
+          ...(images.length > 0 ? { image: images } : {}),
+          ...(colour ? { color: colour } : {}),
+          ...(price ? { offers: offer(variant.in_stock !== false, variant) } : {}),
+        };
+      }),
+    };
+  }
+
+  // One colour (or none): a lone Product and offer, as before.
+  return {
+    ...common,
+    "@type": "Product",
+    mpn: product.base_code,
+    ...(lead ? { sku: lead.sku } : {}),
     ...(product.color_names && product.color_names.length > 0 ? { color: product.color_names.map((c) => colorLabel(c, locale)) } : {}),
-    ...(price
-      ? {
-          offers:
-            product.variants.length > 1
-              ? product.variants.map(offer)
-              : {
-                  // One colour (or none): a lone object, as before, rather than a
-                  // list of one.
-                  ...offer(product.variants[0] ?? lead!),
-                  availability: availability(!soldOut(product)),
-                },
-        }
-      : {}),
+    ...(price ? { offers: offer(!soldOut(product), product.variants[0] ?? lead ?? undefined) } : {}),
   };
 }

@@ -371,6 +371,12 @@ export interface Product {
   opportunity_color: string | null;
   /** Last edit of the product itself (ISO); the sitemap's <lastmod>. */
   updated_at?: string | null;
+  /**
+   * "Sepet Kuralı": counts as coal for the cargo rule, so a cart of it may
+   * not ship free. Absent (older API) is read as coal by the shipping markup,
+   * which then promises nothing.
+   */
+  is_cart_rule_applied?: boolean;
 }
 
 // Catalog listing (GET /products/): prices resolved for the caller's segment.

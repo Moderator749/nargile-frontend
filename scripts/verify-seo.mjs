@@ -11,7 +11,9 @@
  *   - one <title>, a meta description of sensible length, a canonical URL
  *     without a query string, the Open Graph and Twitter card tags;
  *   - every application/ld+json block parses, and the types each page needs
- *     are there (Product with an Offer on a product page, BreadcrumbList on
+ *     are there (Product with an Offer — a ProductGroup with a variant per
+ *     colour — on a product page, each offer with its return policy and any
+ *     shipping it states free and in Turkey, BreadcrumbList on
  *     category and product pages, OnlineStore + WebSite with a SearchAction on
  *     the homepage);
  *   - all of it in <head>, for an ordinary browser as well as for a crawler
@@ -176,12 +178,26 @@ async function page(path, { expect = [], canonical = path, indexable = true, sec
   return { head, body, shell, headings, alts, blocks, title, description };
 }
 
+/** The page's product: a Product, or a ProductGroup of colours. */
+const productBlock = (blocks) => blocks.find((b) => b["@type"] === "Product" || b["@type"] === "ProductGroup");
+
 function productChecks(path, blocks) {
-  const product = blocks.find((b) => b["@type"] === "Product");
-  if (!check(!!product, `${path}: no Product`)) return;
-  for (const key of ["name", "image", "sku", "offers"]) check(product[key] !== undefined, `${path}: Product.${key} missing`);
-  const offers = [].concat(product.offers ?? []);
+  const product = productBlock(blocks);
+  if (!check(!!product, `${path}: no Product or ProductGroup`)) return;
+  const group = product["@type"] === "ProductGroup";
+  const variants = group ? product.hasVariant ?? [] : [product];
+  if (group) {
+    check(variants.length > 1, `${path}: ProductGroup with ${variants.length} variant(s)`);
+    check(product.variesBy?.includes("https://schema.org/color"), `${path}: ProductGroup.variesBy ${product.variesBy}`);
+  }
+  for (const key of ["name", "image"]) check(product[key] !== undefined, `${path}: ${product["@type"]}.${key} missing`);
+  for (const v of variants) for (const key of ["sku", "offers"]) check(v[key] !== undefined, `${path}: ${v.name}: ${key} missing`);
+  const offers = variants.flatMap((v) => [].concat(v.offers ?? []));
   for (const offer of offers) {
+    const returns = offer.hasMerchantReturnPolicy;
+    check(returns?.merchantReturnDays === 14 && returns?.applicableCountry === "TR", `${path}: offer without the 14-day return policy`);
+    const ship = offer.shippingDetails;
+    if (ship) check(ship.shippingRate?.value === 0 && ship.shippingDestination?.addressCountry === "TR", `${path}: shippingDetails ${JSON.stringify(ship)}`);
     check(offer["@type"] === "Offer", `${path}: offer type ${offer["@type"]}`);
     check(offer.priceCurrency === "TRY", `${path}: priceCurrency ${offer.priceCurrency}`);
     check(Number(offer.price) > 0, `${path}: price ${offer.price}`);
@@ -265,10 +281,10 @@ async function main() {
   for (const p of [products[0], products[Math.floor(products.length / 2)], products.at(-1)]) {
     const path = `/product/${p.slug}`;
     check(!UUID.test(p.slug), `${p.id}: slug is an id`);
-    const result = await page(path, { expect: ["Product", "BreadcrumbList"] });
+    const result = await page(path, { expect: ["BreadcrumbList"] });
     if (result) {
       productChecks(path, result.blocks);
-      const product = result.blocks.find((b) => b["@type"] === "Product");
+      const product = productBlock(result.blocks);
       check(product?.url === `${new URL(product?.url ?? BASE).origin}${path}`, `${path}: Product.url ${product?.url}`);
       const category = categoryName.get(p.category_id);
       const alt = `${p.name}${category ? ` - ${category}` : ""} | Nargile Malzemesi`;
