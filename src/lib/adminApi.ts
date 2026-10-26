@@ -392,6 +392,8 @@ function contentApi<Row, Write>(path: string) {
     remove: async (id: number) => {
       await api.delete(`${path}/${id}`);
     },
+    /** Every row, first to last, as dragged; the server numbers them 10, 20, 30… and sends the list back. */
+    reorder: async (ids: number[]) => (await api.put<Row[]>(`${path}/order`, { ids })).data,
   };
 }
 

@@ -6,6 +6,7 @@ import { Pencil, Plus, Trash2, X } from "lucide-react";
 
 import { AdminPageHeader, panelClass } from "@/components/admin/AdminShell";
 import { ImageDropZone } from "@/components/admin/ImageDropZone";
+import { SortableList } from "@/components/admin/SortableList";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -39,6 +40,12 @@ export interface ContentApi<Row, Write> {
   remove: (id: number) => Promise<void>;
   uploadImage?: (id: number, file: File) => Promise<Row>;
   removeImage?: (id: number) => Promise<Row>;
+  /**
+   * Every row's id, first to last. Given, the list is put in order by dragging
+   * (saved on the drop) and the form has no "Sıra" box: a row keeps the place
+   * it was dragged to, and a new one goes to the end.
+   */
+  reorder?: (ids: number[]) => Promise<Row[]>;
 }
 
 interface ContentEditorProps<Row extends BaseRow, Write extends BaseWrite> {
@@ -115,13 +122,47 @@ export function ContentEditor<Row extends BaseRow, Write extends BaseWrite>({
   };
 
   const problem = validate(form);
+  const draggable = !!api.reorder;
+
+  /**
+   * What is saved. Where the list is dragged, the place is the list's, not the
+   * form's: the row's place as it stands now (it may have been dragged since
+   * the form opened), or the end for a new one.
+   */
+  const body = (): Write => {
+    if (!draggable) return form;
+    const current = editing ? rows?.find((r) => r.id === editing.id) : undefined;
+    const end = Math.max(0, ...(rows ?? []).map((r) => r.sort_order)) + 10;
+    return { ...form, sort_order: current?.sort_order ?? end };
+  };
+
+  /** A drop: shown at once, saved, and put back as it was if the save fails. */
+  async function reorder(next: Row[]) {
+    if (!api.reorder) return;
+    const before = rows;
+    setRows(next);
+    setResult(null);
+    try {
+      const saved = await api.reorder(next.map((r) => r.id));
+      setRows(saved);
+      if (editing) {
+        const moved = saved.find((r) => r.id === editing.id);
+        if (moved) setEditing(moved);
+      }
+      void refreshStorefront();
+    } catch (err) {
+      setRows(before);
+      setResult({ kind: "error", text: getApiErrorMessage(err, "Sıra kaydedilemedi. Sayfayı yenileyip tekrar deneyin.") });
+    }
+  }
 
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     if (saving || problem) return;
     setSaving(true);
     try {
-      const saved = editing ? await api.update(editing.id, form) : await api.create(form);
+      const data = body();
+      const saved = editing ? await api.update(editing.id, data) : await api.create(data);
       upsert(saved);
       void refreshStorefront();
       setEditing(saved);
@@ -170,6 +211,55 @@ export function ContentEditor<Row extends BaseRow, Write extends BaseWrite>({
     void run(target, () => api.uploadImage!(target.id, file), "Görsel yüklenemedi (PNG, JPEG veya WebP).");
   }
 
+  /** A row's photo, summary, switch and buttons — the same dragged or not. */
+  const renderRow = (row: Row) => {
+    const { primary, secondary } = summary(row);
+    return (
+      <>
+        {"image" in row && (
+          <div className="relative h-12 w-16 shrink-0 overflow-hidden rounded-lg bg-slate-100 dark:bg-white/5">
+            {row.image && <Image src={row.image} alt="" fill sizes="64px" unoptimized className="object-cover" />}
+          </div>
+        )}
+        <div className="min-w-0 flex-1">
+          <p className={`truncate text-sm font-medium ${row.is_active ? "" : "text-slate-400 line-through dark:text-zinc-500"}`}>{primary}</p>
+          {secondary && <p className="truncate text-xs text-slate-500 dark:text-zinc-400">{secondary}</p>}
+        </div>
+        {!draggable && (
+          <span className="font-mono text-xs text-slate-400" title="Sıra">
+            #{row.sort_order}
+          </span>
+        )}
+        <span id={`row-${row.id}-active`} className="sr-only">
+          {primary} yayında
+        </span>
+        <Switch
+          checked={row.is_active}
+          disabled={busyId === row.id}
+          onChange={(v) => void toggle(row, v)}
+          labelledBy={`row-${row.id}-active`}
+        />
+        <button
+          type="button"
+          onClick={() => {
+            setEditing(row);
+            setForm(toWrite(row));
+            setResult(null);
+            // Stacked, the form is below the list: bring it into view.
+            if (stacked) requestAnimationFrame(() => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+          }}
+          aria-label={`Düzenle: ${primary}`}
+          className={iconBtn}
+        >
+          <Pencil className="h-4 w-4" aria-hidden />
+        </button>
+        <button type="button" onClick={() => remove(row)} disabled={busyId === row.id} aria-label={`Sil: ${primary}`} className={iconBtn}>
+          <Trash2 className="h-4 w-4" aria-hidden />
+        </button>
+      </>
+    );
+  };
+
   return (
     <>
       <AdminPageHeader title={title} description={description} />
@@ -192,57 +282,38 @@ export function ContentEditor<Row extends BaseRow, Write extends BaseWrite>({
             <div className="h-48 motion-safe:animate-pulse" aria-busy />
           ) : rows.length === 0 ? (
             <p className="px-5 py-10 text-center text-sm text-slate-500 dark:text-zinc-400">Henüz kayıt yok.</p>
-          ) : (
-            <ul className="divide-y divide-slate-200 dark:divide-white/10">
-              {rows.map((row) => {
-                const { primary, secondary } = summary(row);
-                return (
-                  <li
-                    key={row.id}
+          ) : draggable ? (
+              <SortableList
+                items={rows}
+                getId={(row) => String(row.id)}
+                getLabel={(row) => summary(row).primary}
+                onReorder={(next) => void reorder(next)}
+                disabled={saving || busyId !== null}
+                className="divide-y divide-slate-200 dark:divide-white/10"
+                renderItem={(row, handle, index) => (
+                  <div
                     aria-busy={busyId === row.id || undefined}
-                    className={`flex items-center gap-4 px-5 py-3.5 ${editing?.id === row.id ? "bg-red-50/60 dark:bg-red-500/5" : ""}`}
+                    className={`flex items-center gap-4 py-3.5 pe-5 ps-2 ${editing?.id === row.id ? "bg-red-50/60 dark:bg-red-500/5" : ""}`}
                   >
-                    {"image" in row && (
-                      <div className="relative h-12 w-16 shrink-0 overflow-hidden rounded-lg bg-slate-100 dark:bg-white/5">
-                        {row.image && <Image src={row.image} alt="" fill sizes="64px" unoptimized className="object-cover" />}
-                      </div>
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <p className={`truncate text-sm font-medium ${row.is_active ? "" : "text-slate-400 line-through dark:text-zinc-500"}`}>{primary}</p>
-                      {secondary && <p className="truncate text-xs text-slate-500 dark:text-zinc-400">{secondary}</p>}
-                    </div>
-                    <span className="font-mono text-xs text-slate-400" title="Sıra">
-                      #{row.sort_order}
+                    {handle}
+                    <span className="-ms-2 w-5 shrink-0 text-right font-mono text-xs text-slate-400 tabular-nums" title="Sıra">
+                      {index + 1}
                     </span>
-                    <span id={`row-${row.id}-active`} className="sr-only">
-                      {primary} yayında
-                    </span>
-                    <Switch
-                      checked={row.is_active}
-                      disabled={busyId === row.id}
-                      onChange={(v) => void toggle(row, v)}
-                      labelledBy={`row-${row.id}-active`}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditing(row);
-                        setForm(toWrite(row));
-                        setResult(null);
-                        // Stacked, the form is below the list: bring it into view.
-                        if (stacked) requestAnimationFrame(() => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
-                      }}
-                      aria-label={`Düzenle: ${primary}`}
-                      className={iconBtn}
-                    >
-                      <Pencil className="h-4 w-4" aria-hidden />
-                    </button>
-                    <button type="button" onClick={() => remove(row)} disabled={busyId === row.id} aria-label={`Sil: ${primary}`} className={iconBtn}>
-                      <Trash2 className="h-4 w-4" aria-hidden />
-                    </button>
-                  </li>
-                );
-              })}
+                    {renderRow(row)}
+                  </div>
+                )}
+              />
+            ) : (
+            <ul className="divide-y divide-slate-200 dark:divide-white/10">
+              {rows.map((row) => (
+                <li
+                  key={row.id}
+                  aria-busy={busyId === row.id || undefined}
+                  className={`flex items-center gap-4 px-5 py-3.5 ${editing?.id === row.id ? "bg-red-50/60 dark:bg-red-500/5" : ""}`}
+                >
+                  {renderRow(row)}
+                </li>
+              ))}
             </ul>
           )}
           {listNote && <div className="border-t border-slate-200 px-5 py-3 text-xs text-slate-500 dark:border-white/10 dark:text-zinc-400">{listNote}</div>}
@@ -293,6 +364,11 @@ export function ContentEditor<Row extends BaseRow, Write extends BaseWrite>({
           )}
 
           <div className="grid grid-cols-2 gap-4">
+            {draggable ? (
+              <p className="self-end pb-1 text-xs text-slate-500 dark:text-zinc-400">
+                Sırayı listede tutamaçtan sürükleyerek değiştirin; yeni kayıt sona eklenir.
+              </p>
+            ) : (
             <Input
               label="Sıra"
               type="number"
@@ -301,6 +377,7 @@ export function ContentEditor<Row extends BaseRow, Write extends BaseWrite>({
               onChange={(e) => set({ sort_order: Math.max(0, Number.parseInt(e.target.value, 10) || 0) } as Partial<Write>)}
               hint="Küçük sayı önce."
             />
+            )}
             <div className="flex items-end justify-between gap-3 pb-1">
               <span id="form-active" className="text-sm font-medium">
                 Yayında
