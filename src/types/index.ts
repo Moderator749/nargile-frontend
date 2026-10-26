@@ -1145,6 +1145,26 @@ export interface AdminOrder extends Omit<Order, "items"> {
   /** Free-form on the server, so every field is optional here. */
   billing_address: (Partial<ShippingAddress> & { country?: string | null }) | null;
   items: AdminOrderItem[];
+  /** Only on a PAYMENT_FAILED order: its "Ödeme Hata Kaydı (PayTR)". */
+  payment_failure?: PaymentFailure | null;
+}
+
+/**
+ * Why a card payment failed (the server's `services/payment_failures`): on the
+ * cardholder's or their bank's side, or on the shop's own (its PayTR account,
+ * its integration, PayTR's fraud checks).
+ */
+export interface PaymentFailure {
+  source: "CUSTOMER_BANK" | "SYSTEM_STORE";
+  /** What to suggest to the customer, in Turkish. */
+  advice: string;
+  /** PayTR's `failed_reason_code`; null when the order failed before PayTR answered. */
+  code: string | null;
+  /** PayTR's `failed_reason_msg`, or the order's own reason. */
+  message: string | null;
+  at: ISODateTime | null;
+  merchant_oid: string | null;
+  test_mode: boolean;
 }
 
 export interface OrderApproveResponse {

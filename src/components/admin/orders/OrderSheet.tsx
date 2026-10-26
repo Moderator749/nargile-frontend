@@ -6,6 +6,7 @@ import { OrderSheetActions } from "@/components/admin/orders/OrderSheetActions";
 import { OrderSheetHistory } from "@/components/admin/orders/OrderSheetHistory";
 import { OrderSheetLines } from "@/components/admin/orders/OrderSheetLines";
 import { OrderShipment } from "@/components/admin/orders/OrderShipment";
+import { PaymentFailureCard } from "@/components/admin/orders/PaymentFailureCard";
 import { SheetBlock, SheetField } from "@/components/admin/orders/SheetBlock";
 import { addressLines, customerCode, orderHistory, sheetTotals, shippingStatus } from "@/components/admin/orders/sheetData";
 import type { OrderNotice } from "@/components/admin/orders/useOrderActions";
@@ -97,6 +98,9 @@ export function OrderSheet({
       className="space-y-3 border-l-2 border-red-600 bg-slate-50 p-3 sm:p-4 dark:bg-zinc-950/40"
     >
       <h3 className="sr-only">{order.order_number} numaralı sipariş detayı</h3>
+
+      {/* A failed card payment: why, first — it is what the admin opened it for. */}
+      {order.payment_failure && <PaymentFailureCard failure={order.payment_failure} />}
 
       <div className="grid gap-3 lg:grid-cols-2">
         <SheetBlock title="Sipariş Detayları">

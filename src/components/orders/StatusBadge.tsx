@@ -35,9 +35,11 @@ export const ORDER_STATUS: Record<OrderStatus, { label: string; className: strin
     label: "İptal edildi",
     className: "bg-red-100 text-red-800 ring-red-300 dark:bg-red-500/15 dark:text-red-200 dark:ring-red-500/40",
   },
+  // Amber, not grey: a failed card payment is a customer who wanted to buy,
+  // worth a call (see the sheet's "Ödeme Hata Kaydı").
   PAYMENT_FAILED: {
     label: "Ödeme başarısız",
-    className: "bg-zinc-100 text-zinc-700 ring-zinc-300 dark:bg-white/10 dark:text-zinc-300 dark:ring-white/20",
+    className: "bg-amber-100 text-amber-800 ring-amber-300 dark:bg-amber-500/15 dark:text-amber-200 dark:ring-amber-500/40",
   },
 };
 

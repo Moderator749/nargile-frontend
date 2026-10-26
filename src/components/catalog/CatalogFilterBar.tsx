@@ -47,8 +47,9 @@ interface CatalogFilterBarProps {
  * The category column's switch, where the shopping happens: the same state as
  * the header's "KATEGORİLER" button (lib/sidebar), so hiding the column for a
  * wider grid is in reach from the grid itself: "Kategorileri Gizle / Göster",
- * a quiet outlined button that says what it does. Desktop only — on a phone
- * the column is a drawer, opened from the header.
+ * an outlined button in the shop's red — a filter tool, so a tint and a
+ * hairline, never the solid red of a buy button — that says what it does.
+ * Desktop only — on a phone the column is a drawer, opened from the header.
  */
 function SidebarToggle() {
   // Catalog pages open with the column showing, which is what the server renders.
@@ -61,7 +62,7 @@ function SidebarToggle() {
       onClick={() => setSidebarCollapsed(!collapsed)}
       aria-expanded={!collapsed}
       data-sidebar-toggle
-      className="hidden h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl border border-neutral-200 bg-white px-3 text-xs font-semibold text-neutral-600 transition-colors duration-200 hover:border-neutral-300 hover:text-neutral-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent lg:inline-flex dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:text-white"
+      className="hidden h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl border border-accent/25 bg-white px-3 text-xs font-semibold text-accent transition-colors duration-200 hover:border-accent/50 hover:bg-accent/5 hover:text-accent-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent lg:inline-flex dark:border-accent/40 dark:bg-neutral-900 dark:hover:bg-accent/10"
     >
       {/* The column is at the reading direction's start: on the right in Arabic. */}
       <Icon className="h-3.5 w-3.5 rtl:-scale-x-100" aria-hidden />

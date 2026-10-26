@@ -9,11 +9,12 @@ import { CargoSelect } from "@/components/admin/orders/CargoSelect";
 import { ShipDialog } from "@/components/admin/orders/ShipDialog";
 import { ExpandToggle, sheetId } from "@/components/admin/orders/ExpandToggle";
 import { OrderSheet } from "@/components/admin/orders/OrderSheet";
+import { FAILURE_SOURCE } from "@/components/admin/orders/PaymentFailureCard";
 import { canApproveOrder, canShipOrder, useOrderActions, type OrderPatch } from "@/components/admin/orders/useOrderActions";
 import { StatusBadge } from "@/components/orders/StatusBadge";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
-import { ADMIN_PAGE_SIZE, adminListOrders } from "@/lib/adminApi";
+import { ADMIN_PAGE_SIZE, adminListOrders, adminOrderStatusCounts } from "@/lib/adminApi";
 import { getApiErrorMessage } from "@/lib/errors";
 import { formatDate, formatMoney } from "@/lib/format";
 import { orderNetTotal } from "@/lib/ordersApi";
@@ -30,6 +31,11 @@ const FILTERS: { value: OrderStatus | null; label: string }[] = [
   { value: "CANCELLED", label: "İptal" },
   { value: "PAYMENT_FAILED", label: "Ödeme başarısız" },
 ];
+
+/** Tabs that carry a count: the ones someone should act on. */
+const COUNTED: ReadonlySet<OrderStatus> = new Set(["PAYMENT_FAILED"]);
+/** How often the counts are asked for again while the page is open (and visible). */
+const COUNTS_REFRESH_MS = 60_000;
 
 interface ListState {
   key: string;
@@ -99,6 +105,23 @@ export function AdminOrdersView() {
   }, [key, status, shippingMethod]);
 
   const current = list?.key === key ? list : null;
+
+  // The tabs' counts: on opening, on "Yenile", on every tab or filter change,
+  // and every minute while the page is in view.
+  const [counts, setCounts] = useState<Partial<Record<OrderStatus, number>>>({});
+  useEffect(() => {
+    const controller = new AbortController();
+    const load = () => {
+      if (document.visibilityState === "hidden") return;
+      adminOrderStatusCounts({ shippingMethod }, controller.signal).then(setCounts).catch(() => {});
+    };
+    load();
+    const timer = setInterval(load, COUNTS_REFRESH_MS);
+    return () => {
+      controller.abort();
+      clearInterval(timer);
+    };
+  }, [key, shippingMethod]);
 
   const patch = useCallback<OrderPatch>((id, changes) => {
     setList((prev) =>
@@ -221,9 +244,12 @@ export function AdminOrdersView() {
       />
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div role="tablist" aria-label="Sipariş durumu" className="flex gap-1 overflow-x-auto [scrollbar-width:none]">
+        {/* A phone scrolls the tabs sideways; a wider screen wraps them, so a
+            count on the last one is never cut off at the edge. */}
+        <div role="tablist" aria-label="Sipariş durumu" className="flex gap-1 overflow-x-auto [scrollbar-width:none] sm:flex-wrap sm:overflow-visible">
           {FILTERS.map((f) => {
             const active = f.value === status;
+            const count = f.value && COUNTED.has(f.value) ? (counts[f.value] ?? 0) : 0;
             return (
               <button
                 key={f.label}
@@ -231,13 +257,25 @@ export function AdminOrdersView() {
                 role="tab"
                 aria-selected={active}
                 onClick={() => setStatus(f.value)}
-                className={`h-9 shrink-0 whitespace-nowrap rounded-full px-4 text-sm font-medium transition-colors duration-200 ${
+                className={`inline-flex h-9 shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-4 text-sm font-medium transition-colors duration-200 ${
                   active
                     ? "bg-red-600 text-white shadow-sm shadow-red-600/20"
                     : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-zinc-100"
                 }`}
               >
                 {f.label}
+                {count > 0 && (
+                  <span
+                    className={`min-w-5 rounded-full px-1.5 text-center text-[11px] font-bold leading-5 tabular-nums ${
+                      active
+                        ? "bg-white/25 text-white"
+                        : "bg-amber-100 text-amber-800 ring-1 ring-inset ring-amber-300 dark:bg-amber-500/15 dark:text-amber-200 dark:ring-amber-500/40"
+                    }`}
+                  >
+                    {count > 999 ? "999+" : count}
+                    <span className="sr-only"> sipariş</span>
+                  </span>
+                )}
               </button>
             );
           })}
@@ -335,6 +373,11 @@ export function AdminOrdersView() {
                         </td>
                         <td className="px-3 py-3 align-top">
                           <StatusBadge status={o.status} compact />
+                          {o.payment_failure && (
+                            <p className={`mt-1 text-[11px] font-semibold leading-4 ${FAILURE_SOURCE[o.payment_failure.source].textClassName}`}>
+                              {FAILURE_SOURCE[o.payment_failure.source].label}
+                            </p>
+                          )}
                           {o.cancel_reason && (
                             <p className="mt-1 max-w-32 truncate text-xs text-slate-500" title={o.cancel_reason}>
                               {o.cancel_reason}

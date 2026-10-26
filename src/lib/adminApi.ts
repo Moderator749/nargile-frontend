@@ -80,6 +80,18 @@ export async function adminListOrders(
   return data;
 }
 
+/** How many orders each status tab holds, under the same İstanbul filter as the list. */
+export async function adminOrderStatusCounts(
+  params: { shippingMethod?: ShippingMethod | null },
+  signal?: AbortSignal,
+): Promise<Record<OrderStatus, number>> {
+  const { data } = await api.get<Record<OrderStatus, number>>("/admin/orders/status-counts", {
+    params: { shipping_method: params.shippingMethod ?? undefined },
+    signal,
+  });
+  return data;
+}
+
 /**
  * One order as it stands now.
  *
