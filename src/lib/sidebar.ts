@@ -69,6 +69,23 @@ export function setSidebarCollapsed(collapsed: boolean) {
 }
 
 /**
+ * Before "KATEGORİLER" opens the column from down the page: the column opens
+ * where it stands, beside the hero at the top, out of sight from there — so
+ * the page glides back up to it first (at once, with reduced motion). Not
+ * where it keeps itself in view (the catalog's, sticky under the header), nor
+ * while its row's top is still on screen.
+ */
+export function scrollToSidebar() {
+  const column = document.querySelector<HTMLElement>(".category-sidebar");
+  const row = column?.parentElement;
+  if (!column || !row || getComputedStyle(column).position === "sticky") return;
+  const header = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--header-height")) || 0;
+  if (row.getBoundingClientRect().top >= header) return;
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
+}
+
+/**
  * The column as a page should open with, for a client-side navigation (the
  * pre-paint script covers a full load): open on the catalog's pages and the
  * deals, closed on a product's, else the visitor's remembered choice.

@@ -11,7 +11,14 @@ import Link from "@/components/i18n/Link";
 import { CategoryList } from "@/components/layout/CategoryList";
 import { SIDEBAR_WIDTH } from "@/components/layout/CategorySidebar";
 
-import { applySidebarFor, isSidebarCollapsed, opensByDefault, setSidebarCollapsed, subscribeSidebar } from "@/lib/sidebar";
+import {
+  applySidebarFor,
+  isSidebarCollapsed,
+  opensByDefault,
+  scrollToSidebar,
+  setSidebarCollapsed,
+  subscribeSidebar,
+} from "@/lib/sidebar";
 import { navLabel, type ResolvedNav } from "@/lib/storefrontNav";
 import { PAGE_CONTAINER } from "@/lib/layout";
 import { useCategoryDrawer } from "@/store/useCategoryDrawer";
@@ -167,7 +174,11 @@ export function TopNav({ categories, links }: { categories: ResolvedNav[]; links
         {/* The column's header cell, and the button that gives up its width. */}
         <button
           type="button"
-          onClick={() => setSidebarCollapsed(!collapsed)}
+          onClick={() => {
+            // Opened from down the page, it would open out of sight: back up to it first.
+            if (collapsed) scrollToSidebar();
+            setSidebarCollapsed(!collapsed);
+          }}
           aria-expanded={!collapsed}
           aria-label={collapsed ? t.nav.openColumn : t.nav.closeColumn}
           data-sidebar-toggle
