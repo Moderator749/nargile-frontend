@@ -103,6 +103,12 @@ const LEGACY_PARENT = "diger";
 
 /** The old store's pages that were not categories, and its brand pages. */
 
+/**
+ * Blog addresses that moved: the lüle guide (one article) became four
+ * (src/lib/blog), and its address goes to the first, in every language.
+ */
+const RETIRED_ARTICLES: Record<string, string> = { "nargile-lule-rehberi": "nargile-lulesi-nedir" };
+
 const LEGACY_PAGES: Record<string, string> = {
   "teslimat-ve-kargolama-bilgileri": "/bilgi/kargo-ve-teslimat",
   "sartlar-ve-kosullar": "/bilgi/uyelik-ve-kullanim-sartlari",
@@ -177,6 +183,14 @@ const nextConfig: NextConfig = {
         destination: to,
         statusCode: 301 as const,
       })),
+      // The lüle guide, split into four articles (see RETIRED_ARTICLES).
+      ...Object.entries(RETIRED_ARTICLES).flatMap(([from, to]) =>
+        ["", "/en", "/ar"].map((prefix) => ({
+          source: `${prefix}/blog/${from}`,
+          destination: `${prefix}/blog/${to}`,
+          statusCode: 301 as const,
+        })),
+      ),
       // Category management moved into Ana Sayfa Düzenleme.
       { source: "/admin/categories", destination: "/admin/homepage?tab=katalog-kategorileri", permanent: true },
       // `/catalog?category=<slug>` is how other shops (and old links) name a

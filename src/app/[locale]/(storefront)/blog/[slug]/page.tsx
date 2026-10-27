@@ -6,7 +6,7 @@ import Link from "@/components/i18n/Link";
 import { InfoPage } from "@/components/info/InfoPage";
 import { LegalText } from "@/components/legal/LegalText";
 import { JsonLd } from "@/components/seo/JsonLd";
-import { ARTICLES, article as findArticle, articleHref, type Article } from "@/lib/blog";
+import { ARTICLES, article as findArticle, articleHref, articles, type Article } from "@/lib/blog";
 import { localePath, type Locale } from "@/lib/i18n/config";
 import { blogMessages } from "@/lib/i18n/messages/info";
 import { getI18n } from "@/lib/i18n/server";
@@ -15,7 +15,7 @@ import { pageMetadata } from "@/lib/seo";
 
 export const dynamicParams = false;
 
-// The slugs are Turkish in every language (/en/blog/nargile-lule-rehberi).
+// The slugs are Turkish in every language (/en/blog/nargile-lulesi-nedir).
 export function generateStaticParams() {
   return ARTICLES.map((article) => ({ slug: article.slug }));
 }
@@ -60,34 +60,34 @@ export default async function ArticlePage(props: PageProps<"/[locale]/blog/[slug
   return (
     <InfoPage title={article.title} href={articleHref(article)}>
       <JsonLd data={articleJsonLd(article, locale)} />
-      <p className="text-base leading-7 text-slate-700 dark:text-zinc-300">{article.intro}</p>
+      {article.intro && <p className="mb-6 text-base leading-7 text-slate-700 dark:text-zinc-300">{article.intro}</p>}
+      <LegalText body={article.body} headingLevel={2} />
 
-      <nav aria-label={m.inThisArticle} className="mt-6 rounded-2xl border border-border p-4">
-        <ul className="space-y-1.5">
-          {article.sections.map((section) => (
-            <li key={section.id}>
-              <a
-                href={`#${section.id}`}
-                className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors duration-200 hover:text-foreground"
-              >
-                <ArrowRight className="h-3.5 w-3.5 shrink-0 text-accent rtl:-scale-x-100" aria-hidden />
-                {section.title}
-              </a>
-            </li>
-          ))}
+      {/* The other articles, so a reader who came for one finds the rest. */}
+      <nav aria-labelledby="more-articles" className="mt-12 rounded-2xl border border-border p-5">
+        <h2 id="more-articles" className="mb-3 text-sm font-bold uppercase tracking-wider text-slate-900 dark:text-zinc-100">
+          {m.moreArticles}
+        </h2>
+        <ul className="space-y-2">
+          {articles(locale)
+            .filter((other) => other.slug !== article.slug)
+            .map((other) => (
+              <li key={other.slug}>
+                <Link
+                  href={articleHref(other)}
+                  className="inline-flex items-start gap-1.5 text-sm text-muted-foreground transition-colors duration-200 hover:text-foreground"
+                >
+                  <ArrowRight className="mt-1 h-3.5 w-3.5 shrink-0 text-accent rtl:-scale-x-100" aria-hidden />
+                  {other.title}
+                </Link>
+              </li>
+            ))}
         </ul>
       </nav>
 
-      {article.sections.map((section) => (
-        <section key={section.id} id={section.id} className="mt-10 scroll-mt-[var(--header-height)]">
-          <h2 className="mb-4 text-lg font-bold tracking-tight text-slate-900 dark:text-zinc-100">{section.title}</h2>
-          <LegalText body={section.body} headingLevel={3} />
-        </section>
-      ))}
-
       <Link
         href="/catalog/luleler"
-        className="mt-10 inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-xs font-bold uppercase tracking-wider transition-colors duration-200 hover:border-accent hover:text-accent"
+        className="mt-8 inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-xs font-bold uppercase tracking-wider transition-colors duration-200 hover:border-accent hover:text-accent"
       >
         {m.browseBowls}
         <ArrowRight className="h-3.5 w-3.5 rtl:-scale-x-100" aria-hidden />

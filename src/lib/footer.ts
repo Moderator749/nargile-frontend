@@ -2,13 +2,13 @@
  * The footer's default lists, kept apart from how it looks. Editable in
  * "Ana Sayfa Düzenleme"; `lib/homepage` builds the default footer from these.
  *
- * The blog links point at the sections of the lüle guide (`lib/blog`) and the
- * support links at the answers on /sss (`lib/faq`), so each id here must match
- * an anchor there.
+ * The blog links are the articles (`lib/blog`), each under its own title, and
+ * the support links point at the answers on /sss (`lib/faq`), so each id there
+ * must match an anchor.
  */
 
 import { BILGI_DOCUMENTS, PERKS_PAGE, bilgiHref } from "@/lib/bilgi";
-import { BLOG_HREF, LULE_GUIDE_HREF } from "@/lib/blog";
+import { ARTICLES, BLOG_HREF, articleHref } from "@/lib/blog";
 import { FAQ, FAQ_HREF } from "@/lib/faq";
 
 export const BRANCHES = [
@@ -31,12 +31,7 @@ export const SOCIAL_LINKS = [
   { label: "Instagram (Esenyurt)", href: "https://www.instagram.com/sultannargile_esenyurt", kind: "instagram" },
 ] as const;
 
-export const BLOG_LINKS = [
-  { label: "Nargile lülesi nedir, çeşitleri var mıdır?", href: `${LULE_GUIDE_HREF}#lule-nedir` },
-  { label: "Phunnel ve Killer lüle arasındaki fark nedir?", href: `${LULE_GUIDE_HREF}#phunnel-killer` },
-  { label: "Sırlı lüle mi, sırsız lüle mi? Hangi lüleyi satın almalıyım?", href: `${LULE_GUIDE_HREF}#sirli-sirsiz` },
-  { label: "Hangi nargile lülesini satın almalıyım?", href: `${LULE_GUIDE_HREF}#malzeme-secimi` },
-];
+export const BLOG_LINKS = ARTICLES.map((article) => ({ label: article.title, href: articleHref(article) }));
 export { BLOG_HREF };
 
 /** The three documents the shop supplied, in the order it listed them. */

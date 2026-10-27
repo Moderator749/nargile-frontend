@@ -1,6 +1,6 @@
 /**
- * The lüle guide (lib/blog) in English, written for people searching for
- * hookah bowls: the same sections under the same anchor ids, in the trade's
+ * The lüle articles (lib/blog) in English, written for people searching for
+ * hookah bowls: the same articles under the same slugs, in the trade's
  * own words (Phunnel bowl, Killer bowl, glazed and unglazed clay bowls, HMD).
  * Same body format as the Turkish: blank lines between paragraphs, `## ` for a
  * sub-heading.
@@ -8,26 +8,26 @@
 
 import type { Article } from "@/lib/blog";
 
-export const LULE_GUIDE_EN: Article = {
-  slug: "nargile-lule-rehberi",
-  title: "Hookah Bowl Guide: Types of Hookah Bowls and How to Choose the Right One",
-  description:
-    "What a hookah bowl is, Phunnel vs Killer bowls, glazed vs unglazed clay bowls and how to pick a bowl by material: the complete guide from Sultan Nargile.",
-  datePublished: "2026-04-10",
-  intro:
-    "Of all the hookah gear you own, the bowl has the biggest say in how a session performs and tastes. The right hookah bowl changes everything, from how you pack it and manage the heat to how smooth the draw is and how much flavour comes through.",
-  sections: [
-    {
-      id: "lule-nedir",
-      title: "What is a hookah bowl, and what types are there?",
-      body: `A bowl's basic job is to turn the shisha tobacco packed into it into smoke, with the help of heat. Most hookah bowls hold between 15 and 25 grams of tobacco.
+export const LULE_ARTICLES_EN: Article[] = [
+  {
+    slug: "nargile-lulesi-nedir",
+    title: "What is a hookah bowl, and what types are there?",
+    description:
+      "What a hookah bowl is, what it does and what it is made of: a short look at the types of bowls and the two designs, Phunnel and Killer.",
+    datePublished: "2026-04-10",
+    intro:
+      "Of all the hookah gear you own, the bowl has the biggest say in how a session performs and tastes. The right hookah bowl changes everything, from how you pack it and manage the heat to how smooth the draw is and how much flavour comes through.",
+    body: `A bowl's basic job is to turn the shisha tobacco packed into it into smoke, with the help of heat. Most hookah bowls hold between 15 and 25 grams of tobacco.
 
 Today, alongside glazed and unglazed bowls made from traditional clay-based materials such as earthenware, clay, stone and ceramic, there are modern options in glass, silicone and metal. By design, bowls fall into two main categories: the Phunnel bowl and the Killer bowl.`,
-    },
-    {
-      id: "phunnel-killer",
-      title: "What is the difference between a Phunnel bowl and a Killer bowl?",
-      body: `Design is the choice hookah smokers struggle with most. Each style has its own packing and smoking dynamics.
+  },
+  {
+    slug: "phunnel-ve-killer-lule-farki",
+    title: "What is the difference between a Phunnel bowl and a Killer bowl?",
+    description:
+      "Phunnel vs Killer hookah bowls: airflow, packing, smoke density and keeping your hookah clean, the two designs compared.",
+    datePublished: "2026-04-10",
+    body: `Design is the choice hookah smokers struggle with most. Each style has its own packing and smoking dynamics.
 
 ## Phunnel bowl
 
@@ -50,11 +50,14 @@ Fluff pack: Pack the tobacco loosely, almost as if you were sprinkling salt, so 
 Airflow management: Keeping the holes clear is key to an easy draw, so a bowl screen is recommended with these bowls.
 
 Thick, harsh smoke: The air passes straight through the tobacco and the holes beneath it. The smoke is much thicker and more satisfying, and feels relatively harsh and full-bodied.`,
-    },
-    {
-      id: "sirli-sirsiz",
-      title: "Glazed or unglazed clay bowl? Which bowl should I buy?",
-      body: `Glaze is the coloured, often patterned protective coating applied to the outside and the tobacco well of clay-based bowls (earthenware, clay, ceramic).
+  },
+  {
+    slug: "sirli-mi-sirsiz-mi-lule",
+    title: "Glazed or unglazed clay bowl? Which bowl should I buy?",
+    description:
+      "Glazed vs unglazed hookah bowls: flavour absorption, juice seeping out, cleaning and switching flavours, and which bowl to choose.",
+    datePublished: "2026-04-10",
+    body: `Glaze is the coloured, often patterned protective coating applied to the outside and the tobacco well of clay-based bowls (earthenware, clay, ceramic).
 
 ## Unglazed bowls (earthenware and clay)
 
@@ -69,17 +72,19 @@ Versatile: The glaze stops the juice from being absorbed, so you can try differe
 Easy cleaning: The smooth surface makes cleaning after a session quick and easy.
 
 The design difference: Glazed Phunnel bowls absorb almost no juice at all. In glazed Killer bowls the juice can cling to the inner surface as it runs through the holes, so a slight ghost of the previous flavour may linger; even so, they sweat little or not at all.`,
-    },
-    {
-      id: "malzeme-secimi",
-      title: "Which hookah bowl should I buy?",
-      body: `A good session starts with good heat management. Getting the heat up to the ideal level in 1–2 minutes and holding it steady throughout the session depends on what the bowl is made of. With the wrong bowl, you can end up adjusting the coals all session with your charcoal tongs in hand.
+  },
+  {
+    slug: "hangi-nargile-lulesini-almaliyim",
+    title: "Which hookah bowl should I buy?",
+    description:
+      "How metal, glass, clay and ceramic hookah bowls handle heat, and how to choose the right hookah bowl by its material.",
+    datePublished: "2026-04-10",
+    body: `A good session starts with good heat management. Getting the heat up to the ideal level in 1–2 minutes and holding it steady throughout the session depends on what the bowl is made of. With the wrong bowl, you can end up adjusting the coals all session with your charcoal tongs in hand.
 
 Metal bowls: Usually aluminium. They conduct heat very quickly but react instantly to every change in the charcoal's heat, which can have you constantly adding and removing coals, burn through the tobacco fast and leave a bitter taste. Because heat management is difficult, they are not usually recommended for professional sessions.
 
 Glass bowls: Thin glass bowls make heat control difficult, and the risk of burning the tobacco is high. The exception is sets with a thick glass well and a thick silicone body, from brands such as Quasar: the silicone body absorbs excess heat, and the special lidded heat management device keeps the heat balanced. For a comfortable, flavour-packed session, they are one of the best choices there is.
 
 For wholesale or retail bowl orders, browse the earthenware, stone, ceramic, glazed, unglazed, Phunnel and Killer options in the catalog and choose the model that best suits your smoking style and budget.`,
-    },
-  ],
-};
+  },
+];

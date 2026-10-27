@@ -307,7 +307,7 @@ const TR_DOMESTIC: RegistrationCopy = {
     "Kampanya, indirim ve duyurulardan haberdar olmak için ticari elektronik ileti (SMS ve E-posta) almayı onaylıyorum.",
   marketingConsentHint:
     "İsteğe bağlı. Sipariş ve şifre mesajları bu onaydan bağımsız gönderilir; tercihinizi hesabınızdan her zaman değiştirebilirsiniz.",
-  readPrivacy: "Gizlilik Kuralları",
+  readPrivacy: "KVKK Aydınlatma Metni",
 };
 
 const EN_INTERNATIONAL: RegistrationCopy = {
@@ -328,7 +328,7 @@ const EN_INTERNATIONAL: RegistrationCopy = {
   marketingConsent: "I agree to receive commercial electronic messages (SMS and e-mail) about campaigns, discounts and news.",
   marketingConsentHint:
     "Optional. Order and password messages are sent regardless; you can change this in your account at any time.",
-  readPrivacy: "Privacy Policy",
+  readPrivacy: "Privacy Notice (KVKK)",
 };
 
 const EN_DOMESTIC: RegistrationCopy = {
@@ -362,7 +362,7 @@ const AR_INTERNATIONAL: RegistrationCopy = {
     "أوافق على تلقّي رسائل إلكترونية تجارية (SMS وبريد إلكتروني) لأبقى على اطلاع بالحملات والخصومات والإعلانات.",
   marketingConsentHint:
     "اختياري. تُرسَل رسائل الطلبات وكلمة المرور بغض النظر عن هذه الموافقة، ويمكنك تغيير اختيارك من حسابك في أي وقت.",
-  readPrivacy: "سياسة الخصوصية",
+  readPrivacy: "إشعار الخصوصية (KVKK)",
 };
 
 const AR_DOMESTIC: RegistrationCopy = {
