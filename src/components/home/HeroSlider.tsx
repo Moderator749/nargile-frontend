@@ -92,9 +92,10 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
       {/* On a phone the controls sit along the slider's top edge — above the
           slide's words (which start 5rem down) and its button, and nowhere
           near the tab bar, where half an arrow under it used to open the
-          cart. Centred under the slide from `md`, as before. */}
+          cart. Centred under the slide from `md`, as before. Flipping a
+          slide leaves an open category column open (`data-sidebar-keep`). */}
       {count > 1 && (
-        <div className="pointer-events-none absolute flex items-center gap-3 max-md:inset-x-3 max-md:top-3 max-md:justify-between md:inset-x-0 md:bottom-5 md:justify-center md:gap-4">
+        <div data-sidebar-keep className="pointer-events-none absolute flex items-center gap-3 max-md:inset-x-3 max-md:top-3 max-md:justify-between md:inset-x-0 md:bottom-5 md:justify-center md:gap-4">
           <button type="button" onClick={() => go(index - 1)} aria-label={t.hero.previous} className={controlClass}>
             <ChevronLeft className="h-5 w-5 rtl:rotate-180" aria-hidden />
           </button>

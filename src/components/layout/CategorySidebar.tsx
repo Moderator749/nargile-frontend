@@ -57,7 +57,9 @@ export function CategorySidebar({ items, fit = false }: { items: ResolvedNav[]; 
 
   // Beside the hero (not `fit`: the catalog's column is the page's way
   // around), the open column is a panel: Escape or a click anywhere else
-  // closes it, as "KATEGORİLER" would. Desktop only; a phone has the drawer.
+  // closes it, as "KATEGORİLER" would — but not the slider's arrows and dots
+  // (`data-sidebar-keep`), which flip the slide beside it, not leave the list.
+  // Desktop only; a phone has the drawer.
   useEffect(() => {
     if (fit) return;
     const wide = () => window.matchMedia("(min-width: 64rem)").matches;
@@ -69,7 +71,7 @@ export function CategorySidebar({ items, fit = false }: { items: ResolvedNav[]; 
     };
     const onPointer = (event: PointerEvent) => {
       const target = event.target as Element | null;
-      if (!target || column.current?.contains(target) || target.closest("[data-sidebar-toggle]")) return;
+      if (!target || column.current?.contains(target) || target.closest("[data-sidebar-toggle], [data-sidebar-keep]")) return;
       close();
     };
     document.addEventListener("keydown", onKey);
