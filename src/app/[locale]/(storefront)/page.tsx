@@ -7,7 +7,6 @@ import { CategoryRow } from "@/components/home/CategoryRow";
 import { BrandShowcase } from "@/components/home/BrandShowcase";
 import { BentoShowcase } from "@/components/home/BentoShowcase";
 import { BrandTicker, tickerBrands } from "@/components/home/BrandTicker";
-import { CampaignBanners } from "@/components/home/CampaignBanners";
 import { DealsFunnel } from "@/components/home/DealsFunnel";
 import { FeaturedProductsShowcase } from "@/components/home/FeaturedProductsShowcase";
 import { HeroAside } from "@/components/home/HeroAside";
@@ -316,9 +315,8 @@ export default async function HomePage() {
     deals: () => (
       <DealsFunnel initialProducts={deals} categories={allCategories} title={home.deals.title} subtitle={home.deals.subtitle} />
     ),
-    // The campaign boxes: the big one and the mini bento (placeholder art
-    // until the shop's photos).
-    campaigns: () => phones("campaigns", <CampaignBanners copy={home.campaigns} />),
+    // "Görsel Vitrin 3": three more, under the deals (where the campaign boxes were).
+    bento3: () => phones("bento3", <BentoShowcase copy={home.bento3} slot="bento3" />),
     // "Sektörde Referans Noktası", on a white band of its own.
     promos: () =>
       phones(

@@ -119,18 +119,13 @@ export const homeMessages = defineMessages({
         { alt: "Oduman kristal gövdeli nargile takımı", eyebrow: "Kristal Gövde", title: "Oduman\nNargile", subtitle: "Koleksiyonu keşfedin" },
       ],
     },
-    campaigns: {
-      heading: "Kampanyalar",
-      leadEyebrow: "Sınırlı Stok",
-      leadTitle: "Premium Takımlarda Efsane Fırsat",
-      leadSubtitle: "Sınırlı stoklarla sunulan elit koleksiyonu keşfedin.",
-      leadCta: "Hemen İncele",
-      lulesTitle: "Lüle Seçkisi",
-      lulesSubtitle: "Premium tatlar.",
-      kozlukTitle: "Közlükler",
-      kozlukSubtitle: "Isı kontrolü.",
-      accessoriesTitle: "Yeni Aksesuarlar",
-      accessoriesSubtitle: "Seansınızı zenginleştiren detaylar.",
+    bento3: {
+      label: "Fırsatlar, Közlükler ve Aksesuarlar",
+      boxes: [
+        { alt: "Kırmızı ışıkta kristal gövdeli nargile takımı", eyebrow: "Sınırlı Stok", title: "Fırsat\nÜrünleri", subtitle: "Kaçırılmayacak fiyatlar" },
+        { alt: "Közlük, lüle ve maşa", eyebrow: "Isı Kontrolü", title: "Közlükler", subtitle: "Eşit ısı, uzun seans" },
+        { alt: "Altın detaylı nargile takımı", eyebrow: "Yeni Sezon", title: "Aksesuarlar", subtitle: "Seansınızı zenginleştiren detaylar" },
+      ],
     },
     spotlight: {
       eyebrow: "Özel Lüle Koleksiyonu",
@@ -254,18 +249,13 @@ export const homeMessages = defineMessages({
         { alt: "Oduman hookah set with a crystal base", eyebrow: "Crystal Base", title: "Oduman\nHookah", subtitle: "Discover the collection" },
       ],
     },
-    campaigns: {
-      heading: "Promotions",
-      leadEyebrow: "Limited Stock",
-      leadTitle: "Legendary Deals on Premium Hookah Sets",
-      leadSubtitle: "Discover the elite collection, while stocks last.",
-      leadCta: "Shop Now",
-      lulesTitle: "Hookah Bowl Selection",
-      lulesSubtitle: "Premium flavor.",
-      kozlukTitle: "Heat Management",
-      kozlukSubtitle: "Total heat control.",
-      accessoriesTitle: "New Accessories",
-      accessoriesSubtitle: "Details that elevate your session.",
+    bento3: {
+      label: "Deals, heat managers and accessories",
+      boxes: [
+        { alt: "Hookah set with a crystal base in red light", eyebrow: "Limited Stock", title: "Deals", subtitle: "Prices not to be missed" },
+        { alt: "Heat manager, bowl and tongs", eyebrow: "Heat Control", title: "Heat\nManagers", subtitle: "Even heat, longer sessions" },
+        { alt: "Hookah set with gold details", eyebrow: "New Season", title: "Accessories", subtitle: "Details that enrich your session" },
+      ],
     },
     spotlight: {
       eyebrow: "Exclusive Hookah Bowl Collection",
@@ -389,18 +379,13 @@ export const homeMessages = defineMessages({
         { alt: "طقم أرجيلة أودومان بقاعدة كريستال", eyebrow: "قاعدة كريستال", title: "أرجيلة\nأودومان", subtitle: "اكتشف المجموعة" },
       ],
     },
-    campaigns: {
-      heading: "العروض",
-      leadEyebrow: "كمية محدودة",
-      leadTitle: "عروض استثنائية على أطقم الشيشة الفاخرة",
-      leadSubtitle: "اكتشف التشكيلة الفاخرة قبل نفاد الكمية.",
-      leadCta: "تسوق الآن",
-      lulesTitle: "تشكيلة رؤوس الشيشة",
-      lulesSubtitle: "نكهة فاخرة.",
-      kozlukTitle: "منظمات الحرارة",
-      kozlukSubtitle: "تحكم كامل بالحرارة.",
-      accessoriesTitle: "إكسسوارات جديدة",
-      accessoriesSubtitle: "تفاصيل تُثري جلستك.",
+    bento3: {
+      label: "العروض ومنظمات الحرارة والإكسسوارات",
+      boxes: [
+        { alt: "طقم أرجيلة بقاعدة كريستال تحت ضوء أحمر", eyebrow: "كمية محدودة", title: "العروض", subtitle: "أسعار لا تفوت" },
+        { alt: "منظم حرارة ورأس وملقط", eyebrow: "التحكم بالحرارة", title: "منظمات\nالحرارة", subtitle: "حرارة متساوية وجلسة أطول" },
+        { alt: "طقم أرجيلة بتفاصيل ذهبية", eyebrow: "موسم جديد", title: "الإكسسوارات", subtitle: "تفاصيل تثري جلستك" },
+      ],
     },
     spotlight: {
       eyebrow: "تشكيلة رؤوس شيشة حصرية",

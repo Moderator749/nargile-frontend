@@ -1,7 +1,7 @@
 /**
  * The words, pictures and links of the homepage's sections that once lived in
  * their components — the perks bar, "Sizin İçin Seçtiklerimiz", the lüle row,
- * the SultanPuan and Kumbara bands, the campaign boxes, "Sektörde Referans
+ * the SultanPuan and Kumbara bands, the photo showcases, "Sektörde Referans
  * Noktası", "Markalarımız", the Közlükler and Oyun rows — now part of the
  * "Ana Sayfa Düzenleme" document, each section editable in its drawer.
  *
@@ -29,7 +29,7 @@ export type SectionCopy = Pick<
   | "kumbara"
   | "bento"
   | "bento2"
-  | "campaigns"
+  | "bento3"
   | "statement"
   | "brand_showcase"
   | "kozlukler"
@@ -57,6 +57,13 @@ const BENTO2_BOXES: [string, string, number][] = [
   ["/images/avantaj-cat-nargile.jpg", "/catalog/klasik-takimlar", 50],
   ["/images/avantaj-legend.jpg", "/catalog/legend", 68],
   ["/images/avantaj-oduman.jpg", "/catalog/oduman", 28],
+];
+
+/** "Görsel Vitrin 3"'s, under the deals where the campaign boxes were: the messages' `bento3.boxes`. */
+const BENTO3_BOXES: [string, string, number][] = [
+  ["/images/hero-3.jpg", "/firsat-urunleri", 52],
+  ["/images/avantaj-hero-3.jpg", "/catalog/kozlukler", 62],
+  ["/images/avantaj-hero-1.jpg", "/catalog/malzemeler", 22],
 ];
 
 /** A photo box with its words stacked at the bottom, on a 55% wash: where a box starts. */
@@ -119,26 +126,7 @@ function copyIn(w: Words): SectionCopy {
     },
     bento: { boxes: bentoBoxes(BENTO_BOXES, w.bento.boxes) },
     bento2: { boxes: bentoBoxes(BENTO2_BOXES, w.bento2.boxes) },
-    campaigns: {
-      lead: {
-        eyebrow: w.campaigns.leadEyebrow,
-        title: w.campaigns.leadTitle,
-        subtitle: w.campaigns.leadSubtitle,
-        cta: w.campaigns.leadCta,
-        href: "/firsat-urunleri",
-        image: null,
-      },
-      minis: [
-        { title: w.campaigns.lulesTitle, subtitle: w.campaigns.lulesSubtitle, href: "/catalog/luleler", image: null },
-        { title: w.campaigns.kozlukTitle, subtitle: w.campaigns.kozlukSubtitle, href: "/catalog/kozlukler", image: null },
-        {
-          title: w.campaigns.accessoriesTitle,
-          subtitle: w.campaigns.accessoriesSubtitle,
-          href: "/catalog/malzemeler",
-          image: null,
-        },
-      ],
-    },
+    bento3: { boxes: bentoBoxes(BENTO3_BOXES, w.bento3.boxes) },
     statement: { heading: w.statement.heading, lead: w.statement.lead, rest: w.statement.rest },
     brand_showcase: {
       heading: w.brands.heading,

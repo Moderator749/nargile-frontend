@@ -23,7 +23,6 @@ import type {
   HomeBentoBox,
   HomeBoxText,
   HomeBrandBlurb,
-  HomeCampaignBox,
   HomeLoyaltyCopy,
   HomePerk,
   Homepage,
@@ -210,72 +209,6 @@ export function LoyaltyForm({
   );
 }
 
-// ── Kampanya Kutuları ────────────────────────────────────────────────────────
-
-function BoxFields({
-  box,
-  onChange,
-  categories,
-  children,
-}: {
-  box: HomeCampaignBox;
-  onChange: (patch: Partial<HomeCampaignBox>) => void;
-  categories: Category[];
-  children?: React.ReactNode;
-}) {
-  return (
-    <div className="grid gap-4 @2xl:grid-cols-[1fr_15rem]">
-      <div className="space-y-3">
-        {children}
-        <TextField label="Başlık" value={box.title} max={80} onChange={(title) => onChange({ title })} />
-        <TextField label="Alt yazı" value={box.subtitle} max={160} onChange={(subtitle) => onChange({ subtitle })} />
-        <LinkField categories={categories} value={box.href} onChange={(href) => onChange({ href })} />
-      </div>
-      <ImageField
-        label="Görsel"
-        value={box.image}
-        onChange={(image) => onChange({ image })}
-        hint="Boş: renk geçişli zemin."
-      />
-    </div>
-  );
-}
-
-const MINI_NAMES = ["Sağ üst (sol)", "Sağ üst (sağ)", "Sağ alt (geniş)"];
-
-export function CampaignsForm({
-  value,
-  set,
-  categories,
-}: {
-  value: Homepage["campaigns"];
-  set: Set<"campaigns">;
-  categories: Category[];
-}) {
-  const lead = value.lead;
-  return (
-    <div className="space-y-6">
-      <Panel title="Büyük kutu" hint="Solda; kutunun tamamı bağlantıdır.">
-        <BoxFields box={lead} categories={categories} onChange={(patch) => set({ ...value, lead: { ...lead, ...patch } })}>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <TextField label="Üst etiket" value={lead.eyebrow} max={40} onChange={(eyebrow) => set({ ...value, lead: { ...lead, eyebrow } })} />
-            <TextField label="Buton yazısı" value={lead.cta} max={40} onChange={(cta) => set({ ...value, lead: { ...lead, cta } })} />
-          </div>
-        </BoxFields>
-      </Panel>
-      {value.minis.map((mini, i) => (
-        <Panel key={i} title={`Küçük kutu ${i + 1} · ${MINI_NAMES[i]}`}>
-          <BoxFields
-            box={mini}
-            categories={categories}
-            onChange={(patch) => set({ ...value, minis: value.minis.map((m, j) => (j === i ? { ...m, ...patch } : m)) })}
-          />
-        </Panel>
-      ))}
-    </div>
-  );
-}
-
 // ── Görsel Vitrin ────────────────────────────────────────────────────────────
 
 /** A per-text setting with one text's value changed (null: back to the box's own); null when none is left. */
@@ -374,7 +307,7 @@ function BentoBoxEditor({
 }
 
 /** "Görsel Vitrin" and "Görsel Vitrin 2": the same three boxes, each section its own. */
-export function BentoForm({ value, set, categories }: { value: Homepage["bento"]; set: Set<"bento" | "bento2">; categories: Category[] }) {
+export function BentoForm({ value, set, categories }: { value: Homepage["bento"]; set: Set<"bento" | "bento2" | "bento3">; categories: Category[] }) {
   return (
     <div className="space-y-6">
       {value.boxes.map((box, i) => (

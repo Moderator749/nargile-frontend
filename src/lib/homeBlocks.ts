@@ -20,7 +20,7 @@ export const HOME_BLOCKS: readonly HomeBlock[] = [
   "kumbara",
   "bento",
   "deals",
-  "campaigns",
+  "bento3",
   "promos",
   "brands",
   "brand_showcase",
@@ -29,6 +29,13 @@ export const HOME_BLOCKS: readonly HomeBlock[] = [
   "showcase",
   "about",
 ];
+
+/**
+ * Sections since replaced, and what took their place: the campaign boxes gave
+ * way to "Görsel Vitrin 3" (2026-10-27). The server reads a saved document in
+ * today's terms too; this covers one it sent before it knew.
+ */
+export const RETIRED_BLOCKS: Readonly<Record<string, HomeBlock>> = { campaigns: "bento3" };
 
 /**
  * The order to show: the saved one, cleaned of anything unknown or repeated,
@@ -40,7 +47,9 @@ export const HOME_BLOCKS: readonly HomeBlock[] = [
  */
 export function resolveBlockOrder(saved: readonly string[] | null | undefined): HomeBlock[] {
   const known = new Set<string>(HOME_BLOCKS);
-  const order = [...new Set(saved ?? [])].filter((id): id is HomeBlock => known.has(id));
+  const order = [...new Set((saved ?? []).map((id) => RETIRED_BLOCKS[id] ?? id))].filter((id): id is HomeBlock =>
+    known.has(id),
+  );
   HOME_BLOCKS.forEach((id, i) => {
     if (order.includes(id)) return;
     const next = HOME_BLOCKS.slice(i + 1).find((later) => order.includes(later));

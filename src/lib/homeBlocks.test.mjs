@@ -36,5 +36,17 @@ test("an order saved before the second showcase puts it between SultanPuan and K
   const saved = ["perks", "brands_top", "picks", "lules", "sultanpuan", "kumbara", "bento", "deals", "campaigns", "promos", "brands", "games", "kozlukler", "brand_showcase", "showcase", "about"];
   const order = resolveBlockOrder(saved);
   assert.deepEqual(order.slice(4, 8), ["sultanpuan", "bento2", "kumbara", "bento"]);
-  assert.deepEqual(order.filter((id) => id !== "bento2"), saved);
+  assert.deepEqual(order.filter((id) => id !== "bento2"), saved.map((id) => (id === "campaigns" ? "bento3" : id)));
+});
+
+test("the campaign boxes hand their place to the third showcase", () => {
+  // The live order on 2026-10-27, as an API from before the change still sends it.
+  const saved = ["perks", "brands_top", "picks", "lules", "bento", "kumbara", "sultanpuan", "bento2", "deals", "campaigns", "promos", "brands", "games", "kozlukler", "brand_showcase", "showcase", "about"];
+  const order = resolveBlockOrder(saved);
+  assert.deepEqual(order, saved.map((id) => (id === "campaigns" ? "bento3" : id)));
+  assert.equal(order.includes("campaigns"), false);
+  // Saved with both (never by this editor): the showcase once, where it was.
+  const both = resolveBlockOrder(["deals", "bento3", "campaigns"]);
+  assert.equal(both.filter((id) => id === "bento3").length, 1);
+  assert.equal(both.indexOf("bento3"), both.indexOf("deals") + 1);
 });

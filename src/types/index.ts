@@ -1639,7 +1639,8 @@ export interface HomeSections {
   /** "Görsel Vitrin 2": three more, between SultanPuan and Kumbara. */
   bento2: boolean;
   deals: boolean;
-  campaigns: boolean;
+  /** "Görsel Vitrin 3": three more, under the deals (where the campaign boxes were). */
+  bento3: boolean;
   /** "Sektörde Referans Noktası" (the key is older than the section). */
   promos: boolean;
   brands: boolean;
@@ -1664,7 +1665,7 @@ export type HomeBlock =
   | "kumbara"
   | "bento"
   | "deals"
-  | "campaigns"
+  | "bento3"
   | "promos"
   | "brands"
   | "brand_showcase"
@@ -1777,20 +1778,6 @@ export interface HomeLoyaltyCopy {
   call: string;
 }
 
-export interface HomeCampaignBox {
-  title: string;
-  subtitle: string;
-  href: string;
-  /** A photo behind the words; without one, the box keeps its gradient. */
-  image?: string | null;
-}
-
-export interface HomeCampaigns {
-  lead: HomeCampaignBox & { eyebrow: string; cta: string };
-  /** Always three: two side by side, one across both. */
-  minis: HomeCampaignBox[];
-}
-
 /** A text on a "Görsel Vitrin" box, as on a hero slide. */
 export type HomeBoxText = "eyebrow" | "title" | "subtitle";
 
@@ -1870,10 +1857,11 @@ export interface Homepage {
   lules: HomeLules;
   sultanpuan: HomeLoyaltyCopy;
   kumbara: HomeLoyaltyCopy;
-  campaigns: HomeCampaigns;
   bento: HomeBento;
   /** "Görsel Vitrin 2": its own three boxes, edited as the first's. */
   bento2: HomeBento;
+  /** "Görsel Vitrin 3": the same, under the deals. */
+  bento3: HomeBento;
   /** "Sektörde Referans Noktası" (the `promos` switch). */
   statement: HomeStatement;
   brand_showcase: HomeBrandShowcase;
@@ -1891,7 +1879,7 @@ export type HomeMobileSection =
   | "kumbara"
   | "bento"
   | "bento2"
-  | "campaigns"
+  | "bento3"
   | "brand_statement"
   | "brand_showcase"
   | "kozlukler"

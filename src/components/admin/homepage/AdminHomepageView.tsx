@@ -10,7 +10,6 @@ import { AdminPageHeader } from "@/components/admin/AdminShell";
 import {
   BentoForm,
   BrandShowcaseForm,
-  CampaignsForm,
   LoyaltyForm,
   LulesForm,
   PerksForm,
@@ -51,7 +50,7 @@ type EditorKey =
   | "bento"
   | "bento2"
   | "deals"
-  | "campaigns"
+  | "bento3"
   | "statement"
   | "brands"
   | "brand_showcase"
@@ -124,11 +123,11 @@ const EDITORS: Record<
     size: "lg",
   },
   deals: { title: "Fırsatları Kaçırma", hint: "Fırsat vitrininin başlığı ve alt metni.", doc: "deals", sections: ["deals"], size: "md" },
-  campaigns: {
-    title: "Kampanya Kutuları",
-    hint: "Büyük kutu ve üç küçük kutu: görsel, yazılar ve bağlantı.",
-    doc: "campaigns",
-    sections: ["campaigns"],
+  bento3: {
+    title: "Görsel Vitrin 3",
+    hint: "Fırsatların altındaki üç kutu, ilki gibi: görsel, üzerindeki yazılar, koyu katman ve bağlantı.",
+    doc: "bento3",
+    sections: ["bento3"],
     size: "lg",
   },
   statement: {
@@ -173,7 +172,7 @@ const SECTION_EDITOR: Partial<Record<keyof HomeSections, EditorKey>> = {
   bento: "bento",
   bento2: "bento2",
   deals: "deals",
-  campaigns: "campaigns",
+  bento3: "bento3",
   promos: "statement",
   brand_showcase: "brand_showcase",
   kozlukler: "kozlukler",
@@ -226,7 +225,7 @@ const SECTION_NAMES: Record<string, string> = {
   lules: "Lüle",
   sultanpuan: "SultanPuan Bandı",
   kumbara: "Kumbara Bandı",
-  campaigns: "Kampanya Kutuları",
+  bento3: "Görsel Vitrin 3",
   bento: "Görsel Vitrin",
   bento2: "Görsel Vitrin 2",
   statement: "Sektörde Referans Noktası",
@@ -276,10 +275,11 @@ function checkLinks(doc: Homepage, categories: Category[]): string | null {
   const s = f.social.findIndex((l) => bad(l.href) || !l.href);
   if (s >= 0) return `Footer, sosyal medya ${s + 1}. bağlantı geçersiz.`;
   if (bad(f.whatsapp_href) || !f.whatsapp_href) return "Footer: WhatsApp bağlantısı https:// ile başlamalı.";
-  const boxes = [doc.campaigns.lead, ...doc.campaigns.minis];
-  const box = boxes.findIndex((b) => bad(b.href) || !b.href);
-  if (box >= 0) return `Kampanya Kutuları, ${box === 0 ? "büyük kutu" : `küçük kutu ${box}`}: bağlantı / ile ya da https:// ile başlamalı.`;
-  for (const [name, boxes] of [["Görsel Vitrin", doc.bento.boxes], ["Görsel Vitrin 2", doc.bento2.boxes]] as const) {
+  for (const [name, boxes] of [
+    ["Görsel Vitrin", doc.bento.boxes],
+    ["Görsel Vitrin 2", doc.bento2.boxes],
+    ["Görsel Vitrin 3", doc.bento3.boxes],
+  ] as const) {
     for (const [i, box] of boxes.entries()) {
       if (!box.image?.trim()) return `${name}, kutu ${i + 1}: görsel gerekli.`;
       if (bad(box.href) || !box.href) return `${name}, kutu ${i + 1}: bağlantı / ile ya da https:// ile başlamalı.`;
@@ -483,12 +483,12 @@ export function AdminHomepageView() {
             ]}
           />
         );
-      case "campaigns":
-        return <CampaignsForm value={doc.campaigns} set={set("campaigns")} categories={categories} />;
       case "bento":
         return <BentoForm value={doc.bento} set={set("bento")} categories={categories} />;
       case "bento2":
         return <BentoForm value={doc.bento2} set={set("bento2")} categories={categories} />;
+      case "bento3":
+        return <BentoForm value={doc.bento3} set={set("bento3")} categories={categories} />;
       case "statement":
         return <StatementForm value={doc.statement} set={set("statement")} />;
       case "brand_showcase":

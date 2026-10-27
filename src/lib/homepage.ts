@@ -11,7 +11,7 @@
  */
 
 import { ADVANTAGES } from "@/lib/advantages";
-import { HOME_BLOCKS, resolveBlockOrder } from "@/lib/homeBlocks";
+import { HOME_BLOCKS, RETIRED_BLOCKS, resolveBlockOrder } from "@/lib/homeBlocks";
 import { DEFAULT_SECTION_COPY } from "@/lib/homeSectionCopy";
 import { BILGI_DOCUMENTS, PERKS_PAGE, bilgiHref } from "@/lib/bilgi";
 import { BLOG_HREF } from "@/lib/blog";
@@ -33,7 +33,7 @@ export const SECTION_LABELS: Record<keyof HomeSections, { title: string; hint: s
   bento: { title: "Görsel Vitrin", hint: "Yan yana üç yatay (3:2) görsel kutu; üzerlerinde slider gibi yerleştirilen yazılar." },
   bento2: { title: "Görsel Vitrin 2", hint: "SultanPuan ile Kumbara arasındaki ikinci üç görsel kutu; ilki gibi düzenlenir." },
   deals: { title: "Fırsatları Kaçırma", hint: "Kırmızı fırsat vitrini; aktif fırsat olsa bile gizlenir." },
-  campaigns: { title: "Kampanya Kutuları", hint: "Büyük fırsat kutusu ve yanındaki üç küçük kutu (mini bento)." },
+  bento3: { title: "Görsel Vitrin 3", hint: "Fırsatların altındaki üç görsel kutu; ilki gibi düzenlenir." },
   promos: { title: "Sektörde Referans Noktası", hint: "Kısa marka tanıtımı ve kataloğa bağlantı." },
   brands: { title: "Markalar Şeridi (alt)", hint: "Tanıtımın altındaki kayan marka adları; üst şeritle aynı adlar." },
   brand_showcase: { title: "Markalarımız", hint: "Marka başına bir ürün bandı." },
@@ -66,7 +66,7 @@ export const DEFAULT_HOMEPAGE: Homepage = {
     bento: true,
     bento2: true,
     deals: true,
-    campaigns: true,
+    bento3: true,
     promos: true,
     brands: true,
     brand_showcase: true,
@@ -147,7 +147,7 @@ export const MOBILE_SECTION_LABELS: { key: HomeMobileSection; title: string; hin
   { key: "bento2", title: "Mobilde Görsel Vitrin 2'yi Gizle", hint: "SultanPuan ile Kumbara arasındaki üç yazılı görsel kutu." },
   { key: "kumbara", title: "Mobilde Kumbara Bandını Gizle", hint: "\"Kumbara 20.000 TL\" kartı ve marpuçlar." },
   { key: "bento", title: "Mobilde Görsel Vitrini Gizle", hint: "Fırsatların üstündeki üç yazılı görsel kutu." },
-  { key: "campaigns", title: "Mobilde Kampanya Kutularını Gizle", hint: "Fırsatların altındaki büyük kutu ve üç küçük kutu." },
+  { key: "bento3", title: "Mobilde Görsel Vitrin 3'ü Gizle", hint: "Fırsatların altındaki üç yazılı görsel kutu." },
   { key: "brand_statement", title: "Mobilde Marka Metnini Gizle", hint: "\"Sektörde Referans Noktası\" bölümü." },
   { key: "brand_showcase", title: "Mobilde Markalarımız'ı Gizle", hint: "Marka başına bir ürün bandı." },
   { key: "kozlukler", title: "Mobilde Közlükler Satırını Gizle", hint: "Közlükler ürün satırı." },
@@ -160,11 +160,21 @@ export function resolveHomepage(saved: Partial<Homepage> | null | undefined): Ho
   const merged: Homepage = { ...DEFAULT_HOMEPAGE, ...(saved ?? {}) };
   // Switches are merged one by one, so a switch added later defaults to on —
   // but for the top brand ticker, which "brands" switched before it had its own.
+  // A replaced section's switch and a phone's choice go to what replaced it.
+  const savedSections: Record<string, boolean> = { ...(saved?.sections ?? {}) };
+  for (const [old, now] of Object.entries(RETIRED_BLOCKS)) {
+    if (old in savedSections) savedSections[now] ??= savedSections[old];
+    delete savedSections[old];
+  }
   merged.sections = {
     ...DEFAULT_HOMEPAGE.sections,
     brands_top: saved?.sections?.brands ?? true,
-    ...(saved?.sections ?? {}),
+    ...savedSections,
   };
+  if (saved?.mobile) {
+    const hidden = (saved.mobile.hidden ?? []).map((key) => (RETIRED_BLOCKS[key] ?? key) as HomeMobileSection);
+    merged.mobile = { ...saved.mobile, hidden: [...new Set(hidden)] };
+  }
   // A section the saved order does not name takes its default place.
   merged.order = resolveBlockOrder(saved?.order);
   return merged;
