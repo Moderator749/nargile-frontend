@@ -219,6 +219,10 @@ const nextConfig: NextConfig = {
       ...(MEDIA_IS_LOCAL
         ? [new URL(`${MEDIA.protocol}//localhost:${MEDIA.port}${MEDIA.pathname}**`), new URL(`${MEDIA.protocol}//127.0.0.1:${MEDIA.port}${MEDIA.pathname}**`)]
         : [new URL(`${MEDIA.href}**`)]),
+      // The same uploads under the live domain (the backend's PUBLIC_MEDIA_URL
+      // since go-live), whichever address the API above is reached at.
+      new URL("https://www.nargilemalzemesi.com/api/backend/media/**"),
+      new URL("https://nargilemalzemesi.com/api/backend/media/**"),
     ],
     /*
 - Next 16 refuses to optimise an image whose host resolves to a private or
