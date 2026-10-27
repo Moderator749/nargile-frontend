@@ -1,11 +1,12 @@
 /**
- * "Premium Ürün Yelpazesi": the twelve tiles of the homepage showcase.
+ * "Premium Ürün Yelpazesi": the tiles of the homepage showcase.
  *
- * A fixed gallery in a fixed rhythm — wide, square, square / square, square,
- * wide — repeated down four rows. The copy is the shop's own and the
- * destinations are resolved against the live catalog by the same rules the
- * menus use (`lib/storefrontNav`): a category slug where one exists, a brand
- * where one is on file, and a search for the same words until then.
+ * Laid out on a desktop as rows of four slots, two rows at most (`placeShowcase`):
+ * a tile takes one slot, or two when the editor marks it "geniş" — one such
+ * tile to a row. The copy is the shop's own and the destinations are resolved
+ * against the live catalog by the same rules the menus use (`lib/storefrontNav`):
+ * a category slug where one exists, a brand where one is on file, and a search
+ * for the same words until then.
  *
  * The eyebrows describe the collection rather than counting it. A tile cannot
  * say "480+ ürün" honestly without the API reporting a count, and the public
@@ -16,10 +17,12 @@ import { foldSearch } from "@/lib/searchFold";
 import { navHref } from "@/lib/storefrontNav";
 import type { Brand, Category, HomeShowcaseTile } from "@/types";
 
+export * from "@/lib/showcaseGrid";
+
 /** A tile as the homepage editor stores it; see `HomeShowcaseTile`. */
 export type ShowcaseTile = HomeShowcaseTile;
 
-/** The default gallery, shown until the homepage editor saves its own. */
+/** The default gallery, shown until the homepage editor saves its own: two full rows. */
 export const SHOWCASE_TILES: ShowcaseTile[] = [
   // Row 1 — wide, square, square
   { label: "Nargile Takımları", eyebrow: "Tüm takımlar", slug: "nargile-takimlari", wide: true, icon: "wind" },
@@ -29,14 +32,6 @@ export const SHOWCASE_TILES: ShowcaseTile[] = [
   { label: "Lüle Çeşitleri", eyebrow: "Phunnel & killer", slug: "luleler", wide: false, icon: "layers" },
   { label: "Isı Yönetim Araçları", eyebrow: "Közlükler", slug: "isi-yonetim-araclari", wide: false, icon: "flame" },
   { label: "Legend Hookah Koleksiyonu", eyebrow: "Marka koleksiyonu", brand: "legend", search: "legend", wide: true, icon: "sparkles" },
-  // Row 3 — wide, square, square
-  { label: "Çantalı Nargile Takımları", eyebrow: "Taşınabilir", slug: "cantali-nargile-takimlari", wide: true, icon: "shield" },
-  { label: "Yedek Parça", eyebrow: "Şişe, conta & difüzör", slug: "yedek-parca", wide: false, icon: "package" },
-  { label: "Aksesuarlar", eyebrow: "Baca, maşa & çanta", slug: "aksesuarlar", wide: false, icon: "wrench" },
-  // Row 4 — square, square, wide
-  { label: "Yakıcılar", eyebrow: "Ocak, pürmüz & gaz", slug: "yakicilar", wide: false, icon: "wind" },
-  { label: "Masaüstü Takımlar", eyebrow: "Kompakt takımlar", slug: "masaustu-nargile-takimlari", wide: false, icon: "package" },
-  { label: "Sarf Malzemeleri", eyebrow: "Günlük tüketim", slug: "sarf-malzemeleri", wide: true, icon: "sparkles" },
 ];
 
 export interface ResolvedTile extends ShowcaseTile {

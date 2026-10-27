@@ -38,6 +38,7 @@ import { getApiErrorMessage } from "@/lib/errors";
 import { brokenCategoryLink } from "@/lib/catalogLinks";
 import { DEFAULT_HOMEPAGE, SECTION_LABELS, resolveHomepage } from "@/lib/homepage";
 import { refreshStorefront } from "@/lib/revalidate";
+import { showcaseProblem } from "@/lib/showcase";
 import type { Brand, Category, HomeBlock, Homepage, HomeSections } from "@/types";
 
 type EditorKey =
@@ -286,6 +287,8 @@ function checkLinks(doc: Homepage, categories: Category[]): string | null {
       if (color) return `${name}, kutu ${i + 1}: “${color}” geçerli bir renk değil (#RRGGBB).`;
     }
   }
+  const grid = showcaseProblem(doc.showcase.tiles);
+  if (grid) return `Premium Yelpaze: ${grid}`;
   if (bad(doc.lules.href) || !doc.lules.href) return "Lüle bölümü: “Tümünü gör” bağlantısı / ile ya da https:// ile başlamalı.";
   return null;
 }

@@ -1,4 +1,3 @@
-import type { CSSProperties } from "react";
 import Image from "next/image";
 import { ArrowUpRight } from "lucide-react";
 
@@ -7,80 +6,51 @@ import { canOptimiseImage } from "@/lib/home";
 import { homeIcon } from "@/lib/homeIcons";
 import { homeMessages } from "@/lib/i18n/messages/home";
 import { getMessages } from "@/lib/i18n/server";
-import type { ResolvedTile } from "@/lib/showcase";
+import { placeShowcase, SHOWCASE_ROWS, type ResolvedTile } from "@/lib/showcase";
 import { SITE_NAME } from "@/lib/site";
 
 /**
- * The layout. On a desktop (`lg`) the grid has 60 narrow columns — 60 is
- * what 2/5, 1/5, 1/4, 1/3 and 1/2 all divide — and each tile spans its share.
- * The gutters are the tiles' own padding (the list pulls itself out by half a
- * gutter on each side), since a `gap` would be paid 59 times across 60 tracks.
+ * The layout. On a desktop (`lg`) four slots to a row, two rows at most
+ * (`placeShowcase`): a tile takes one slot, a "geniş" one two — one to a row —
+ * exactly as the editor marked it; a tile past the second row is not drawn
+ * (the editor refuses one).
  *
- * - The first row: one featured tile, 2/5 of the width, and three narrow
- *   ones, 1/5 each. The featured one is the first of the first four that the
- *   editor marked "geniş" (else the first), set at the front of the row.
- * - The rest: rows of at most four, as even as they come (5 → 3 + 2,
- *   7 → 4 + 3, 9 → 3 + 3 + 3), each row's tiles sharing its width equally,
- *   so there is never a hole, however many tiles the editor holds.
- *
- * On a tablet the first four make a 2×2 block and the rest follow in pairs,
- * an odd last one taking the row; on a phone the featured tile has a row of
- * its own and the rest go in pairs, smaller (an odd last one, again, takes
- * the row). Every row is the same compact height.
+ * Below `lg` two to a row, in the same order: a wide tile takes the row, and a
+ * square left alone in its row (before a wide one, or the last) takes it too,
+ * so there is never a hole. A half-width tile on a phone (≈170px) is drawn
+ * tighter. Every row on a tablet and up is the same compact height.
  */
 interface Placed {
   tile: ResolvedTile;
   /** Its place in the editor's list, for the index number and the key. */
   index: number;
-  featured: boolean;
-  /** Columns of the desktop's 60. */
-  span: number;
-  /** The whole row on a tablet (an odd tile left at the end). */
-  fullOnTablet: boolean;
-  /** The whole row on a phone: the featured tile, and an odd one left at the end. */
-  fullOnPhone: boolean;
-}
-
-/** Rows of at most four, as even as they come: 5 → [3, 2], 7 → [4, 3], 10 → [4, 3, 3]. */
-function rowSizes(count: number): number[] {
-  if (count === 0) return [];
-  const rows = Math.ceil(count / 4);
-  const base = Math.floor(count / rows);
-  return Array.from({ length: rows }, (_, i) => base + (i < count % rows ? 1 : 0));
+  /** Desktop slots: 2 for a wide tile. */
+  span: 1 | 2;
+  /** The whole row below `lg`: a wide tile, or a square with no partner. */
+  full: boolean;
 }
 
 function layout(tiles: ResolvedTile[]): Placed[] {
-  const indexed = tiles.map((tile, index) => ({ tile, index }));
-  const top = indexed.slice(0, 4);
-  const featuredAt = Math.max(0, top.findIndex((t) => t.tile.wide));
-  const row = [top[featuredAt], ...top.filter((_, i) => i !== featuredAt)];
-  // Fewer than four in all: the featured tile still leads, the others share what is left.
-  const topSpans = [[60], [36, 24], [30, 15, 15], [24, 12, 12, 12]][row.length - 1] ?? [];
-  const placed: Placed[] = row.map((t, i) => ({
-    ...t,
-    featured: i === 0,
-    span: topSpans[i],
-    fullOnTablet: row.length % 2 === 1 && i === row.length - 1,
-    fullOnPhone: i === 0,
-  }));
-
-  const rest = indexed.slice(4);
-  let at = 0;
-  for (const size of rowSizes(rest.length)) {
-    for (const t of rest.slice(at, at + size)) {
-      placed.push({ ...t, featured: false, span: 60 / size, fullOnTablet: false, fullOnPhone: false });
-    }
-    at += size;
+  const placed = placeShowcase(tiles)
+    .map((slot, index) => ({ tile: tiles[index], index, span: slot.span, row: slot.row }))
+    .filter((t) => t.row < SHOWCASE_ROWS)
+    .map(({ tile, index, span }) => ({ tile, index, span, full: span === 2 }));
+  // Pair the squares in order; one left without a partner takes the row.
+  let alone: Placed | null = null;
+  for (const t of placed) {
+    if (t.full) {
+      if (alone) alone.full = true;
+      alone = null;
+    } else if (alone) alone = null;
+    else alone = t;
   }
-  if (rest.length % 2 === 1) placed[placed.length - 1].fullOnTablet = true;
-  // On a phone the featured tile takes its own row and the rest go in pairs.
-  if (placed.length > 1 && (placed.length - 1) % 2 === 1) placed[placed.length - 1].fullOnPhone = true;
+  if (alone) alone.full = true;
   return placed;
 }
 
 /**
- * "Premium Ürün Yelpazesi": the catalog as an editorial grid (`layout`): a
- * featured tile and three narrow ones across the top, the rest in even rows.
+ * "Premium Ürün Yelpazesi": the catalog as an editorial grid (`layout`): rows
+ * of four, a wide tile taking two of a row's slots.
  *
  * Each tile is one link — a full-bleed photograph (or, with none yet, the
  * category's icon on the dark floor) under a scrim that is dark where the
@@ -115,18 +85,18 @@ export async function CatalogShowcase({ title, subtitle, tiles }: { title: strin
         )}
         <span aria-hidden className="mx-auto mb-10 mt-4 block h-1.5 w-14 rounded-full bg-red-600" />
 
-        <ul className="grid w-full grid-cols-2 gap-3 md:gap-4 md:grid-cols-2 md:gap-5 lg:-mx-2.5 lg:w-[calc(100%+1.25rem)] lg:grid-cols-[repeat(60,minmax(0,1fr))] lg:gap-x-0">
-          {layout(tiles).map(({ tile, index, featured, span, fullOnTablet, fullOnPhone }) => {
+        <ul className="grid w-full grid-cols-2 gap-3 md:gap-5 lg:grid-cols-4">
+          {layout(tiles).map(({ tile, index, span, full }) => {
             const Icon = homeIcon(tile.icon);
+            const wide = span === 2;
             // A half-width tile on a phone (≈170px): tighter padding, type and arrow.
-            const pair = !fullOnPhone;
+            const pair = !full;
             return (
               <li
                 key={`${tile.label}-${index}`}
-                style={{ "--span": span } as CSSProperties}
-                className={`min-w-0 ${featured ? "h-[240px]" : pair ? "h-[170px]" : "h-[190px]"} md:h-[220px] lg:px-2.5 lg:[grid-column:span_var(--span)] ${
-                  fullOnPhone ? "col-span-2" : ""
-                } ${fullOnTablet ? "md:col-span-2" : fullOnPhone ? "md:col-span-1" : ""}`}
+                className={`min-w-0 ${wide ? "h-[220px]" : pair ? "h-[170px]" : "h-[190px]"} md:h-[220px] ${
+                  full ? "col-span-2" : ""
+                } ${wide ? "" : "lg:col-span-1"}`}
               >
                 <Link
                   href={tile.href}
@@ -139,7 +109,7 @@ export async function CatalogShowcase({ title, subtitle, tiles }: { title: strin
                       src={tile.image}
                       alt={`${tile.label} | ${SITE_NAME}`}
                       fill
-                      sizes={`(min-width: 1024px) ${Math.round((span / 60) * 100)}vw, (min-width: 768px) ${fullOnTablet ? "100vw" : "50vw"}, ${fullOnPhone ? "100vw" : "50vw"}`}
+                      sizes={`(min-width: 1280px) ${wide ? 640 : 320}px, (min-width: 1024px) ${wide ? 50 : 25}vw, ${full ? "100vw" : "50vw"}`}
                       unoptimized={!canOptimiseImage(tile.image)}
                       className="-z-20 object-cover object-center transition-transform duration-700 ease-out motion-safe:group-hover:scale-105"
                     />
@@ -188,7 +158,7 @@ export async function CatalogShowcase({ title, subtitle, tiles }: { title: strin
                       </span>
                       <h3
                         className={`text-balance font-semibold leading-[1.1] tracking-tighter text-white drop-shadow-md ${
-                          featured ? "text-2xl md:text-3xl" : span <= 12 ? "text-lg md:text-xl lg:text-lg" : "text-xl"
+                          wide ? "text-2xl md:text-3xl" : "text-xl lg:text-lg"
                         } ${pair ? "max-md:text-base" : ""}`}
                       >
                         {tile.label}

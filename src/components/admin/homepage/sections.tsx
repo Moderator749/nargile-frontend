@@ -14,7 +14,7 @@ import {
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
-import { ArrowUpRight, GalleryHorizontal, GripVertical, LayoutGrid, Lock, Pencil, RotateCcw, Tags, Timer } from "lucide-react";
+import { ArrowUpRight, GalleryHorizontal, GripVertical, LayoutGrid, Lock, Pencil, Plus, RotateCcw, Tags, Timer } from "lucide-react";
 
 import { adminSelectClass } from "@/components/admin/ContentEditor";
 import { CategoryMenuEditor } from "@/components/admin/homepage/CategoryMenuEditor";
@@ -30,6 +30,15 @@ import {
 import { Switch } from "@/components/ui/Switch";
 import { HOME_BLOCKS } from "@/lib/homeBlocks";
 import { DEFAULT_SEO_INTRO, MOBILE_SECTION_LABELS, SECTION_LABELS } from "@/lib/homepage";
+import {
+  canWiden,
+  isPlaceholderTitle,
+  placeShowcase,
+  SHOWCASE_COLUMNS,
+  SHOWCASE_SLOTS,
+  showcaseProblem,
+  showcaseSlotsUsed,
+} from "@/lib/showcase";
 import { navHref } from "@/lib/storefrontNav";
 import type {
   Brand,
@@ -449,6 +458,49 @@ export function BrandsTab({ brands }: { brands: Brand[] }) {
 
 // ── Premium Ürün Yelpazesi ───────────────────────────────────────────────────
 
+const blankTile = (): HomeShowcaseTile => ({
+  label: "Yeni kutu",
+  eyebrow: "",
+  wide: false,
+  icon: "package",
+  href: "/catalog",
+});
+
+/**
+ * The desktop grid in miniature: two rows of four slots, each tile on its
+ * number (two slots for a wide one), the free slots dashed — so the editor
+ * sees where a tile lands before saving.
+ */
+function ShowcaseGridMap({ tiles }: { tiles: HomeShowcaseTile[] }) {
+  const shown = tiles.flatMap((tile, index) => (tile.enabled === false ? [] : [{ tile, index }]));
+  const slots = placeShowcase(shown.map((t) => t.tile));
+  const free = Math.max(0, SHOWCASE_SLOTS - slots.reduce((sum, s) => sum + s.span, 0));
+  return (
+    <div aria-hidden className="grid grid-cols-4 gap-1.5 rounded-xl bg-slate-100 p-2 dark:bg-white/5">
+      {shown.map(({ tile, index }, i) => (
+        <div
+          key={index}
+          className={`flex h-10 min-w-0 items-center gap-1.5 rounded-md px-2 text-[11px] font-medium ${
+            slots[i].span === 2 ? "col-span-2" : ""
+          } ${
+            slots[i].row >= 2 || slots[i].narrowed
+              ? "bg-red-100 text-red-700 ring-1 ring-red-400 dark:bg-red-500/15 dark:text-red-300"
+              : isPlaceholderTitle(tile.label)
+                ? "bg-slate-300 text-slate-600 dark:bg-zinc-800 dark:text-zinc-400"
+                : "bg-neutral-800 text-white dark:bg-zinc-700"
+          }`}
+        >
+          <span className="font-mono opacity-70">{String(index + 1).padStart(2, "0")}</span>
+          <span className="truncate">{tile.label}</span>
+        </div>
+      ))}
+      {Array.from({ length: free }, (_, i) => (
+        <div key={`free-${i}`} className="h-10 rounded-md border border-dashed border-slate-300 dark:border-white/15" />
+      ))}
+    </div>
+  );
+}
+
 export function ShowcaseTab({
   value,
   set,
@@ -462,6 +514,11 @@ export function ShowcaseTab({
 }) {
   const bySlug = new Map(categories.map((c) => [c.slug, c]));
   const brandBySlug = new Map(brands.map((b) => [b.slug, b]));
+  const problem = showcaseProblem(value.tiles);
+  // Room for another square: a free slot, in a list of at most eight.
+  const used = showcaseSlotsUsed(value.tiles.filter((t) => t.enabled !== false));
+  const max = Math.min(SHOWCASE_SLOTS, value.tiles.length + Math.max(0, SHOWCASE_SLOTS - used));
+  const add = () => set({ ...value, tiles: [...value.tiles, blankTile()] });
   return (
     <div className="space-y-6">
       <Panel title="Başlık">
@@ -476,59 +533,81 @@ export function ShowcaseTab({
       </Panel>
       <Panel
         title="Kutular"
-        hint="Geniş kutu iki sütun kaplar. Görsel boşsa, bağlantı bir kategori sayfasıysa (/catalog/…) o kategorinin kapak ya da ürün fotoğrafı kullanılır."
+        hint={`Masaüstünde satır başına ${SHOWCASE_COLUMNS} yer, en fazla 2 satır (${SHOWCASE_SLOTS} yer). Geniş kutu 2 yer kaplar; bir satırda en fazla bir geniş kutu olur. Yeni kutu, başlığı girilince sitede görünür. Görsel boşsa, bağlantı bir kategori sayfasıysa (/catalog/…) o kategorinin kapak ya da ürün fotoğrafı kullanılır.`}
+        action={
+          <button
+            type="button"
+            onClick={add}
+            disabled={value.tiles.length >= max}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-red-700 disabled:pointer-events-none disabled:opacity-40"
+          >
+            <Plus className="h-4 w-4" aria-hidden /> Yeni Kutu
+            <span className="text-xs font-normal text-white/80">
+              ({used}/{SHOWCASE_SLOTS} yer)
+            </span>
+          </button>
+        }
       >
+        <ShowcaseGridMap tiles={value.tiles} />
+        {problem && (
+          <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-700 dark:bg-red-500/10 dark:text-red-300">
+            {problem}
+          </p>
+        )}
         <ListEditor
           items={value.tiles}
           onChange={(tiles) => set({ ...value, tiles })}
-          blank={(): HomeShowcaseTile => ({
-            label: "Yeni kutu",
-            eyebrow: "",
-            wide: false,
-            icon: "package",
-            href: "/catalog",
-          })}
-          max={24}
-          addLabel="Kutu ekle"
-          itemLabel={(t) => `${t.label}${t.wide ? " · geniş" : ""}`}
-          render={(tile, update) => (
-            <div className="grid gap-3 @2xl:grid-cols-[1fr_16rem]">
-              <div className="space-y-3">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <TextField label="Başlık" value={tile.label} max={80} onChange={(label) => update({ label })} />
-                  <TextField
-                    label="Kırmızı üst etiket"
-                    value={tile.eyebrow}
-                    max={40}
-                    onChange={(eyebrow) => update({ eyebrow })}
-                  />
-                </div>
-                <LinkField
-                  categories={categories}
-                  value={tile.href ?? navHref(tile, bySlug, brandBySlug)}
-                  onChange={(href) => update({ slug: null, brand: null, search: null, href })}
-                />
-                <div className="grid items-end gap-3 sm:grid-cols-2">
-                  <IconSelect value={tile.icon} onChange={(icon) => update({ icon })} />
-                  <label className="flex h-10 items-center gap-2 text-sm text-slate-700 dark:text-zinc-300">
-                    <input
-                      type="checkbox"
-                      checked={tile.wide}
-                      onChange={(e) => update({ wide: e.target.checked })}
-                      className="h-4 w-4 accent-red-600"
+          blank={blankTile}
+          max={max}
+          addLabel="Yeni Kutu"
+          itemLabel={(t) =>
+            `${t.label}${t.wide ? " · geniş" : ""}${isPlaceholderTitle(t.label) ? " · başlık girilene kadar sitede görünmez" : ""}`
+          }
+          render={(tile, update, index) => {
+            const widenable = tile.wide || canWiden(value.tiles, index);
+            return (
+              <div className="grid gap-3 @2xl:grid-cols-[1fr_16rem]">
+                <div className="space-y-3">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <TextField label="Başlık" value={tile.label} max={80} onChange={(label) => update({ label })} />
+                    <TextField
+                      label="Kırmızı üst etiket"
+                      value={tile.eyebrow}
+                      max={40}
+                      onChange={(eyebrow) => update({ eyebrow })}
                     />
-                    Geniş kutu (2 sütun)
-                  </label>
+                  </div>
+                  <LinkField
+                    categories={categories}
+                    value={tile.href ?? navHref(tile, bySlug, brandBySlug)}
+                    onChange={(href) => update({ slug: null, brand: null, search: null, href })}
+                  />
+                  <div className="grid items-end gap-3 sm:grid-cols-2">
+                    <IconSelect value={tile.icon} onChange={(icon) => update({ icon })} />
+                    <label
+                      className={`flex h-10 items-center gap-2 text-sm text-slate-700 dark:text-zinc-300 ${widenable ? "" : "opacity-50"}`}
+                      title={widenable ? undefined : "Bu satırda geniş kutuya yer yok."}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={tile.wide}
+                        disabled={!widenable}
+                        onChange={(e) => update({ wide: e.target.checked })}
+                        className="h-4 w-4 accent-red-600"
+                      />
+                      Geniş kutu (2 sütun)
+                    </label>
+                  </div>
                 </div>
+                <ImageField
+                  label="Görsel"
+                  value={tile.image}
+                  onChange={(image) => update({ image })}
+                  hint="Boş: kategoriden otomatik."
+                />
               </div>
-              <ImageField
-                label="Görsel"
-                value={tile.image}
-                onChange={(image) => update({ image })}
-                hint="Boş: kategoriden otomatik."
-              />
-            </div>
-          )}
+            );
+          }}
         />
       </Panel>
     </div>
