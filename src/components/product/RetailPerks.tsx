@@ -8,7 +8,7 @@ import { PERKS_PAGE } from "@/lib/bilgi";
 import { homeMessages } from "@/lib/i18n/messages/home";
 import { productMessages } from "@/lib/i18n/messages/product";
 import { retailPerks } from "@/lib/perks";
-import { storeAdvantages, type AdvantageSources } from "@/lib/storeAdvantages";
+import { storeAdvantages, type AdvantageSources, type StoreAdvantage } from "@/lib/storeAdvantages";
 import { useAuthStore } from "@/store/useAuthStore";
 import type { StoreParameters, User } from "@/types";
 
@@ -36,14 +36,33 @@ export const showsRetailPerks = (user: Pick<User, "account_type" | "segment_code
  * Shown to a bireysel account and to a visitor who has not signed in — never
  * to a kafe, a bayi or a toptan account, whose discounts are zero by rule
  * (`lib/perks`, mirroring the server): offering them here would be offering
- * something checkout will not honour.
+ * something checkout will not honour. Such an account sees `TransferPerk`
+ * instead, where the product gives its list the havale discount.
  */
 export function RetailPerks({ params, sources }: { params: StoreParameters; sources: AdvantageSources }) {
   const user = useAuthStore((s) => s.user);
-  const t = useMessages(productMessages).perks;
   const { percent } = useMessages(homeMessages);
   if (!showsRetailPerks(user)) return null;
-  const advantages = storeAdvantages(sources, params, percent);
+  return <AdvantageList advantages={storeAdvantages(sources, params, percent)} />;
+}
+
+/**
+ * A firm's account (kafe, bayi, toptan) on a product whose switch gives its
+ * list the havale discount (`segment_havale`): of the advantages, that one
+ * alone — the others are retail offers checkout will not honour for it. The
+ * Avantaj Çubuğu's own words and the live tiers of "Parametreler", as the
+ * retail list states it, whether or not the homepage shows the bar.
+ */
+export function TransferPerk({ params, sources }: { params: StoreParameters; sources: AdvantageSources }) {
+  const { percent } = useMessages(homeMessages);
+  const transfer = storeAdvantages({ ...sources, sections: { ...sources.sections, perks: true } }, params, percent).filter(
+    (advantage) => advantage.key === "transfer",
+  );
+  return <AdvantageList advantages={transfer} />;
+}
+
+function AdvantageList({ advantages }: { advantages: StoreAdvantage[] }) {
+  const t = useMessages(productMessages).perks;
   if (advantages.length === 0) return null;
 
   return (

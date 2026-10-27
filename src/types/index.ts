@@ -447,6 +447,12 @@ export interface CatalogProduct extends Product {
    * already in the page's language (the API answers with ?lang=).
    */
   locales?: string[];
+  /**
+   * The caller's B2B price list takes the havale discount on this product
+   * ("Bayide / Toptanda / Kafede Havale / EFT İndirimi"), as checkout gives it.
+   * Always false for a guest and a retail account (theirs is cart-wide).
+   */
+  segment_havale?: boolean;
 }
 
 /** `GET /products/{id}`: the product plus its "birlikte satılanlar". */

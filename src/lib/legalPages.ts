@@ -14,6 +14,4 @@ export const LEGAL_PAGES: { slug: string; key: LegalKey }[] = [
 
 export const legalHref = (key: LegalKey) => `/sozlesmeler/${LEGAL_PAGES.find((p) => p.key === key)!.slug}`;
 
-/** The footer's "İptal & İade Koşulları": the right of withdrawal in the distance sales agreement. */
-export const RETURNS_HREF = "/bilgi/mesafeli-satis-sozlesmesi#madde-6";
 export const DISTANCE_SALES_HREF = "/bilgi/mesafeli-satis-sozlesmesi";

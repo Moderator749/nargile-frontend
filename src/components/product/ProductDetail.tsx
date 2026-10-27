@@ -10,7 +10,7 @@ import { QuantityStepper } from "@/components/cart/QuantityStepper";
 import { ColorPicker } from "@/components/product/ColorPicker";
 import { CrossSells } from "@/components/product/CrossSells";
 import { ProductDescription } from "@/components/product/ProductDescription";
-import { RetailPerks, showsRetailPerks } from "@/components/product/RetailPerks";
+import { RetailPerks, TransferPerk, showsRetailPerks } from "@/components/product/RetailPerks";
 import type { AdvantageSources } from "@/lib/storeAdvantages";
 import { isExportAccount } from "@/lib/exportAccount";
 import { ProductGallery } from "@/components/product/ProductGallery";
@@ -381,11 +381,18 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
           </p>
 
           {/* The shop's advantages, every one of them, under the button rather
-              than between the price and it. */}
-          {perksShown && (
+              than between the price and it; a firm's account sees only the
+              havale discount, and only where this product gives its list one. */}
+          {perksShown ? (
             <div className="mt-6 border-t border-border pt-6">
               <RetailPerks params={params} sources={advantages} />
             </div>
+          ) : (
+            product.segment_havale && (
+              <div className="mt-6 border-t border-border pt-6">
+                <TransferPerk params={params} sources={advantages} />
+              </div>
+            )
           )}
 
           {/* A three-line preview rather than a wall of text, so "Sepete Ekle"

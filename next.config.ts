@@ -64,8 +64,8 @@ const RETIRED_CATEGORIES: Record<string, string> = {
 - Measured, not guessed: each old category page was read and its products
 - looked up here; nearly all of each landed in the one category named. The
 - herbal molasses shelf (/nargile-tutunu-markalari-ve-cesitleri, "Bitkisel
-- Ürün tatları") is left out: none of its products were brought over, and an
-- address leading to an empty "Bitkisel Ürünler" is no better than a 404.
+- Ürün tatları") goes to "Bitkisel Ürünler", where its 46 products are brought
+- over (the backend's opencart_migration_tool, --allow-category).
  */
 const LEGACY_CATEGORIES: Record<string, string> = {
   "paslanmaz-celik-nargile-takimlari": "celik-takimlar",
@@ -86,6 +86,7 @@ const LEGACY_CATEGORIES: Record<string, string> = {
   "nargile-malzemeleri-ve-aksesuarlari": "malzemeler",
   "yedek-parca": "malzemeler",
   "okey-tavla-ve-iskambil-kartlari": "oyun-eglence",
+  "nargile-tutunu-markalari-ve-cesitleri": "bitkisel-urunler",
   kampanyalar: "kampanyalar",
   // Its WD Hookah sets are steel sets here (unpublished for now).
   "wd-hookah-nargile-takimlari": "celik-takimlar",

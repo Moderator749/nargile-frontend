@@ -916,8 +916,8 @@ export const OPENCART_INFORMATION_IDS: Record<string, string> = {
  * slug → the same model where there is one, else the shelf they belonged on.
  * Only used when the API does not know the slug: a product published again
  * takes its own address back. The old herbal molasses (Falcon, Cosmic) are
- * not listed: "Bitkisel Ürünler" has none of them yet, and an address that
- * leads to an empty shelf is no better than a 404.
+ * not listed: they are brought over under their old slugs ("Bitkisel
+ * Ürünler"), so the API answers for them as for any product.
  */
 export const RETIRED_PRODUCTS: Record<string, string> = {
   "wd-a7s-1": "/catalog/celik-takimlar",

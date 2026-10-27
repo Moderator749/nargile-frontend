@@ -5,7 +5,7 @@ const listItemClass = "ps-1 marker:text-red-600";
 /**
  * A numbered section's anchor ("6. CAYMA HAKKI" → #madde-6), the same in every
  * language the document is translated into, so a link can point at a section
- * (the footer's "İptal & İade Koşulları" at the right of withdrawal).
+ * (#madde-6, the right of withdrawal, for a link about returns).
  */
 export const sectionId = (heading: string) => {
   const number = heading.match(/^\s*(\d+)\./);
