@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-import { INDEXING_ALLOWED, SITE_URL } from "@/lib/site";
+import { INDEXING_ALLOWED, MEDIA_PATH, SITE_URL } from "@/lib/site";
 
 /**
  * Crawl the storefront; stay out of the panel, the account, the cart and
@@ -12,6 +12,12 @@ import { INDEXING_ALLOWED, SITE_URL } from "@/lib/site";
  * safeguard, and this list spares the crawl budget. The Turkish paths are the
  * names these pages are known by and may be given; listing them now costs
  * nothing.
+ *
+ * The API stays out — but for its uploads (MEDIA_PATH), where every product
+ * photo is: the image sitemap and the product data name them, and Googlebot-
+ * Image must be able to fetch them. The longer rule wins, whatever the order.
+ * One group for every crawler (Googlebot, Googlebot-Image, Bingbot, YandexBot…):
+ * none needs rules of its own.
  */
 const PRIVATE_PATHS = [
   "/admin",
@@ -37,10 +43,9 @@ export default function robots(): MetadataRoute.Robots {
     // In every language: /en/cart is as private as /cart.
     rules: {
       userAgent: "*",
-      allow: "/",
+      allow: ["/", MEDIA_PATH],
       disallow: [...PRIVATE_PATHS, ...["/en", "/ar"].flatMap((prefix) => PRIVATE_PATHS.filter((p) => p !== "/admin" && p !== "/api").map((p) => `${prefix}${p}`))],
     },
     sitemap: `${SITE_URL}/sitemap.xml`,
-    host: SITE_URL,
   };
 }

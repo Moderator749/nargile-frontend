@@ -1054,4 +1054,21 @@ export const RETIRED_PRODUCTS: Record<string, string> = {
   "mr.wood-nargile-takimi-colored-elegant-red-kristal-sise-marpuc-dahil": "/catalog/mr-wood",
   "mr.wood-nargile-takimi-colored-elegant-green-kristal-sise-marpuc-dahil": "/catalog/mr-wood",
   "mr.wood-nargile-takimi-colored-elegant-turquoise-kristal-sise-marpuc-dahil": "/catalog/mr-wood",
+  // Added to the old store after the map above was measured (its sitemap of
+  // 2026-10-27); no same model here, so the shelf their siblings are on.
+  "mlz161-folyo-delici": "/catalog/malzemeler",
+  "kzt-02-askili-koz-tavasi": "/catalog/malzemeler",
+  "kzt-03-askili-koz-tavasi-1-1": "/catalog/malzemeler",
+  "celik-nargile-takimi-nt1002": "/catalog/celik-takimlar",
+  "union-fibonacci-pink": "/catalog/rus-takimlar",
+  "alpha-smart-exzo-tribal-red": "/catalog/rus-takimlar",
+  "alpha-nargile-takimi-smart-exzo-tribal-lime": "/catalog/rus-takimlar",
+  "yp-sf-05-nargile-sisesi": "/catalog/siseler",
+  "steamulation-ultimate-mini-nargile-takimi-white-matt": "/catalog/steamulation",
+  "steamulation-pure-nargile-takimi-black-matt": "/catalog/steamulation",
+  "steamulation-ultimate-gen-3-nargile-takimi-silver-matt": "/catalog/steamulation",
+  "steamulation-ultimate-one-gen-3-nargile-takimi-clear": "/catalog/steamulation",
+  "steamulation-ultimate-one-gen-3-nargile-takimi-graphite-metallic": "/catalog/steamulation",
+  "steamulation-ultimate-one-gen-3-nargile-takimi-orange-matt": "/catalog/steamulation",
+  "steamulation-ultimate-one-gen-3-nargile-takimi-emerald-matt": "/catalog/steamulation",
 };

@@ -49,6 +49,22 @@ const ROUTES = new Set([
   "opengraph-image",
 ]);
 
+/**
+ * The shop's own address (NEXT_PUBLIC_SITE_URL), when CANONICAL_HOST_REDIRECT
+ * is "true": after the domain move, a page asked for on the deployment's
+ * *.vercel.app address answers with a 301 to the same page there, so search
+ * engines see one site, not two. Set on the Production environment only, and
+ * only once the domain points here — previews and staging keep their address.
+ */
+const CANONICAL_HOST = (() => {
+  if (process.env.CANONICAL_HOST_REDIRECT !== "true") return null;
+  try {
+    return new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "");
+  } catch {
+    return null;
+  }
+})();
+
 /** The API did not answer the lookup. */
 const UNAVAILABLE = Symbol("unavailable");
 
@@ -192,9 +208,17 @@ async function productRedirect(request: NextRequest, path: string, prefix: strin
  *    root is served from the `tr` segment, its address unchanged (a rewrite).
  * 2. Legacy product addresses, in whichever language they came (above).
  * 3. The rest goes on.
+ *
+ * Before all of it, a page on the deployment's own address goes to the shop's
+ * (CANONICAL_HOST), once that is switched on.
  */
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  const host = request.headers.get("host")?.split(":")[0] ?? request.nextUrl.hostname;
+  if (CANONICAL_HOST && host !== CANONICAL_HOST.hostname && host.endsWith(".vercel.app")) {
+    return NextResponse.redirect(new URL(`${pathname}${request.nextUrl.search}`, CANONICAL_HOST.origin), 301);
+  }
 
   if (pathname === "/index.php" || (pathname === "/" && request.nextUrl.searchParams.has("route"))) return openCartRoute(request);
 

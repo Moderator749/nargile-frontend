@@ -8,7 +8,7 @@ import { INFO_LINKS } from "@/lib/footer";
 import { DEFAULT_LOCALE, LOCALES, localePath, type Locale } from "@/lib/i18n/config";
 import { brandCanonical, brandHref, productHref } from "@/lib/seo";
 import { getBrands, getCategories, getPublicProducts } from "@/lib/server/catalog";
-import { SITE_URL } from "@/lib/site";
+import { MEDIA_PATH, SITE_URL, canonicalMedia } from "@/lib/site";
 import type { CatalogProduct } from "@/types";
 
 export const revalidate = 3600;
@@ -32,7 +32,7 @@ function productPhotos(product: CatalogProduct): string[] {
   const photos = product.image_urls?.length ? product.image_urls : product.image_url ? [product.image_url] : [];
   return photos
     .slice(0, 10)
-    .map((src) => (src.startsWith("/") ? `${SITE_URL}${src}` : src))
+    .map((src) => (src.startsWith("/") && !src.startsWith(MEDIA_PATH) ? `${SITE_URL}${src}` : canonicalMedia(src)))
     .filter((src) => /^https?:\/\//.test(src));
 }
 

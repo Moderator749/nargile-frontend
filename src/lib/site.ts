@@ -14,6 +14,26 @@ export const DEFAULT_DESCRIPTION =
  */
 export const INDEXING_ALLOWED = process.env.NEXT_PUBLIC_ALLOW_INDEXING === "true";
 
+/** Where the API's uploads are served through this site (next.config's /api/backend proxy). */
+export const MEDIA_PATH = "/api/backend/media/";
+
+/**
+ * A photo's address as search engines should know it: one of the API's uploads
+ * served through any deployment of this site (the staging host, a preview, the
+ * real domain: the same file behind each) is put on the shop's own domain, so
+ * the sitemap's images and the product data name the canonical host, not
+ * whichever one the API wrote into the URL. Anything else is left as it is.
+ */
+export function canonicalMedia(src: string): string {
+  if (src.startsWith(MEDIA_PATH)) return `${SITE_URL}${src}`;
+  try {
+    const url = new URL(src);
+    return url.pathname.startsWith(MEDIA_PATH) ? `${SITE_URL}${url.pathname}` : src;
+  } catch {
+    return src;
+  }
+}
+
 /** Shared metadata for pages that must never appear in search results. */
 export const PRIVATE_ROBOTS = { index: false, follow: false } as const;
 

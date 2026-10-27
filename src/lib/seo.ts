@@ -4,7 +4,7 @@ import { DEFAULT_LOCALE, LOCALES, OG_LOCALE, localePath, type Locale } from "@/l
 import { colorLabel } from "@/lib/i18n/colors";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { htmlToText } from "@/lib/richText";
-import { DEFAULT_OG_IMAGE, INDEXING_ALLOWED, SITE_NAME, SITE_URL } from "@/lib/site";
+import { DEFAULT_OG_IMAGE, INDEXING_ALLOWED, SITE_NAME, SITE_URL, canonicalMedia } from "@/lib/site";
 import { displayVariant, soldOut } from "@/lib/variants";
 import type { Brand, CatalogProduct, Category, HomeFooter } from "@/types";
 
@@ -323,11 +323,10 @@ export function websiteJsonLd(locale: Locale = DEFAULT_LOCALE) {
   };
 }
 
-/** Every photo of the product, cover first — what the gallery shows. */
+/** Every photo of the product, cover first — what the gallery shows — on the shop's own domain. */
 function productImages(product: { image_url: string | null; image_urls?: string[] }): string[] {
   const gallery = product.image_urls ?? [];
-  if (gallery.length > 0) return gallery;
-  return product.image_url ? [product.image_url] : [];
+  return (gallery.length > 0 ? gallery : product.image_url ? [product.image_url] : []).map(canonicalMedia);
 }
 
 /** Breadcrumbs by their site paths (unprefixed), put in the page's language. */
