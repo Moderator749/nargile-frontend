@@ -1731,7 +1731,6 @@ export interface HomeFooter {
   faq: HomeFooterColumn;
   copyright: string;
   price_note: string;
-  warning: string;
 }
 
 /**

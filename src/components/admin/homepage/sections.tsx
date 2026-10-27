@@ -841,7 +841,6 @@ export function FooterTab({ value, set }: { value: Homepage["footer"]; set: Set<
           max={200}
           onChange={(price_note) => patch({ price_note })}
         />
-        <TextField label="Yasal uyarı" value={value.warning} max={200} onChange={(warning) => patch({ warning })} />
       </Panel>
     </div>
   );

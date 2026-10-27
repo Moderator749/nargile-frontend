@@ -39,14 +39,19 @@ function ArrowLinks({ links }: { links: { label: string; href: string }[] }) {
   );
 }
 
-/** One of the three link columns, with its pill under the list when it has one. */
-function LinkColumn({ id, column }: { id: string; column: HomeFooterColumn }) {
+/**
+ * One of the three link columns, with its pill under the list when it has one.
+ * `always`: links the column shows whatever the editor left in it (the legal
+ * texts under "Bilgi Sayfaları"), after its own, each once.
+ */
+function LinkColumn({ id, column, always = [] }: { id: string; column: HomeFooterColumn; always?: { label: string; href: string }[] }) {
+  const own = new Set(column.links.map((link) => link.href));
   return (
     <nav aria-labelledby={id}>
       <h2 id={id} className={headingClass}>
         {column.title}
       </h2>
-      <ArrowLinks links={column.links} />
+      <ArrowLinks links={[...column.links, ...always.filter((link) => !own.has(link.href))]} />
       {column.cta_label && column.cta_href && (
         <Link href={column.cta_href} className={pillClass}>
           {column.cta_label}
@@ -176,29 +181,22 @@ export async function SiteFooter({ footer }: { footer: HomeFooter }) {
           </section>
 
           <LinkColumn id="footer-blog" column={footer.blog} />
-          <LinkColumn id="footer-info" column={footer.info} />
+          {/* Every legal text a shop has to show, under "Bilgi Sayfaları" with the rest. */}
+          <LinkColumn
+            id="footer-info"
+            column={footer.info}
+            always={[
+              { href: DISTANCE_SALES_HREF, label: m.distanceSales },
+              { href: RETURNS_HREF, label: m.returns },
+              { href: legalHref("PRIVACY"), label: m.kvkk },
+              { href: legalHref("COOKIES"), label: m.cookies },
+            ]}
+          />
           <LinkColumn id="footer-faq" column={footer.faq} />
         </div>
 
-        {/* The legal texts and the ways to pay: fixed, whatever the columns
-            above hold, since a shop has to show them. */}
-        <div className="flex flex-col items-center gap-5 border-t border-neutral-800 py-8 lg:flex-row lg:justify-between">
-          <nav aria-label={m.legal}>
-            <ul className="flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs font-medium text-neutral-300 lg:justify-start">
-              {[
-                { href: legalHref("PRIVACY"), label: m.kvkk },
-                { href: DISTANCE_SALES_HREF, label: m.distanceSales },
-                { href: RETURNS_HREF, label: m.returns },
-                { href: legalHref("COOKIES"), label: m.cookies },
-              ].map((link) => (
-                <li key={link.href}>
-                  <Link href={link.href} className="inline-flex min-h-6 items-center transition-colors hover:text-white hover:underline">
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
+        {/* The ways to pay: fixed, whatever the columns above hold. */}
+        <div className="flex justify-center border-t border-neutral-800 py-8">
           <PaymentBadges label={m.payments} />
         </div>
 
@@ -207,11 +205,6 @@ export async function SiteFooter({ footer }: { footer: HomeFooter }) {
             © {new Date().getFullYear()} {footer.copyright}
           </p>
           {footer.price_note && <p className="mt-1 text-xs text-neutral-400">{footer.price_note}</p>}
-          {footer.warning && (
-            <p className="mx-auto mt-6 max-w-2xl rounded-2xl border border-neutral-800 px-6 py-2 text-center text-xs text-neutral-300">
-              {footer.warning}
-            </p>
-          )}
         </div>
       </div>
     </footer>

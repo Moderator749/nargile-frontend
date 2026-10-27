@@ -119,9 +119,11 @@ export const DEFAULT_HOMEPAGE: Homepage = {
     blog: { title: "Blog", links: BLOG_LINKS, cta_label: "Tüm yazıları gör", cta_href: BLOG_HREF },
     info: {
       title: "Bilgi Sayfaları",
+      // The advantages first, then the shop's terms; the footer adds every legal
+      // text this list leaves out (KVKK, çerezler, iade) after them.
       links: [
-        ...BILGI_DOCUMENTS.map((doc) => ({ label: doc.title, href: bilgiHref(doc) })),
         { label: PERKS_PAGE.title, href: PERKS_PAGE.href },
+        ...BILGI_DOCUMENTS.map((doc) => ({ label: doc.title, href: bilgiHref(doc) })),
       ],
       cta_label: "",
       cta_href: null,
@@ -129,7 +131,6 @@ export const DEFAULT_HOMEPAGE: Homepage = {
     faq: { title: "Destek & S.S.S", links: FAQ_LINKS, cta_label: "Tüm soruları gör", cta_href: FAQ_HREF },
     copyright: "SULTAN NARGİLE. Tüm hakları saklıdır.",
     price_note: "Fiyatlara KDV dahildir. Döviz fiyatları TCMB kuruyla yaklaşıktır; ödeme TL ile alınır.",
-    warning: "18 yaşından küçüklere satış yapılmaz. Tütün mamulleri sağlığa zararlıdır.",
   },
   // A phone shows the whole page and the slides' wide photos until the admin says otherwise.
   mobile: { hero_images: [], hidden: [] },
