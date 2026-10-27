@@ -4,6 +4,7 @@
  */
 
 import { api } from "@/lib/api";
+import type { CommunicationPreferences } from "@/lib/ordersApi";
 import type { AddressBookEntry, AddressBookInput, Token } from "@/types";
 
 export interface ProfileInput {
@@ -42,4 +43,13 @@ export async function editAddress(id: number, body: AddressBookInput): Promise<A
 
 export async function deleteAddress(id: number): Promise<void> {
   await api.delete(`/me/address-book/${id}`);
+}
+
+/**
+ * The one-time consent card: the channels ticked are consented to, and the
+ * card is not shown again. "Şimdi değil" sends neither.
+ */
+export async function answerConsentPrompt(body: CommunicationPreferences): Promise<CommunicationPreferences> {
+  const { data } = await api.post<CommunicationPreferences>("/me/consent-prompt", body);
+  return data;
 }

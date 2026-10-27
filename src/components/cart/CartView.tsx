@@ -171,6 +171,8 @@ export function CartView({ checkoutStep = false }: { checkoutStep?: boolean } = 
   const [transportMode, setTransportMode] = useState<TransportMode | null>(null);
   // The two agreements. The server refuses an order without both.
   const [agreements, setAgreements] = useState<Agreements>(NO_AGREEMENTS);
+  // Campaign consent: unticked unless the customer ticks it.
+  const [marketingConsent, setMarketingConsent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   // "Karşı ödemeli" consent; only asked for (and only sent) when the receiver pays.
@@ -540,6 +542,7 @@ export function CartView({ checkoutStep = false }: { checkoutStep?: boolean } = 
           orderNote,
           transportMode: quoteOnly ? transportMode : null,
           agreements,
+          marketingConsent,
         }),
       );
       if (order.payment_method === "CREDIT_CARD") {
@@ -779,6 +782,9 @@ export function CartView({ checkoutStep = false }: { checkoutStep?: boolean } = 
           onSaveCardChange={setSaveCard}
           agreements={agreements}
           onAgreementsChange={(patch) => setAgreements((current) => ({ ...current, ...patch }))}
+          showMarketingConsent={!(user?.marketing_email_consent && user?.marketing_sms_consent)}
+          marketingConsent={marketingConsent}
+          onMarketingConsentChange={setMarketingConsent}
           legalDocuments={legalDocuments}
           submitting={submitting}
           checkoutError={checkoutError}

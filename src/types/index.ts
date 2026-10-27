@@ -156,6 +156,11 @@ export interface User {
   segment_code?: SegmentType | null;
   /** Usable Sultan Puan (each worth `loyalty.conversion_rate` TRY). Returned by GET /auth/me only. */
   loyalty_balance?: number;
+  /** Campaign consent on file (ticari elektronik ileti onayı). */
+  marketing_email_consent?: boolean;
+  marketing_sms_consent?: boolean;
+  /** Never asked for it: the one-time "Kampanyalardan haberdar olun" card asks. */
+  consent_prompt_due?: boolean;
 }
 
 /** Whoever the invoice is made out to — the account's own firm, or another one. */
@@ -594,6 +599,8 @@ export interface CartCalculateRequest {
   /** Both are required to place an order; a price preview needs neither. */
   distance_sales_accepted?: boolean;
   terms_accepted?: boolean;
+  /** The campaign box, ticked by the customer; unticked withdraws nothing. */
+  marketing_consent?: boolean;
 }
 
 export interface CartItemBreakdown {

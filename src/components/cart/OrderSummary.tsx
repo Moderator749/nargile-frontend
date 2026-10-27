@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { Building2, Check, Lock, Send, Ship, TrendingUp, Truck } from "lucide-react";
 
-import { LegalConsent, type Agreements } from "@/components/cart/LegalConsent";
+import { LegalConsent, MarketingConsent, type Agreements } from "@/components/cart/LegalConsent";
 import { useLocale, useMessages } from "@/components/i18n/LocaleProvider";
 import { LoyaltyPointsInput } from "@/components/cart/LoyaltyPointsInput";
 import { PaymentMethodPicker } from "@/components/cart/PaymentMethodPicker";
@@ -54,6 +54,10 @@ interface OrderSummaryProps {
   agreements: Agreements;
   onAgreementsChange: (patch: Partial<Agreements>) => void;
   legalDocuments: Partial<Record<LegalKey, LegalDocument>> | null;
+  /** The optional campaign box: shown while the account lacks either consent. */
+  showMarketingConsent: boolean;
+  marketingConsent: boolean;
+  onMarketingConsentChange: (value: boolean) => void;
   submitting: boolean;
   checkoutError: string | null;
   /** Why the order can't be placed yet (e.g. incomplete address); null = ready. */
@@ -483,6 +487,11 @@ export function OrderSummary(props: OrderSummaryProps) {
             onChange={props.onAgreementsChange}
             documents={props.legalDocuments}
           />
+        )}
+
+        {/* Optional and unticked: an order never depends on it. */}
+        {isLoggedIn && props.showMarketingConsent && (
+          <MarketingConsent checked={props.marketingConsent} onChange={props.onMarketingConsentChange} />
         )}
 
         <Button type="button" onClick={props.onCheckout} loading={submitting} disabled={!canCheckout}>

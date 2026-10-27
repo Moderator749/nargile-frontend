@@ -89,3 +89,33 @@ export function LegalConsent({
     </div>
   );
 }
+
+/**
+ * "Kampanya ve fırsatlardan haberdar olmak istiyorum": ticari elektronik ileti
+ * onayı, asked beside the agreements but apart from them — it is optional,
+ * starts unticked, and an order never waits on it. Ticked, the order records
+ * both consents on the account; unticked, nothing changes.
+ */
+export function MarketingConsent({ checked, onChange }: { checked: boolean; onChange: (value: boolean) => void }) {
+  const t = useMessages(cartMessages).legal;
+  return (
+    <div className="flex items-start gap-2.5 px-3 text-xs leading-5">
+      <input
+        id="marketing-consent"
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        aria-describedby="marketing-consent-hint"
+        className="mt-0.5 h-4 w-4 shrink-0 accent-red-600"
+      />
+      <div>
+        <label htmlFor="marketing-consent" className="cursor-pointer text-slate-600 dark:text-zinc-300">
+          {t.marketing}
+        </label>
+        <p id="marketing-consent-hint" className="text-[11px] text-slate-400 dark:text-zinc-500">
+          {t.marketingHint}
+        </p>
+      </div>
+    </div>
+  );
+}

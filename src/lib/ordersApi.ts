@@ -56,6 +56,8 @@ export function buildCheckoutRequest(
     transportMode?: TransportMode | null;
     /** The two agreements; an order without both is refused by the server. */
     agreements?: { distanceSales: boolean; terms: boolean };
+    /** "Kampanya ve fırsatlardan … haberdar olmak istiyorum", if ticked. */
+    marketingConsent?: boolean;
   } = {},
 ): CheckoutRequest {
   return {
@@ -77,6 +79,7 @@ export function buildCheckoutRequest(
     transport_mode: options.transportMode ?? null,
     distance_sales_accepted: options.agreements?.distanceSales ?? false,
     terms_accepted: options.agreements?.terms ?? false,
+    marketing_consent: options.marketingConsent ?? false,
   };
 }
 

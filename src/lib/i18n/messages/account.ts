@@ -454,3 +454,37 @@ export const addressBookMessages = defineMessages({
     },
   },
 });
+
+/** The one-time card asking for campaign consent (ticari elektronik ileti onayı). */
+export const consentPromptMessages = defineMessages({
+  tr: {
+    heading: "Kampanyalardan haberdar olmak ister misiniz?",
+    intro: "Yeni ürünler, indirimler ve size özel fırsatlar için size ulaşabilmemize izin verin. Tamamen isteğe bağlıdır; Hesabım sayfasından istediğiniz zaman kapatabilirsiniz.",
+    email: "E-posta ile",
+    sms: "SMS ile",
+    save: "Tercihimi kaydet",
+    notNow: "Şimdi değil",
+    thanks: "Teşekkürler, tercihiniz kaydedildi.",
+    failed: "Tercihiniz kaydedilemedi. Lütfen tekrar deneyin.",
+  },
+  en: {
+    heading: "Would you like to hear about our campaigns?",
+    intro: "Let us reach you about new products, discounts and offers for you. It's entirely optional, and you can turn it off any time on your account page.",
+    email: "By email",
+    sms: "By SMS",
+    save: "Save my choice",
+    notNow: "Not now",
+    thanks: "Thank you, your choice was saved.",
+    failed: "We couldn't save your choice. Please try again.",
+  },
+  ar: {
+    heading: "هل ترغب في معرفة حملاتنا؟",
+    intro: "اسمح لنا بالتواصل معك بشأن المنتجات الجديدة والخصومات والعروض الخاصة بك. هذا اختياري تمامًا، ويمكنك إيقافه في أي وقت من صفحة حسابك.",
+    email: "عبر البريد الإلكتروني",
+    sms: "عبر الرسائل النصية",
+    save: "حفظ اختياري",
+    notNow: "ليس الآن",
+    thanks: "شكرًا، تم حفظ اختيارك.",
+    failed: "تعذّر حفظ اختيارك. يرجى المحاولة مرة أخرى.",
+  },
+});

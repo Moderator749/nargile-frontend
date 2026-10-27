@@ -7,6 +7,7 @@ import Link from "@/components/i18n/Link";
 import { AddressBookPanel } from "@/components/account/AddressBookPanel";
 import { B2BApplicationPanel } from "@/components/account/B2BApplicationPanel";
 import { CommunicationPreferencesPanel } from "@/components/account/CommunicationPreferencesPanel";
+import { ConsentPrompt } from "@/components/account/ConsentPrompt";
 import { PasswordPanel } from "@/components/account/PasswordPanel";
 import { ProfilePanel } from "@/components/account/ProfilePanel";
 import { WalletPanel } from "@/components/account/WalletPanel";
@@ -27,6 +28,7 @@ export function AccountView() {
   const token = useAuthStore((s) => s.token);
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [promptAnswers, setPromptAnswers] = useState(0);
 
   useEffect(() => {
     if (!hydrated || !token) return;
@@ -61,6 +63,7 @@ export function AccountView() {
       </p>
 
       <div className="mt-8 space-y-6">
+        <ConsentPrompt onAnswered={() => setPromptAnswers((n) => n + 1)} />
         {/* Keyed on the account: a different sign-in starts the form afresh. */}
         <ProfilePanel key={user.id} user={user} />
         <AddressBookPanel user={user} />
@@ -86,7 +89,8 @@ export function AccountView() {
       </div>
 
       <div className="mt-10">
-        <CommunicationPreferencesPanel />
+        {/* Read afresh once the card above records an answer. */}
+        <CommunicationPreferencesPanel key={promptAnswers} />
       </div>
 
       <p className="mt-10 text-sm">

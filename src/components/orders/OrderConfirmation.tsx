@@ -3,6 +3,7 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { CircleCheck, CircleX, Landmark, Loader2, UserCheck } from "lucide-react";
 
+import { ConsentPrompt } from "@/components/account/ConsentPrompt";
 import Link from "@/components/i18n/Link";
 import { useLocale, useMessages } from "@/components/i18n/LocaleProvider";
 import { BankAccountList, CopyButton } from "@/components/payment/BankAccounts";
@@ -237,6 +238,13 @@ export function OrderConfirmation({ orderId }: { orderId: string }) {
           <dd className="font-mono">{formatMoney(net)}</dd>
         </dl>
       </section>
+
+      {/* Asked once, and not while a payment is still being settled. */}
+      {!failed && !awaitingCard && (
+        <div className="mt-8">
+          <ConsentPrompt />
+        </div>
+      )}
 
       <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
         <Link href="/orders" className="inline-flex h-11 items-center justify-center rounded-lg bg-slate-900 px-5 text-sm font-semibold text-white hover:bg-slate-700 dark:bg-white dark:text-zinc-900">

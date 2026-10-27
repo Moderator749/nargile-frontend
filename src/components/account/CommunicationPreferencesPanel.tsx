@@ -12,6 +12,7 @@ import {
   type CommunicationPreferences,
 } from "@/lib/ordersApi";
 import { communicationMessages } from "@/lib/i18n/messages/account";
+import { useAuthStore } from "@/store/useAuthStore";
 
 /** The switches, in order; their words are communicationMessages[key]. */
 const ROWS: (keyof CommunicationPreferences)[] = ["email", "sms"];
@@ -44,8 +45,14 @@ export function CommunicationPreferencesPanel() {
     setError(null);
     setSaved(false);
     try {
-      setPrefs(await updateCommunicationPreferences(next));
+      const stored = await updateCommunicationPreferences(next);
+      setPrefs(stored);
       setSaved(true);
+      // Answered here, so the one-time card has nothing left to ask.
+      const { user, setUser } = useAuthStore.getState();
+      if (user) {
+        setUser({ ...user, marketing_email_consent: stored.email, marketing_sms_consent: stored.sms, consent_prompt_due: false });
+      }
     } catch (err) {
       setPrefs(before);
       setError(getApiErrorMessage(err, m.saveFailed));
