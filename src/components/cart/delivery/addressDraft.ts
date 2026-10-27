@@ -124,10 +124,24 @@ export function fromSaved(saved: SavedAddress, fallback: { full_name?: string; p
  */
 export function addressProblem(a: AddressDraft, locale: Locale = "tr"): string | null {
   const m = checkoutMessages[locale];
+  if (a.full_name.trim().length < 2) return m.problems.name;
+  return phoneProblem(a.phone, a.country !== TURKEY, locale) ?? placeProblem(a, locale);
+}
+
+/** The order's contact number: what the courier calls and PayTR is given. */
+export function phoneProblem(phone: string, abroad: boolean, locale: Locale = "tr"): string | null {
+  const ok = abroad ? isValidInternationalPhone(phone) : isValidPhone(phone);
+  return ok ? null : checkoutMessages[locale].problems.phone;
+}
+
+/**
+ * Whether the address itself can be shipped to, number aside: what decides if
+ * an address on file is offered as it stands or the form comes back for it.
+ */
+export function placeProblem(a: AddressDraft, locale: Locale = "tr"): string | null {
+  const m = checkoutMessages[locale];
   const abroad = a.country !== TURKEY;
   if (a.full_name.trim().length < 2) return m.problems.name;
-  const phoneOk = abroad ? isValidInternationalPhone(a.phone) : isValidPhone(a.phone);
-  if (!phoneOk) return m.problems.phone;
   if (!a.country) return abroad ? m.export.problems.country : m.problems.country;
   if (abroad) {
     if (a.city.trim().length < 2) return m.export.problems.city;

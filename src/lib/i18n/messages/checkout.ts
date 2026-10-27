@@ -100,6 +100,8 @@ export const checkoutMessages = defineMessages({
       legend: "Teslimat bilgileri",
       confirm: "Onay",
       confirmed: "Onaylandı",
+      contactPhone: "Telefon numarası",
+      contactHint: "Kargo görevlisi bu numarayı arar; sipariş bildirimleri bu numaraya gelir.",
     },
     bireysel: {
       billingTitle: "Fatura adresime istiyorum",
@@ -221,6 +223,8 @@ export const checkoutMessages = defineMessages({
       legend: "Delivery details",
       confirm: "Confirm",
       confirmed: "Confirmed",
+      contactPhone: "Phone number",
+      contactHint: "The courier calls this number, and order updates are sent to it.",
     },
     bireysel: {
       billingTitle: "Deliver to my invoice address",
@@ -342,6 +346,8 @@ export const checkoutMessages = defineMessages({
       legend: "بيانات التوصيل",
       confirm: "تأكيد",
       confirmed: "تم التأكيد",
+      contactPhone: "رقم الهاتف",
+      contactHint: "يتصل مندوب الشحن بهذا الرقم، وتُرسل إليه إشعارات الطلب.",
     },
     bireysel: {
       billingTitle: "التوصيل إلى عنوان الفاتورة",

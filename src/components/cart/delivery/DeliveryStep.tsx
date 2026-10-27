@@ -2,6 +2,7 @@
 
 import { useMessages } from "@/components/i18n/LocaleProvider";
 import { BireyselDelivery } from "@/components/cart/delivery/BireyselDelivery";
+import { ContactPhoneField } from "@/components/cart/delivery/ContactPhoneField";
 import {
   shipsAbroad,
   shipsToRegistered,
@@ -17,6 +18,9 @@ import type { AccountType, SavedAddress, TransportMode } from "@/types";
 
 interface DeliveryStepProps {
   accountType: AccountType;
+  /** The order's phone number, whichever card is picked. */
+  contactPhone: string;
+  onContactPhoneChange: (value: string) => void;
   /** Addresses sign-up collected; null while they are still loading. */
   saved: SavedAddress[] | null;
   /** Whether the registered address is in İstanbul, where our own van goes. */
@@ -83,6 +87,7 @@ export function DeliveryStep(props: DeliveryStepProps) {
       <h2 id="delivery-heading" className="text-lg font-bold tracking-tight">
         {t.heading}
       </h2>
+      <ContactPhoneField value={props.contactPhone} onChange={props.onContactPhoneChange} abroad={abroad} />
 
       {abroad ? (
         <ExportDelivery

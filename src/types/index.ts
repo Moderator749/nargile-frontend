@@ -127,6 +127,8 @@ export interface ShippingAddress {
 
 /** An address from sign-up, offered at checkout as somewhere to ship to. */
 export interface SavedAddress {
+  /** The row's id, which "Adreslerim" edits by. */
+  id: number | null;
   kind: AddressKind;
   label: string;
   full_name: string | null;
@@ -1425,8 +1427,26 @@ export interface BankAccount {
 
 export type BankAccountWrite = Omit<BankAccount, "id">;
 
-/** Which kind of address a stored row is; both are invoice addresses. */
-export type AddressKind = "BILLING" | "CORPORATE_BILLING";
+/** Which kind of address a stored row is: the two invoice addresses, or a
+ *  delivery address the customer saved in "Adreslerim". */
+export type AddressKind = "BILLING" | "CORPORATE_BILLING" | "SHIPPING";
+
+/** One address in "Adreslerim", and what the customer may do with it. */
+export interface AddressBookEntry extends SavedAddress {
+  id: number;
+  editable: boolean;
+  deletable: boolean;
+}
+
+/** What "Adreslerim" saves: where, without who (the order asks that). */
+export interface AddressBookInput {
+  label: string | null;
+  country: string;
+  city: string;
+  district: string | null;
+  postal_code: string | null;
+  line: string;
+}
 /** Sortable columns of the admin customers grid. */
 export type CustomerSort = "name" | "created" | "orders";
 
@@ -1455,6 +1475,8 @@ export interface AdminCustomer {
  */
 export interface AdminCustomerAddress {
   kind: AddressKind;
+  /** A saved delivery address's own name ("Ev"); null on an invoice address. */
+  label?: string | null;
   /** ISO 3166-1 alpha-2; "TR" for a domestic address. */
   country: string;
   city: string;

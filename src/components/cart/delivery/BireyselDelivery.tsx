@@ -1,6 +1,6 @@
 "use client";
 
-import { Building2, MapPin, Package, Plus } from "lucide-react";
+import { Building2, Home, MapPin, Package, Plus } from "lucide-react";
 
 import { AddressFields } from "@/components/cart/delivery/AddressFields";
 import { useLocale, useMessages } from "@/components/i18n/LocaleProvider";
@@ -95,18 +95,20 @@ export function BireyselDelivery(props: BireyselDeliveryProps) {
             aria-busy
           />
         ) : (
-          // The customer's own invoice address. A firm's has its own card
-          // below, built from the invoice section rather than from this list.
+          // The customer's own invoice address, then the delivery addresses
+          // saved in "Adreslerim", each under the name it was given. A firm's
+          // has its own card below, built from the invoice section rather
+          // than from this list.
           saved.map((entry, index) =>
-            entry.kind === "BILLING" ? (
+            entry.kind === "BILLING" || entry.kind === "SHIPPING" ? (
               <DeliveryCard
-                key={`${entry.kind}-${index}`}
+                key={`${entry.kind}-${entry.id ?? index}`}
                 name="delivery_choice"
                 selected={choice?.kind === "saved" && choice.index === index}
                 onSelect={() => props.onChoiceChange({ kind: "saved", index })}
-                title={t.billingTitle}
+                title={entry.kind === "BILLING" ? t.billingTitle : entry.label}
                 summary={addressSummary(entry, (code) => countryName(code, locale))}
-                Icon={MapPin}
+                Icon={entry.kind === "BILLING" ? MapPin : Home}
               />
             ) : null,
           )

@@ -14,6 +14,7 @@ import {
   NEW_ADDRESS,
   TURKEY,
   addressProblem,
+  placeProblem,
   billingIndex,
   freightProblem,
   fromSaved,
@@ -144,6 +145,8 @@ export function CartView({ checkoutStep = false }: { checkoutStep?: boolean } = 
   const [firmCard, setFirmCard] = useState<FirmCard>(DEFAULT_FIRM_CARD);
   // "Şubeme istiyorum": what the firm calls the branch this order is for.
   const [branchName, setBranchName] = useState("");
+  // The number the order goes out under: the account's, until it is typed.
+  const [phoneTyped, setPhoneTyped] = useState<string | null>(null);
   const [otherReceiver, setOtherReceiver] = useState(false);
   const [receiverName, setReceiverName] = useState("");
   const [receiverPhone, setReceiverPhone] = useState("");
@@ -397,21 +400,21 @@ export function CartView({ checkoutStep = false }: { checkoutStep?: boolean } = 
    * thin to post anything to (one from before the current sign-up form) gets
    * the fields back instead of a button it cannot use.
    */
+  const contactPhone = phoneTyped ?? user?.phone ?? "";
   const onFile = useMemo(() => {
     if (saved === null || saved.length === 0) return null;
-    return fromSaved(saved[billingIndex(saved)], {
-      full_name: user?.full_name ?? "",
-      phone: user?.phone ?? "",
-    });
+    return fromSaved(saved[billingIndex(saved)], { full_name: user?.full_name ?? "" });
   }, [saved, user]);
-  const onFileAddressReady = onFile !== null && addressProblem(onFile, locale) === null;
+  // The place alone: the number is asked in a field of its own, whatever the card.
+  const onFileAddressReady = onFile !== null && placeProblem(onFile, locale) === null;
 
   /**
    * What ships: whatever has been typed, else the chosen card, else a blank form
    * with whatever the profile knows. `typed` is cleared when another card is
-   * picked, so a card's own address is what a card shows.
+   * picked, so a card's own address is what a card shows. The number is the
+   * step's own field, whichever card it is.
    */
-  const draft: AddressDraft = useMemo(() => {
+  const place: AddressDraft = useMemo(() => {
     const blank: AddressDraft = {
       ...EMPTY_ADDRESS,
       country: abroad ? "" : TURKEY,
@@ -458,6 +461,7 @@ export function CartView({ checkoutStep = false }: { checkoutStep?: boolean } = 
     onFile,
     onFileAddressReady,
   ]);
+  const draft: AddressDraft = useMemo(() => ({ ...place, phone: contactPhone }), [place, contactPhone]);
 
   /**
    * How it travels. Every account decides that by picking a card — the branch
@@ -660,6 +664,8 @@ export function CartView({ checkoutStep = false }: { checkoutStep?: boolean } = 
           {isLoggedIn && (
             <div className="mt-6">
               <DeliveryStep
+                contactPhone={contactPhone}
+                onContactPhoneChange={setPhoneTyped}
                 transportMode={transportMode}
                 onTransportModeChange={setTransportMode}
                 accountType={accountType}

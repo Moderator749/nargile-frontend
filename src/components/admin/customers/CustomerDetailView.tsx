@@ -85,6 +85,7 @@ function AddressCard({ address }: { address: AdminCustomerAddress }) {
     <div className="rounded-xl border border-slate-200 p-4 dark:border-white/10">
       <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400 dark:text-zinc-500">
         {ADDRESS_KIND_LABELS[address.kind]}
+        {address.label ? ` · ${address.label}` : ""}
       </p>
       <address className="mt-1 text-sm not-italic leading-6 text-slate-900 dark:text-zinc-100">
         {lines.filter(Boolean).map((line) => (

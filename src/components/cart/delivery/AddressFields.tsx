@@ -9,8 +9,6 @@ import { TURKEY, type AddressDraft } from "@/components/cart/delivery/addressDra
 const inputClass =
   "block h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20 dark:border-white/15 dark:bg-zinc-900 dark:text-zinc-100";
 const labelClass = "block text-sm font-medium text-slate-700 dark:text-zinc-300";
-/** A phone number reads left to right on an Arabic page too; it only sits on the right. */
-const phoneClass = `${inputClass} rtl:text-right`;
 
 /**
  * Where this order goes, typed out.
@@ -18,7 +16,8 @@ const phoneClass = `${inputClass} rtl:text-right`;
  * Two shapes, because two kinds of carrier read them: a Turkish address routes
  * on a province and an ilçe, an address abroad on a country and a postal code.
  * The fields are the same ones sign-up asks for, so a customer who gave an
- * address there recognises this one.
+ * address there recognises this one. The number is not among them: the
+ * delivery step asks it once, for whichever card is picked (ContactPhoneField).
  */
 export function AddressFields({
   value,
@@ -53,7 +52,7 @@ export function AddressFields({
           {abroad ? x.placeNote : m.address.placeNote}
         </p>
       )}
-      <div className="space-y-1.5">
+      <div className="space-y-1.5 sm:col-span-2">
         <label htmlFor="addr-name" className={labelClass}>
           {abroad ? x.name : m.address.name}
         </label>
@@ -64,23 +63,6 @@ export function AddressFields({
           value={value.full_name}
           onChange={(e) => set({ full_name: e.target.value })}
           className={inputClass}
-        />
-      </div>
-      <div className="space-y-1.5">
-        <label htmlFor="addr-phone" className={labelClass}>
-          {abroad ? x.phone : m.address.phone}
-        </label>
-        <input
-          id="addr-phone"
-          type="tel"
-          autoComplete="tel"
-          inputMode="tel"
-          maxLength={30}
-          dir="ltr"
-          placeholder={abroad ? x.phonePlaceholder : m.address.phonePlaceholder}
-          value={value.phone}
-          onChange={(e) => set({ phone: e.target.value })}
-          className={phoneClass}
         />
       </div>
 

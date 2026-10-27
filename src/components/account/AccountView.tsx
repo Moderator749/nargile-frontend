@@ -4,8 +4,11 @@ import { useEffect, useState } from "react";
 
 import { useMessages } from "@/components/i18n/LocaleProvider";
 import Link from "@/components/i18n/Link";
+import { AddressBookPanel } from "@/components/account/AddressBookPanel";
 import { B2BApplicationPanel } from "@/components/account/B2BApplicationPanel";
 import { CommunicationPreferencesPanel } from "@/components/account/CommunicationPreferencesPanel";
+import { PasswordPanel } from "@/components/account/PasswordPanel";
+import { ProfilePanel } from "@/components/account/ProfilePanel";
 import { WalletPanel } from "@/components/account/WalletPanel";
 import { Alert } from "@/components/ui/Alert";
 import { getApiErrorMessage } from "@/lib/errors";
@@ -15,7 +18,8 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { useAuthHydrated } from "@/store/useHasHydrated";
 import type { Wallet } from "@/types";
 
-/** "Hesabım": profile basics and the Sultan Puan wallet. */
+/** "Hesabım": the customer's details, addresses and password, the business
+ *  application, the Sultan Puan wallet and communication preferences. */
 export function AccountView() {
   const m = useMessages(accountMessages);
   const hydrated = useAuthHydrated();
@@ -55,6 +59,13 @@ export function AccountView() {
         {user.full_name ? `${user.full_name} · ` : ""}
         {user.email}
       </p>
+
+      <div className="mt-8 space-y-6">
+        {/* Keyed on the account: a different sign-in starts the form afresh. */}
+        <ProfilePanel key={user.id} user={user} />
+        <AddressBookPanel user={user} />
+        <PasswordPanel />
+      </div>
 
       {/* Only retail customers can apply; B2B customers already have their segment. */}
       {(!user.segment_code || user.segment_code === "RETAIL") && (

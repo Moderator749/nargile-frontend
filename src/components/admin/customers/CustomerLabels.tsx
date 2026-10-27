@@ -31,6 +31,7 @@ export const INTERNATIONAL_KIND_LABELS: Record<InternationalKind, string> = {
 export const ADDRESS_KIND_LABELS: Record<AddressKind, string> = {
   BILLING: "Fatura Adresi",
   CORPORATE_BILLING: "Kurumsal Fatura Adresi",
+  SHIPPING: "Teslimat Adresi",
 };
 
 export const APPLICATION_STATUS_LABELS: Record<string, string> = {
