@@ -5,6 +5,7 @@ import { colorLabel } from "@/lib/i18n/colors";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { htmlToText } from "@/lib/richText";
 import { DEFAULT_OG_IMAGE, INDEXING_ALLOWED, SITE_NAME, SITE_URL, canonicalMedia } from "@/lib/site";
+import { publishedStores, storeHref } from "@/lib/stores";
 import { displayVariant, soldOut } from "@/lib/variants";
 import type { Brand, CatalogProduct, Category, HomeFooter } from "@/types";
 
@@ -307,6 +308,10 @@ export function organizationJsonLd(footer: HomeFooter | undefined, locale: Local
         }
       : {}),
     ...(sameAs.length > 0 ? { sameAs } : {}),
+    // Its stores, each described on its own page (lib/stores storeJsonLd).
+    ...(publishedStores().length > 0
+      ? { department: publishedStores().map((s) => ({ "@id": `${SITE_URL}${storeHref(s)}#store` })) }
+      : {}),
     hasMerchantReturnPolicy: returnPolicyJsonLd(locale),
   };
 }

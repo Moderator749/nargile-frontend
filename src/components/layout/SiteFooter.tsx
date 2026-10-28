@@ -7,6 +7,7 @@ import { InstagramIcon, YouTubeIcon } from "@/components/icons/SocialIcons";
 import { ContactBar } from "@/components/layout/ContactBar";
 import { footerMessages } from "@/lib/i18n/messages/layout";
 import { DISTANCE_SALES_HREF, legalHref } from "@/lib/legalPages";
+import { storeForBranch, storeHref } from "@/lib/stores";
 import { getMessages } from "@/lib/i18n/server";
 import type { HomeFooter, HomeFooterColumn, HomeSocialKind } from "@/types";
 
@@ -136,17 +137,27 @@ export async function SiteFooter({ footer }: { footer: HomeFooter }) {
             </Link>
 
             <address className="mt-6 space-y-4 not-italic">
-              {footer.branches.map((branch, i) => (
-                <p key={`${branch.name}-${i}`} className="flex gap-2.5 text-sm leading-5 text-neutral-400">
-                  <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-red-600" aria-hidden />
-                  <span>
-                    <strong className="block text-xs font-bold uppercase tracking-wider text-white">
-                      {branch.name}
-                    </strong>
-                    {branch.address}
-                  </span>
-                </p>
-              ))}
+              {footer.branches.map((branch, i) => {
+                // A branch whose store page is published leads to it (lib/stores).
+                const store = storeForBranch(branch.name);
+                return (
+                  <p key={`${branch.name}-${i}`} className="flex gap-2.5 text-sm leading-5 text-neutral-400">
+                    <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-red-600" aria-hidden />
+                    <span>
+                      <strong className="block text-xs font-bold uppercase tracking-wider text-white">
+                        {store?.verified ? (
+                          <Link href={storeHref(store)} className="underline-offset-4 hover:underline">
+                            {branch.name}
+                          </Link>
+                        ) : (
+                          branch.name
+                        )}
+                      </strong>
+                      {branch.address}
+                    </span>
+                  </p>
+                );
+              })}
               {footer.hours && (
                 <p className="flex gap-2.5 text-sm leading-5 text-neutral-400">
                   <Clock className="mt-0.5 h-4 w-4 shrink-0 text-red-600" aria-hidden />

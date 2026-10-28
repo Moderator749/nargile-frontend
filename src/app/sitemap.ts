@@ -9,6 +9,7 @@ import { DEFAULT_LOCALE, LOCALES, localePath, type Locale } from "@/lib/i18n/con
 import { brandCanonical, brandHref, productHref } from "@/lib/seo";
 import { getBrands, getCategories, getPublicProducts } from "@/lib/server/catalog";
 import { MEDIA_PATH, SITE_URL, canonicalMedia } from "@/lib/site";
+import { STORES_HREF, publishedStores, storeHref } from "@/lib/stores";
 import type { CatalogProduct } from "@/types";
 
 export const revalidate = 3600;
@@ -117,6 +118,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         // (<image:image>), the shop's own address in front of a bare path.
         ...(productPhotos(p).length > 0 ? { images: productPhotos(p) } : {}),
       }),
+    ),
+    // The stores the shop has confirmed (a draft is noindex), and their list.
+    ...(publishedStores().length > 0 ? [STORES_HREF, ...publishedStores().map(storeHref)] : []).flatMap((href) =>
+      inLanguages(href, "all", { changeFrequency: "monthly", priority: 0.6 }),
     ),
     // The Bilgi Sayfaları, the FAQ and the blog, in every language (each has
     // its English and Arabic, lib/content).
