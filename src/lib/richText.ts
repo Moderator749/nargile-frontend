@@ -55,9 +55,12 @@ export function htmlToText(value: string | null | undefined): string {
 }
 
 /**
- * The text's headings one level down (<h2> → <h3>, <h3> → <h4>), for a text
- * shown under a heading of its own — a dialog's title, a section's <h2>.
+ * The text's headings under a heading of its own — a dialog's title, a
+ * section's <h2>: a text that opens its sections with <h2> moves one level
+ * down (<h2> → <h3>, <h3> → <h4>); one already written in <h3> stays as it
+ * is, so no level is ever skipped (<h2> straight to <h4>).
  */
 export function shiftHeadings(html: string): string {
+  if (!/<h2\b/i.test(html)) return html;
   return html.replace(/<(\/?)h([23])\b/gi, (_, slash: string, level: string) => `<${slash}h${Number(level) + 1}`);
 }

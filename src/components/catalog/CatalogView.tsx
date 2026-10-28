@@ -197,7 +197,10 @@ function CatalogGrid({
       />
 
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        {/* The grid's heading, over the cards' own <h3>s: the collection's name
+            for the outline (and a screen reader), its count for the eye. */}
         <h2 id="products-heading" className="text-[11px] font-medium uppercase tracking-[0.25em] text-muted-foreground">
+          <span className="sr-only">{collection}: </span>
           {catalog.loading
             ? t.loading
             : total !== null

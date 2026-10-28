@@ -23,6 +23,16 @@ import { displayVariant, soldOut } from "@/lib/variants";
 // edits refresh it immediately.
 export const revalidate = 86400;
 
+/**
+ * None is built ahead — there are hundreds, in three languages — but declaring
+ * the list makes the route incrementally static: each product page is drawn
+ * on its first visit and served from the cache after, as the categories are,
+ * instead of being drawn for every visitor and every crawl.
+ */
+export async function generateStaticParams() {
+  return [];
+}
+
 async function load(slug: string) {
   const [product, categories] = await Promise.all([getProduct(slug), getCategories()]);
   const category = product?.category_id != null ? categories?.find((c) => c.id === product.category_id) : undefined;

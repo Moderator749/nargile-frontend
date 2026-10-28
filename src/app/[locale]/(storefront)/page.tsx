@@ -57,20 +57,20 @@ const FEATURED_CATEGORY_SLUG = "celik-takimlar";
  * up — see `fillPicks`.
  */
 const PICK_KEYS = ["bestsellers", "newest"] as const;
-const PICKS_COUNT = 15;
+const PICKS_COUNT = 10;
 
 /** "Lüle Alırken Kararsız Kalacaksınız": this category's products, as the row under the picks. */
 const LULE_CATEGORY_SLUG = "luleler";
-const LULE_COUNT = 15;
+const LULE_COUNT = 10;
 
 /** "Kumbara 20.000 TL": this category's products, in the band above the deals. */
 const KUMBARA_CATEGORY_SLUG = "marpuclar";
-const KUMBARA_COUNT = 15;
+const KUMBARA_COUNT = 10;
 
 /** "Közlükler" and "Oyun & Eğlence": each its category as a standard product row. */
 const KOZLUK_CATEGORY_SLUG = "kozlukler";
 const GAMES_CATEGORY_SLUG = "oyun-eglence";
-const CATEGORY_ROW_COUNT = 15;
+const CATEGORY_ROW_COUNT = 10;
 
 type Picks = Record<(typeof PICK_KEYS)[number], CatalogProduct[]>;
 
@@ -163,10 +163,10 @@ const BRAND_SHOWCASES = [
 ] as const;
 
 /** How many of a brand's products its row holds: the dearest ones (the rest are a click away, on its page). */
-const BRAND_SHOWCASE_COUNT = 12;
+const BRAND_SHOWCASE_COUNT = 8;
 
 /** "%10 SultanPuan": as many cards as the other rows. */
-const SULTANPUAN_COUNT = 15;
+const SULTANPUAN_COUNT = 10;
 /** The API's page, and how far to page through a brand. */
 const BRAND_PAGE = 100;
 const BRAND_MAX = 400;
@@ -444,7 +444,7 @@ export default async function HomePage() {
         {/* The first slide's title is the page's h1; with the slider switched
             off, the page still needs one. */}
         {/* So does a first slide without a title of its own (a banner with its words in the photo). */}
-        {(!sections.hero || !slides[0]?.title.trim()) && <h1 className="sr-only">{t.meta.siteTitle}</h1>}
+        {(!sections.hero || !slides[0]?.title.trim()) && <h1 className="sr-only">{t.meta.homeHeading}</h1>}
 
         {/* Module 4: the category column (closed until "KATEGORİLER" opens
             it), with the hero beside it, on a white band edge to edge that
@@ -476,7 +476,21 @@ export default async function HomePage() {
         {/* Everything between the hero and the footer, in the order set in
             "Ana Sayfa Düzenleme › Bölümler" (lib/homeBlocks), each behind its
             own switch there. */}
-        {home.order.map((id) => sections[id] && <Fragment key={id}>{blocks[id]()}</Fragment>)}
+        {home.order.map(
+          (id, i) =>
+            sections[id] &&
+            // The first two are in view as the page opens; the rest are laid
+            // out and painted only as they come near the screen
+            // (content-visibility), so a phone reaches the first paint sooner.
+            // All of it is in the HTML all the same.
+            (i < 2 ? (
+              <Fragment key={id}>{blocks[id]()}</Fragment>
+            ) : (
+              <div key={id} className="[content-visibility:auto] [contain-intrinsic-size:auto_640px]">
+                {blocks[id]()}
+              </div>
+            )),
+        )}
       </main>
     </>
   );

@@ -169,7 +169,7 @@ export const cartMessages = defineMessages({
       freeShippingOf: (have: string, of: string) => `${have} / ${of} TL`,
       toNextTier: (remaining: string, rate: string) => `${remaining} daha ekleyin, ${rate} sepet indirimi kazanın`,
       guestEstimate:
-        "Bireysel alışveriş kurallarıyla tahmini tutardır; kesin tutar giriş yaptıktan sonra hesaplanır. Firma hesaplarında kendi fiyat listeniz geçerlidir. Kömür ağırlıklı sepetlerde ücretsiz kargo koşulludur.",
+        "Bireysel alışveriş kurallarıyla tahmini tutardır; kesin tutar ödeme adımında hesaplanır. Firma hesaplarında kendi fiyat listeniz geçerlidir. Kömür ağırlıklı sepetlerde ücretsiz kargo koşulludur.",
       exclVat: "(KDV hariç)",
       inclVat: "(KDV dahil)",
       havaleDiscount: (rate: string) => `Havale/EFT indirimi (−${rate})`,
@@ -189,9 +189,10 @@ export const cartMessages = defineMessages({
       pointsToEarn: (points: string) => `Siparişiniz onaylandığında ${points} Sultan Puan kazanacaksınız.`,
       calculating: "Kargo ve indirimler hesaplanıyor…",
       guestNote: (threshold: string) =>
-        `Ciro ve havale indirimleri ile size özel fiyatlar giriş yaptıktan sonra hesaplanır. ${threshold} üzeri kargo ücretsiz (kömürde koşullu); altında gönderim ücreti teslimatta alıcı tarafından ödenir.`,
+        `Ciro ve havale indirimleri ödeme adımında hesaplanır; firma hesapları kendi fiyatlarını giriş yaparak görür. ${threshold} üzeri kargo ücretsiz (kömürde koşullu); altında gönderim ücreti teslimatta alıcı tarafından ödenir.`,
       markedProducts: (hint: string) => `${hint}, işaretli ürünlerde`,
-      signIn: "Siparişi tamamlamak için giriş yapın",
+      /** A visitor's button: on to /checkout, where they sign in or go on as a guest. */
+      signIn: "Ödemeye Geç",
       openingPayment: "Ödeme sayfası açılıyor…",
       placingOrder: "Sipariş oluşturuluyor…",
       payByCard: "Kart ile Öde",
@@ -324,7 +325,7 @@ export const cartMessages = defineMessages({
       freeShippingOf: (have: string, of: string) => `${have} / ${of} TL`,
       toNextTier: (remaining: string, rate: string) => `Add ${remaining} more for a ${rate} basket discount`,
       guestEstimate:
-        "An estimate by the rules for individual orders; the exact amount is worked out once you sign in. Business accounts are charged their own price list. Free shipping on coal-heavy carts has conditions.",
+        "An estimate by the rules for individual orders; the exact amount is worked out at checkout. Business accounts are charged their own price list. Free shipping on coal-heavy carts has conditions.",
       exclVat: "(excl. VAT)",
       inclVat: "(incl. VAT)",
       havaleDiscount: (rate: string) => `Bank transfer discount (−${rate})`,
@@ -344,9 +345,9 @@ export const cartMessages = defineMessages({
       pointsToEarn: (points: string) => `You will earn ${points} Sultan Puan once your order is approved.`,
       calculating: "Calculating shipping and discounts…",
       guestNote: (threshold: string) =>
-        `Volume and bank transfer discounts and your own prices are calculated once you sign in. Shipping is free over ${threshold} (conditions apply to charcoal); below that, the recipient pays for shipping on delivery.`,
+        `Volume and bank transfer discounts are calculated at checkout; business accounts see their own prices once signed in. Shipping is free over ${threshold} (conditions apply to charcoal); below that, the recipient pays for shipping on delivery.`,
       markedProducts: (hint: string) => `${hint}, on marked products`,
-      signIn: "Sign in to place your order",
+      signIn: "Proceed to Checkout",
       openingPayment: "Opening the payment page…",
       placingOrder: "Placing your order…",
       payByCard: "Pay by Card",
@@ -480,7 +481,7 @@ export const cartMessages = defineMessages({
       freeShippingOf: (have: string, of: string) => `${have} / ${of} TL`,
       toNextTier: (remaining: string, rate: string) => `أضف ${remaining} لتحصل على خصم سلة ${rate}`,
       guestEstimate:
-        "مبلغ تقديري وفق قواعد الطلبات الفردية؛ يُحسب المبلغ النهائي بعد تسجيل الدخول. تُطبَّق على حسابات الشركات قائمة أسعارها الخاصة. الشحن المجاني لسلال الفحم مشروط.",
+        "مبلغ تقديري وفق قواعد الطلبات الفردية؛ يُحسب المبلغ النهائي في خطوة الدفع. تُطبَّق على حسابات الشركات قائمة أسعارها الخاصة. الشحن المجاني لسلال الفحم مشروط.",
       exclVat: "(غير شامل الضريبة)",
       inclVat: "(شامل الضريبة)",
       havaleDiscount: (rate: string) => `خصم التحويل البنكي (${rate})`,
@@ -500,9 +501,9 @@ export const cartMessages = defineMessages({
       pointsToEarn: (points: string) => `ستكسب ${points} نقطة Sultan Puan عند الموافقة على طلبك.`,
       calculating: "جارٍ حساب الشحن والخصومات…",
       guestNote: (threshold: string) =>
-        `تُحتسب خصومات حجم المشتريات والتحويل البنكي وأسعارك الخاصة بعد تسجيل الدخول. الشحن مجاني فوق ${threshold} (بشروط للفحم)؛ وما دون ذلك يدفع المستلم رسوم الشحن عند التسليم.`,
+        `تُحتسب خصومات حجم المشتريات والتحويل البنكي في خطوة الدفع، وترى حسابات الشركات أسعارها بعد تسجيل الدخول. الشحن مجاني فوق ${threshold} (بشروط للفحم)؛ وما دون ذلك يدفع المستلم رسوم الشحن عند التسليم.`,
       markedProducts: (hint: string) => `${hint}، على المنتجات المميزة`,
-      signIn: "سجّل الدخول لإتمام الطلب",
+      signIn: "متابعة الدفع",
       openingPayment: "جارٍ فتح صفحة الدفع…",
       placingOrder: "جارٍ إنشاء الطلب…",
       payByCard: "ادفع بالبطاقة",

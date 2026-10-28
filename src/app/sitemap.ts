@@ -6,7 +6,7 @@ import { FAQ_HREF } from "@/lib/faq";
 import { DEALS_HREF } from "@/lib/flashSale";
 import { INFO_LINKS } from "@/lib/footer";
 import { DEFAULT_LOCALE, LOCALES, localePath, type Locale } from "@/lib/i18n/config";
-import { brandCanonical, brandHref, productHref } from "@/lib/seo";
+import { brandCanonical, brandPageHref, productHref } from "@/lib/seo";
 import { getBrands, getCategories, getPublicProducts } from "@/lib/server/catalog";
 import { MEDIA_PATH, SITE_URL, canonicalMedia } from "@/lib/site";
 import { STORES_HREF, publishedStores, storeHref } from "@/lib/stores";
@@ -83,7 +83,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // the same slug) and has something on sale.
   const brandPages = await Promise.all(
     (brands ?? [])
-      .filter((b) => b.is_active && brandCanonical(b.slug, categories) === brandHref(b.slug))
+      .filter((b) => b.is_active && brandCanonical(b.slug, categories) === brandPageHref(b.slug))
       .map(async (b) => ({ brand: b, products: (await getPublicProducts(undefined, 100, 0, b.search_term)) ?? [] })),
   );
 
@@ -103,7 +103,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .filter(({ products }) => products.length > 0)
       .flatMap(({ brand, products }) =>
         // In a language when its products are (as the page itself says).
-        inLanguages(brandHref(brand.slug), LOCALES.filter((l) => products.some((p) => p.locales?.includes(l))), {
+        inLanguages(brandPageHref(brand.slug), LOCALES.filter((l) => products.some((p) => p.locales?.includes(l))), {
           lastModified: latest(products.map((p) => p.updated_at)),
           changeFrequency: "weekly",
           priority: 0.7,

@@ -4,6 +4,7 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import { CircleCheck, CircleX, Landmark, Loader2, UserCheck } from "lucide-react";
 
 import { ConsentPrompt } from "@/components/account/ConsentPrompt";
+import { GuestClaim } from "@/components/account/GuestClaim";
 import Link from "@/components/i18n/Link";
 import { useLocale, useMessages } from "@/components/i18n/LocaleProvider";
 import { BankAccountList, CopyButton } from "@/components/payment/BankAccounts";
@@ -241,8 +242,10 @@ export function OrderConfirmation({ orderId }: { orderId: string }) {
 
       {/* Asked once, and not while a payment is still being settled. */}
       {!failed && !awaitingCard && (
-        <div className="mt-8">
+        <div className="mt-8 space-y-4">
           <ConsentPrompt />
+          {/* A guest's order: keep it in an account, with a password. */}
+          <GuestClaim />
         </div>
       )}
 

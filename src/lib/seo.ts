@@ -38,7 +38,19 @@ export function productImageAlt(product: { name: string }, category?: { name: st
 }
 
 /** A brand's landing page: every product the brand's search term finds. */
-export const brandHref = (slug: string) => `/marka/${slug}`;
+/**
+ * Brands whose page is folded into their category for good: the category is
+ * the one page search engines are given (next.config.ts 301s the brand's
+ * address there), so every link goes straight to it. Sultan Nargile's brand
+ * slug ("sultan-nargile", once "sultan") is not its category's ("sultan").
+ */
+export const BRAND_CATEGORY: Record<string, string> = { "sultan-nargile": "sultan", sultan: "sultan" };
+
+/** Where a link to the brand goes: its category where it was folded into one, else its own page. */
+export const brandHref = (slug: string) => (BRAND_CATEGORY[slug] ? `/catalog/${BRAND_CATEGORY[slug]}` : brandPageHref(slug));
+
+/** The brand page's own address (/marka/<slug>). */
+export const brandPageHref = (slug: string) => `/marka/${slug}`;
 
 /**
  * Where the brand's content is canonical. Most house brands (Sultan, Legend,
@@ -47,7 +59,8 @@ export const brandHref = (slug: string) => `/marka/${slug}`;
  * hand — is the one search engines are pointed at.
  */
 export function brandCanonical(slug: string, categories: { slug: string }[] | null): string {
-  return categories?.some((c) => c.slug === slug) ? `/catalog/${slug}` : brandHref(slug);
+  const category = BRAND_CATEGORY[slug] ?? slug;
+  return categories?.some((c) => c.slug === category) ? `/catalog/${category}` : brandPageHref(slug);
 }
 
 // ── Page metadata ─────────────────────────────────────────────────────────────
@@ -101,18 +114,26 @@ function pageLanguages(locales: PageSeo["locales"]): Locale[] {
  * than adding to the layout's — and the Twitter card mirrors it, so a link
  * pasted into WhatsApp, Instagram or X shows the same title, text and photo.
  */
+/** About as much of a title as a search result shows. */
+const TITLE_MAX = 60;
+
 export function pageMetadata(page: PageSeo): Metadata {
   const locale = page.locale ?? DEFAULT_LOCALE;
   const languages = pageLanguages(page.locales);
   const translated = languages.includes(locale);
   const href = localePath(locale, page.href);
-  const fullTitle = page.absoluteTitle ? page.title : `${page.title} | ${SITE_NAME}`;
+  // The shop's name after the page's, unless that pushes the title past what
+  // a search result shows (about 60 characters): then the page's own words
+  // alone, which are what the search was for.
+  const suffixed = `${page.title} | ${SITE_NAME}`;
+  const bare = page.absoluteTitle || (suffixed.length > TITLE_MAX && page.title.length <= TITLE_MAX);
+  const fullTitle = bare ? page.title : suffixed;
   const photos = (page.images ?? []).filter((src): src is string => !!src).slice(0, 4);
   // The shop's own card is drawn per language (app/[locale]/opengraph-image).
   const card = { ...DEFAULT_OG_IMAGE, url: localePath(locale, DEFAULT_OG_IMAGE.url) };
   const images = photos.length > 0 ? photos.map((url) => ({ url, alt: page.imageAlt ?? page.title })) : [card];
   return {
-    title: page.absoluteTitle ? { absolute: page.title } : page.title,
+    title: bare ? { absolute: page.title } : page.title,
     description: page.description,
     alternates: {
       canonical: href,

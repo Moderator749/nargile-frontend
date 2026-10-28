@@ -8,12 +8,14 @@ import { AddressBookPanel } from "@/components/account/AddressBookPanel";
 import { B2BApplicationPanel } from "@/components/account/B2BApplicationPanel";
 import { CommunicationPreferencesPanel } from "@/components/account/CommunicationPreferencesPanel";
 import { ConsentPrompt } from "@/components/account/ConsentPrompt";
+import { GuestClaim } from "@/components/account/GuestClaim";
 import { PasswordPanel } from "@/components/account/PasswordPanel";
 import { ProfilePanel } from "@/components/account/ProfilePanel";
 import { WalletPanel } from "@/components/account/WalletPanel";
 import { Alert } from "@/components/ui/Alert";
 import { getApiErrorMessage } from "@/lib/errors";
 import { accountMessages } from "@/lib/i18n/messages/account";
+import { guestMessages } from "@/lib/i18n/messages/guest";
 import { fetchMyWallet } from "@/lib/ordersApi";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useAuthHydrated } from "@/store/useHasHydrated";
@@ -23,6 +25,7 @@ import type { Wallet } from "@/types";
  *  application, the Sultan Puan wallet and communication preferences. */
 export function AccountView() {
   const m = useMessages(accountMessages);
+  const g = useMessages(guestMessages).account;
   const hydrated = useAuthHydrated();
   const user = useAuthStore((s) => s.user);
   const token = useAuthStore((s) => s.token);
@@ -50,6 +53,22 @@ export function AccountView() {
         <Link href="/login?next=/account" className="mt-6 inline-flex h-11 items-center rounded-lg bg-red-600 px-6 text-sm font-semibold text-white hover:bg-red-500">
           {m.signIn}
         </Link>
+      </main>
+    );
+  }
+
+  // A guest checkout has no account yet: its order, and the way to one.
+  if (user.is_guest) {
+    return (
+      <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-10 sm:px-6">
+        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{g.title}</h1>
+        <p className="mt-2 text-sm text-slate-600 dark:text-zinc-400">{g.lead}</p>
+        <Link href="/orders" className="mt-5 inline-flex h-11 items-center rounded-lg bg-slate-900 px-5 text-sm font-semibold text-white hover:bg-slate-700 dark:bg-white dark:text-zinc-900">
+          {g.orders}
+        </Link>
+        <div className="mt-8">
+          <GuestClaim />
+        </div>
       </main>
     );
   }

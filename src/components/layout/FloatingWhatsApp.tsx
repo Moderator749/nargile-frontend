@@ -59,6 +59,28 @@ function useCovers(button: RefObject<HTMLAnchorElement | null>, path: string): b
   return covers;
 }
 
+/**
+ * On a phone, whether the page is being scrolled down: the button steps aside
+ * then, so it never sits on a card's "+" while the visitor reads down the
+ * grid, and comes back the moment they scroll up or stop near the top.
+ */
+function useScrollingDown(): boolean {
+  const [down, setDown] = useState(false);
+  useEffect(() => {
+    const phone = window.matchMedia("(max-width: 767px)");
+    let last = window.scrollY;
+    const onScroll = () => {
+      const y = window.scrollY;
+      if (!phone.matches || y < 120) setDown(false);
+      else if (Math.abs(y - last) > 8) setDown(y > last);
+      last = y;
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  return down;
+}
+
 /** The path without its language prefix ("/en/cart" → "/cart"). */
 function withoutLocale(path: string): string {
   const first = path.split("/")[1];
@@ -71,13 +93,17 @@ function withoutLocale(path: string): string {
  * phone it rides above the bottom tab bar — and above a product's or the
  * cart's buy bar (--buy-bar-height) — so it never covers their buttons; it
  * is not shown on the basket and checkout, and it steps aside (fades out)
- * while it would cover the homepage's cards beside the slider.
+ * while it would cover the homepage's cards beside the slider, and on a phone
+ * while the page is scrolled down. In Arabic it sits in the left corner,
+ * where a right-to-left line ends, so it never covers the start of a title.
  */
 export function FloatingWhatsApp() {
   const path = withoutLocale(usePathname() ?? "/");
   const m = useMessages(storeMessages);
   const ref = useRef<HTMLAnchorElement>(null);
   const covers = useCovers(ref, path);
+  const scrollingDown = useScrollingDown();
+  const away = covers || scrollingDown;
   if (HIDDEN_ON.some((p) => path === p || path.startsWith(`${p}/`))) return null;
 
   const store = STORES.find((s) => path === storeHref(s)) ?? STORES.find((s) => s.slug === WHATSAPP_STORE);
@@ -91,11 +117,11 @@ export function FloatingWhatsApp() {
       rel="noopener noreferrer"
       aria-label={m.floatingWhatsapp}
       title={m.floatingWhatsapp}
-      aria-hidden={covers || undefined}
-      tabIndex={covers ? -1 : undefined}
-      className={`fixed right-4 bottom-[calc(4rem+1rem+env(safe-area-inset-bottom,0px)+var(--buy-bar-height,0px))] z-40 flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg shadow-black/20 transition-[transform,opacity] duration-200 hover:scale-105 ${
-        covers ? "pointer-events-none translate-y-2 opacity-0" : ""
-      } focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#25D366] motion-reduce:transition-none md:right-6 md:bottom-6 print:hidden`}
+      aria-hidden={away || undefined}
+      tabIndex={away ? -1 : undefined}
+      className={`fixed right-4 bottom-[calc(4rem+1rem+env(safe-area-inset-bottom,0px)+var(--buy-bar-height,0px))] z-40 flex h-12 w-12 items-center rtl:right-auto rtl:left-4 md:h-14 md:w-14 justify-center rounded-full bg-[#25D366] text-white shadow-lg shadow-black/20 transition-[transform,opacity] duration-200 hover:scale-105 ${
+        away ? "pointer-events-none translate-y-2 opacity-0" : ""
+      } focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#25D366] motion-reduce:transition-none md:right-6 md:bottom-6 md:rtl:right-auto md:rtl:left-6 print:hidden`}
     >
       <WhatsAppIcon className="h-7 w-7" />
     </a>

@@ -6,6 +6,7 @@ import { ExternalLink, PackageSearch, Truck } from "lucide-react";
 
 import Link from "@/components/i18n/Link";
 import { useLocale, useMessages } from "@/components/i18n/LocaleProvider";
+import { OrderLookupForm } from "@/components/orders/OrderLookupForm";
 import { StatusBadge } from "@/components/orders/StatusBadge";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -75,6 +76,9 @@ export function CargoTracking() {
           </Button>
         </form>
       </section>
+
+      {/* By order number and e-mail: a guest's way back, signed in or not. */}
+      <OrderLookupForm />
 
       <section aria-labelledby="my-shipments">
         <h2 id="my-shipments" className="flex items-center gap-2 text-lg font-bold tracking-tight">

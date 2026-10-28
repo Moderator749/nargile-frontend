@@ -151,6 +151,8 @@ export interface User {
   role: UserRole;
   is_active: boolean;
   is_verified: boolean;
+  /** A guest checkout's buyer ("Üye olmadan devam et"), not an account. */
+  is_guest?: boolean;
   created_at: ISODateTime;
   /** Returned by GET /auth/me (UserMe); absent from other user responses. */
   segment_code?: SegmentType | null;
@@ -1461,6 +1463,8 @@ export type CustomerSort = "name" | "created" | "orders";
 export interface AdminCustomer {
   id: UUID;
   email: string;
+  /** A guest checkout's buyer ("Misafir"), not an account. */
+  is_guest?: boolean;
   full_name: string | null;
   /** Ünvan, when the account is a firm's or is invoiced as one. */
   company_title: string | null;
@@ -2014,4 +2018,16 @@ export interface PriceImportAlias {
   product_name: string;
   image_url: string | null;
   created_at: string;
+}
+
+/** "Kargo Takip" by order number and e-mail: where an order stands, nothing about who placed it. */
+export interface OrderLookup {
+  order_number: string;
+  status: OrderStatus;
+  created_at: ISODateTime;
+  carrier_name: string | null;
+  tracking_code: string | null;
+  tracking_url: string | null;
+  shipped_at: ISODateTime | null;
+  carrier_status_text: string | null;
 }

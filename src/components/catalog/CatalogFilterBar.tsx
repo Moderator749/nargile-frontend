@@ -86,7 +86,7 @@ function DensityToggle() {
       aria-pressed={density === value}
       aria-label={label}
       title={label}
-      className={`flex h-7 w-6 items-center justify-center rounded-lg transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent ${
+      className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent ${
         density === value
           ? "bg-white text-red-600 shadow-sm dark:bg-neutral-700 dark:text-red-400"
           : "text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200"
@@ -99,7 +99,7 @@ function DensityToggle() {
     <div
       role="group"
       aria-label={t.view}
-      className="flex h-9 shrink-0 items-center gap-0.5 rounded-xl border border-neutral-200 bg-neutral-100 p-0.5 md:hidden dark:border-neutral-700 dark:bg-neutral-800"
+      className="flex h-10 shrink-0 items-center gap-0.5 rounded-xl border border-neutral-200 bg-neutral-100 p-0.5 md:hidden dark:border-neutral-700 dark:bg-neutral-800"
     >
       {option("two", t.viewTwo, LayoutGrid)}
       {option("one", t.viewOne, Square)}

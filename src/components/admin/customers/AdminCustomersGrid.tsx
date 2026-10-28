@@ -251,6 +251,11 @@ export function AdminCustomersGrid() {
                               title={title}
                             >
                               {title}
+                              {customer.is_guest && (
+                                <span className="ms-2 inline-flex rounded-full bg-slate-100 px-1.5 py-0.5 align-middle text-[10px] font-semibold uppercase tracking-wide text-slate-600 dark:bg-white/10 dark:text-zinc-300">
+                                  Misafir
+                                </span>
+                              )}
                             </span>
                             <span className="block truncate text-xs text-slate-500 dark:text-zinc-500">
                               {under ?? `${customer.order_count} sipariş`}

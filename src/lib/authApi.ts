@@ -1,5 +1,5 @@
 import { api } from "@/lib/api";
-import type { LoginRequest, RegistrationCreate, Token, User } from "@/types";
+import type { LoginRequest, OrderLookup, RegistrationCreate, Token, User } from "@/types";
 
 export async function login(payload: LoginRequest): Promise<Token> {
   const { data } = await api.post<Token>("/auth/login", payload);
@@ -40,4 +40,22 @@ export async function confirmPasswordReset(
 ): Promise<string> {
   const { data } = await api.post<{ detail: string }>("/auth/password-reset/confirm", body);
   return data.detail;
+}
+
+/** "Üye olmadan devam et": a session for one guest checkout. 409 when the address has an account. */
+export async function startGuest(body: { email: string; full_name: string; phone: string }): Promise<Token> {
+  const { data } = await api.post<Token>("/auth/guest", body);
+  return data;
+}
+
+/** A guest sets a password: its checkout becomes an account (a new session; the guest's ends). */
+export async function claimGuest(password: string): Promise<Token> {
+  const { data } = await api.post<Token>("/auth/guest/claim", { password });
+  return data;
+}
+
+/** "Kargo Takip" without signing in: the order with this number, placed under this address. */
+export async function lookupOrder(orderNumber: string, email: string): Promise<OrderLookup> {
+  const { data } = await api.get<OrderLookup>("/orders/lookup", { params: { order_number: orderNumber, email } });
+  return data;
 }

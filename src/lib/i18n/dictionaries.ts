@@ -16,6 +16,8 @@ import type { Locale } from "@/lib/i18n/config";
 const tr = {
   meta: {
     siteTitle: "Nargile Takımı, Lüle, Kömür ve Aksesuarlar | Nargile Malzemesi",
+    /** The homepage's <h1> where the first slide has no title of its own: the page's subject, not its <title>. */
+    homeHeading: "Nargile Takımı, Lüle, Nargile Kömürü ve Aksesuarları",
     defaultDescription:
       "Orijinal nargile takımı modelleri, lüle, nargile kömürü, közlük ve marpuç çeşitleri. Kafe, toptancı ve bayilere özel fiyatlar, 3.000 TL üzeri ücretsiz kargo.",
     shopPromise: "Kafe, toptancı ve bayilere özel fiyatlar, 3.000 TL üzeri ücretsiz kargo.",
@@ -23,7 +25,9 @@ const tr = {
     categoryTitle: (name: string) => `${name} Modelleri ve Fiyatları`,
     categoryLead: (name: string, brands: string[]) =>
       brands.length > 0 ? `${name}: ${brands.join(", ")} ve daha fazlası.` : `${name} modelleri ve fiyatları.`,
-    brandTitle: (brand: string) => `${brand} Nargile Ürünleri ve Fiyatları`,
+    // "Sultan Nargile Ürünleri", not "Sultan Nargile Nargile Ürünleri".
+    brandTitle: (brand: string) =>
+      /nargile/i.test(brand.toLocaleLowerCase("tr")) ? `${brand} Ürünleri ve Fiyatları` : `${brand} Nargile Ürünleri ve Fiyatları`,
     brandLead: (brand: string, sample: string[], count: number) =>
       count > 0
         ? `${brand} nargile ürünleri${sample.length ? `: ${sample.join(", ")}` : ""} ve tüm ${brand} modelleri.`
@@ -78,6 +82,7 @@ export type Dictionary = typeof tr;
 const en: Dictionary = {
   meta: {
     siteTitle: "Nargile Malzemesi — Hookah Sets, Bowls, Charcoal & Accessories | Wholesale & Retail",
+    homeHeading: "Hookah Sets, Bowls, Charcoal and Accessories",
     defaultDescription:
       "Hookah sets, hookah bowls, natural coconut hookah charcoal, heat management devices and accessories from Istanbul. Wholesale prices for cafés, lounges and dealers.",
     shopPromise: "Wholesale prices for cafés, lounges and dealers; shipped from Istanbul.",
@@ -138,6 +143,7 @@ const en: Dictionary = {
 const ar: Dictionary = {
   meta: {
     siteTitle: "Nargile Malzemesi — شيشة كاملة، رؤوس شيشة، فحم وإكسسوارات | جملة وتجزئة",
+    homeHeading: "أطقم الشيشة والرؤوس والفحم والإكسسوارات",
     defaultDescription:
       "شيشة كاملة، رؤوس شيشة، فحم جوز الهند الطبيعي، منظمات حرارة وإكسسوارات من إسطنبول. أسعار جملة للمقاهي والموزعين.",
     shopPromise: "أسعار جملة للمقاهي والموزعين؛ شحن من إسطنبول.",

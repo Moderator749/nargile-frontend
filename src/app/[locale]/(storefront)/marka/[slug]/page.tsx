@@ -6,7 +6,7 @@ import { brandForSlug } from "@/lib/brandMatch";
 import { DEFAULT_LOCALE, LOCALES, localePath } from "@/lib/i18n/config";
 import { textToHtml } from "@/lib/richText";
 import { getI18n } from "@/lib/i18n/server";
-import { brandCanonical, brandDescription, brandHref, metaDescription, pageMetadata } from "@/lib/seo";
+import { brandCanonical, brandDescription, brandPageHref, metaDescription, pageMetadata } from "@/lib/seo";
 import { getBrands, getCategories, getPublicProducts, required } from "@/lib/server/catalog";
 
 // A day, as the catalog (CATALOG_REVALIDATE); admin edits refresh it immediately.
@@ -60,7 +60,7 @@ export default async function BrandPage(props: PageProps<"/[locale]/marka/[slug]
   const { slug } = await props.params;
   const [{ brands, brand, products }, categories, { locale, t }] = await Promise.all([load(slug), getCategories(), getI18n()]);
   if (!brand) notFound();
-  if (brand.slug !== slug) permanentRedirect(localePath(locale, brandHref(brand.slug)));
+  if (brand.slug !== slug) permanentRedirect(localePath(locale, brandPageHref(brand.slug)));
 
   return (
     <CatalogScreen
@@ -69,7 +69,7 @@ export default async function BrandPage(props: PageProps<"/[locale]/marka/[slug]
       intro={ownDescription(brand, locale) ? textToHtml(brand.description ?? "") : null}
       breadcrumbs={[
         { name: t.nav.home, href: "/" },
-        { name: brand.name, href: brandHref(brand.slug) },
+        { name: brand.name, href: brandPageHref(brand.slug) },
       ]}
       categories={categories ?? []}
       activeCategory={null}

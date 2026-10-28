@@ -24,10 +24,11 @@ const pillClass =
 /** A column of links, each behind a red arrow — pointing, and nudging, the way the text reads. */
 function ArrowLinks({ links }: { links: { label: string; href: string }[] }) {
   return (
-    <ul className="space-y-2.5">
+    // A phone's link is a row a finger can hit (40px, its padding); from md the list is as dense as it was.
+    <ul className="md:space-y-2.5">
       {links.map((link, i) => (
         <li key={`${link.href}-${i}`}>
-          <Link href={link.href} className={`group flex gap-2 ${linkClass}`}>
+          <Link href={link.href} className={`group flex gap-2 py-2 md:py-0 ${linkClass}`}>
             <ArrowRight
               className="mt-1.5 h-3.5 w-3.5 shrink-0 text-red-600 transition-transform duration-200 rtl:-scale-x-100 motion-safe:group-hover:translate-x-0.5 rtl:motion-safe:group-hover:-translate-x-0.5"
               aria-hidden
@@ -179,7 +180,7 @@ export async function SiteFooter({ footer }: { footer: HomeFooter }) {
                         href={social.href}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className={`inline-flex items-center gap-2.5 ${linkClass}`}
+                        className={`inline-flex min-h-10 items-center gap-2.5 md:min-h-0 ${linkClass}`}
                       >
                         <Icon className="h-4 w-4 shrink-0 text-red-600" />
                         {social.label}

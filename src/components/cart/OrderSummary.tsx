@@ -22,6 +22,8 @@ import type { Cart, LegalDocument, LegalKey, PaymentMethod, ShippingMethod, Stor
 
 interface OrderSummaryProps {
   isLoggedIn: boolean;
+  /** A guest checkout: no Sultan Puan to spend, no account to keep a card in. */
+  guest?: boolean;
   /**
    * Whether this account gets the retail promotions. False hides the points
    * box and the discount nudges rather than offering what will not be given;
@@ -294,7 +296,7 @@ export function OrderSummary(props: OrderSummaryProps) {
   const b2bInvoice =
     !!quote && !quote.perks_eligible && !props.quoteOnly && quote.subtotal_excl_tax != null && quote.vat_total != null;
   // Sultan Puan is a retail promotion and can be switched off in the panel.
-  const loyalty = props.perks && params.loyalty.enabled;
+  const loyalty = props.perks && params.loyalty.enabled && !props.guest;
   // A B2B cart with products that give its list the havale discount ("Bayide / Toptanda / Kafede …").
   const b2bHavale = !!quote?.items.some((i) => i.havale_eligible);
   const transferHint = transferDiscountHint(params, locale);
@@ -328,7 +330,7 @@ export function OrderSummary(props: OrderSummaryProps) {
             transferDiscount={props.perks ? transferHint : b2bHavale && transferHint ? t.markedProducts(transferHint) : null}
             cardAvailable={props.cardAvailable}
             saveCard={props.saveCard}
-            onSaveCardChange={props.onSaveCardChange}
+            onSaveCardChange={props.guest ? undefined : props.onSaveCardChange}
           />
           {props.paymentMethod === "BANK_TRANSFER" && <TransferDetails quote={quote} />}
           {/* Sultan Puan is a retail promotion too, so it is not offered to an

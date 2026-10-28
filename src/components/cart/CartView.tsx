@@ -27,6 +27,7 @@ import {
   type AddressDraft,
 } from "@/components/cart/delivery/addressDraft";
 import { EmptyCart } from "@/components/cart/EmptyCart";
+import { GuestCheckoutStart } from "@/components/cart/GuestCheckoutStart";
 import {
   DEFAULT_FIRM_CARD,
   METHOD_BY_FIRM_CARD,
@@ -227,10 +228,8 @@ export function CartView({ checkoutStep = false }: { checkoutStep?: boolean } = 
       .catch(() => {});
   }, [cartHydrated, holdsToStock, items, updateQuantity]);
 
-  // /checkout is for a signed-in buyer: a visitor signs in first and comes back here.
-  useEffect(() => {
-    if (checkoutStep && authHydrated && !user) router.replace(to("/login?next=/checkout"));
-  }, [checkoutStep, authHydrated, user, router, to]);
+  // /checkout opens for a visitor too: it starts with "Üye olmadan devam et"
+  // beside signing in (GuestCheckoutStart), where the steps will follow.
   // The summary in sight or not: the phone's checkout bar shows while it is not.
   const summary = useRef<HTMLDivElement>(null);
   const [summaryInView, setSummaryInView] = useState(true);
@@ -248,7 +247,7 @@ export function CartView({ checkoutStep = false }: { checkoutStep?: boolean } = 
   const steps = useRef<HTMLDivElement>(null);
   const landed = useRef(false);
   useEffect(() => {
-    if (!checkoutStep || landed.current || !user || !cartHydrated || !steps.current) return;
+    if (!checkoutStep || landed.current || !authHydrated || !cartHydrated || !steps.current) return;
     landed.current = true;
     steps.current.scrollIntoView({ block: "start" });
   });
@@ -520,8 +519,10 @@ export function CartView({ checkoutStep = false }: { checkoutStep?: boolean } = 
 
   async function handleCheckout() {
     if (!isLoggedIn) {
-      // Signed in (or signed up), they land at the delivery and payment steps.
-      router.push(to("/login?next=/checkout"));
+      // On to /checkout, where a visitor signs in or goes on as a guest; there
+      // already, to the guest form.
+      if (checkoutStep) steps.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      else router.push(to("/checkout"));
       return;
     }
     if (submitting || checkoutBlocker) return;
@@ -648,6 +649,12 @@ export function CartView({ checkoutStep = false }: { checkoutStep?: boolean } = 
           </ul>
           {/* Where /checkout opens: the steps after the lines. */}
           <div ref={steps} id="odeme-adimlari" className="scroll-mt-28" />
+          {/* A visitor at checkout: a guest, or signing in, before the steps. */}
+          {checkoutStep && authHydrated && !user && (
+            <div className="mt-6">
+              <GuestCheckoutStart />
+            </div>
+          )}
           {/* Fatura first: how the invoice is issued decides what the delivery
               cards below offer. A firm's invoice is already made out to the
               firm, so only a personal order has a choice to make here. */}
@@ -761,6 +768,7 @@ export function CartView({ checkoutStep = false }: { checkoutStep?: boolean } = 
         <div ref={summary} id="siparis-ozeti" className="scroll-mt-24 lg:self-stretch">
         <OrderSummary
           isLoggedIn={isLoggedIn}
+          guest={!!user?.is_guest}
           perks={perks}
           params={params}
           cardAvailable={cardAvailable}

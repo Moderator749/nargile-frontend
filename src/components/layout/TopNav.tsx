@@ -38,6 +38,11 @@ function CategoryDrawer({ categories, links = [] }: { categories: ResolvedNav[];
   const open = useCategoryDrawer((s) => s.open);
   const setOpen = useCategoryDrawer((s) => s.setOpen);
   const dialog = useRef<HTMLDialogElement>(null);
+  // A page both menus lead to ("Nargile Takımları" heads the column and sits in
+  // the bar) is listed once, with the categories: on a phone both lists are
+  // shown, one under the other.
+  const listed = new Set(categories.map((c) => c.href));
+  const barOnly = links.filter((l) => !listed.has(l.href));
 
   // The native dialog brings the focus trap, Escape and the inert background.
   useEffect(() => {
@@ -76,10 +81,10 @@ function CategoryDrawer({ categories, links = [] }: { categories: ResolvedNav[];
       {/* The top bar's links on a phone (the bar is hidden there), as rows of
           the same list as the categories under them: one height, one padding,
           one hairline between every row. */}
-      {links.length > 0 && (
+      {barOnly.length > 0 && (
         <nav aria-label={t.nav.mainMenu} className="border-b border-border md:hidden">
           <Suspense fallback={null}>
-            <CategoryList items={links} onNavigate={() => setOpen(false)} />
+            <CategoryList items={barOnly} onNavigate={() => setOpen(false)} />
           </Suspense>
         </nav>
       )}

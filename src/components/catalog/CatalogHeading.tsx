@@ -42,7 +42,8 @@ export async function CatalogHeading({
                   </span>
                 ) : (
                   <>
-                    <Link href={crumb.href} className="transition-colors duration-200 hover:text-foreground">
+                    {/* A finger-sized target on the 10px line, without moving it. */}
+                    <Link href={crumb.href} className="-my-3 inline-block py-3 transition-colors duration-200 hover:text-foreground">
                       {crumb.name}
                     </Link>
                     <span aria-hidden className="text-neutral-300 dark:text-neutral-700">

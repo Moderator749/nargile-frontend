@@ -184,6 +184,16 @@ const nextConfig: NextConfig = {
         destination: to,
         statusCode: 301 as const,
       })),
+      // In every language: a short address the panel once linked to, and the
+      // Sultan Nargile brand page, whose authority goes to its category (see
+      // BRAND_CATEGORY in src/lib/seo).
+      ...["", "/en", "/ar"].flatMap((prefix) =>
+        [
+          ["malzemeler", "catalog/malzemeler"],
+          ["marka/sultan-nargile", "catalog/sultan"],
+          ["marka/sultan", "catalog/sultan"],
+        ].map(([from, to]) => ({ source: `${prefix}/${from}`, destination: `${prefix}/${to}`, statusCode: 301 as const })),
+      ),
       // The lüle guide, split into four articles (see RETIRED_ARTICLES).
       ...Object.entries(RETIRED_ARTICLES).flatMap(([from, to]) =>
         ["", "/en", "/ar"].map((prefix) => ({

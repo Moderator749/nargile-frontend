@@ -21,7 +21,8 @@ interface PaymentMethodPickerProps {
   cardAvailable: boolean;
   /** "Kart bilgilerimi sonraki alışverişlerim için güvenle kaydet". */
   saveCard: boolean;
-  onSaveCardChange: (checked: boolean) => void;
+  /** Absent for a guest, which has no account to keep a card in. */
+  onSaveCardChange?: (checked: boolean) => void;
 }
 
 export function PaymentMethodPicker({
@@ -80,7 +81,7 @@ export function PaymentMethodPicker({
       {/* Only the card has anything to save. The card itself never reaches us:
           the payment provider keeps the token, and the order only remembers
           that it was asked for. */}
-      {value === "CREDIT_CARD" && (
+      {value === "CREDIT_CARD" && onSaveCardChange && (
         <label className="mt-3 flex cursor-pointer items-start gap-2.5 text-xs leading-5">
           <input
             type="checkbox"
