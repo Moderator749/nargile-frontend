@@ -50,6 +50,13 @@ export const homeMessages = defineMessages({
       advantagesTitle: "Hacim büyür. Maliyet küçülür.",
       advantagesText: "Sultan Nargile ile alışverişlerinizde toptan ve perakende ayrıcalıklarından yararlanın.",
       advantagesLink: "Avantajları keşfet",
+      /** Under the community card's title: what the channels bring. */
+      channelsNote: "Yeni ürünler, kampanyalar ve kullanım videoları",
+      /** The advantages card's short lines; the figures are the live "Parametreler". */
+      featureOriginal: "Orijinal ürün güvencesi",
+      featureShipping: (amount: string) => `${amount} üzeri ücretsiz kargo`,
+      featureLoyalty: (rate: string) => `${rate} SultanPuan kazancı`,
+      featureWholesale: "Size özel toptan fiyatlar",
     },
     perks: {
       heading: "Mağaza avantajları",
@@ -181,6 +188,11 @@ export const homeMessages = defineMessages({
       advantagesTitle: "Order more. Pay less.",
       advantagesText: "Enjoy wholesale and retail perks every time you shop with Sultan Nargile.",
       advantagesLink: "Explore the perks",
+      channelsNote: "New arrivals, offers and how-to videos",
+      featureOriginal: "Genuine products, guaranteed",
+      featureShipping: (amount: string) => `Free shipping over ${amount}`,
+      featureLoyalty: (rate: string) => `Earn ${rate} in SultanPuan`,
+      featureWholesale: "Your own wholesale prices",
     },
     perks: {
       heading: "Store perks",
@@ -311,6 +323,11 @@ export const homeMessages = defineMessages({
       advantagesTitle: "اطلب أكثر، وادفع أقل.",
       advantagesText: "استفد من مزايا الجملة والتجزئة في كل مشترياتك مع Sultan Nargile.",
       advantagesLink: "اكتشف المزايا",
+      channelsNote: "منتجات جديدة وعروض وفيديوهات استخدام",
+      featureOriginal: "منتجات أصلية مضمونة",
+      featureShipping: (amount: string) => `شحن مجاني للطلبات فوق ${amount}`,
+      featureLoyalty: (rate: string) => `اكسب ${rate} بنقاط SultanPuan`,
+      featureWholesale: "أسعار جملة خاصة بك",
     },
     perks: {
       heading: "مزايا المتجر",
