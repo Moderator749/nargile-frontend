@@ -135,10 +135,19 @@ export function StoreDetails({
         <div className="space-y-4">
           <StoreMap src={mapEmbedSrc(store)} title={m.mapTitle(district)} label={m.showMap} note={m.mapNote} />
           {store.photos.length > 0 ? (
-            <ul className="grid grid-cols-2 gap-3">
-              {store.photos.map((photo) => (
-                <li key={photo.src} className="relative aspect-[4/3] overflow-hidden rounded-2xl">
-                  <Image src={photo.src} alt={photo.alt[locale]} fill sizes="(min-width: 1024px) 25vw, 50vw" className="object-cover" />
+            // Each photo whole, in its own proportions: they are cropped to what may be shown.
+            <ul className="space-y-4">
+              {store.photos.map((photo, i) => (
+                <li key={photo.src} className="overflow-hidden rounded-2xl">
+                  <Image
+                    src={photo.src}
+                    alt={photo.alt[locale]}
+                    width={photo.width}
+                    height={photo.height}
+                    sizes="(min-width: 1024px) 480px, 100vw"
+                    priority={i === 0}
+                    className="h-auto w-full"
+                  />
                 </li>
               ))}
             </ul>

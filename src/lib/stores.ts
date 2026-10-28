@@ -83,10 +83,34 @@ export const STORES: Store[] = [
     phone: null,
     whatsappHref: null,
     hours: FOOTER_HOURS,
-    geo: null,
+    // Its pin on Google Maps (Plus Code 2V55+J9), as the shop gave it.
+    geo: { latitude: 41.009062, longitude: 28.858438 },
     mapsUrl: null,
     sameAs: ["https://www.instagram.com/sultannargile_bahcelievler"],
-    photos: [],
+    // Cropped to the hookahs: the shop's tobacco brands' signs and anyone who
+    // could be recognised are left out (4207 sayılı Kanun, KVKK).
+    photos: [
+      {
+        src: "/media/stores/bahcelievler/vitrin.webp",
+        width: 668,
+        height: 599,
+        alt: {
+          tr: "Bahçelievler mağazamızın vitrininde nargile takımları",
+          en: "Hookah sets in the window of our Bahçelievler store",
+          ar: "أطقم شيشة في واجهة متجرنا في باهتشيليفلر",
+        },
+      },
+      {
+        src: "/media/stores/bahcelievler/dis-vitrin.webp",
+        width: 760,
+        height: 220,
+        alt: {
+          tr: "Bahçelievler mağazamızın sokaktan görünen vitrini",
+          en: "The window of our Bahçelievler store from the street",
+          ar: "واجهة متجرنا في باهتشيليفلر من الشارع",
+        },
+      },
+    ],
     nearby: ["Bakırköy", "Güngören", "Bağcılar", "Küçükçekmece"],
     copy: {
       tr: {
@@ -132,10 +156,32 @@ export const STORES: Store[] = [
     phone: null,
     whatsappHref: null,
     hours: FOOTER_HOURS,
-    geo: null,
+    // Its pin on Google Maps (Plus Code 2J9W+89), as the shop gave it.
+    geo: { latitude: 41.018312, longitude: 28.645938 },
     mapsUrl: null,
     sameAs: ["https://www.instagram.com/sultannargile_esenyurt"],
-    photos: [],
+    photos: [
+      {
+        src: "/media/stores/esenyurt/magaza-ici-1.webp",
+        width: 960,
+        height: 540,
+        alt: {
+          tr: "Esenyurt mağazamızda sergilenen nargile takımları",
+          en: "Hookah sets on display in our Esenyurt store",
+          ar: "أطقم شيشة معروضة في متجرنا في إسنيورت",
+        },
+      },
+      {
+        src: "/media/stores/esenyurt/magaza-ici-2.webp",
+        width: 1139,
+        height: 1020,
+        alt: {
+          tr: "Esenyurt mağazamızın içi: Rus ve klasik nargile takımları",
+          en: "Inside our Esenyurt store: Russian-style and classic hookah sets",
+          ar: "داخل متجرنا في إسنيورت: شيشة روسية وكلاسيكية",
+        },
+      },
+    ],
     nearby: ["Beylikdüzü", "Avcılar", "Büyükçekmece", "Başakşehir"],
     copy: {
       tr: {
@@ -186,9 +232,12 @@ export const storeForBranch = (name: string) =>
 /** "Soğanlı Mah. … No:5/A Bahçelievler / İstanbul", as the footer writes it. */
 export const fullAddress = (store: Store) => `${store.street} ${store.district.tr} / İstanbul`;
 
-/** Where "Yol Tarifi" goes: the profile's own map link, else a Google Maps search for the address. */
+/** Where "Yol Tarifi" goes: the profile's own map link, else its pin, else a Google Maps search for the address. */
 export const directionsHref = (store: Store) =>
-  store.mapsUrl ?? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress(store))}`;
+  store.mapsUrl ??
+  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+    store.geo ? `${store.geo.latitude},${store.geo.longitude}` : fullAddress(store),
+  )}`;
 
 /** The map shown when the visitor asks for it: by coordinates where given, else by address. */
 export const mapEmbedSrc = (store: Store) =>
