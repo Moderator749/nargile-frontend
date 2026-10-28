@@ -29,6 +29,7 @@ export function StoreDetails({
   other,
   locale,
   phone,
+  whatsapp,
   whatsappHref,
 }: {
   store: Store;
@@ -36,6 +37,8 @@ export function StoreDetails({
   locale: Locale;
   /** The store's own number, else the shop's. */
   phone: string;
+  /** The store's WhatsApp line, where it is not the phone number above. */
+  whatsapp: string | null;
   whatsappHref: string;
 }) {
   const m = storeMessages[locale];
@@ -86,6 +89,17 @@ export function StoreDetails({
                 </a>
               </span>
             </p>
+            {whatsapp && (
+              <p className="flex gap-3">
+                <MessageCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" aria-hidden />
+                <span>
+                  <strong className="block text-xs font-bold uppercase tracking-wider text-muted-foreground">{m.whatsapp}</strong>
+                  <a href={whatsappHref} target="_blank" rel="noopener noreferrer" dir="ltr" className="text-sm text-neutral-900 underline-offset-4 hover:underline dark:text-zinc-100">
+                    {whatsapp}
+                  </a>
+                </span>
+              </p>
+            )}
             {store.hours && (
               <div className="flex gap-3">
                 <Clock className="mt-0.5 h-5 w-5 shrink-0 text-red-600" aria-hidden />

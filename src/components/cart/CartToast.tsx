@@ -57,7 +57,7 @@ export function CartToast() {
     <div
       role="status"
       aria-live="polite"
-      className="pointer-events-none fixed inset-x-3 bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px)+var(--buy-bar-height,0px))] z-[60] flex justify-center md:inset-x-auto md:end-6 md:bottom-6 md:justify-end"
+      className="pointer-events-none fixed inset-x-3 bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px)+var(--buy-bar-height,0px))] z-[60] flex justify-center md:inset-x-auto md:end-6 md:bottom-24 md:justify-end"
     >
       {toast && shown && (
         <div

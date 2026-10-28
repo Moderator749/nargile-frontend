@@ -8,7 +8,7 @@ import { getI18n } from "@/lib/i18n/server";
 import { storeMessages } from "@/lib/i18n/messages/stores";
 import { breadcrumbJsonLd, pageMetadata } from "@/lib/seo";
 import { getHomepage } from "@/lib/server/homepage";
-import { STORES, STORES_HREF, findStore, storeHref, storeJsonLd } from "@/lib/stores";
+import { STORES, STORES_HREF, findStore, storeHref, storeJsonLd, whatsappLink } from "@/lib/stores";
 
 export const dynamicParams = false;
 
@@ -58,7 +58,8 @@ export default async function StorePage(props: PageProps<"/[locale]/magazalar/[s
           other={STORES.find((s) => s.slug !== store.slug) ?? null}
           locale={locale}
           phone={phone}
-          whatsappHref={store.whatsappHref ?? home.footer.whatsapp_href}
+          whatsapp={store.whatsapp && store.whatsapp !== phone ? store.whatsapp : null}
+          whatsappHref={store.whatsapp ? whatsappLink(store.whatsapp, m.whatsappGreeting) : home.footer.whatsapp_href}
         />
       </div>
     </main>

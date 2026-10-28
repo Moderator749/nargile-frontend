@@ -50,8 +50,8 @@ export interface Store {
   postalCode: string | null;
   /** The store's own line ("0212 …"); null = the shop's main number stands in. */
   phone: string | null;
-  /** wa.me link of the store's own WhatsApp; null = the shop's. */
-  whatsappHref: string | null;
+  /** The store's WhatsApp line, as written on the page ("+90 532 …"); null = the shop's. */
+  whatsapp: string | null;
   hours: OpeningHours[] | null;
   geo: { latitude: number; longitude: number } | null;
   /** Its place on Google Maps (the profile's "Share" link). */
@@ -64,9 +64,8 @@ export interface Store {
   copy: Record<Locale, { title: string; heading: string; description: string; intro: string[] }>;
 }
 
-// Hours as the footer has always given them ("Hafta içi 09:30 – 20:00 ·
-// Cumartesi 09:30 – 20:00"); Sunday is not stated there, so it is left out
-// (closed) until the shop says otherwise.
+// Both stores, as the shop confirmed on 2026-10-28: Monday to Saturday
+// 09:30–20:00, closed on Sunday.
 const FOOTER_HOURS: OpeningHours[] = [
   { days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"], opens: "09:30", closes: "20:00" },
 ];
@@ -74,14 +73,15 @@ const FOOTER_HOURS: OpeningHours[] = [
 export const STORES: Store[] = [
   {
     slug: "bahcelievler",
-    verified: false,
-    businessName: null,
+    verified: true,
+    businessName: "Sultan Nargile Bahçelievler",
     district: { tr: "Bahçelievler", en: "Bahçelievler", ar: "باهتشيليفلر" },
     street: "Soğanlı Mah. Site Sok. No:5/A",
     neighbourhood: "Soğanlı",
-    postalCode: null,
-    phone: null,
-    whatsappHref: null,
+    postalCode: "34183",
+    // One line for calls and WhatsApp.
+    phone: "+90 532 787 30 43",
+    whatsapp: "+90 532 787 30 43",
     hours: FOOTER_HOURS,
     // Its pin on Google Maps (Plus Code 2V55+J9), as the shop gave it.
     geo: { latitude: 41.009062, longitude: 28.858438 },
@@ -114,32 +114,32 @@ export const STORES: Store[] = [
     nearby: ["Bakırköy", "Güngören", "Bağcılar", "Küçükçekmece"],
     copy: {
       tr: {
-        title: "Bahçelievler Nargile Mağazası",
-        heading: "Bahçelievler Nargile Mağazası",
+        title: "Sultan Nargile Bahçelievler | Nargile Mağazası",
+        heading: "Sultan Nargile Bahçelievler Mağazası",
         description:
           "Bahçelievler Soğanlı'daki mağazamızda nargile takımı, lüle, kömür, közlük ve marpuç çeşitlerini yerinde görün. Adres, çalışma saatleri ve yol tarifi.",
         intro: [
-          "Nargile Malzemesi'nin Bahçelievler mağazası Soğanlı Mahallesi'nde. Nargile takımlarını, lüleleri, nargile kömürlerini, közlükleri ve marpuçları mağazamızda yakından inceleyebilir, size en uygun takımı seçmek için ekibimize danışabilirsiniz.",
+          "Sultan Nargile Bahçelievler, Nargile Malzemesi'nin Soğanlı Mahallesi'ndeki mağazası. Nargile takımlarını, lüleleri, nargile kömürlerini, közlükleri ve marpuçları mağazamızda yakından inceleyebilir, size en uygun takımı seçmek için ekibimize danışabilirsiniz.",
           "Bakırköy, Güngören, Bağcılar ve Küçükçekmece gibi yakın semtlerden de kolayca ulaşabileceğiniz mağazamızda kafe ve işletmeler için toptan alım ve bayi fiyatları hakkında da bilgi alabilirsiniz. Aradığınız ürünün mağazada olup olmadığını gelmeden önce telefonla ya da WhatsApp'tan sorabilirsiniz.",
         ],
       },
       en: {
-        title: "Hookah Shop in Bahçelievler, Istanbul",
-        heading: "Our Hookah Shop in Bahçelievler",
+        title: "Sultan Nargile Bahçelievler | Hookah Shop in Istanbul",
+        heading: "Sultan Nargile Bahçelievler Store",
         description:
           "Visit our hookah shop in Soğanlı, Bahçelievler, Istanbul: hookah sets, bowls, charcoal, heat management devices and hoses. Address, opening hours and directions.",
         intro: [
-          "Nargile Malzemesi's Bahçelievler store is in the Soğanlı neighbourhood. See hookah sets, bowls, charcoal, heat management devices and hoses up close, and ask our team to help you choose the right set.",
+          "Sultan Nargile Bahçelievler is Nargile Malzemesi's store in the Soğanlı neighbourhood. See hookah sets, bowls, charcoal, heat management devices and hoses up close, and ask our team to help you choose the right set.",
           "Easy to reach from Bakırköy, Güngören, Bağcılar and Küçükçekmece. Cafés and lounges can ask about wholesale and dealer prices in store. To check that an item is in stock before you come, call or message us on WhatsApp.",
         ],
       },
       ar: {
-        title: "متجر شيشة في باهتشيليفلر، إسطنبول",
-        heading: "متجر الشيشة في باهتشيليفلر",
+        title: "Sultan Nargile باهتشيليفلر | متجر شيشة في إسطنبول",
+        heading: "متجر Sultan Nargile في باهتشيليفلر",
         description:
           "زوروا متجر الشيشة في سوغانلي، باهتشيليفلر، إسطنبول: أطقم شيشة، رؤوس، فحم، منظمات حرارة ولي. العنوان وساعات العمل والاتجاهات.",
         intro: [
-          "يقع متجر Nargile Malzemesi في باهتشيليفلر في حي سوغانلي. شاهد أطقم الشيشة والرؤوس والفحم ومنظمات الحرارة واللي عن قرب، واستشر فريقنا لاختيار الطقم المناسب لك.",
+          "Sultan Nargile باهتشيليفلر هو متجر Nargile Malzemesi في حي سوغانلي. شاهد أطقم الشيشة والرؤوس والفحم ومنظمات الحرارة واللي عن قرب، واستشر فريقنا لاختيار الطقم المناسب لك.",
           "يسهل الوصول إليه من باكركوي وغونغورن وباغجيلار وكوتشوك تشكمجة. يمكن للمقاهي الاستفسار عن أسعار الجملة والموزعين في المتجر. وللتأكد من توفر منتج قبل زيارتك، اتصل بنا أو راسلنا على واتساب.",
         ],
       },
@@ -147,14 +147,14 @@ export const STORES: Store[] = [
   },
   {
     slug: "esenyurt",
-    verified: false,
-    businessName: null,
+    verified: true,
+    businessName: "Sultan Nargile Esenyurt",
     district: { tr: "Esenyurt", en: "Esenyurt", ar: "إسنيورت" },
     street: "Barbaros Hayrettin Paşa Mah. 1988 Sok. No:4 Papatya 1 Residence",
     neighbourhood: "Barbaros Hayrettin Paşa",
-    postalCode: null,
-    phone: null,
-    whatsappHref: null,
+    postalCode: "34522",
+    phone: "0212 853 60 30",
+    whatsapp: "+90 552 125 60 70",
     hours: FOOTER_HOURS,
     // Its pin on Google Maps (Plus Code 2J9W+89), as the shop gave it.
     geo: { latitude: 41.018312, longitude: 28.645938 },
@@ -185,32 +185,32 @@ export const STORES: Store[] = [
     nearby: ["Beylikdüzü", "Avcılar", "Büyükçekmece", "Başakşehir"],
     copy: {
       tr: {
-        title: "Esenyurt Nargile Mağazası",
-        heading: "Esenyurt Nargile Mağazası",
+        title: "Sultan Nargile Esenyurt | Nargile Mağazası",
+        heading: "Sultan Nargile Esenyurt Mağazası",
         description:
           "Esenyurt'taki mağazamızda nargile takımı, lüle, kömür, közlük ve marpuç çeşitlerini yerinde görün. Adres, çalışma saatleri ve yol tarifi.",
         intro: [
-          "Nargile Malzemesi'nin Esenyurt mağazası Barbaros Hayrettin Paşa Mahallesi'nde. Nargile takımlarını, lüleleri, nargile kömürlerini, közlükleri ve marpuçları mağazamızda yakından inceleyebilir, size en uygun takımı seçmek için ekibimize danışabilirsiniz.",
+          "Sultan Nargile Esenyurt, Nargile Malzemesi'nin Barbaros Hayrettin Paşa Mahallesi'ndeki mağazası. Nargile takımlarını, lüleleri, nargile kömürlerini, közlükleri ve marpuçları mağazamızda yakından inceleyebilir, size en uygun takımı seçmek için ekibimize danışabilirsiniz.",
           "Beylikdüzü, Avcılar, Büyükçekmece ve Başakşehir gibi yakın ilçelerden de kolayca ulaşabileceğiniz mağazamızda kafe ve işletmeler için toptan alım ve bayi fiyatları hakkında da bilgi alabilirsiniz. Aradığınız ürünün mağazada olup olmadığını gelmeden önce telefonla ya da WhatsApp'tan sorabilirsiniz.",
         ],
       },
       en: {
-        title: "Hookah Shop in Esenyurt, Istanbul",
-        heading: "Our Hookah Shop in Esenyurt",
+        title: "Sultan Nargile Esenyurt | Hookah Shop in Istanbul",
+        heading: "Sultan Nargile Esenyurt Store",
         description:
           "Visit our hookah shop in Esenyurt, Istanbul: hookah sets, bowls, charcoal, heat management devices and hoses. Address, opening hours and directions.",
         intro: [
-          "Nargile Malzemesi's Esenyurt store is in the Barbaros Hayrettin Paşa neighbourhood. See hookah sets, bowls, charcoal, heat management devices and hoses up close, and ask our team to help you choose the right set.",
+          "Sultan Nargile Esenyurt is Nargile Malzemesi's store in the Barbaros Hayrettin Paşa neighbourhood. See hookah sets, bowls, charcoal, heat management devices and hoses up close, and ask our team to help you choose the right set.",
           "Easy to reach from Beylikdüzü, Avcılar, Büyükçekmece and Başakşehir. Cafés and lounges can ask about wholesale and dealer prices in store. To check that an item is in stock before you come, call or message us on WhatsApp.",
         ],
       },
       ar: {
-        title: "متجر شيشة في إسنيورت، إسطنبول",
-        heading: "متجر الشيشة في إسنيورت",
+        title: "Sultan Nargile إسنيورت | متجر شيشة في إسطنبول",
+        heading: "متجر Sultan Nargile في إسنيورت",
         description:
           "زوروا متجر الشيشة في إسنيورت، إسطنبول: أطقم شيشة، رؤوس، فحم، منظمات حرارة ولي. العنوان وساعات العمل والاتجاهات.",
         intro: [
-          "يقع متجر Nargile Malzemesi في إسنيورت في حي بارباروس خير الدين باشا. شاهد أطقم الشيشة والرؤوس والفحم ومنظمات الحرارة واللي عن قرب، واستشر فريقنا لاختيار الطقم المناسب لك.",
+          "Sultan Nargile إسنيورت هو متجر Nargile Malzemesi في حي بارباروس خير الدين باشا. شاهد أطقم الشيشة والرؤوس والفحم ومنظمات الحرارة واللي عن قرب، واستشر فريقنا لاختيار الطقم المناسب لك.",
           "يسهل الوصول إليه من بيليك دوزو وأفجيلار وبيوك تشكمجة وباشاك شهير. يمكن للمقاهي الاستفسار عن أسعار الجملة والموزعين في المتجر. وللتأكد من توفر منتج قبل زيارتك، اتصل بنا أو راسلنا على واتساب.",
         ],
       },
@@ -228,6 +228,16 @@ export const publishedStores = () => STORES.filter((s) => s.verified);
 /** The footer's branch line ("Bahçelievler") → its store, by district. */
 export const storeForBranch = (name: string) =>
   STORES.find((s) => s.district.tr.toLocaleLowerCase("tr") === name.trim().toLocaleLowerCase("tr")) ?? null;
+
+/** wa.me wants the number's digits, country code first. */
+export function whatsappLink(number: string, text?: string): string {
+  const digits = number.replace(/\D/g, "");
+  const international = number.trim().startsWith("+") ? digits : `90${digits.replace(/^0/, "")}`;
+  return `https://wa.me/${international}${text ? `?text=${encodeURIComponent(text)}` : ""}`;
+}
+
+/** The line the floating WhatsApp button opens: Bahçelievler's, except on Esenyurt's own page. */
+export const WHATSAPP_STORE = "bahcelievler";
 
 /** "Soğanlı Mah. … No:5/A Bahçelievler / İstanbul", as the footer writes it. */
 export const fullAddress = (store: Store) => `${store.street} ${store.district.tr} / İstanbul`;
@@ -251,12 +261,11 @@ export function missingFields(store: Store): string[] {
     !store.businessName && "İşletme Profili'ndeki işletme adı",
     !store.postalCode && "posta kodu",
     !store.phone && "mağaza telefonu",
+    !store.whatsapp && "WhatsApp hattı",
     !store.geo && "harita konumu (enlem/boylam)",
     !store.mapsUrl && "Google Haritalar bağlantısı",
     !store.sameAs.some((u) => /google\.|g\.page|goo\.gl/.test(u)) && "Google İşletme Profili bağlantısı",
     store.photos.length === 0 && "mağaza fotoğrafları",
-    // The hours are the footer's; Sunday is not stated there.
-    "çalışma saatlerinin teyidi (Pazar dahil)",
   ].filter((field): field is string => !!field);
 }
 
@@ -273,6 +282,7 @@ export function storeJsonLd(store: Store, locale: Locale = DEFAULT_LOCALE, fallb
     "@type": "Store",
     "@id": `${SITE_URL}${storeHref(store)}#store`,
     name: store.businessName ?? `Nargile Malzemesi ${store.district.tr}`,
+    ...(store.businessName ? { alternateName: `Nargile Malzemesi ${store.district.tr}` } : {}),
     url,
     ...(store.photos.length > 0 ? { image: store.photos.map((p) => (p.src.startsWith("/") ? `${SITE_URL}${p.src}` : p.src)) } : {}),
     ...(phone ? { telephone: phone } : {}),

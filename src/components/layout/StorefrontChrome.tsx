@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { ExportNotice } from "@/components/auth/ExportNotice";
 import { CartToast } from "@/components/cart/CartToast";
 import { AnnouncementPopup } from "@/components/banner/AnnouncementPopup";
+import { FloatingWhatsApp } from "@/components/layout/FloatingWhatsApp";
 import { MobileTabBar } from "@/components/layout/MobileTabBar";
 import { SearchSheet } from "@/components/search/SearchSheet";
 import { Navbar } from "@/components/layout/Navbar";
@@ -44,6 +45,8 @@ export async function StorefrontChrome({ children }: { children: ReactNode }) {
       <SearchSheet />
       {/* "… sepete eklendi · Sepete Git", for whatever added it. */}
       <CartToast />
+      {/* WhatsApp, in the bottom corner of every page but the basket and checkout. */}
+      <FloatingWhatsApp />
     </>
   );
 }
