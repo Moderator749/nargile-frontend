@@ -28,6 +28,9 @@ export const catalogMessages = defineMessages({
     breadcrumb: "Sayfa konumu",
     /** Over a category's introduction where a phone shows it, under the products. */
     about: (name: string) => `${name} Hakkında`,
+    /** The row of a category's family under its heading: the group's name, then "all of it". */
+    family: (group: string) => `${group} çeşitleri`,
+    familyAll: "Tümü",
     segments: TR_SEGMENT,
     filters: {
       showCategories: "Kategorileri Göster",
@@ -141,6 +144,8 @@ export const catalogMessages = defineMessages({
   en: {
     breadcrumb: "Breadcrumb",
     about: (name: string) => `About ${name}`,
+    family: (group: string) => `Types of ${group}`,
+    familyAll: "All",
     segments: EN_SEGMENT,
     filters: {
       showCategories: "Show Categories",
@@ -249,6 +254,8 @@ export const catalogMessages = defineMessages({
   ar: {
     breadcrumb: "مسار التنقل",
     about: (name: string) => `حول ${name}`,
+    family: (group: string) => `أنواع ${group}`,
+    familyAll: "الكل",
     segments: AR_SEGMENT,
     filters: {
       view: "طريقة العرض",

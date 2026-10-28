@@ -88,7 +88,7 @@ export const FALLBACK_SLIDE: HeroSlide = {
   id: "fallback",
   eyebrow: "Nargile Malzemesi",
   title: "Kusursuz Mühendislik. Saf Deneyim.",
-  subtitle: "Endüstriyel Nargile ve Premium Sarf Malzemeleri.",
+  subtitle: "Nargile Takımları, Lüleler ve Premium Sarf Malzemeleri.",
   cta: { label: "Kataloğu Keşfet", href: "/catalog" },
   image: DEFAULT_HERO_IMAGES[0],
   align: "center",

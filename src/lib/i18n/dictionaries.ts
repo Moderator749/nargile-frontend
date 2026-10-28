@@ -15,9 +15,9 @@ import type { Locale } from "@/lib/i18n/config";
 
 const tr = {
   meta: {
-    siteTitle: "Nargile Malzemesi — Endüstriyel Toptan & Perakende Nargile Çözümleri",
+    siteTitle: "Nargile Takımı, Lüle, Kömür ve Aksesuarlar | Nargile Malzemesi",
     defaultDescription:
-      "Nargile Malzemesi: endüstriyel nargile takımları, kömür, lüle ve aksesuarlar. Kafe, toptancı ve bayilere özel fiyatlar, 3.000 TL üzeri ücretsiz kargo, İstanbul içi kurye.",
+      "Orijinal nargile takımı modelleri, lüle, nargile kömürü, közlük ve marpuç çeşitleri. Kafe, toptancı ve bayilere özel fiyatlar, 3.000 TL üzeri ücretsiz kargo.",
     shopPromise: "Kafe, toptancı ve bayilere özel fiyatlar, 3.000 TL üzeri ücretsiz kargo.",
     genuine: "Orijinal ürünler, güvenli ödeme.",
     categoryTitle: (name: string) => `${name} Modelleri ve Fiyatları`,
@@ -37,8 +37,8 @@ const tr = {
     productNotFound: "Ürün bulunamadı",
     categoryNotFound: "Kategori bulunamadı",
     brandNotFound: "Marka bulunamadı",
-    catalogHeading: "Endüstriyel Nargile & Toptan Çözümler",
-    catalogPageTitle: "Katalog — Endüstriyel Nargile & Toptan Çözümler",
+    catalogHeading: "Tüm Nargile Ürünleri",
+    catalogPageTitle: "Tüm Ürünler: Nargile Takımları, Lüle, Kömür ve Aksesuarlar",
     brandHeading: (brand: string) => `${brand} Ürünleri`,
   },
   nav: {

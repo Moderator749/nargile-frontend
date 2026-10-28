@@ -78,6 +78,22 @@ type Picks = Record<(typeof PICK_KEYS)[number], CatalogProduct[]>;
 const showable = (products: CatalogProduct[] | null, count = PICKS_COUNT) =>
   (products ?? []).filter((p) => p.image_url && p.variants.some((v) => v.price)).slice(0, count);
 
+/**
+ * A product as its card needs it. Each card's product is written into the
+ * page for the browser to pick up, and the homepage holds well over a hundred
+ * cards: the long text (description, meta tags) and the gallery stay on the
+ * product's own page.
+ */
+function forCard(product: CatalogProduct): CatalogProduct {
+  const card: CatalogProduct = { ...product, description: null, youtube_video_url: null };
+  delete card.meta_title;
+  delete card.meta_description;
+  delete card.image_urls;
+  return card;
+}
+
+const forCards = (products: CatalogProduct[] | null): CatalogProduct[] | null => products && products.map(forCard);
+
 /** One card per name: a category can list the same item in several sizes ("Alüminyum Közlük - Kapaksız" ×4). */
 function onePerName(products: CatalogProduct[] | null): CatalogProduct[] {
   const seen = new Set<string>();
@@ -146,8 +162,11 @@ const BRAND_SHOWCASES = [
   },
 ] as const;
 
-/** How many of a brand's products its row holds: the dearest ones. */
-const BRAND_SHOWCASE_COUNT = 24;
+/** How many of a brand's products its row holds: the dearest ones (the rest are a click away, on its page). */
+const BRAND_SHOWCASE_COUNT = 12;
+
+/** "%10 SultanPuan": as many cards as the other rows. */
+const SULTANPUAN_COUNT = 15;
 /** The API's page, and how far to page through a brand. */
 const BRAND_PAGE = 100;
 const BRAND_MAX = 400;
@@ -191,8 +210,8 @@ export default async function HomePage() {
   const [home, { locale, t }] = await Promise.all([getHomepage(), getI18n()]);
   const { sections } = home;
   const [
-    categories, featured, flashSales, brands, content, artwork, bestsellers, newest, brandRows, sultanPuan, lules, marpuclar,
-    kozlukProducts, gameProducts,
+    categories, featured, flashSales, brands, content, artwork, fullBestsellers, fullNewest, fullBrandRows, fullSultanPuan,
+    fullLules, fullMarpuclar, fullKozlukProducts, fullGameProducts,
   ] = await Promise.all([
       getCategories(),
       getPublicProducts(FEATURED_CATEGORY_SLUG, FEATURED_PRODUCTS_COUNT),
@@ -224,13 +243,22 @@ export default async function HomePage() {
       sections.kozlukler ? getPublicProducts(KOZLUK_CATEGORY_SLUG, CATEGORY_ROW_COUNT * 4) : null,
       sections.games ? getPublicProducts(GAMES_CATEGORY_SLUG, CATEGORY_ROW_COUNT * 4) : null,
     ]);
+  // Every list below is cards only; `featured` keeps its descriptions for the page's ItemList.
+  const [bestsellers, newest, lules, marpuclar, kozlukProducts, gameProducts] = [
+    fullBestsellers, fullNewest, fullLules, fullMarpuclar, fullKozlukProducts, fullGameProducts,
+  ].map(forCards);
+  const brandRows = fullBrandRows.map((row) => row.map(forCard));
+  const sultanPuan = fullSultanPuan && {
+    ...fullSultanPuan,
+    products: showable(fullSultanPuan.products, SULTANPUAN_COUNT).map(forCard),
+  };
   const allCategories = categories ?? [];
   const sidebar = resolveNav(home.navigation.sidebar, allCategories, brands ?? []);
   const ticker = tickerBrands(brands, home.brands.items);
   const showcase = resolveShowcase(home.showcase.tiles, allCategories, brands ?? [], artwork);
   // The deals funnel is the page's only deals section, and it is there only
   // when there is a deal to put in it.
-  const deals = (flashSales ?? []).filter((p) => p.is_opportunity);
+  const deals = (flashSales ?? []).filter((p) => p.is_opportunity).map(forCard);
 
   // Content tied to flash sales (a slide, the "Şok" promo box) only shows while one is live.
   // Managed in /admin/hero and /admin/promos.
@@ -266,7 +294,7 @@ export default async function HomePage() {
   // time; with neither, from the catalog's first page.
   const lists: Picks = { bestsellers: showable(bestsellers), newest: showable(newest) };
   const short = Object.values(lists).some((list) => list.length < PICKS_COUNT);
-  const ready = [...showable(featured, Infinity), ...interleave(brandRows)];
+  const ready = [...showable(featured, Infinity).map(forCard), ...interleave(brandRows)];
   const spare = !short
     ? []
     : ready.length > 0

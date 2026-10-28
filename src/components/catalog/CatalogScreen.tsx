@@ -1,11 +1,13 @@
 import { CatalogHeading, CatalogIntro } from "@/components/catalog/CatalogHeading";
 import { CategoryClosing } from "@/components/catalog/CategoryClosing";
+import { CategoryFamilyNav } from "@/components/catalog/CategoryFamilyNav";
 import { SeoIntro } from "@/components/home/SeoIntro";
 import { CatalogView } from "@/components/catalog/CatalogView";
 import { CategorySidebar } from "@/components/layout/CategorySidebar";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { getLocale } from "@/lib/i18n/server";
 import { breadcrumbJsonLd, productListJsonLd, type Breadcrumb } from "@/lib/seo";
+import type { CategoryFamily } from "@/lib/categories";
 import { getHomepage } from "@/lib/server/homepage";
 import { resolveNav } from "@/lib/storefrontNav";
 import type { Brand, CatalogProduct, Category } from "@/types";
@@ -27,6 +29,8 @@ interface CatalogScreenProps {
   closing?: { title: string; html: string | null } | null;
   /** The whole catalog, where the header's search lands (see CatalogHeading). */
   searchable?: boolean;
+  /** A category's group and its kinds, as links under the heading. */
+  family?: CategoryFamily | null;
 }
 
 /**
@@ -45,6 +49,7 @@ export async function CatalogScreen({
   intro,
   closing,
   searchable,
+  family,
 }: CatalogScreenProps) {
   const [home, locale] = await Promise.all([getHomepage(), getLocale()]);
   const pageHref = breadcrumbs[breadcrumbs.length - 1].href;
@@ -63,7 +68,12 @@ export async function CatalogScreen({
         activeCategory={activeCategory}
         initialProducts={products}
         brand={brand ? { name: brand.name, searchTerm: brand.search_term } : undefined}
-        heading={<CatalogHeading title={title} breadcrumbs={breadcrumbs} searchable={searchable} compact />}
+        heading={
+          <>
+            <CatalogHeading title={title} breadcrumbs={breadcrumbs} searchable={searchable} compact />
+            {family && activeCategory && <CategoryFamilyNav family={family} current={activeCategory.slug} />}
+          </>
+        }
         intro={intro ? <CatalogIntro title={title} html={intro} /> : undefined}
         sidebar={<CategorySidebar items={resolveNav(home.navigation.sidebar, categories, brands)} fit />}
       />

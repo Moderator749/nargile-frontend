@@ -109,7 +109,7 @@ COPY.kozlukler = COPY["isi-yonetim-araclari"];
 const DEFAULT_COPY: WrittenCopy = {
   icon: Package,
   description: {
-    tr: "Endüstriyel nargile ürünleri, kömür ve lüleler. Kafe, toptancı ve bayilere özel fiyatlar.",
+    tr: "Orijinal nargile ürünleri, kömür ve lüleler. Kafe, toptancı ve bayilere özel fiyatlar.",
     en: "Professional hookah supplies, hookah charcoal and bowls. Special prices for cafés, wholesalers and dealers.",
     ar: "مستلزمات شيشة احترافية، فحم ورؤوس شيشة. أسعار خاصة للمقاهي وتجار الجملة والموزعين.",
   },
@@ -138,3 +138,29 @@ export function categoryTree(categories: Category[]): CategoryNode[] {
     .sort(bySortThenName)
     .map((c) => ({ ...c, children: (children.get(c.id) ?? []).sort(bySortThenName) }));
 }
+
+/** A group and the subcategories of it that list something, for the row under a category's heading. */
+export interface CategoryFamily {
+  group: Category;
+  members: Category[];
+}
+
+/**
+ * The family a category belongs to: its group (itself, when it is one) and the
+ * group's subcategories with products, in menu order — so "Nargile Takımları"
+ * leads on to each kind of set, and each kind to its neighbours and back to
+ * all of them. Null when the category has no group or the group no stocked
+ * subcategory.
+ */
+export function categoryFamily(category: Category, categories: Category[]): CategoryFamily | null {
+  const group = category.parent_id === null ? category : categories.find((c) => c.id === category.parent_id);
+  if (!group) return null;
+  const members = categories
+    .filter((c) => c.parent_id === group.id && (c.product_count ?? 0) > 0)
+    .sort(bySortThenName);
+  return members.length > 0 ? { group, members } : null;
+}
+
+/** The category's group, when it is under one. */
+export const parentCategory = (category: Category | null | undefined, categories: Category[]): Category | undefined =>
+  category?.parent_id != null ? categories.find((c) => c.id === category.parent_id) : undefined;

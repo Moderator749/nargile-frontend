@@ -4,9 +4,9 @@ import { notFound, permanentRedirect } from "next/navigation";
 import { CatalogScreen } from "@/components/catalog/CatalogScreen";
 import { DEFAULT_LOCALE, localePath } from "@/lib/i18n/config";
 import { getI18n } from "@/lib/i18n/server";
-import { hasCategoryCopy, categoryCopy } from "@/lib/categories";
+import { categoryCopy, categoryFamily, hasCategoryCopy, parentCategory } from "@/lib/categories";
 import { getBrands, getCategories, getCategoryBySlug, getPublicProducts, required } from "@/lib/server/catalog";
-import { categoryDescription, metaDescription, pageMetadata } from "@/lib/seo";
+import { categoryDescription, leadParagraph, metaDescription, pageMetadata } from "@/lib/seo";
 
 // A day, as the catalog (CATALOG_REVALIDATE); admin edits refresh it immediately.
 export const revalidate = 86400;
@@ -34,7 +34,7 @@ export async function generateMetadata(props: PageProps<"/[locale]/catalog/[cate
   // three languages, lib/categories), else built from what the category
   // sells, so no two categories share one description.
   const description = category.description
-    ? metaDescription(category.description)
+    ? metaDescription(leadParagraph(category.description))
     : hasCategoryCopy(category.slug)
       ? categoryCopy(category.slug, locale).description
       : categoryDescription(category, products, locale);
@@ -70,14 +70,17 @@ export default async function CategoryPage(props: PageProps<"/[locale]/catalog/[
   }
 
   const name = category.name;
+  const parent = parentCategory(category, categories);
   return (
     <CatalogScreen
       title={name}
       breadcrumbs={[
-        // Ana Sayfa > Kategori, the first two steps of Ana Sayfa > Kategori > Ürün.
+        // Ana Sayfa > (Grup >) Kategori, the first steps of the product's own trail.
         { name: t.nav.home, href: "/" },
+        ...(parent ? [{ name: parent.name, href: `/catalog/${parent.slug}` }] : []),
         { name, href: `/catalog/${slug}` },
       ]}
+      family={categoryFamily(category, categories)}
       categories={categories}
       activeCategory={category}
       products={products}

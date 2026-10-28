@@ -4,7 +4,7 @@ export const SITE_NAME = "Nargile Malzemesi";
 export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "");
 
 export const DEFAULT_DESCRIPTION =
-  "Nargile Malzemesi: endüstriyel nargile takımları, kömür, lüle ve aksesuarlar. Kafe, toptancı ve bayilere özel fiyatlar, 3.000 TL üzeri ücretsiz kargo, İstanbul içi kurye.";
+  "Orijinal nargile takımı modelleri, lüle, nargile kömürü, közlük ve marpuç çeşitleri. Kafe, toptancı ve bayilere özel fiyatlar, 3.000 TL üzeri ücretsiz kargo.";
 
 /**
  * Whether search engines may index this deployment. Off unless the

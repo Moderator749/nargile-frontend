@@ -45,13 +45,17 @@ export const SECTION_LABELS: Record<keyof HomeSections, { title: string; hint: s
   footer: { title: "Footer (Alt Bilgi)", hint: "İletişim kartları, dört kolon ve yasal uyarı. Tüm sayfalarda." },
 };
 
-/** The shop's own copy for "Alt SEO Metni": shown until an admin writes theirs, and for any field left empty. */
+/**
+ * The shop's own copy for "Alt SEO Metni": shown until an admin writes theirs, and for any field left empty.
+ * Its English and Arabic are in the homepage's translation memory, keyed by these exact words (backend
+ * migration d6a3f9b2e417): a rewording here shows in Turkish on /en and /ar until it is translated again.
+ */
 export const DEFAULT_SEO_INTRO: HomeSeoIntro = {
-  title: "Türkiye'nin Lider Nargile Malzemeleri ve Toptan Tedarikçisi",
+  title: "Nargile Takımı ve Nargile Malzemelerinde Aradığınız Her Şey",
   summary:
-    "Geleneksel nargile kültürünü modern mühendislikle buluşturan NargileMalzemesi, birinci sınıf paslanmaz çelik nargile takımları, premium lüle çeşitleri ve yüksek kaliteli nargile kömürleri ile sektörün öncüsüdür. Sultan Nargile, Oduman ve Legend Hookah gibi dünya standartlarındaki markaları tek bir çatı altında sunuyoruz.",
+    "Nargile Malzemesi; Rus, çelik, klasik, masaüstü ve çantalı nargile takımlarından lüle, nargile kömürü, közlük, marpuç ve sipsiye kadar nargileye dair her şeyi bir arada sunar. Sultan Nargile, Legend Hookah, Oduman, Alpha Hookah, Steamulation ve Meduse gibi markaların orijinal ürünlerini karşılaştırıp size en uygun olanı seçebilirsiniz.",
   content:
-    "Bireysel nargile severler için kusursuz bir içim deneyimi sunarken, kafeler ve işletmeler için toptan nargile malzemeleri tedariğinde güvenilir çözüm ortağınızız. Hızlı kargo, orijinal ürün garantisi ve otomatik ciro indirimleriyle, ihtiyacınız olan tüm profesyonel aksesuarlar güvenle kapınızda.",
+    "Evinde keyifle nargile içenler için de, her gün onlarca takımın çalıştığı kafeler için de doğru ürünü bulmak kolay olmalı. Bu yüzden ürünlerimizi türlerine ve markalarına göre ayırıyor, her kategoride seçim yaparken işinize yarayacak bilgileri paylaşıyoruz. Kafe, toptancı ve bayilere özel fiyatlar, hızlı kargo ve orijinal ürün güvencesiyle ihtiyacınız olan her şey kapınızda.",
 };
 
 export const DEFAULT_HOMEPAGE: Homepage = {

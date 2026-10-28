@@ -191,6 +191,16 @@ export function metaDescription(text: string | null | undefined, max = 158): str
   return `${(space > max * 0.6 ? cut.slice(0, space) : cut).replace(/[\s,.;:–-]+$/, "")}…`;
 }
 
+/**
+ * An introduction's opening paragraph, where it says enough on its own: the
+ * category copy is written so that its first paragraph is the search result's
+ * snippet, which would otherwise end on the first words of the second.
+ */
+export function leadParagraph(html: string): string {
+  const first = /<p\b[^>]*>([\s\S]*?)<\/p>/i.exec(html)?.[1];
+  return first && htmlToText(first).trim().length >= 80 ? first : html;
+}
+
 /** The brands most of these products carry, most frequent first. */
 export function leadingBrands(products: CatalogProduct[] | null | undefined, limit = 3): string[] {
   const counts = new Map<string, number>();

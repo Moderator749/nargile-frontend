@@ -6,7 +6,7 @@ import { ProductDetail } from "@/components/product/ProductDetail";
 import { RelatedCategories } from "@/components/product/RelatedCategories";
 import { SimilarProducts } from "@/components/product/SimilarProducts";
 import { JsonLd } from "@/components/seo/JsonLd";
-import { categoryCopy, hasCategoryCopy } from "@/lib/categories";
+import { categoryCopy, hasCategoryCopy, parentCategory } from "@/lib/categories";
 import { DEFAULT_LOCALE, localePath } from "@/lib/i18n/config";
 import { getI18n } from "@/lib/i18n/server";
 import { breadcrumbJsonLd, metaDescription, pageMetadata, productHref, productJsonLd, type Breadcrumb } from "@/lib/seo";
@@ -100,9 +100,11 @@ export default async function ProductPage(props: PageProps<"/[locale]/product/[s
   const similar = pickSimilar(categoryList, product);
   const related = relatedCategories(product, categories, brands ?? [], undefined, locale);
 
-  // Ana Sayfa > Kategori > Ürün: the path a visitor takes from a menu to here.
+  // Ana Sayfa > (Grup >) Kategori > Ürün: the path a visitor takes from a menu to here.
+  const group = parentCategory(category, categories);
   const crumbs: Breadcrumb[] = [
     { name: t.nav.home, href: "/" },
+    ...(group ? [{ name: group.name, href: `/catalog/${group.slug}` }] : []),
     ...(category ? [{ name: category.name, href: `/catalog/${category.slug}` }] : []),
     { name: product.name, href: productHref(product) },
   ];
