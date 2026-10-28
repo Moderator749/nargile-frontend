@@ -1,21 +1,19 @@
 import type { ComponentType } from "react";
-import Image from "next/image";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowRight, Crown } from "lucide-react";
 
 import { InstagramIcon, YouTubeIcon } from "@/components/icons/SocialIcons";
 import { SmoothAnchor } from "@/components/home/SmoothAnchor";
 import { PERKS_PAGE } from "@/lib/bilgi";
-import { canOptimiseImage, type CardPhoto, type PromoBox } from "@/lib/home";
+import type { PromoBox } from "@/lib/home";
 import type { homeMessages } from "@/lib/i18n/messages/home";
-import type { PromoShade } from "@/types";
 
 /** The words the cards need: the homepage messages of the page's language. */
 export type HeroAsideWords = (typeof homeMessages)["tr"];
 
 /**
  * The channels, in order; one without a link in /admin/promos is left out.
- * Glass on the photograph at rest, with the glyph in its brand's colour; the
- * whole button takes the brand's colours on hover.
+ * Dark buttons on the light card, the glyph in its brand's colour; the whole
+ * button takes the brand's colours on hover.
  */
 const CHANNELS: {
   key: "instagram" | "youtube";
@@ -26,105 +24,32 @@ const CHANNELS: {
   {
     key: "instagram",
     Icon: InstagramIcon,
-    tone: "hover:border-transparent hover:bg-gradient-to-tr hover:from-yellow-400 hover:via-pink-500 hover:to-purple-600 focus-visible:outline-pink-400",
+    tone: "hover:bg-gradient-to-tr hover:from-yellow-400 hover:via-pink-500 hover:to-purple-600 focus-visible:outline-pink-500",
     glyph: "text-pink-400",
   },
   {
     key: "youtube",
     Icon: YouTubeIcon,
-    tone: "hover:border-transparent hover:bg-[#FF0000] focus-visible:outline-red-400",
+    tone: "hover:bg-[#FF0000] focus-visible:outline-red-500",
     glyph: "text-red-500",
   },
 ];
 
 /**
- * The shop's own photographs (also on the advantage tiles), dark and red:
- * accessories, and an ornate set. Neither carries another brand's name, as the
- * Legend and Oduman shots do — the advantages card speaks for Sultan Nargile.
- * The set stands on the left of its frame, so it is mirrored to clear the words.
- * In Arabic the words are at the right, so each photo is mirrored the other
- * way round (the set no longer, the accessories now), and the veil with them.
- */
-const BACKDROPS = {
-  channels: { src: "/images/avantaj-hero-3.jpg" },
-  advantages: { src: "/images/avantaj-hero-1.jpg", flip: true },
-};
-
-/**
- * A card on a photograph: dark in either theme, as the slider beside it is.
+ * A card in words only: a soft cream ground under dark type, rounded as the
+ * slider beside it is, a hairline and a light shadow to lift it off the page.
+ * In the dark theme the cream turns to a deep stone so it does not glare.
  * Its own height below `lg` (where it stands under the slider), half the
  * slider's from `lg`, in the 264px column beside it — hence the tighter
- * padding there. The hairline is drawn over the photograph, which would
- * otherwise cover a ring on the card itself.
- */
-const CARD = [
-  "relative isolate flex min-h-[200px] flex-1 flex-col justify-between overflow-hidden rounded-2xl bg-neutral-950 p-6 shadow-sm lg:min-h-0 lg:p-5",
-  "after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:ring-1 after:ring-inset after:ring-white/10",
-].join(" ");
-const OVERLINE = "text-xs font-bold uppercase tracking-widest";
-
-/**
- * "Gölge Yönü": where the veil is darkest. From the left is the look the cards
- * always had — the words are at the start — and, like the words, it changes
- * sides in Arabic; from the top or the bottom it stays put. Whole class names,
- * so Tailwind finds them.
- */
-const VEIL: Record<PromoShade, string> = {
-  left: "bg-gradient-to-r rtl:bg-gradient-to-l",
-  right: "bg-gradient-to-l rtl:bg-gradient-to-r",
-  top: "bg-gradient-to-b",
-  bottom: "bg-gradient-to-t",
-};
-const TITLE = "mt-1.5 text-balance text-xl font-extrabold leading-tight text-white";
-
-/**
- * The photograph behind a card, under a veil that is darkest where `shade`
- * says (the start, where the words are, unless the admin chose otherwise) and
- * clears towards the subject.
+ * padding there.
  *
- * The shop's own photo is mirrored as BACKDROPS says; one the admin chose
- * ("Promo Kutusu") is shown as it is, cropped where its focus says.
+ * The photographs the cards once stood on ("Promo Kutusu" photos and shades)
+ * are no longer drawn: the cards are type and icons alone.
  */
-function Backdrop({
-  src,
-  flip,
-  zoom,
-  photo,
-  shade = "left",
-}: {
-  src: string;
-  flip?: boolean;
-  zoom?: boolean;
-  photo?: CardPhoto | null;
-  shade?: PromoShade;
-}) {
-  const mirror = photo ? "" : flip ? "ltr:-scale-x-100" : "rtl:-scale-x-100";
-  return (
-    <>
-      {/* The mirror is on a wrapper: on the image itself the hover zoom would
-          set the same `scale` and turn it back. */}
-      <span aria-hidden className={`absolute inset-0 -z-10 ${mirror}`}>
-        <Image
-          src={photo?.src ?? src}
-          alt=""
-          fill
-          sizes="(min-width: 1280px) 420px, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-          // On screen with the hero from the first paint, so not left for the
-          // lazy loader; no preload either, which would compete with the
-          // hero's own (the page's LCP).
-          loading="eager"
-          unoptimized={photo ? !canOptimiseImage(photo.src) : false}
-          style={photo ? { objectPosition: `${photo.focusX}% 50%` } : undefined}
-          className={`object-cover ${photo ? "" : flip ? "object-left" : "object-right"} ${
-            zoom ? "transition-transform duration-700 ease-out motion-safe:group-hover:scale-105" : ""
-          }`}
-        />
-      </span>
-      {/* Clear at its far end: a veil dark all over (it once ended at 25%) looked the same from every side. */}
-      <span aria-hidden className={`pointer-events-none absolute inset-0 -z-10 from-black/85 via-black/40 to-transparent ${VEIL[shade]}`} />
-    </>
-  );
-}
+const CARD =
+  "relative isolate flex min-h-[200px] flex-1 flex-col justify-between overflow-hidden rounded-[2rem] border border-stone-200/80 bg-gradient-to-br from-[#FBFAF6] via-[#F7F4EC] to-[#EFE9DC] p-6 text-gray-900 shadow-sm lg:min-h-0 lg:p-5 dark:border-white/10 dark:from-stone-900 dark:via-stone-900 dark:to-stone-950 dark:text-stone-100";
+const OVERLINE = "text-[11px] font-semibold uppercase tracking-[0.2em] lg:tracking-[0.12em]";
+const TITLE = "mt-1.5 text-balance text-xl font-extrabold leading-tight tracking-tight text-gray-900 dark:text-white";
 
 /**
  * Where the advantages box leads: its own link, unless that is empty or the
@@ -145,9 +70,8 @@ export function ChannelsCard({ box, t }: { box?: PromoBox; t: HeroAsideWords }) 
   });
   return (
     <div className={CARD}>
-      <Backdrop {...BACKDROPS.channels} photo={box?.photos?.top} shade={box?.shades?.top} />
       <div>
-        <p className={`${OVERLINE} text-white/70`}>{box?.text || t.followUs}</p>
+        <p className={`${OVERLINE} text-stone-500 dark:text-stone-400`}>{box?.text || t.followUs}</p>
         <h2 className={TITLE}>{box?.topTitle || t.aside.channelsTitle}</h2>
       </div>
       {/* One under the other in the narrow column, where side by side the
@@ -160,7 +84,7 @@ export function ChannelsCard({ box, t }: { box?: PromoBox; t: HeroAsideWords }) 
                 href={href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className={`group/channel flex w-full items-center justify-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-2.5 text-sm font-semibold text-white backdrop-blur-sm transition-all focus-visible:outline-2 focus-visible:outline-offset-2 ${tone}`}
+                className={`group/channel flex w-full items-center justify-center gap-2 rounded-full bg-gray-900 px-3 py-2.5 text-sm font-semibold text-white shadow-sm transition-all focus-visible:outline-2 focus-visible:outline-offset-2 dark:bg-white/10 ${tone}`}
               >
                 <Icon className={`h-4.5 w-4.5 shrink-0 transition-colors group-hover/channel:text-white ${glyph}`} />
                 <span className="truncate">{label}</span>
@@ -181,20 +105,26 @@ export function AdvantagesCard({ box, t }: { box?: PromoBox; t: HeroAsideWords }
   return (
     <SmoothAnchor
       href={advantagesHref(box?.href)}
-      className={`group ${CARD} transition-shadow duration-300 hover:shadow-xl hover:shadow-black/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent`}
+      className={`group ${CARD} transition-shadow duration-300 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent`}
     >
-      <Backdrop {...BACKDROPS.advantages} photo={box?.photos?.bottom} shade={box?.shades?.bottom} zoom />
       <div>
-        <p className={`${OVERLINE} text-red-400`}>{eyebrow}</p>
+        {/* A small crown in bronze over the overline: the programme's mark, no photograph. */}
+        <span
+          aria-hidden
+          className="mb-3 flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-amber-200 to-amber-400 text-amber-900 shadow-sm ring-1 ring-amber-500/30 lg:mb-2.5 lg:h-7 lg:w-7"
+        >
+          <Crown className="h-4 w-4 lg:h-3.5 lg:w-3.5" strokeWidth={2.25} />
+        </span>
+        <p className={`${OVERLINE} text-amber-800 dark:text-amber-300`}>{eyebrow}</p>
         <h2 className={TITLE}>{box?.title || t.aside.advantagesTitle}</h2>
-        <p className="mt-2 max-w-[22rem] text-sm leading-relaxed text-white/80 lg:text-[13px] lg:leading-snug">
+        <p className="mt-2 max-w-[22rem] text-sm leading-relaxed text-gray-600 lg:text-[13px] lg:leading-snug dark:text-stone-300">
           {box?.bottomText || t.aside.advantagesText}
         </p>
       </div>
-      <span className="mt-4 inline-flex w-max items-center text-sm font-semibold text-red-400 transition-colors group-hover:text-red-300">
+      <span className="mt-4 inline-flex w-max items-center gap-1.5 rounded-full bg-gray-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors group-hover:bg-gray-800 dark:bg-white dark:text-gray-900 dark:group-hover:bg-stone-200">
         {box?.widget?.anchor_label || t.aside.advantagesLink}
-        <ArrowUpRight
-          className="ms-1 h-4 w-4 transition-transform rtl:-scale-x-100 motion-safe:group-hover:-translate-y-0.5 motion-safe:group-hover:translate-x-0.5 rtl:motion-safe:group-hover:-translate-x-0.5"
+        <ArrowRight
+          className="h-4 w-4 transition-transform rtl:-scale-x-100 motion-safe:group-hover:translate-x-0.5 rtl:motion-safe:group-hover:-translate-x-0.5"
           aria-hidden
         />
       </span>
@@ -205,9 +135,8 @@ export function AdvantagesCard({ box, t }: { box?: PromoBox; t: HeroAsideWords }
 /**
  * The two cards beside the hero: the shop's channels above, the advantages
  * below (ChannelsCard, AdvantagesCard — which /admin/promos previews one by
- * one, each under its own fields). Both read the one promo box: its texts,
- * links, photos and shades; without one they keep their own copy and the
- * channels are left out.
+ * one, each under its own fields). Both read the one promo box: its texts and
+ * links; without one they keep their own copy and the channels are left out.
  *
  * Below `lg` they stand under the slider, side by side from `sm` and stacked on
  * a phone, so a small screen keeps the channels and the way to the advantages.
@@ -232,6 +161,8 @@ export function HeroAsideCards({
   return (
     <aside
       aria-label={t.highlights}
+      // The floating WhatsApp button steps aside while it would cover these cards.
+      data-float-clear=""
       className={`mt-4 grid min-w-0 gap-4 sm:grid-cols-2 lg:invisible lg:mt-0 lg:flex lg:h-0 lg:min-h-full lg:flex-col lg:overflow-hidden lg:opacity-0 lg:transition-[opacity,visibility] lg:duration-300 motion-reduce:transition-none lg:sidebar-closed:visible lg:sidebar-closed:opacity-100 ${className}`}
     >
       <ChannelsCard box={box} t={t} />

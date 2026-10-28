@@ -1,105 +1,22 @@
 "use client";
 
-import { useId } from "react";
-
-import { ImageField } from "@/components/admin/homepage/fields";
 import { AdvantagesCard, ChannelsCard } from "@/components/home/HeroAsideCards";
 import { useMessages } from "@/components/i18n/LocaleProvider";
 import { Input } from "@/components/ui/Input";
 import type { PromoBox } from "@/lib/home";
 import { homeMessages } from "@/lib/i18n/messages/home";
-import type { PromoBoxWrite, PromoShade, SocialWidget } from "@/types";
+import type { PromoBoxWrite, SocialWidget } from "@/types";
 
 const legend = "px-1 text-sm font-semibold text-slate-800 dark:text-zinc-100";
 const fixed = "text-xs text-slate-500 dark:text-zinc-400";
-
-/** A card's background photo: upload (or an address), remove, and where its crop centres across it. */
-function CardPhotoFields({
-  image,
-  focus,
-  onImage,
-  onFocus,
-}: {
-  image: string | null;
-  focus: number;
-  onImage: (image: string | null) => void;
-  onFocus: (focus: number) => void;
-}) {
-  const id = useId();
-  return (
-    <div className="space-y-2 rounded-lg bg-slate-50 p-3 dark:bg-white/[0.03]">
-      <ImageField
-        label="Arka plan fotoğrafı"
-        value={image}
-        onChange={onImage}
-        hint="Boş: sitenin kendi fotoğrafı. Yazılar soldadır; fotoğrafın konusu gölgenin açıldığı tarafta kalsın."
-      />
-      {image && (
-        <div className="space-y-1">
-          <label htmlFor={id} className="block text-xs font-medium text-slate-600 dark:text-zinc-400">
-            Odak (yatay): %{focus}
-          </label>
-          <input
-            id={id}
-            type="range"
-            min={0}
-            max={100}
-            value={focus}
-            onChange={(e) => onFocus(Number(e.target.value))}
-            className="w-full accent-red-600"
-          />
-        </div>
-      )}
-    </div>
-  );
-}
-
-/** "Gölge Yönü": where the card's dark veil is darkest, so the words stay legible. */
-const SHADES: { value: PromoShade; label: string }[] = [
-  { value: "left", label: "Soldan" },
-  { value: "right", label: "Sağdan" },
-  { value: "top", label: "Üstten" },
-  { value: "bottom", label: "Alttan" },
-];
-
-function ShadeField({ value, onChange }: { value: PromoShade; onChange: (shade: PromoShade) => void }) {
-  const name = useId();
-  return (
-    <fieldset className="space-y-1.5">
-      <legend className="text-sm font-medium text-slate-700 dark:text-zinc-300">Gölge Yönü</legend>
-      <div className="grid grid-cols-4 gap-1 rounded-lg bg-slate-100 p-1 dark:bg-white/5">
-        {SHADES.map((shade) => (
-          <label
-            key={shade.value}
-            className={`flex h-9 cursor-pointer items-center justify-center rounded-md text-xs font-semibold transition-colors has-focus-visible:outline-2 has-focus-visible:outline-red-600 ${
-              value === shade.value
-                ? "bg-white text-slate-900 shadow-sm dark:bg-zinc-800 dark:text-white"
-                : "text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-100"
-            }`}
-          >
-            <input
-              type="radio"
-              name={name}
-              value={shade.value}
-              checked={value === shade.value}
-              onChange={() => onChange(shade.value)}
-              className="sr-only"
-            />
-            {shade.label}
-          </label>
-        ))}
-      </div>
-      <p className={fixed}>Koyu gölgenin başladığı kenar; yazılar o tarafta en iyi okunur. Arapça sayfada sol ve sağ yer değiştirir.</p>
-    </fieldset>
-  );
-}
 
 const fieldset = "space-y-3 rounded-xl border border-slate-200 p-4 dark:border-white/10";
 
 /**
  * The community card's fields (the top card beside the hero): its two texts,
- * the shop's channels, its photo and its shade. A text left blank shows the
- * site's own copy, named in its placeholder and translated with the site.
+ * the shop's channels. A text left blank shows the site's own copy, named in
+ * its placeholder and translated with the site. The cards have no photo: they
+ * are type and icons on a cream ground (HeroAsideCards).
  */
 export function TopCardFields({
   value: v,
@@ -151,18 +68,11 @@ export function TopCardFields({
         <Input label="YouTube etiketi" value={widget.youtube_label} maxLength={40} onChange={(e) => setWidget({ youtube_label: e.target.value })} />
       </div>
       <p className={fixed}>Boş bırakılan kanal gösterilmez. Bağlantılar yeni sekmede açılır.</p>
-      <CardPhotoFields
-        image={v.top_card_image_url}
-        focus={v.top_card_focus_x}
-        onImage={(top_card_image_url) => set({ top_card_image_url })}
-        onFocus={(top_card_focus_x) => set({ top_card_focus_x })}
-      />
-      <ShadeField value={v.top_shade} onChange={(top_shade) => set({ top_shade })} />
     </fieldset>
   );
 }
 
-/** The advantages card's fields (the bottom card): every text on it, its link, photo and shade. */
+/** The advantages card's fields (the bottom card): every text on it and its link. */
 export function BottomCardFields({
   value: v,
   set,
@@ -217,20 +127,12 @@ export function BottomCardFields({
           hint="Kartın tamamı bu adrese gider."
         />
       </div>
-      <CardPhotoFields
-        image={v.bottom_card_image_url}
-        focus={v.bottom_card_focus_x}
-        onImage={(bottom_card_image_url) => set({ bottom_card_image_url })}
-        onFocus={(bottom_card_focus_x) => set({ bottom_card_focus_x })}
-      />
-      <ShadeField value={v.bottom_shade} onChange={(bottom_shade) => set({ bottom_shade })} />
     </fieldset>
   );
 }
 
 /** The form as the storefront reads it (`lib/home`'s PromoBox). */
 export function previewBox(v: PromoBoxWrite): PromoBox {
-  const photo = (src: string | null, focusX: number) => (src?.trim() ? { src: src.trim(), focusX } : null);
   return {
     id: "preview",
     eyebrow: v.eyebrow,
@@ -238,10 +140,8 @@ export function previewBox(v: PromoBoxWrite): PromoBox {
     text: v.text ?? undefined,
     href: v.href || "/",
     widget: v.widget,
-    photos: { top: photo(v.top_card_image_url, v.top_card_focus_x), bottom: photo(v.bottom_card_image_url, v.bottom_card_focus_x) },
     topTitle: v.top_title ?? undefined,
     bottomText: v.bottom_text ?? undefined,
-    shades: { top: v.top_shade, bottom: v.bottom_shade },
   };
 }
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState, type RefObject } from "react";
 import { usePathname } from "next/navigation";
 
 import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
@@ -10,6 +11,53 @@ import { STORES, WHATSAPP_STORE, storeHref, whatsappLink } from "@/lib/stores";
 
 /** Where a shopper is paying or reviewing the basket: nothing should float over its buttons. */
 const HIDDEN_ON = ["/cart", "/sepet", "/checkout", "/odeme"];
+
+/**
+ * Whether the button would cover something marked `data-float-clear` (the
+ * homepage's cards beside the slider): on a laptop the page's margin is
+ * narrower than the button, so where the cards end, it sits on their corner.
+ * Checked as the page scrolls or resizes, one frame at a time.
+ */
+function useCovers(button: RefObject<HTMLAnchorElement | null>, path: string): boolean {
+  const [covers, setCovers] = useState(false);
+  useEffect(() => {
+    let frame = 0;
+    let settle = 0;
+    const check = () => {
+      frame = 0;
+      const own = button.current?.getBoundingClientRect();
+      if (!own) return;
+      const hit = [...document.querySelectorAll("[data-float-clear]")].some((el) => {
+        const r = el.getBoundingClientRect();
+        // A small margin, so it leaves before it touches.
+        return r.width > 0 && r.left < own.right + 8 && r.right > own.left - 8 && r.top < own.bottom + 8 && r.bottom > own.top - 8;
+      });
+      setCovers(hit);
+    };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(check);
+    };
+    schedule();
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    // The cards fade in and out as the category column closes and opens:
+    // checked again once their 300ms transition is over.
+    const observer = new MutationObserver(() => {
+      schedule();
+      window.clearTimeout(settle);
+      settle = window.setTimeout(schedule, 350);
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "data-sidebar"] });
+    return () => {
+      cancelAnimationFrame(frame);
+      window.clearTimeout(settle);
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+      observer.disconnect();
+    };
+  }, [button, path]);
+  return covers;
+}
 
 /** The path without its language prefix ("/en/cart" → "/cart"). */
 function withoutLocale(path: string): string {
@@ -22,11 +70,14 @@ function withoutLocale(path: string): string {
  * page: Bahçelievler's line, or the store's own on a store's page. On a
  * phone it rides above the bottom tab bar — and above a product's or the
  * cart's buy bar (--buy-bar-height) — so it never covers their buttons; it
- * is not shown on the basket and checkout.
+ * is not shown on the basket and checkout, and it steps aside (fades out)
+ * while it would cover the homepage's cards beside the slider.
  */
 export function FloatingWhatsApp() {
   const path = withoutLocale(usePathname() ?? "/");
   const m = useMessages(storeMessages);
+  const ref = useRef<HTMLAnchorElement>(null);
+  const covers = useCovers(ref, path);
   if (HIDDEN_ON.some((p) => path === p || path.startsWith(`${p}/`))) return null;
 
   const store = STORES.find((s) => path === storeHref(s)) ?? STORES.find((s) => s.slug === WHATSAPP_STORE);
@@ -34,12 +85,17 @@ export function FloatingWhatsApp() {
 
   return (
     <a
+      ref={ref}
       href={whatsappLink(store.whatsapp, m.whatsappGreeting)}
       target="_blank"
       rel="noopener noreferrer"
       aria-label={m.floatingWhatsapp}
       title={m.floatingWhatsapp}
-      className="fixed right-4 bottom-[calc(4rem+1rem+env(safe-area-inset-bottom,0px)+var(--buy-bar-height,0px))] z-40 flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg shadow-black/20 transition-transform duration-200 hover:scale-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#25D366] motion-reduce:transition-none md:right-6 md:bottom-6 print:hidden"
+      aria-hidden={covers || undefined}
+      tabIndex={covers ? -1 : undefined}
+      className={`fixed right-4 bottom-[calc(4rem+1rem+env(safe-area-inset-bottom,0px)+var(--buy-bar-height,0px))] z-40 flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg shadow-black/20 transition-[transform,opacity] duration-200 hover:scale-105 ${
+        covers ? "pointer-events-none translate-y-2 opacity-0" : ""
+      } focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#25D366] motion-reduce:transition-none md:right-6 md:bottom-6 print:hidden`}
     >
       <WhatsAppIcon className="h-7 w-7" />
     </a>
