@@ -1,41 +1,38 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { LEGACY_CATEGORIES, LEGACY_PARENT } from "./lib/legacy/categories";
+import { ROOT_ROUTES } from "./lib/rootRoutes";
 import { OPENCART_CATEGORY_IDS, OPENCART_INFORMATION_IDS, OPENCART_PRODUCT_IDS, RETIRED_PRODUCTS } from "./lib/legacy/opencart";
 
 /*
- * Permanent (301) redirects to a product's one address, /product/<slug>:
+ * Permanent (301) redirects to a product's one address, /<slug> at the root —
+ * as the old store (OpenCart) addressed its products, the slugs carried over
+ * as it spelled them (scripts/apply_legacy_product_slugs.py in the backend).
+ * The page itself (app/[locale]/(storefront)/[slug]) answers an old spelling,
+ * an id or a product the shop no longer sells (RETIRED_PRODUCTS) with a
+ * permanent redirect of its own; here are the addresses it never sees:
  *
- * - /product/<uuid>: how product pages were addressed before slugs. Links
- *   already shared, bookmarked or indexed keep working, and search engines move
- *   their ranking over to the slug address.
- * - /product/<SLUG> in capitals: the same address in lowercase.
- * - /<slug>: how the old store (OpenCart) addressed the same products. When the
- *   domain moves to this storefront, every old product link lands on its page
- *   here instead of a 404 — the slugs were carried over as the old store spelled
- *   them (scripts/apply_legacy_product_slugs.py in the backend).
- * - /<category>/<slug>: the same, reached through one of the old store's
+ * - /product/<slug>: where product pages were until 2026-10-29, indexed for
+ *   the days in between. /product/<uuid>, from before slugs, is looked up.
+ * - /<SLUG> in capitals: slugs are lowercase.
+ * - /<category>/<slug>: an old product reached through one of the old store's
  *   category pages (/legend-hookah-nargile-takimlari/legend-hookah-celik-…),
  *   or /diger/<category>/<slug> under its "Diğer" shelf. The category part
  *   names no product, so only the last segment is looked up; a third of the
  *   old product links indexed are in this form. When that finds nothing, the
  *   category the address names (lib/legacy/categories) is where it goes.
- *
- * - An old product the shop no longer sells here (unpublished, or never
- *   brought over) goes to the same model if there is one, else the shelf it
- *   belonged on (RETIRED_PRODUCTS, measured
- *   from the old store's sitemap) — but only after the API was asked: a
- *   product published again takes its address back by itself.
  * - /index.php?route=…: the old store's addresses before its friendly URLs —
  *   a product by its OpenCart id, a category by its path, a search, the
  *   information pages, the home page (openCartRoute below).
  *
- * Anything the API does not know as a product goes on untouched (and ends at
- * the 404 page if nothing else answers it). When the API cannot answer at all
- * (down, slow, a 5xx), such an address gets a 503 instead: whether it is an
- * old product link cannot be told, and a 404 would tell search engines the
- * page is gone. Kept free of the app's own modules: proxy code is built and
- * run apart from the pages.
+ * The shop's own pages (/catalog, /cart, /blog…) are folders of src/app and
+ * win over a slug by Next's own routing; the backend never gives a product a
+ * slug one of them (or a redirect in next.config.ts) has taken
+ * (RESERVED_ROOT_PATHS in its app/core/slugs.py). When the API cannot answer
+ * a lookup here at all (down, slow, a 5xx), the address gets a 503: whether
+ * it is an old product link cannot be told, and a 404 would tell search
+ * engines the page is gone. Kept free of the app's own modules: proxy code is
+ * built and run apart from the pages.
  */
 
 /** The API itself, as src/lib/config.ts calls it on the server. */
@@ -45,12 +42,14 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const SLUG = /^[a-z0-9]+(?:[.-][a-z0-9]+)*$/;
 /** Files served at the root: never product slugs, never worth a lookup. */
 const FILE = /\.(?:txt|xml|svg|ico|png|jpe?g|webp|gif|js|css|json|map|webmanifest)$/i;
-/** The storefront's own top-level pages (src/app). */
-const ROUTES = new Set([
-  "en", "ar", "tr", "account", "admin", "api", "bilgi", "blog", "cart", "catalog", "firsat-urunleri", "fiyat-katalogu", "images",
-  "kargo-takip", "login", "marka", "onizleme", "orders", "product", "register", "sifre-yenile", "sifremi-unuttum", "sss",
-  "opengraph-image",
-]);
+/** The storefront's own top-level pages (src/app): never a product's address. */
+const ROUTES = new Set(ROOT_ROUTES);
+/**
+ * What a scanner asks for at the root (/wp-login.php, /.env, /backup.zip):
+ * never a product. It goes to the 404 by the catch-all rather than the product
+ * page, whose cache would keep a page for every such address.
+ */
+const NOT_A_PRODUCT = /^\.|\.(?:php\d?|aspx?|asmx|axd|jsp|cgi|action|do|env|ini|cfg|conf|config|ya?ml|log|sql|db|bak|old|orig|swp|zip|t?gz|tar|rar|7z|html?|sh|py|pl|rb|exe|dll)$/i;
 
 /**
  * The shop's own address (NEXT_PUBLIC_SITE_URL), when CANONICAL_HOST_REDIRECT
@@ -171,9 +170,9 @@ function movedTo(request: NextRequest, pathname: string, query?: Record<string, 
 async function legacyProduct(request: NextRequest, slug: string, go: (request: NextRequest, pathname: string) => NextResponse = moved) {
   const current = await productSlug(slug);
   if (current === UNAVAILABLE) return unavailable();
-  if (current) return go(request, `/product/${current}`);
+  if (current) return go(request, `/${current}`);
   const next = RETIRED_PRODUCTS[slug];
-  return next ? go(request, next) : null;
+  return next ? go(request, next.replace(/^\/product\//, "/")) : null;
 }
 
 /**
@@ -210,35 +209,31 @@ async function openCartRoute(request: NextRequest) {
 
 /**
  * Legacy addresses that point at a product, answered with a 301 to its page:
- * /product/<uuid>, /product/<CAPITALS>, and — at the root only, the old store
- * being Turkish — /<slug> and /<category>/<slug>. `prefix` is the language the
- * address was in ("" for Turkish), kept on the way.
+ * /product/<slug> and /product/<uuid> in any language, a slug in capitals,
+ * and — at the root only, the old store being Turkish — /<category>/<slug>.
+ * `prefix` is the language the address was in ("" for Turkish), kept on the way.
  */
 async function productRedirect(request: NextRequest, path: string, prefix: string) {
   const segments = path.split("/").filter(Boolean);
 
-  if (segments.length === 2 && segments[0] === "product" && UUID.test(segments[1])) {
-    const slug = await productSlug(segments[1]);
+  if (segments.length === 2 && segments[0] === "product") {
+    const ref = segments[1];
+    if (!UUID.test(ref)) return moved(request, `${prefix}/${ref.toLowerCase()}`);
+    const slug = await productSlug(ref);
     if (slug === UNAVAILABLE) return unavailable();
-    if (slug) return moved(request, `${prefix}/product/${slug}`);
-  } else if (segments.length === 2 && segments[0] === "product" && segments[1] !== segments[1].toLowerCase()) {
+    if (slug) return moved(request, `${prefix}/${slug}`);
+  } else if (segments.length === 1 && segments[0] !== segments[0].toLowerCase() && !FILE.test(segments[0])) {
     // Slugs are lowercase: a link typed in capitals has one address too.
-    return moved(request, `${prefix}/product/${segments[1].toLowerCase()}`);
-  } else if (!prefix && (segments.length === 1 || segments.length === 2)) {
-    // /<slug> or /<category>/<slug>; the shop's own sections (/catalog/…,
-    // /bilgi/…) and Next's files (/_next/…) are never the old store's.
-    const legacy = segments.map((segment) => segment.toLowerCase());
-    const slug = legacy[legacy.length - 1];
-    const category = legacy.length === 2 ? legacy[0] : null;
-    if (
-      !ROUTES.has(legacy[0]) &&
-      (category === null || SLUG.test(category)) &&
-      !FILE.test(slug) && SLUG.test(slug) && slug.length <= 255
-    ) {
+    return moved(request, `${prefix}/${segments[0].toLowerCase()}`);
+  } else if (!prefix && segments.length === 2) {
+    // /<category>/<slug>; the shop's own sections (/catalog/…, /bilgi/…) and
+    // Next's files (/_next/…) are never the old store's.
+    const [category, slug] = segments.map((segment) => segment.toLowerCase());
+    if (!ROUTES.has(category) && SLUG.test(category) && !FILE.test(slug) && SLUG.test(slug) && slug.length <= 255) {
       const found = await legacyProduct(request, slug);
       if (found) return found;
       // No such product: an old category's address still says where it was.
-      const shelf = category !== null ? LEGACY_CATEGORIES[category] : undefined;
+      const shelf = LEGACY_CATEGORIES[category];
       if (shelf) return toLegacyShelf(request, shelf);
     }
   } else if (!prefix && segments.length === 3 && segments[0].toLowerCase() === LEGACY_PARENT) {
@@ -289,6 +284,14 @@ export async function proxy(request: NextRequest) {
 
   const redirect = await productRedirect(request, path, language ? `/${language}` : "");
   if (redirect) return redirect;
+
+  // A scanner's file at the root: the catch-all's 404, not the product page.
+  const segments = path.split("/").filter(Boolean);
+  if (segments.length === 1 && !ROUTES.has(segments[0]) && NOT_A_PRODUCT.test(decodeURIComponent(segments[0]))) {
+    const url = request.nextUrl.clone();
+    url.pathname = `/${language ?? "tr"}/_/${segments[0]}`;
+    return NextResponse.rewrite(url);
+  }
 
   if (language) return NextResponse.next();
   const url = request.nextUrl.clone();

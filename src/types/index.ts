@@ -346,7 +346,7 @@ export interface BrandWrite {
 
 export interface Product {
   id: UUID;
-  /** The page's address, /product/<slug>; given once and kept through renames. */
+  /** The page's address, /<slug>; given once and kept through renames. */
   slug: string;
   base_code: string;
   name: string;
@@ -1091,7 +1091,7 @@ export interface ProductSheet {
    * replaces what is stored — a language left out is removed; omitted, kept.
    */
   translations?: Partial<Record<TranslatedLocale, ProductTranslation>> | null;
-  /** The page's address, /product/<slug>; blank keeps the current one (a new product's comes from its name). */
+  /** The page's address, /<slug>; blank keeps the current one (a new product's comes from its name). */
   slug?: string | null;
   /** Gallery in order; the server mirrors the first one into `image_url`. */
   image_urls: string[];

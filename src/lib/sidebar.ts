@@ -1,3 +1,5 @@
+import { ROOT_ROUTES, isProductPath } from "@/lib/rootRoutes";
+
 /**
  * Whether the category column is open, remembered per visitor. Closed until the
  * visitor opens it: the homepage's hero then has the two promo boxes beside it
@@ -27,11 +29,15 @@ const COLLAPSED = "collapsed";
 /** The catalog, its categories, the brand pages and the deals: they open with the column showing. */
 const OPEN_BY_DEFAULT = /^\/(?:(?:en|ar)\/)?(?:catalog|marka|firsat-urunleri)(?:\/|$)/;
 
-/** A product's page: it opens with the column closed. */
-const CLOSED_BY_DEFAULT = /^\/(?:(?:en|ar)\/)?product(?:\/|$)/;
+/**
+ * A product's page, /<slug> (lib/rootRoutes): it opens with the column closed.
+ * As a pattern too, for the pre-paint script: one segment, after an optional
+ * language, that is none of the shop's own pages.
+ */
+const CLOSED_BY_DEFAULT = new RegExp(`^/(?:(?:en|ar)/)?(?!(?:${ROOT_ROUTES.join("|")})/?$)[^/]+/?$`);
 
 export const opensByDefault = (pathname: string) => OPEN_BY_DEFAULT.test(pathname);
-export const closesByDefault = (pathname: string) => CLOSED_BY_DEFAULT.test(pathname);
+export const closesByDefault = (pathname: string) => isProductPath(pathname);
 
 /** Runs in <head>: sets the attribute before anything is painted. */
 export const SIDEBAR_SCRIPT = `try{var p=location.pathname;if(!${OPEN_BY_DEFAULT}.test(p)&&(${CLOSED_BY_DEFAULT}.test(p)||localStorage.getItem(${JSON.stringify(KEY)})!=="0")){document.documentElement.setAttribute(${JSON.stringify(ATTRIBUTE)},${JSON.stringify(COLLAPSED)})}}catch(_){}`;

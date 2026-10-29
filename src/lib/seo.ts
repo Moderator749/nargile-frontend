@@ -21,12 +21,13 @@ const absolute = (href: string, locale: Locale = DEFAULT_LOCALE) => `${SITE_URL}
 const IN_LANGUAGE: Record<Locale, string> = { tr: "tr-TR", en: "en", ar: "ar" };
 
 /**
- * The product detail page, by slug. A caller that only has the id (an old
- * cart line) still gets a working link: /product/<id> answers with a
- * permanent redirect to the slug (see src/proxy.ts).
+ * The product detail page, by slug, at the root: /<slug>, as the old store
+ * addressed its products. A caller that only has the id (an old cart line)
+ * still gets a working link: /product/<id> answers with a permanent redirect
+ * to the slug (see src/proxy.ts).
  */
 export const productHref = (product: { id: string; slug?: string | null }) =>
-  `/product/${product.slug || product.id}`;
+  product.slug ? `/${product.slug}` : `/product/${product.id}`;
 
 /**
  * A product photo's alt text: "<Ürün> - <Kategori> | Nargile Malzemesi". The

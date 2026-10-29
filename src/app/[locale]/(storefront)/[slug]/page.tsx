@@ -8,6 +8,7 @@ import { SimilarProducts } from "@/components/product/SimilarProducts";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { categoryCopy, hasCategoryCopy, parentCategory } from "@/lib/categories";
 import { DEFAULT_LOCALE, localePath } from "@/lib/i18n/config";
+import { RETIRED_PRODUCTS } from "@/lib/legacy/opencart";
 import { getI18n } from "@/lib/i18n/server";
 import { breadcrumbJsonLd, metaDescription, pageMetadata, productHref, productJsonLd, type Breadcrumb } from "@/lib/seo";
 import { PAGE_CONTAINER } from "@/lib/layout";
@@ -39,7 +40,7 @@ async function load(slug: string) {
   return { product, categories: categories ?? [], category };
 }
 
-export async function generateMetadata(props: PageProps<"/[locale]/product/[slug]">): Promise<Metadata> {
+export async function generateMetadata(props: PageProps<"/[locale]/[slug]">): Promise<Metadata> {
   const { slug } = await props.params;
   const [{ product, category }, { locale, t }] = await Promise.all([load(slug), getI18n()]);
   if (!product) return { title: t.meta.productNotFound, robots: { index: false } };
@@ -90,13 +91,19 @@ export async function generateMetadata(props: PageProps<"/[locale]/product/[slug
   });
 }
 
-export default async function ProductPage(props: PageProps<"/[locale]/product/[slug]">) {
+export default async function ProductPage(props: PageProps<"/[locale]/[slug]">) {
   const { slug } = await props.params;
   const [{ product, categories, category }, home, { locale, t }] = await Promise.all([load(slug), getHomepage(), getI18n()]);
-  if (!product) notFound();
-  // Asked by id (a link from before slugs) or in other letter case: one
-  // address per product. src/proxy.ts answers an id with a 301 before this
-  // renders (a 503 when it cannot reach the API); this is the fallback.
+  if (!product) {
+    // An old store's product the shop no longer sells: its model or its shelf
+    // (RETIRED_PRODUCTS), the address having been its, in Turkish.
+    const next = locale === DEFAULT_LOCALE ? RETIRED_PRODUCTS[slug] : undefined;
+    if (next) permanentRedirect(next.replace(/^\/product\//, "/"));
+    notFound();
+  }
+  // Asked by an old store's spelling, by id or in other letter case: one
+  // address per product. src/proxy.ts answers an id and capitals with a 301
+  // before this renders; this is the fallback.
   if (product.slug !== slug) permanentRedirect(localePath(locale, productHref(product)));
 
   // Internal links under the product: its category's other products, and the

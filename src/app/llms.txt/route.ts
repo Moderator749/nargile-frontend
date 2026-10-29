@@ -151,7 +151,7 @@ export async function GET() {
     "## Makineler için",
     "",
     `- [Site haritası](${url("/sitemap.xml")}): Her kategori ve ürün sayfası, son güncelleme tarihleriyle.`,
-    "- Ürün sayfaları /product/<ürün-adı> adresindedir ve schema.org Product, Offer ve BreadcrumbList verisi taşır.",
+    "- Ürün sayfaları /<ürün-adı> adresindedir (sitenin kökünde) ve schema.org Product, Offer ve BreadcrumbList verisi taşır.",
     "",
   );
 
