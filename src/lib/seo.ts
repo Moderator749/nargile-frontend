@@ -272,19 +272,32 @@ export function returnPolicyJsonLd(locale: Locale = DEFAULT_LOCALE) {
 }
 
 /**
- * Free delivery in Turkey, stated only where it is certain for the product
- * on its own: a retail cart ships on the shop from `freeFrom` (the panel's
- * "ücretsiz kargo limiti"), so one unit at or above it does — unless it counts
- * as coal, whose carts the "%50 Kuralı" can still send karşı ödemeli. Below
- * the limit the carriage is paid on delivery at the carrier's rate, which no
- * fixed figure here could honestly state, so nothing is said.
+ * How long a parcel takes: "Kargo ve Teslimat Şartları" gives it to the
+ * carrier within 2 business days, and the carrier brings it anywhere in
+ * Turkey in 1–3 more.
  */
-function freeShippingJsonLd(price: number, coal: boolean, freeFrom: number | null) {
-  if (freeFrom === null || coal || !(price >= freeFrom)) return undefined;
+const DELIVERY_TIME = {
+  "@type": "ShippingDeliveryTime",
+  handlingTime: { "@type": "QuantitativeValue", minValue: 0, maxValue: 2, unitCode: "DAY" },
+  transitTime: { "@type": "QuantitativeValue", minValue: 1, maxValue: 3, unitCode: "DAY" },
+};
+
+/**
+ * Delivery in Turkey, on every offer. Free (a rate of 0) only where that is
+ * certain for the product on its own: a retail cart ships on the shop from
+ * `freeFrom` (the panel's "ücretsiz kargo limiti"), so one unit at or above it
+ * does — unless it counts as coal, whose carts the "%50 Kuralı" can still send
+ * karşı ödemeli. Otherwise the buyer pays the carrier on delivery at the
+ * carrier's own rate, which no fixed figure here could honestly state: the
+ * destination and the delivery time are given, and no shippingRate at all.
+ */
+function shippingJsonLd(price: number, coal: boolean, freeFrom: number | null) {
+  const free = freeFrom !== null && !coal && price >= freeFrom;
   return {
     "@type": "OfferShippingDetails",
-    shippingRate: { "@type": "MonetaryAmount", value: 0, currency: "TRY" },
     shippingDestination: { "@type": "DefinedRegion", addressCountry: "TR" },
+    ...(free ? { shippingRate: { "@type": "MonetaryAmount", value: 0, currency: "TRY" } } : {}),
+    deliveryTime: DELIVERY_TIME,
   };
 }
 
@@ -437,7 +450,7 @@ export function productJsonLd(
   const availability = (inStock: boolean) =>
     inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock";
   const shipping = price
-    ? freeShippingJsonLd(Number(price.price_incl_tax), product.is_cart_rule_applied ?? true, terms.freeShippingFrom)
+    ? shippingJsonLd(Number(price.price_incl_tax), product.is_cart_rule_applied ?? true, terms.freeShippingFrom)
     : undefined;
   const returns = returnPolicyJsonLd(locale);
 
