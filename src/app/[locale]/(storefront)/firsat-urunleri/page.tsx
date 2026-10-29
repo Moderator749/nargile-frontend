@@ -35,12 +35,11 @@ export default async function DealsPage() {
     { name: TITLE, href: DEALS_HREF },
   ];
   const products = deals ?? [];
-  const categoryById = new Map((categories ?? []).map((c) => [c.id, c]));
 
   return (
     <main className="flex flex-1 flex-col bg-white text-foreground dark:bg-background">
       <JsonLd data={breadcrumbJsonLd(BREADCRUMBS, locale)} />
-      {products.length > 0 && <JsonLd data={productListJsonLd(products, DEALS_HREF, categoryById, locale)} />}
+      {products.length > 0 && <JsonLd data={productListJsonLd(products, DEALS_HREF, locale)} />}
       {/* Laid out as a catalog page: Kategoriler open beside the grid on
           arrival (see lib/sidebar), the catalog's toolbar above it. */}
       <div className={`${PAGE_CONTAINER} py-8 md:py-10 lg:flex lg:items-start`}>

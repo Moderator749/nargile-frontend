@@ -436,9 +436,7 @@ export default async function HomePage() {
         {/* With its SearchAction: the header's search box, as Google can offer it. */}
         <JsonLd data={websiteJsonLd(locale)} />
         {featured && featured.length > 0 && (
-          <JsonLd
-            data={productListJsonLd(featured, "/", new Map(allCategories.map((c) => [c.id, c])), locale)}
-          />
+          <JsonLd data={productListJsonLd(featured, "/", locale)} />
         )}
 
         {/* The first slide's title is the page's h1; with the slider switched

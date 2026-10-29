@@ -380,50 +380,24 @@ export function breadcrumbJsonLd(crumbs: Breadcrumb[], locale: Locale = DEFAULT_
 }
 
 /**
- * Product list for a catalog page. Offers always use the public RETAIL list price —
- * the same price an anonymous visitor (and crawler) sees on the page.
+ * The products a listing page shows (a category, the deals, the homepage), as
+ * Google's "summary page": each item only the address of the product's own
+ * page, in the order shown. The full Product — price, stock, returns,
+ * shipping — is stated once, on that page (productJsonLd). A Product per card
+ * here would be read as a merchant listing of its own, short of what the
+ * product page says, and reported as an error on every listing it is in.
  */
-export function productListJsonLd(
-  products: CatalogProduct[],
-  pageHref: string,
-  categoryById: Map<number, Category>,
-  locale: Locale = DEFAULT_LOCALE,
-) {
+export function productListJsonLd(products: CatalogProduct[], pageHref: string, locale: Locale = DEFAULT_LOCALE) {
   return {
     "@context": "https://schema.org",
     "@type": "ItemList",
     url: absolute(pageHref, locale),
     numberOfItems: products.length,
-    itemListElement: products.flatMap((product, i) => {
-      // The colour the card itself shows, so the markup and the page agree.
-      const variant = displayVariant(product);
-      const price = variant?.list_price;
-      if (!variant || !price) return [];
-      const category = product.category_id != null ? categoryById.get(product.category_id) : undefined;
-      return [
-        {
-          "@type": "ListItem",
-          position: i + 1,
-          item: {
-            "@type": "Product",
-            name: product.name,
-            sku: variant.sku,
-            mpn: product.base_code,
-            ...(productImages(product).length > 0 ? { image: productImages(product) } : {}),
-            ...(product.description ? { description: htmlToText(product.description) } : {}),
-            ...(product.brand ? { brand: { "@type": "Brand", name: product.brand } } : {}),
-            ...(category ? { category: category.name } : {}),
-            url: absolute(productHref(product), locale),
-            offers: {
-              "@type": "Offer",
-              price: price.price_incl_tax,
-              priceCurrency: price.currency,
-              url: absolute(productHref(product), locale),
-            },
-          },
-        },
-      ];
-    }),
+    itemListElement: products.map((product, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      url: absolute(productHref(product), locale),
+    })),
   };
 }
 

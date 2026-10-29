@@ -53,14 +53,13 @@ export async function CatalogScreen({
 }: CatalogScreenProps) {
   const [home, locale] = await Promise.all([getHomepage(), getLocale()]);
   const pageHref = breadcrumbs[breadcrumbs.length - 1].href;
-  const categoryById = new Map(categories.map((c) => [c.id, c]));
 
   return (
     // White under the grid; the grey header and category column frame it.
     <main className="flex flex-1 flex-col bg-white text-foreground dark:bg-background">
       <JsonLd data={breadcrumbJsonLd(breadcrumbs, locale)} />
       {products && products.length > 0 && (
-        <JsonLd data={productListJsonLd(products, pageHref, categoryById, locale)} />
+        <JsonLd data={productListJsonLd(products, pageHref, locale)} />
       )}
 
       <CatalogView
