@@ -68,7 +68,7 @@ export default async function BrandPage(props: PageProps<"/[locale]/marka/[slug]
       // Plain text as the admin wrote it: escaped into paragraphs, never markup.
       intro={ownDescription(brand, locale) ? textToHtml(brand.description ?? "") : null}
       breadcrumbs={[
-        { name: t.nav.home, href: "/" },
+        { name: t.nav.crumbHome, href: "/" },
         { name: brand.name, href: brandPageHref(brand.slug) },
       ]}
       categories={categories ?? []}

@@ -12,6 +12,7 @@
  */
 
 import type { Locale } from "@/lib/i18n/config";
+import { SITE_NAME } from "@/lib/site";
 
 const tr = {
   meta: {
@@ -52,6 +53,8 @@ const tr = {
     tracking: "Kargo Takip",
     categories: "Kategoriler",
     home: "Ana Sayfa",
+    // The breadcrumb's first step: the shop's name, in every language.
+    crumbHome: SITE_NAME,
     cart: "Sepetim",
     cartWithCount: (n: number) => `Sepet (${n} ürün)`,
     account: "Hesabım",
@@ -115,6 +118,8 @@ const en: Dictionary = {
     tracking: "Track Order",
     categories: "Categories",
     home: "Home",
+    // The breadcrumb's first step: the shop's name, in every language.
+    crumbHome: SITE_NAME,
     cart: "Cart",
     cartWithCount: (n: number) => `Cart (${n} ${n === 1 ? "item" : "items"})`,
     account: "My Account",
@@ -176,6 +181,8 @@ const ar: Dictionary = {
     tracking: "تتبع الشحنة",
     categories: "الأقسام",
     home: "الرئيسية",
+    // The breadcrumb's first step: the shop's name, in every language.
+    crumbHome: SITE_NAME,
     cart: "السلة",
     cartWithCount: (n: number) => `السلة (${n} منتج)`,
     account: "حسابي",

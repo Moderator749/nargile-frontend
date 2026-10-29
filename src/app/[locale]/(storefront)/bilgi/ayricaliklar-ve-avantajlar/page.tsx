@@ -205,7 +205,7 @@ export default async function PerksPage() {
     <BilgiLayout
       title={page.title}
       breadcrumbs={[
-        { name: t.nav.home, href: "/" },
+        { name: t.nav.crumbHome, href: "/" },
         { name: bilgiMessages[locale].title, href: BILGI_HREF },
         { name: page.title, href: page.href },
       ]}

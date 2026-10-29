@@ -76,7 +76,7 @@ export default async function CategoryPage(props: PageProps<"/[locale]/catalog/[
       title={name}
       breadcrumbs={[
         // Ana Sayfa > (Grup >) Kategori, the first steps of the product's own trail.
-        { name: t.nav.home, href: "/" },
+        { name: t.nav.crumbHome, href: "/" },
         ...(parent ? [{ name: parent.name, href: `/catalog/${parent.slug}` }] : []),
         { name, href: `/catalog/${slug}` },
       ]}

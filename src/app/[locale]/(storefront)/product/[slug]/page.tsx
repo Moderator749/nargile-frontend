@@ -113,7 +113,7 @@ export default async function ProductPage(props: PageProps<"/[locale]/product/[s
   // Ana Sayfa > (Grup >) Kategori > Ürün: the path a visitor takes from a menu to here.
   const group = parentCategory(category, categories);
   const crumbs: Breadcrumb[] = [
-    { name: t.nav.home, href: "/" },
+    { name: t.nav.crumbHome, href: "/" },
     ...(group ? [{ name: group.name, href: `/catalog/${group.slug}` }] : []),
     ...(category ? [{ name: category.name, href: `/catalog/${category.slug}` }] : []),
     { name: product.name, href: productHref(product) },

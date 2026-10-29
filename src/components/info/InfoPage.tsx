@@ -27,7 +27,7 @@ export async function InfoPage({
   const { locale, t } = await getI18n();
   const m = infoShellMessages[locale];
   const crumbs = [
-    { name: t.nav.home, href: "/" },
+    { name: t.nav.crumbHome, href: "/" },
     { name: title, href },
   ];
   // lib/format's formatDate, in the page's language (Turkish: the same "tr-TR" output).

@@ -38,7 +38,7 @@ export default async function LegalPage(props: PageProps<"/[locale]/sozlesmeler/
     <BilgiLayout
       title={doc.title}
       breadcrumbs={[
-        { name: t.nav.home, href: "/" },
+        { name: t.nav.crumbHome, href: "/" },
         { name: doc.title, href: `/sozlesmeler/${slug}` },
       ]}
     >

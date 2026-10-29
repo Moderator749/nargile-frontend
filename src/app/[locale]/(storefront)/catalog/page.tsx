@@ -34,7 +34,7 @@ export default async function CatalogPage() {
     <CatalogScreen
       title={t.meta.catalogHeading}
       breadcrumbs={[
-        { name: t.nav.home, href: "/" },
+        { name: t.nav.crumbHome, href: "/" },
         { name: t.nav.catalog, href: "/catalog" },
       ]}
       categories={categories ?? []}

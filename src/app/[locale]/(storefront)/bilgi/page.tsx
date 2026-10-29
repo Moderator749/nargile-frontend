@@ -21,7 +21,7 @@ export default async function BilgiIndexPage() {
     <BilgiLayout
       title={m.title}
       breadcrumbs={[
-        { name: t.nav.home, href: "/" },
+        { name: t.nav.crumbHome, href: "/" },
         { name: m.title, href: BILGI_HREF },
       ]}
     >

@@ -40,7 +40,7 @@ export default async function StorePage(props: PageProps<"/[locale]/magazalar/[s
   if (!store) notFound();
   const m = storeMessages[locale];
   const crumbs = [
-    { name: t.nav.home, href: "/" },
+    { name: t.nav.crumbHome, href: "/" },
     { name: m.indexHeading, href: STORES_HREF },
     { name: store.district[locale], href: storeHref(store) },
   ];

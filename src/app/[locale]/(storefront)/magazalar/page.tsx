@@ -27,7 +27,7 @@ export default async function StoresPage() {
   const { locale, t } = await getI18n();
   const m = storeMessages[locale];
   const crumbs = [
-    { name: t.nav.home, href: "/" },
+    { name: t.nav.crumbHome, href: "/" },
     { name: m.indexHeading, href: STORES_HREF },
   ];
   return (

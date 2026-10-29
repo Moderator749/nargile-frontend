@@ -31,7 +31,7 @@ export default async function BilgiDocumentPage(props: PageProps<"/[locale]/bilg
     <BilgiLayout
       title={doc.title}
       breadcrumbs={[
-        { name: t.nav.home, href: "/" },
+        { name: t.nav.crumbHome, href: "/" },
         { name: bilgiMessages[locale].title, href: BILGI_HREF },
         { name: doc.title, href: bilgiHref(doc) },
       ]}

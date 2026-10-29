@@ -31,7 +31,7 @@ export default async function DealsPage() {
   ]);
   const TITLE = t.nav.deals;
   const BREADCRUMBS: Breadcrumb[] = [
-    { name: t.nav.home, href: "/" },
+    { name: t.nav.crumbHome, href: "/" },
     { name: TITLE, href: DEALS_HREF },
   ];
   const products = deals ?? [];
