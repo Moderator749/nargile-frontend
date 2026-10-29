@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
+import { LEGACY_CATEGORIES, LEGACY_PARENT } from "./lib/legacy/categories";
 import { OPENCART_CATEGORY_IDS, OPENCART_INFORMATION_IDS, OPENCART_PRODUCT_IDS, RETIRED_PRODUCTS } from "./lib/legacy/opencart";
 
 /*
@@ -14,9 +15,11 @@ import { OPENCART_CATEGORY_IDS, OPENCART_INFORMATION_IDS, OPENCART_PRODUCT_IDS, 
  *   here instead of a 404 — the slugs were carried over as the old store spelled
  *   them (scripts/apply_legacy_product_slugs.py in the backend).
  * - /<category>/<slug>: the same, reached through one of the old store's
- *   category pages (/legend-hookah-nargile-takimlari/legend-hookah-celik-…).
- *   The category part names no product, so only the last segment is looked up;
- *   a third of the old product links indexed are in this form.
+ *   category pages (/legend-hookah-nargile-takimlari/legend-hookah-celik-…),
+ *   or /diger/<category>/<slug> under its "Diğer" shelf. The category part
+ *   names no product, so only the last segment is looked up; a third of the
+ *   old product links indexed are in this form. When that finds nothing, the
+ *   category the address names (lib/legacy/categories) is where it goes.
  *
  * - An old product the shop no longer sells here (unpublished, or never
  *   brought over) goes to the same model if there is one, else the shelf it
@@ -75,15 +78,33 @@ const CANONICAL_HOST = (() => {
 const CATALOG_SORTS = new Set(["recommended", "price-asc", "price-desc", "name-asc"]);
 const OPENCART_LISTING = ["order", "limit", "page"];
 
+/** Takes the old store's listing parameters off `url`; whether it had any. */
+function dropOpenCartListing(url: URL): boolean {
+  const sort = url.searchParams.get("sort");
+  const stale = OPENCART_LISTING.filter((key) => url.searchParams.has(key));
+  if (sort !== null && !CATALOG_SORTS.has(sort)) stale.push("sort");
+  for (const key of stale) url.searchParams.delete(key);
+  return stale.length > 0;
+}
+
 /** The catalog address without the old store's listing parameters; null when it has none. */
 function withoutOpenCartListing(request: NextRequest) {
-  const params = request.nextUrl.searchParams;
-  const sort = params.get("sort");
-  const stale = OPENCART_LISTING.filter((key) => params.has(key));
-  if (sort !== null && !CATALOG_SORTS.has(sort)) stale.push("sort");
-  if (stale.length === 0) return null;
   const url = request.nextUrl.clone();
-  for (const key of stale) url.searchParams.delete(key);
+  return dropOpenCartListing(url) ? NextResponse.redirect(url, 301) : null;
+}
+
+/**
+ * A dead product under one of the old store's category addresses
+ * (/rus-nargile-takimlari-ve-modelleri/blade-…, /diger/ozel-sipsiler/na15-…)
+ * goes to that category's shelf here: the address itself names where it
+ * belonged, so the shelf is the page it was about. Its listing parameters
+ * (and the product page's ?tag=…) stay behind; the rest (utm_*…) comes along.
+ */
+function toLegacyShelf(request: NextRequest, category: string) {
+  const url = request.nextUrl.clone();
+  url.pathname = `/catalog/${category}`;
+  dropOpenCartListing(url);
+  url.searchParams.delete("tag");
   return NextResponse.redirect(url, 301);
 }
 
@@ -216,6 +237,17 @@ async function productRedirect(request: NextRequest, path: string, prefix: strin
     ) {
       const found = await legacyProduct(request, slug);
       if (found) return found;
+      // No such product: an old category's address still says where it was.
+      const shelf = category !== null ? LEGACY_CATEGORIES[category] : undefined;
+      if (shelf) return toLegacyShelf(request, shelf);
+    }
+  } else if (!prefix && segments.length === 3 && segments[0].toLowerCase() === LEGACY_PARENT) {
+    // /diger/<category>/<slug>: the old store's accessory shelves, one level
+    // down. Only under a category it had — /diger/te/… was a test shelf.
+    const shelf = LEGACY_CATEGORIES[segments[1].toLowerCase()];
+    const slug = segments[2].toLowerCase();
+    if (shelf && !FILE.test(slug) && SLUG.test(slug) && slug.length <= 255) {
+      return (await legacyProduct(request, slug)) ?? toLegacyShelf(request, shelf);
     }
   }
   return null;
