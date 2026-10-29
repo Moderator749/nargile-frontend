@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { LEGACY_CATEGORIES, LEGACY_PARENT } from "./lib/legacy/categories";
+import { LEGACY_CATEGORIES, LEGACY_PAGES, LEGACY_PARENT, RETIRED_CATEGORIES } from "./lib/legacy/categories";
 import { ROOT_ROUTES, isRootSlugPath } from "./lib/rootRoutes";
 import { OPENCART_CATEGORY_IDS, OPENCART_INFORMATION_IDS, OPENCART_PRODUCT_IDS, RETIRED_PRODUCTS } from "./lib/legacy/opencart";
 
@@ -151,9 +151,32 @@ function unavailable() {
 }
 
 function moved(request: NextRequest, pathname: string) {
-  const url = request.nextUrl.clone(); // the query string (utm_*…) comes along
+  const url = request.nextUrl.clone(); // the query string (utm_*…) comes along,
   url.pathname = pathname;
+  // but not the old store's listing parameters, nor its product pages' ?tag=:
+  // one 301 to the clean address, not a second to drop them.
+  dropOpenCartListing(url);
+  url.searchParams.delete("tag");
   return NextResponse.redirect(url, 301);
+}
+
+/**
+ * An old category or page address, to where it lives now (lib/legacy/
+ * categories): a category slug this shop retired, at the root or under
+ * /catalog, in any language; and, the old store being Turkish, its shelves
+ * (/nargile-siseleri, /diger/kozlukler) and pages at the root. An old address
+ * that is a live slug today (/siseler, /oduman) is that page, not a redirect.
+ */
+function oldShelfOrPage(path: string, prefix: string): string | null {
+  const segments = path.split("/").filter(Boolean);
+  const [first, second] = segments.map((segment) => segment.toLowerCase());
+  if (segments.length === 2 && first === "catalog" && RETIRED_CATEGORIES[second]) return `${prefix}/${RETIRED_CATEGORIES[second]}`;
+  if (segments.length === 1 && RETIRED_CATEGORIES[first]) return `${prefix}/${RETIRED_CATEGORIES[first]}`;
+  if (prefix) return null;
+  if (segments.length === 1 && LEGACY_CATEGORIES[first] && LEGACY_CATEGORIES[first] !== first) return `/${LEGACY_CATEGORIES[first]}`;
+  if (segments.length === 2 && first === LEGACY_PARENT && LEGACY_CATEGORIES[second]) return `/${LEGACY_CATEGORIES[second]}`;
+  if (segments.length === 1 && LEGACY_PAGES[segments[0]]) return LEGACY_PAGES[segments[0]];
+  return null;
 }
 
 /** A 301 to an address of our own, the old query string dropped (it named the old page). */
@@ -279,6 +302,9 @@ export async function proxy(request: NextRequest) {
   const path = language ? pathname.slice(3) || "/" : pathname;
   if (language && /^\/admin(?:\/|$)/.test(path)) return moved(request, path);
 
+  const old = oldShelfOrPage(path, language ? `/${language}` : "");
+  if (old) return moved(request, old);
+
   // `/catalog?category=<slug>`, how other shops (and old links) name a
   // category: its page, the parameter left behind. Not for good — the
   // address does not say the category exists.
@@ -293,12 +319,7 @@ export async function proxy(request: NextRequest) {
   // /catalog/<slug>, where category pages were until 2026-10-29: one 301 to
   // /<slug>, the old store's listing parameters left behind on the way.
   const shelf = /^\/catalog\/([^/]+)\/?$/.exec(path)?.[1];
-  if (shelf) {
-    const url = request.nextUrl.clone();
-    url.pathname = `${language ? `/${language}` : ""}/${shelf.toLowerCase()}`;
-    dropOpenCartListing(url);
-    return NextResponse.redirect(url, 301);
-  }
+  if (shelf) return moved(request, `${language ? `/${language}` : ""}/${shelf.toLowerCase()}`);
 
   // The catalog, a category or a product with the old store's listing
   // parameters: the same page without them.

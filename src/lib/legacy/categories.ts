@@ -1,5 +1,5 @@
-// The old store's (OpenCart) category addresses, read by next.config.ts (a
-// 301 for each) and src/proxy.ts (where a dead product under one goes).
+// The old store's (OpenCart) category and page addresses and this shop's
+// retired category slugs, each answered by src/proxy.ts with one 301.
 // No path aliases here: both are built apart from the pages.
 
 /**
@@ -64,3 +64,48 @@ export const LEGACY_CATEGORIES: Record<string, string> = {
  * down — every one of them is answered at both addresses.
  */
 export const LEGACY_PARENT = "diger";
+
+/**
+- Old category slug → the live category its products are in now. A slug the
+- current tree uses (celik-takimlar, komurler, sultan…) must never be listed
+- here: the redirect would hide that category's page. Each is reserved in the
+- backend (RESERVED_ROOT_PATHS): no product or category may take it.
+ */
+export const RETIRED_CATEGORIES: Record<string, string> = {
+  "nargile-komurleri": "komurler",
+  "hindistan-cevizi-komurleri": "komurler",
+  "bitkisel-karisimlar": "bitkisel-urunler",
+  "marpuc-ve-hortumlar": "marpuclar",
+  "kozlukler-isi-yonetimi": "kozlukler",
+  "yedek-siseler": "siseler",
+  "yedek-sise-ve-govde": "siseler",
+  "nargile-siseleri": "siseler",
+  "masaustu-nargile-takimlari": "masaustu-takimlar",
+  "mini-masaustu-takimlar": "masaustu-takimlar",
+  "rus-takimlari": "rus-takimlar",
+  "panada-hookah": "panada",
+  "sultan-nargile": "sultan",
+  "legend-hookah": "legend",
+  "oduman-nargile": "oduman",
+  "mr-wood-nargile": "mr-wood",
+  "steamulation-nargile-takimlari": "steamulation",
+  "quasar-arguile": "quasar",
+  "meduse-nargile-takimlari": "meduse",
+};
+
+/** The old store's pages that were not categories, and its brand pages. */
+export const LEGACY_PAGES: Record<string, string> = {
+  "teslimat-ve-kargolama-bilgileri": "/bilgi/kargo-ve-teslimat",
+  "sartlar-ve-kosullar": "/bilgi/uyelik-ve-kullanim-sartlari",
+  "sikca-sorulan-sorular": "/sss",
+  // No page of their own here: the shop's story is the homepage's closing
+  // passage, the privacy terms are among the Bilgi documents.
+  hakkimizda: "/",
+  "gizlilik-sozlesmesi": "/bilgi",
+  // "İthal Nargile" was empty when the old store was read.
+  "ithal-nargile": "/catalog",
+  // Brand pages (manufacturers) → the brand's category.
+  "legend-hookah-nargile": "/legend",
+  "sultan-nargile": "/sultan",
+  "oduman%20nargile": "/oduman", // the old store's own spelling, with a space
+};

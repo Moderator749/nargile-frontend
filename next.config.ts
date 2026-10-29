@@ -1,6 +1,5 @@
 import type { NextConfig } from "next";
 
-import { LEGACY_CATEGORIES, LEGACY_PARENT } from "./src/lib/legacy/categories";
 
 const FALLBACK_API_URL = "http://127.0.0.1:8000/api/v1";
 
@@ -35,56 +34,10 @@ if (process.env.VERCEL && !process.env.BACKEND_URL) {
 }
 
 /**
-- Old category slug → the live category its products are in now. A slug the
-- current tree uses (celik-takimlar, komurler, sultan…) must never be listed
-- here: the redirect would hide that category's page. Each is reserved in the
-- backend (RESERVED_ROOT_PATHS): no product or category may take it.
- */
-const RETIRED_CATEGORIES: Record<string, string> = {
-  "nargile-komurleri": "komurler",
-  "hindistan-cevizi-komurleri": "komurler",
-  "bitkisel-karisimlar": "bitkisel-urunler",
-  "marpuc-ve-hortumlar": "marpuclar",
-  "kozlukler-isi-yonetimi": "kozlukler",
-  "yedek-siseler": "siseler",
-  "yedek-sise-ve-govde": "siseler",
-  "nargile-siseleri": "siseler",
-  "masaustu-nargile-takimlari": "masaustu-takimlar",
-  "mini-masaustu-takimlar": "masaustu-takimlar",
-  "rus-takimlari": "rus-takimlar",
-  "panada-hookah": "panada",
-  "sultan-nargile": "sultan",
-  "legend-hookah": "legend",
-  "oduman-nargile": "oduman",
-  "mr-wood-nargile": "mr-wood",
-  "steamulation-nargile-takimlari": "steamulation",
-  "quasar-arguile": "quasar",
-  "meduse-nargile-takimlari": "meduse",
-};
-
-/** The old store's pages that were not categories, and its brand pages. */
-
-/**
  * Blog addresses that moved: the lüle guide (one article) became four
  * (src/lib/blog), and its address goes to the first, in every language.
  */
 const RETIRED_ARTICLES: Record<string, string> = { "nargile-lule-rehberi": "nargile-lulesi-nedir" };
-
-const LEGACY_PAGES: Record<string, string> = {
-  "teslimat-ve-kargolama-bilgileri": "/bilgi/kargo-ve-teslimat",
-  "sartlar-ve-kosullar": "/bilgi/uyelik-ve-kullanim-sartlari",
-  "sikca-sorulan-sorular": "/sss",
-  // No page of their own here: the shop's story is the homepage's closing
-  // passage, the privacy terms are among the Bilgi documents.
-  hakkimizda: "/",
-  "gizlilik-sozlesmesi": "/bilgi",
-  // "İthal Nargile" was empty when the old store was read.
-  "ithal-nargile": "/catalog",
-  // Brand pages (manufacturers) → the brand's category.
-  "legend-hookah-nargile": "/legend",
-  "sultan-nargile": "/sultan",
-  "oduman%20nargile": "/oduman", // the old store's own spelling, with a space
-};
 
 const nextConfig: NextConfig = {
   /*
@@ -116,42 +69,15 @@ const nextConfig: NextConfig = {
       // "Teslimat Ayarları" moved into Parametreler with every other threshold.
       // Exact path only: /admin/settings/legal (Sözleşmeler) stays where it is.
       { source: "/admin/settings", destination: "/admin/parameters", permanent: true },
-      // Category pages retired by the taxonomy migrations (see RETIRED_CATEGORIES),
-      // forwarded for good to where their products went, so an old link or a
-      // search result never lands on a 404.
+      // Old category and page addresses (retired slugs, the old store's
+      // shelves and pages) are answered by src/proxy.ts from
+      // src/lib/legacy/categories, in one 301 that leaves the old store's
+      // listing parameters behind — a redirect here would carry them along.
       // 301 rather than Next's default 308 for `permanent`: the code every
       // crawler and old client has treated as "moved for good" the longest.
-      // At the root, where category pages are now, and under /catalog, where
-      // they were: one 301 straight to the live shelf, in every language.
-      ...Object.entries(RETIRED_CATEGORIES).flatMap(([from, to]) =>
-        ["", "/en", "/ar"].flatMap((prefix) =>
-          [`${prefix}/catalog/${from}`, `${prefix}/${from}`].map((source) => ({
-            source,
-            destination: `${prefix}/${to}`,
-            statusCode: 301 as const,
-          })),
-        ),
-      ),
-      // The old store's addresses, so its links and its search results keep
-      // landing on the same shelf when the domain moves here. (Its product
-      // addresses are answered by src/proxy.ts, which asks the API.)
-      // An old address that is today's slug too (/siseler, /oduman) is the
-      // shelf's own page now: only its /diger/… form moves.
-      ...Object.entries(LEGACY_CATEGORIES).flatMap(([from, to]) =>
-        [...(from === to ? [] : [`/${from}`]), `/${LEGACY_PARENT}/${from}`].map((source) => ({
-          source,
-          destination: `/${to}`,
-          statusCode: 301 as const,
-        })),
-      ),
       // The old store's sitemap files (sitemap-product-1.xml…), which search
       // engines still hold: ours lists every language.
       { source: "/sitemap-:file", destination: "/sitemap.xml", statusCode: 301 as const },
-      ...Object.entries(LEGACY_PAGES).map(([from, to]) => ({
-        source: `/${from}`,
-        destination: to,
-        statusCode: 301 as const,
-      })),
       // In every language: the Sultan Nargile brand page, whose authority
       // goes to its category (see BRAND_CATEGORY in src/lib/seo).
       ...["", "/en", "/ar"].flatMap((prefix) =>
