@@ -53,7 +53,8 @@ export const LEGACY_CATEGORIES: Record<string, string> = {
   "ozel-sipsiler": "ozel-sipsiler",
   "oyun-aletleri": "oyun-eglence",
   marpuclar: "marpuclar",
-  "wd-hookah": "celik-takimlar",
+  // The brand's own page now (/wd-hookah): its old address is that page.
+  "wd-hookah": "wd-hookah",
   "sultan-nargile-takimlari": "sultan",
   "masaustu-nargile-takimi": "masaustu-takimlar",
 };
