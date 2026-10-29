@@ -1,6 +1,10 @@
 import type { Category } from "@/types";
 
-/** The category slug a site link opens, if it is a category page (/catalog/<slug>). */
+/**
+ * The category slug an old-style link names (/catalog/<slug>, where category
+ * pages were until 2026-10-29). A link at the root (/<slug>) is not checked:
+ * products share that namespace, so a slug that is no category may well be one.
+ */
 export function catalogSlugOf(href: string | null | undefined): string | null {
   const match = href?.trim().match(/^\/catalog\/([^/?#]+)\/?(?:[?#].*)?$/);
   return match ? decodeURIComponent(match[1]) : null;

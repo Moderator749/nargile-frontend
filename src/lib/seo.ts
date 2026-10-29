@@ -30,6 +30,14 @@ export const productHref = (product: { id: string; slug?: string | null }) =>
   product.slug ? `/${product.slug}` : `/product/${product.id}`;
 
 /**
+ * A category's page, at the root too: /<slug>. Products and categories share
+ * the one namespace, which the backend keeps free of clashes between them
+ * (app/services/root_slugs.py); /catalog/<slug>, where categories were until
+ * 2026-10-29, answers with a 301 here (src/proxy.ts).
+ */
+export const categoryHref = (slug: string) => `/${slug}`;
+
+/**
  * A product photo's alt text: "<Ürün> - <Kategori> | Nargile Malzemesi". The
  * name says what is in the picture; the category and the shop are what an
  * image search ranks it under.
@@ -48,7 +56,7 @@ export function productImageAlt(product: { name: string }, category?: { name: st
 export const BRAND_CATEGORY: Record<string, string> = { "sultan-nargile": "sultan", sultan: "sultan" };
 
 /** Where a link to the brand goes: its category where it was folded into one, else its own page. */
-export const brandHref = (slug: string) => (BRAND_CATEGORY[slug] ? `/catalog/${BRAND_CATEGORY[slug]}` : brandPageHref(slug));
+export const brandHref = (slug: string) => (BRAND_CATEGORY[slug] ? categoryHref(BRAND_CATEGORY[slug]) : brandPageHref(slug));
 
 /** The brand page's own address (/marka/<slug>). */
 export const brandPageHref = (slug: string) => `/marka/${slug}`;
@@ -61,7 +69,7 @@ export const brandPageHref = (slug: string) => `/marka/${slug}`;
  */
 export function brandCanonical(slug: string, categories: { slug: string }[] | null): string {
   const category = BRAND_CATEGORY[slug] ?? slug;
-  return categories?.some((c) => c.slug === category) ? `/catalog/${category}` : brandPageHref(slug);
+  return categories?.some((c) => c.slug === category) ? categoryHref(category) : brandPageHref(slug);
 }
 
 // ── Page metadata ─────────────────────────────────────────────────────────────
@@ -71,7 +79,7 @@ export interface PageSeo {
   title: string;
   absoluteTitle?: boolean;
   description: string;
-  /** Path of the canonical URL ("/catalog/luleler"): no query string, ever. */
+  /** Path of the canonical URL ("/luleler"): no query string, ever. */
   href: string;
   /** Photos to preview the link with, best first; the shop's own card when none. */
   images?: (string | null | undefined)[];

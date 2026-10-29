@@ -1,34 +1,24 @@
 import type { Metadata } from "next";
-import { notFound, permanentRedirect } from "next/navigation";
 
 import { CatalogScreen } from "@/components/catalog/CatalogScreen";
-import { DEFAULT_LOCALE, localePath } from "@/lib/i18n/config";
-import { getI18n } from "@/lib/i18n/server";
 import { categoryCopy, categoryFamily, hasCategoryCopy, parentCategory } from "@/lib/categories";
-import { getBrands, getCategories, getCategoryBySlug, getPublicProducts, required } from "@/lib/server/catalog";
-import { categoryDescription, leadParagraph, metaDescription, pageMetadata } from "@/lib/seo";
+import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n/config";
+import type { getI18n } from "@/lib/i18n/server";
+import { getBrands, getPublicProducts } from "@/lib/server/catalog";
+import { categoryDescription, categoryHref, leadParagraph, metaDescription, pageMetadata } from "@/lib/seo";
+import type { Category } from "@/types";
 
-// A day, as the catalog (CATALOG_REVALIDATE); admin edits refresh it immediately.
-export const revalidate = 86400;
+/*
+ * A category's page, drawn at the root (/<slug>) by the page beside this
+ * module, which tells a category's slug from a product's. Until 2026-10-29 it
+ * was /catalog/<slug>, which now answers with a 301 here (src/proxy.ts).
+ */
 
-/** Prerender known categories; new ones render on first request (dynamicParams). */
-export async function generateStaticParams() {
-  const categories = (await getCategories()) ?? [];
-  return categories.map((c) => ({ category: c.slug }));
-}
+type I18n = Awaited<ReturnType<typeof getI18n>>;
 
-/** The category this slug names; throws when the API is down, so an outage is never a 404. */
-async function findCategory(slug: string) {
-  const categories = required(await getCategories(), "/categories");
-  return { categories, category: categories.find((c) => c.slug === slug) ?? null };
-}
-
-export async function generateMetadata(props: PageProps<"/[locale]/catalog/[category]">): Promise<Metadata> {
-  const { category: slug } = await props.params;
+export async function categoryMetadata(category: Category, { locale, t }: I18n): Promise<Metadata> {
   // The same request the page makes, so the data cache answers it once.
-  const [{ category }, products, { locale, t }] = await Promise.all([findCategory(slug), getPublicProducts(slug), getI18n()]);
-  if (!category) return { title: t.meta.categoryNotFound, robots: { index: false } };
-
+  const products = await getPublicProducts(category.slug);
   // The admin's own introduction (in the page's language: the API answers
   // with its translation), else written copy where the shop has it (in all
   // three languages, lib/categories), else built from what the category
@@ -41,7 +31,7 @@ export async function generateMetadata(props: PageProps<"/[locale]/catalog/[cate
   return pageMetadata({
     title: t.meta.categoryTitle(category.name),
     description,
-    href: `/catalog/${category.slug}`,
+    href: categoryHref(category.slug),
     locale,
     locales: category.locales,
     // The category's own photo, else its first products' — a link shared on
@@ -53,22 +43,14 @@ export async function generateMetadata(props: PageProps<"/[locale]/catalog/[cate
   });
 }
 
-export default async function CategoryPage(props: PageProps<"/[locale]/catalog/[category]">) {
-  const { category: slug } = await props.params;
-  const [{ categories, category }, products, brands, { locale, t }] = await Promise.all([
-    findCategory(slug),
-    getPublicProducts(slug),
-    getBrands(),
-    getI18n(),
-  ]);
-  // A slug the admin has since changed leads on to the category's current
-  // address; one the API does not know at all is a 404.
-  if (!category) {
-    const renamed = await getCategoryBySlug(slug);
-    if (renamed && renamed.slug !== slug) permanentRedirect(localePath(locale, `/catalog/${renamed.slug}`));
-    notFound();
-  }
-
+export async function CategoryPage({
+  category,
+  categories,
+  locale,
+  t,
+}: { category: Category; categories: Category[] } & I18n & { locale: Locale }) {
+  const slug = category.slug;
+  const [products, brands] = await Promise.all([getPublicProducts(slug), getBrands()]);
   const name = category.name;
   const parent = parentCategory(category, categories);
   return (
@@ -77,8 +59,8 @@ export default async function CategoryPage(props: PageProps<"/[locale]/catalog/[
       breadcrumbs={[
         // Ana Sayfa > (Grup >) Kategori, the first steps of the product's own trail.
         { name: t.nav.crumbHome, href: "/" },
-        ...(parent ? [{ name: parent.name, href: `/catalog/${parent.slug}` }] : []),
-        { name, href: `/catalog/${slug}` },
+        ...(parent ? [{ name: parent.name, href: categoryHref(parent.slug) }] : []),
+        { name, href: categoryHref(slug) },
       ]}
       family={categoryFamily(category, categories)}
       categories={categories}

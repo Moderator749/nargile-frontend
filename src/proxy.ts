@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { LEGACY_CATEGORIES, LEGACY_PARENT } from "./lib/legacy/categories";
-import { ROOT_ROUTES } from "./lib/rootRoutes";
+import { ROOT_ROUTES, isRootSlugPath } from "./lib/rootRoutes";
 import { OPENCART_CATEGORY_IDS, OPENCART_INFORMATION_IDS, OPENCART_PRODUCT_IDS, RETIRED_PRODUCTS } from "./lib/legacy/opencart";
 
 /*
@@ -21,6 +21,8 @@ import { OPENCART_CATEGORY_IDS, OPENCART_INFORMATION_IDS, OPENCART_PRODUCT_IDS, 
  *   names no product, so only the last segment is looked up; a third of the
  *   old product links indexed are in this form. When that finds nothing, the
  *   category the address names (lib/legacy/categories) is where it goes.
+ * - /catalog/<slug>: where category pages were until 2026-10-29; categories
+ *   share the root with products now (the page tells them apart).
  * - /index.php?route=…: the old store's addresses before its friendly URLs —
  *   a product by its OpenCart id, a category by its path, a search, the
  *   information pages, the home page (openCartRoute below).
@@ -70,7 +72,7 @@ const CANONICAL_HOST = (() => {
 /**
  * The old store's listing parameters (?sort=p.price&order=ASC&limit=25,
  * ?page=2), which its category links carried and the category redirects
- * (next.config.ts) pass along to /catalog/…. The catalog reads none of them —
+ * (next.config.ts) pass along to the shelf. The catalog reads none of them —
  * its own `sort` takes only these keys (lib/catalogFilterParams) — so an
  * address with them is the same page under another name, and is sent to it.
  */
@@ -101,7 +103,7 @@ function withoutOpenCartListing(request: NextRequest) {
  */
 function toLegacyShelf(request: NextRequest, category: string) {
   const url = request.nextUrl.clone();
-  url.pathname = `/catalog/${category}`;
+  url.pathname = `/${category}`;
   dropOpenCartListing(url);
   url.searchParams.delete("tag");
   return NextResponse.redirect(url, 301);
@@ -172,7 +174,7 @@ async function legacyProduct(request: NextRequest, slug: string, go: (request: N
   if (current === UNAVAILABLE) return unavailable();
   if (current) return go(request, `/${current}`);
   const next = RETIRED_PRODUCTS[slug];
-  return next ? go(request, next.replace(/^\/product\//, "/")) : null;
+  return next ? go(request, next.replace(/^\/(?:product|catalog)\//, "/")) : null;
 }
 
 /**
@@ -192,7 +194,7 @@ async function openCartRoute(request: NextRequest) {
   if (route === "product/category") {
     const id = (params.get("path") ?? "").split("_").pop() ?? "";
     const category = OPENCART_CATEGORY_IDS[id];
-    return movedTo(request, category ? `/catalog/${category}` : "/catalog");
+    return movedTo(request, category ? `/${category}` : "/catalog");
   }
   if (route === "product/search") {
     const q = (params.get("search") ?? params.get("tag") ?? "").trim().slice(0, 100);
@@ -277,7 +279,30 @@ export async function proxy(request: NextRequest) {
   const path = language ? pathname.slice(3) || "/" : pathname;
   if (language && /^\/admin(?:\/|$)/.test(path)) return moved(request, path);
 
-  if (/^\/catalog(?:\/|$)/.test(path) && request.nextUrl.search) {
+  // `/catalog?category=<slug>`, how other shops (and old links) name a
+  // category: its page, the parameter left behind. Not for good — the
+  // address does not say the category exists.
+  const asked = path === "/catalog" ? request.nextUrl.searchParams.get("category") : null;
+  if (asked && /^[a-z0-9-]+$/.test(asked)) {
+    const url = request.nextUrl.clone();
+    url.pathname = `${language ? `/${language}` : ""}/${asked}`;
+    url.searchParams.delete("category");
+    return NextResponse.redirect(url, 307);
+  }
+
+  // /catalog/<slug>, where category pages were until 2026-10-29: one 301 to
+  // /<slug>, the old store's listing parameters left behind on the way.
+  const shelf = /^\/catalog\/([^/]+)\/?$/.exec(path)?.[1];
+  if (shelf) {
+    const url = request.nextUrl.clone();
+    url.pathname = `${language ? `/${language}` : ""}/${shelf.toLowerCase()}`;
+    dropOpenCartListing(url);
+    return NextResponse.redirect(url, 301);
+  }
+
+  // The catalog, a category or a product with the old store's listing
+  // parameters: the same page without them.
+  if (request.nextUrl.search && (path === "/catalog" || isRootSlugPath(path))) {
     const clean = withoutOpenCartListing(request);
     if (clean) return clean;
   }

@@ -17,7 +17,7 @@ import { DEALS_HREF } from "@/lib/flashSale";
 import { catalogSearchHref } from "@/lib/home";
 import type { Locale } from "@/lib/i18n/config";
 import { INTL_LOCALE } from "@/lib/i18n/messages";
-import { brandHref } from "@/lib/seo";
+import { brandHref, categoryHref } from "@/lib/seo";
 import type { Brand, Category, HomeNavItem } from "@/types";
 
 /**
@@ -93,7 +93,7 @@ export function navHref(
   if (entry.href) return entry.href;
   // A category page only exists for a slug the catalog knows; linking to one it
   // does not would be a 404 with the visitor's click already spent.
-  if (entry.slug && categories.has(entry.slug)) return `/catalog/${entry.slug}`;
+  if (entry.slug && categories.has(entry.slug)) return categoryHref(entry.slug);
   const brand = entry.brand ? brands.get(entry.brand) : undefined;
   // The brand's own page: the same products its search finds, at a URL that
   // can be indexed and shared.

@@ -6,6 +6,7 @@ import { PrePaintFallback } from "@/components/layout/PrePaintFallback";
 import { errorMessages } from "@/lib/i18n/messages/layout";
 import { getMessages } from "@/lib/i18n/server";
 import { getCategories } from "@/lib/server/catalog";
+import { categoryHref } from "@/lib/seo";
 
 /** Both 404 pages' metadata, in the page's language: never indexed, its links still followed. */
 export async function notFoundMetadata(): Promise<Metadata> {
@@ -57,7 +58,7 @@ export async function NotFoundContent() {
             {categories.map((c) => (
               <li key={c.id}>
                 <Link
-                  href={`/catalog/${c.slug}`}
+                  href={categoryHref(c.slug)}
                   className="inline-flex rounded-full border border-border bg-white px-4 py-2 text-xs font-semibold text-foreground transition-colors duration-200 hover:border-red-400/60 hover:text-red-600 dark:bg-zinc-900 dark:hover:text-red-400"
                 >
                   {c.name}

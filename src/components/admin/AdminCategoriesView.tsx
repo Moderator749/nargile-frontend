@@ -200,7 +200,7 @@ export function AdminCategoriesView({ onChange }: { onChange?: () => void } = {}
             </span>
           )}
         </p>
-        <p className="font-mono text-xs text-slate-500 dark:text-zinc-400">/catalog/{c.slug}</p>
+        <p className="font-mono text-xs text-slate-500 dark:text-zinc-400">/{c.slug}</p>
       </div>
       <span className="text-xs tabular-nums text-slate-500 dark:text-zinc-400" title="Doğrudan bu kategorideki ürünler">
         {c.product_count} ürün
@@ -228,7 +228,7 @@ export function AdminCategoriesView({ onChange }: { onChange?: () => void } = {}
     <>
       <p className="mb-6 text-sm text-slate-600 dark:text-zinc-400">
         Katalogdaki gruplar ve alt kategoriler: ürün formundaki kategori listesi ve mağazadaki kategori sayfaları
-        (/catalog/…) buradan gelir. Bir grup sayfası, alt kategorilerindeki ürünleri de listeler.
+        (/…) buradan gelir. Bir grup sayfası, alt kategorilerindeki ürünleri de listeler.
       </p>
 
       <div className="grid gap-6 @4xl:grid-cols-[1fr_24rem]">
@@ -276,7 +276,7 @@ export function AdminCategoriesView({ onChange }: { onChange?: () => void } = {}
             value={form.slug}
             onChange={(e) => set("slug", e.target.value)}
             placeholder="boş: addan üretilir"
-            hint="Sayfa adresi: /catalog/<slug>. Değiştirirseniz eski adres yeni adrese yönlendirilir."
+            hint="Sayfa adresi: /<slug> (sitenin kökünde, ürünlerle aynı alanda; bir ürünün ya da sitenin bir sayfasının adresi olamaz). Değiştirirseniz eski adres yeni adrese yönlendirilir."
           />
           <div className="space-y-1.5">
             <p id="cat-description-label" className="block text-sm font-medium text-slate-700 dark:text-zinc-300">

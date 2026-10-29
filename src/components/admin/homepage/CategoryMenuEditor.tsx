@@ -10,6 +10,7 @@ import { categoryTree } from "@/lib/categories";
 import { brokenCategoryLink } from "@/lib/catalogLinks";
 import { navHref } from "@/lib/storefrontNav";
 import type { Brand, Category, HomeNavItem } from "@/types";
+import { categoryHref } from "@/lib/seo";
 
 const labelClass = "block text-xs font-medium text-slate-600 dark:text-zinc-400";
 type TargetKind = "category" | "brand" | "link" | "search";
@@ -175,7 +176,7 @@ function Entry({
                 id={`${id}-value`}
                 value={link}
                 maxLength={300}
-                placeholder="/catalog/luleler veya https://…"
+                placeholder="/luleler veya https://…"
                 aria-invalid={badLink || undefined}
                 onChange={(e) => setLink(e.target.value)}
                 className={`${inputClass} font-mono ${badLink || broken ? "border-red-400 focus:border-red-500" : ""}`}
@@ -247,14 +248,14 @@ export function CategoryMenuEditor({
 
   // A new entry starts on the first category not already in this menu.
   function add() {
-    const taken = new Set(items.map((i) => i.href ?? (i.slug ? `/catalog/${i.slug}` : "")));
+    const taken = new Set(items.map((i) => i.href ?? (i.slug ? categoryHref(i.slug) : "")));
     const free = categoryTree(categories)
       .flatMap((g) => [g, ...g.children])
-      .find((c) => !taken.has(`/catalog/${c.slug}`));
+      .find((c) => !taken.has(categoryHref(c.slug)));
     onChange([
       ...items,
       free
-        ? { label: free.name.toLocaleUpperCase("tr-TR"), href: `/catalog/${free.slug}`, enabled: true }
+        ? { label: free.name.toLocaleUpperCase("tr-TR"), href: categoryHref(free.slug), enabled: true }
         : { label: "YENİ KATEGORİ", href: "/catalog", enabled: true },
     ]);
   }

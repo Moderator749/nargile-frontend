@@ -6,7 +6,7 @@ import { FAQ_HREF } from "@/lib/faq";
 import { DEALS_HREF } from "@/lib/flashSale";
 import { INFO_LINKS } from "@/lib/footer";
 import { DEFAULT_LOCALE, LOCALES, localePath, type Locale } from "@/lib/i18n/config";
-import { brandCanonical, brandPageHref, productHref } from "@/lib/seo";
+import { brandCanonical, brandPageHref, productHref, categoryHref } from "@/lib/seo";
 import { getBrands, getCategories, getPublicProducts } from "@/lib/server/catalog";
 import { MEDIA_PATH, SITE_URL, canonicalMedia } from "@/lib/site";
 import { STORES_HREF, publishedStores, storeHref } from "@/lib/stores";
@@ -93,7 +93,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Undated: its list changes as deals open and close, which no date here records.
     ...inLanguages(DEALS_HREF, "all", { changeFrequency: "daily", priority: 0.8 }),
     ...categoryPages.flatMap((category) =>
-      inLanguages(`/catalog/${category.slug}`, category.locales, {
+      inLanguages(categoryHref(category.slug), category.locales, {
         lastModified: latest([category.updated_at]),
         changeFrequency: "daily",
         priority: category.parent_id === null ? 0.8 : 0.7,

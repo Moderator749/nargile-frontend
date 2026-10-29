@@ -12,6 +12,7 @@ import { productMessages } from "@/lib/i18n/messages/product";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useAuthHydrated } from "@/store/useHasHydrated";
 import type { CatalogProduct, Category } from "@/types";
+import { categoryHref } from "@/lib/seo";
 
 /**
  * "Benzer Ürünler": products from the same category (chosen on the server, see
@@ -69,7 +70,7 @@ export function SimilarProducts({
       pricesPending={loggedIn && !mine}
       footer={
         <Link
-          href={`/catalog/${category.slug}`}
+          href={categoryHref(category.slug)}
           className="inline-flex items-center gap-1 text-sm font-medium text-foreground underline-offset-4 transition-colors duration-200 hover:text-accent hover:underline"
         >
           {t.allInCategory(category.name)}

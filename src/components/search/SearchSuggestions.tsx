@@ -11,7 +11,7 @@ import { useDisplayMoney } from "@/hooks/useDisplayMoney";
 import { fetchSuggestions } from "@/lib/catalogApi";
 import { saleState } from "@/lib/flashSale";
 import { canOptimiseImage } from "@/lib/home";
-import { productHref } from "@/lib/seo";
+import { productHref, categoryHref } from "@/lib/seo";
 import { displayVariant } from "@/lib/variants";
 import type { CatalogProduct, SearchSuggestions as Suggestions } from "@/types";
 
@@ -107,7 +107,7 @@ export function SuggestionPanel({
             {data.categories.map((c) => (
               <li key={c.slug}>
                 <Link
-                  href={`/catalog/${c.slug}`}
+                  href={categoryHref(c.slug)}
                   onClick={onPick}
                   className="flex min-h-11 items-center gap-2.5 rounded-lg px-2 text-sm font-medium text-foreground transition-colors hover:bg-neutral-100 focus-visible:bg-neutral-100 focus-visible:outline-none dark:hover:bg-white/[0.06] dark:focus-visible:bg-white/[0.06]"
                 >

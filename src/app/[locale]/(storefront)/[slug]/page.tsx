@@ -10,28 +10,54 @@ import { categoryCopy, hasCategoryCopy, parentCategory } from "@/lib/categories"
 import { DEFAULT_LOCALE, localePath } from "@/lib/i18n/config";
 import { RETIRED_PRODUCTS } from "@/lib/legacy/opencart";
 import { getI18n } from "@/lib/i18n/server";
-import { breadcrumbJsonLd, metaDescription, pageMetadata, productHref, productJsonLd, type Breadcrumb } from "@/lib/seo";
+import { breadcrumbJsonLd, metaDescription, pageMetadata, productHref, productJsonLd, type Breadcrumb, categoryHref } from "@/lib/seo";
 import { PAGE_CONTAINER } from "@/lib/layout";
 import { pickSimilar, relatedCategories } from "@/lib/related";
-import { getBrands, getCategories, getCategoryProducts, getFreeShippingFrom, getProduct } from "@/lib/server/catalog";
+import {
+  getBrands,
+  getCategories,
+  getCategoryBySlug,
+  getCategoryProducts,
+  getFreeShippingFrom,
+  getProduct,
+  required,
+} from "@/lib/server/catalog";
 import { getHomepage } from "@/lib/server/homepage";
 import { advantageSources } from "@/lib/storeAdvantages";
 import { nameWithCode } from "@/lib/slug";
 import { resolveNav } from "@/lib/storefrontNav";
 import { displayVariant, soldOut } from "@/lib/variants";
 
+import { CategoryPage, categoryMetadata } from "./category";
+
 // Same freshness window as the catalog (a day; CATALOG_REVALIDATE); admin
 // edits refresh it immediately.
 export const revalidate = 86400;
 
+/*
+ * /<slug> at the root: a category's page or a product's. The two share the
+ * one namespace — the backend gives no product a category's slug, nor a
+ * category a product's (app/services/root_slugs.py) — and the shop's own
+ * pages (/cart, /blog…) are folders of their own, which Next serves first
+ * (lib/rootRoutes). A slug is a category's when the category list (cached,
+ * the same read every page makes) has it, else it is looked up as a product.
+ */
+
 /**
- * None is built ahead — there are hundreds, in three languages — but declaring
- * the list makes the route incrementally static: each product page is drawn
- * on its first visit and served from the cache after, as the categories are,
- * instead of being drawn for every visitor and every crawl.
+ * The categories are built ahead; products are not — there are hundreds, in
+ * three languages — but declaring the list makes the route incrementally
+ * static: each product page is drawn on its first visit and served from the
+ * cache after, instead of being drawn for every visitor and every crawl.
  */
 export async function generateStaticParams() {
-  return [];
+  const categories = (await getCategories()) ?? [];
+  return categories.map((c) => ({ slug: c.slug }));
+}
+
+/** The category this slug names, if any; throws when the API is down, so an outage is never a 404. */
+async function findShelf(slug: string) {
+  const categories = required(await getCategories(), "/categories");
+  return { categories, shelf: categories.find((c) => c.slug === slug) ?? null };
 }
 
 async function load(slug: string) {
@@ -42,7 +68,10 @@ async function load(slug: string) {
 
 export async function generateMetadata(props: PageProps<"/[locale]/[slug]">): Promise<Metadata> {
   const { slug } = await props.params;
-  const [{ product, category }, { locale, t }] = await Promise.all([load(slug), getI18n()]);
+  const [{ shelf }, i18n] = await Promise.all([findShelf(slug), getI18n()]);
+  if (shelf) return categoryMetadata(shelf, i18n);
+  const { locale, t } = i18n;
+  const { product, category } = await load(slug);
   if (!product) return { title: t.meta.productNotFound, robots: { index: false } };
 
   // "Açıklama ve SEO" wins when the admin filled it in; otherwise the page falls
@@ -91,14 +120,24 @@ export async function generateMetadata(props: PageProps<"/[locale]/[slug]">): Pr
   });
 }
 
-export default async function ProductPage(props: PageProps<"/[locale]/[slug]">) {
+export default async function RootSlugPage(props: PageProps<"/[locale]/[slug]">) {
   const { slug } = await props.params;
-  const [{ product, categories, category }, home, { locale, t }] = await Promise.all([load(slug), getHomepage(), getI18n()]);
+  const [{ categories: shelves, shelf }, i18n] = await Promise.all([findShelf(slug), getI18n()]);
+  if (shelf) return <CategoryPage category={shelf} categories={shelves} {...i18n} />;
+  return ProductPage(slug, i18n);
+}
+
+async function ProductPage(slug: string, { locale, t }: Awaited<ReturnType<typeof getI18n>>) {
+  const [{ product, categories, category }, home] = await Promise.all([load(slug), getHomepage()]);
   if (!product) {
+    // A category's slug the admin has since changed leads on to its current
+    // address.
+    const renamed = await getCategoryBySlug(slug);
+    if (renamed && renamed.slug !== slug) permanentRedirect(localePath(locale, categoryHref(renamed.slug)));
     // An old store's product the shop no longer sells: its model or its shelf
     // (RETIRED_PRODUCTS), the address having been its, in Turkish.
     const next = locale === DEFAULT_LOCALE ? RETIRED_PRODUCTS[slug] : undefined;
-    if (next) permanentRedirect(next.replace(/^\/product\//, "/"));
+    if (next) permanentRedirect(next.replace(/^\/(?:product|catalog)\//, "/"));
     notFound();
   }
   // Asked by an old store's spelling, by id or in other letter case: one
@@ -121,8 +160,8 @@ export default async function ProductPage(props: PageProps<"/[locale]/[slug]">) 
   const group = parentCategory(category, categories);
   const crumbs: Breadcrumb[] = [
     { name: t.nav.crumbHome, href: "/" },
-    ...(group ? [{ name: group.name, href: `/catalog/${group.slug}` }] : []),
-    ...(category ? [{ name: category.name, href: `/catalog/${category.slug}` }] : []),
+    ...(group ? [{ name: group.name, href: categoryHref(group.slug) }] : []),
+    ...(category ? [{ name: category.name, href: categoryHref(category.slug) }] : []),
     { name: product.name, href: productHref(product) },
   ];
 

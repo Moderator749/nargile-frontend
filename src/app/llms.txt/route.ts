@@ -1,7 +1,7 @@
 import { BILGI_DOCUMENTS, PERKS_PAGE, bilgiHref } from "@/lib/bilgi";
 import { ARTICLES, BLOG_HREF, articleHref } from "@/lib/blog";
 import { FAQ, FAQ_HREF } from "@/lib/faq";
-import { brandCanonical } from "@/lib/seo";
+import { brandCanonical, categoryHref } from "@/lib/seo";
 import { getBrands, getCategories, getPublicProducts, getStoreParameters } from "@/lib/server/catalog";
 import { getHomepage } from "@/lib/server/homepage";
 import { DEFAULT_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
@@ -79,7 +79,7 @@ export async function GET() {
         .filter((b) => b.is_active)
         .map(async (b) => {
           const href = brandCanonical(b.slug, stocked);
-          if (href.startsWith("/catalog/")) return { name: b.name, href };
+          if (!href.startsWith("/marka/")) return { name: b.name, href };
           const found = await getPublicProducts(undefined, 1, 0, b.search_term);
           return found && found.length > 0 ? { name: b.name, href } : null;
         }),
@@ -110,13 +110,13 @@ export async function GET() {
     "",
     `- [Tüm ürünler](${url("/catalog")}): Kataloğun tamamı; ?q= ile arama yapılabilir.`,
     ...topLevel.flatMap((c) => [
-      `- [${line(c.name)}](${url(`/catalog/${c.slug}`)}): ${c.product_count} ürün`,
-      ...childrenOf(c).map((s) => `  - [${line(s.name)}](${url(`/catalog/${s.slug}`)}): ${s.product_count} ürün`),
+      `- [${line(c.name)}](${url(categoryHref(c.slug))}): ${c.product_count} ürün`,
+      ...childrenOf(c).map((s) => `  - [${line(s.name)}](${url(categoryHref(s.slug))}): ${s.product_count} ürün`),
     ]),
     // A subcategory whose parent has nothing of its own still has a page.
     ...stocked
       .filter((c) => c.parent_id !== null && !topLevel.some((t) => t.id === c.parent_id))
-      .map((c) => `- [${line(c.name)}](${url(`/catalog/${c.slug}`)}): ${c.product_count} ürün`),
+      .map((c) => `- [${line(c.name)}](${url(categoryHref(c.slug))}): ${c.product_count} ürün`),
     "",
   ];
 

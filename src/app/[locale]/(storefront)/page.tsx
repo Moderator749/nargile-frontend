@@ -20,7 +20,7 @@ import { SultanPuanShowcase } from "@/components/home/SultanPuanShowcase";
 import { CategorySidebar } from "@/components/layout/CategorySidebar";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { FEATURED_PRODUCTS_COUNT } from "@/lib/config";
-import { brandHref, organizationJsonLd, pageMetadata, productListJsonLd, websiteJsonLd } from "@/lib/seo";
+import { brandHref, organizationJsonLd, pageMetadata, productListJsonLd, websiteJsonLd, categoryHref } from "@/lib/seo";
 import { FALLBACK_SLIDE, heroPromo, meets, toHeroSlide, withDefaultImage } from "@/lib/home";
 import {
   getBrands,
@@ -403,7 +403,7 @@ export default async function HomePage() {
           subtitle={home.kozlukler.subtitle}
           products={showable(onePerName(kozlukProducts), CATEGORY_ROW_COUNT)}
           categories={allCategories}
-          more={{ href: `/catalog/${KOZLUK_CATEGORY_SLUG}`, label: home.kozlukler.more }}
+          more={{ href: categoryHref(KOZLUK_CATEGORY_SLUG), label: home.kozlukler.more }}
         />,
       ),
     games: () =>
@@ -415,7 +415,7 @@ export default async function HomePage() {
           subtitle={home.games.subtitle}
           products={showable(onePerName(gameProducts), CATEGORY_ROW_COUNT)}
           categories={allCategories}
-          more={{ href: `/catalog/${GAMES_CATEGORY_SLUG}`, label: home.games.more }}
+          more={{ href: categoryHref(GAMES_CATEGORY_SLUG), label: home.games.more }}
         />,
       ),
     // "Premium Ürün Yelpazesi": the catalog as a gallery (the category bento).

@@ -22,6 +22,7 @@ import {
 import { navLabel, type ResolvedNav } from "@/lib/storefrontNav";
 import { PAGE_CONTAINER } from "@/lib/layout";
 import { useCategoryDrawer } from "@/store/useCategoryDrawer";
+import { isRootSlugPath } from "@/lib/rootRoutes";
 
 /**
  * The same list as the sidebar's, in a drawer for the screens it steps aside
@@ -235,7 +236,7 @@ export function TopNav({ categories, links }: { categories: ResolvedNav[]; links
             there for them to keep to one line. */}
         <ul className="flex min-w-0 flex-1 flex-wrap items-center justify-center gap-x-4 gap-y-1 lg:justify-between lg:gap-x-3 xl:gap-x-6">
           {links.map(({ label, href, accent }) => {
-            const current = href.startsWith("/catalog/") && pathname === href;
+            const current = isRootSlugPath(href) && pathname === href;
             return (
               <li key={label} className="shrink-0">
                 <Link

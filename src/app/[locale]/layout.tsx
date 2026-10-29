@@ -8,7 +8,8 @@ import { AUTH_HINT_SCRIPT } from "@/lib/auth";
 import { geistMono, geistSans } from "@/lib/fonts";
 import { DIRECTION, LOCALES, OG_LOCALE, isLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionaries";
-import { SIDEBAR_SCRIPT } from "@/lib/sidebar";
+import { getCategories } from "@/lib/server/catalog";
+import { SIDEBAR_SCRIPT, shelvesScript } from "@/lib/sidebar";
 import { INDEXING_ALLOWED, SITE_NAME, SITE_URL } from "@/lib/site";
 import { THEME_SCRIPT } from "@/lib/theme";
 
@@ -57,6 +58,8 @@ export const viewport: Viewport = {
 export default async function RootLayout({ children, params }: LayoutProps<"/[locale]">) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
+  // From the catalog's cache; when the API cannot say, every slug reads as a product's.
+  const shelves = ((await getCategories()) ?? []).map((c) => c.slug);
   return (
     <html
       lang={locale}
@@ -78,6 +81,8 @@ export default async function RootLayout({ children, params }: LayoutProps<"/[lo
       <head>
         <script id="theme" dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
         <script id="auth-hint" dangerouslySetInnerHTML={{ __html: AUTH_HINT_SCRIPT }} />
+        {/* The category slugs first: a category's page and a product's share /<slug>. */}
+        <script id="shelves" dangerouslySetInnerHTML={{ __html: shelvesScript(shelves) }} />
         <script id="sidebar-state" dangerouslySetInnerHTML={{ __html: SIDEBAR_SCRIPT }} />
       </head>
       <body className="flex min-h-full flex-col bg-background font-sans text-foreground selection:bg-accent selection:text-white">

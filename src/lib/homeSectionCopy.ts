@@ -47,23 +47,23 @@ type Words = (typeof homeMessages)["tr"];
  * messages' `bento.boxes`, in this order.
  */
 const BENTO_BOXES: [string, string, number][] = [
-  ["/images/avantaj-cat-komur.jpg", "/catalog/komurler", 42],
-  ["/images/avantaj-cat-tutun.jpg", "/catalog/bitkisel-urunler", 55],
-  ["/images/avantaj-cat-aksesuar.jpg", "/catalog/malzemeler", 50],
+  ["/images/avantaj-cat-komur.jpg", "/komurler", 42],
+  ["/images/avantaj-cat-tutun.jpg", "/bitkisel-urunler", 55],
+  ["/images/avantaj-cat-aksesuar.jpg", "/malzemeler", 50],
 ];
 
 /** "Görsel Vitrin 2"'s, as the first's: the messages' `bento2.boxes`. */
 const BENTO2_BOXES: [string, string, number][] = [
-  ["/images/avantaj-cat-nargile.jpg", "/catalog/klasik-takimlar", 50],
-  ["/images/avantaj-legend.jpg", "/catalog/legend", 68],
-  ["/images/avantaj-oduman.jpg", "/catalog/oduman", 28],
+  ["/images/avantaj-cat-nargile.jpg", "/klasik-takimlar", 50],
+  ["/images/avantaj-legend.jpg", "/legend", 68],
+  ["/images/avantaj-oduman.jpg", "/oduman", 28],
 ];
 
 /** "Görsel Vitrin 3"'s, under the deals where the campaign boxes were: the messages' `bento3.boxes`. */
 const BENTO3_BOXES: [string, string, number][] = [
   ["/images/hero-3.jpg", "/firsat-urunleri", 52],
-  ["/images/avantaj-hero-3.jpg", "/catalog/kozlukler", 62],
-  ["/images/avantaj-hero-1.jpg", "/catalog/malzemeler", 22],
+  ["/images/avantaj-hero-3.jpg", "/kozlukler", 62],
+  ["/images/avantaj-hero-1.jpg", "/malzemeler", 22],
 ];
 
 /** A photo box with its words stacked at the bottom, on a 55% wash: where a box starts. */
@@ -110,7 +110,7 @@ function copyIn(w: Words): SectionCopy {
       kinds: [...w.lules.kinds],
       closing: w.lules.closing,
       more: w.lules.more,
-      href: "/catalog/luleler",
+      href: "/luleler",
       courier_eyebrow: w.perks.courierEyebrow,
       courier_text: w.perks.courierText,
     },

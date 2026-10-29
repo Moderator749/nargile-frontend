@@ -86,7 +86,7 @@ export default async function ArticlePage(props: PageProps<"/[locale]/blog/[slug
       </nav>
 
       <Link
-        href="/catalog/luleler"
+        href="/luleler"
         className="mt-8 inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-xs font-bold uppercase tracking-wider transition-colors duration-200 hover:border-accent hover:text-accent"
       >
         {m.browseBowls}

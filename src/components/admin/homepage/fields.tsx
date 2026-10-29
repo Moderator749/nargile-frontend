@@ -10,6 +10,7 @@ import { getApiErrorMessage } from "@/lib/errors";
 import { HOME_ICONS } from "@/lib/homeIcons";
 import { brokenCategoryLink } from "@/lib/catalogLinks";
 import type { Category, HomeIconKey } from "@/types";
+import { categoryHref } from "@/lib/seo";
 
 export const inputClass =
   "block h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20 dark:border-white/15 dark:bg-zinc-900 dark:text-zinc-100";
@@ -331,7 +332,7 @@ export function LinkField({
   value: string;
   onChange: (href: string) => void;
   label?: string;
-  /** The live categories, to catch a /catalog/<slug> link to one that does not exist. */
+  /** The live categories, to catch an old /catalog/<slug> link to one that does not exist. */
   categories?: Category[];
 }) {
   const id = useId();
@@ -346,7 +347,7 @@ export function LinkField({
         id={id}
         value={value}
         maxLength={300}
-        placeholder="/catalog/luleler veya https://…"
+        placeholder="/luleler veya https://…"
         aria-invalid={bad || undefined}
         onChange={(e) => onChange(e.target.value)}
         className={`${inputClass} font-mono ${bad || broken ? "border-red-400 focus:border-red-500" : ""}`}
@@ -374,10 +375,10 @@ export function BrokenCategoryNote({
           {" "}
           <button
             type="button"
-            onClick={() => onFix(`/catalog/${broken.suggestion!.slug}`)}
+            onClick={() => onFix(categoryHref(broken.suggestion!.slug))}
             className="font-semibold underline underline-offset-2 hover:text-red-700"
           >
-            /catalog/{broken.suggestion.slug} ({broken.suggestion.name}) kullan
+            /{broken.suggestion.slug} ({broken.suggestion.name}) kullan
           </button>
         </>
       )}

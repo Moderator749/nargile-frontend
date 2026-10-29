@@ -25,7 +25,7 @@ function refresh() {
   revalidateTag("catalog", { expire: 0 });
   revalidatePath("/[locale]", "page");
   revalidatePath("/[locale]/marka/[slug]", "page");
-  revalidatePath("/[locale]/catalog/[category]", "page");
+  revalidatePath("/[locale]/[slug]", "page");
 }
 
 /**

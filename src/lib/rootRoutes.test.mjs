@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readdirSync } from "node:fs";
 import { test } from "node:test";
 
-import { ROOT_ROUTES, isProductPath } from "./rootRoutes.ts";
+import { ROOT_ROUTES, isRootSlugPath } from "./rootRoutes.ts";
 
 const pages = (dir) =>
   readdirSync(new URL(dir, import.meta.url), { withFileTypes: true })
@@ -16,13 +16,15 @@ test("every page folder at the root is a reserved route, so no product slug can 
   }
 });
 
-test("a product's address is one segment that is not a page of the shop", () => {
-  assert.equal(isProductPath("/oduman-n2-nargile-takimi"), true);
-  assert.equal(isProductPath("/en/oduman-n2-nargile-takimi"), true);
-  assert.equal(isProductPath("/mr.wood-nargile-takimi-prisma-zebrano"), true);
-  assert.equal(isProductPath("/"), false);
-  assert.equal(isProductPath("/en"), false);
-  assert.equal(isProductPath("/cart"), false);
-  assert.equal(isProductPath("/ar/blog"), false);
-  assert.equal(isProductPath("/catalog/sultan"), false);
+test("a product's or category's address is one segment that is not a page of the shop", () => {
+  assert.equal(isRootSlugPath("/oduman-n2-nargile-takimi"), true);
+  assert.equal(isRootSlugPath("/en/oduman-n2-nargile-takimi"), true);
+  assert.equal(isRootSlugPath("/mr.wood-nargile-takimi-prisma-zebrano"), true);
+  assert.equal(isRootSlugPath("/"), false);
+  assert.equal(isRootSlugPath("/en"), false);
+  assert.equal(isRootSlugPath("/cart"), false);
+  assert.equal(isRootSlugPath("/ar/blog"), false);
+  assert.equal(isRootSlugPath("/catalog/sultan"), false);
+  assert.equal(isRootSlugPath("/sultan"), true);
+  assert.equal(isRootSlugPath("/catalog"), false);
 });

@@ -208,7 +208,7 @@ function Toolbar({ editor, id }: { editor: Editor; id: string }) {
               }
               if (e.key === "Escape") setLinking(null);
             }}
-            placeholder="https://… ya da /catalog/luleler"
+            placeholder="https://… ya da /luleler"
             autoFocus
             className="h-8 min-w-0 flex-1 rounded-md border border-slate-300 bg-white px-2 text-sm dark:border-white/15 dark:bg-zinc-900"
           />

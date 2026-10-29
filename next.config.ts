@@ -37,7 +37,8 @@ if (process.env.VERCEL && !process.env.BACKEND_URL) {
 /**
 - Old category slug → the live category its products are in now. A slug the
 - current tree uses (celik-takimlar, komurler, sultan…) must never be listed
-- here: the redirect would hide that category's page.
+- here: the redirect would hide that category's page. Each is reserved in the
+- backend (RESERVED_ROOT_PATHS): no product or category may take it.
  */
 const RETIRED_CATEGORIES: Record<string, string> = {
   "nargile-komurleri": "komurler",
@@ -80,9 +81,9 @@ const LEGACY_PAGES: Record<string, string> = {
   // "İthal Nargile" was empty when the old store was read.
   "ithal-nargile": "/catalog",
   // Brand pages (manufacturers) → the brand's category.
-  "legend-hookah-nargile": "/catalog/legend",
-  "sultan-nargile": "/catalog/sultan",
-  "oduman%20nargile": "/catalog/oduman", // the old store's own spelling, with a space
+  "legend-hookah-nargile": "/legend",
+  "sultan-nargile": "/sultan",
+  "oduman%20nargile": "/oduman", // the old store's own spelling, with a space
 };
 
 const nextConfig: NextConfig = {
@@ -120,18 +121,26 @@ const nextConfig: NextConfig = {
       // search result never lands on a 404.
       // 301 rather than Next's default 308 for `permanent`: the code every
       // crawler and old client has treated as "moved for good" the longest.
-      ...Object.entries(RETIRED_CATEGORIES).map(([from, to]) => ({
-        source: `/catalog/${from}`,
-        destination: `/catalog/${to}`,
-        statusCode: 301 as const,
-      })),
+      // At the root, where category pages are now, and under /catalog, where
+      // they were: one 301 straight to the live shelf, in every language.
+      ...Object.entries(RETIRED_CATEGORIES).flatMap(([from, to]) =>
+        ["", "/en", "/ar"].flatMap((prefix) =>
+          [`${prefix}/catalog/${from}`, `${prefix}/${from}`].map((source) => ({
+            source,
+            destination: `${prefix}/${to}`,
+            statusCode: 301 as const,
+          })),
+        ),
+      ),
       // The old store's addresses, so its links and its search results keep
       // landing on the same shelf when the domain moves here. (Its product
       // addresses are answered by src/proxy.ts, which asks the API.)
+      // An old address that is today's slug too (/siseler, /oduman) is the
+      // shelf's own page now: only its /diger/… form moves.
       ...Object.entries(LEGACY_CATEGORIES).flatMap(([from, to]) =>
-        [`/${from}`, `/${LEGACY_PARENT}/${from}`].map((source) => ({
+        [...(from === to ? [] : [`/${from}`]), `/${LEGACY_PARENT}/${from}`].map((source) => ({
           source,
-          destination: `/catalog/${to}`,
+          destination: `/${to}`,
           statusCode: 301 as const,
         })),
       ),
@@ -143,14 +152,12 @@ const nextConfig: NextConfig = {
         destination: to,
         statusCode: 301 as const,
       })),
-      // In every language: a short address the panel once linked to, and the
-      // Sultan Nargile brand page, whose authority goes to its category (see
-      // BRAND_CATEGORY in src/lib/seo).
+      // In every language: the Sultan Nargile brand page, whose authority
+      // goes to its category (see BRAND_CATEGORY in src/lib/seo).
       ...["", "/en", "/ar"].flatMap((prefix) =>
         [
-          ["malzemeler", "catalog/malzemeler"],
-          ["marka/sultan-nargile", "catalog/sultan"],
-          ["marka/sultan", "catalog/sultan"],
+          ["marka/sultan-nargile", "sultan"],
+          ["marka/sultan", "sultan"],
         ].map(([from, to]) => ({ source: `${prefix}/${from}`, destination: `${prefix}/${to}`, statusCode: 301 as const })),
       ),
       // The lüle guide, split into four articles (see RETIRED_ARTICLES).
@@ -163,14 +170,8 @@ const nextConfig: NextConfig = {
       ),
       // Category management moved into Ana Sayfa Düzenleme.
       { source: "/admin/categories", destination: "/admin/homepage?tab=katalog-kategorileri", permanent: true },
-      // `/catalog?category=<slug>` is how other shops (and old links) name a
-      // category; ours live at /catalog/<slug>.
-      {
-        source: "/catalog",
-        has: [{ type: "query", key: "category", value: "(?<slug>[a-z0-9-]+)" }],
-        destination: "/catalog/:slug",
-        permanent: false,
-      },
+      // `/catalog?category=<slug>`, how other shops (and old links) name a
+      // category, is answered by src/proxy.ts: ours live at /<slug>.
     ];
   },
   images: {

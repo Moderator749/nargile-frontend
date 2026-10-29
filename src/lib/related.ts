@@ -2,7 +2,7 @@
 
 import type { Locale } from "@/lib/i18n/config";
 import { productMessages } from "@/lib/i18n/messages/product";
-import { brandCanonical } from "@/lib/seo";
+import { brandCanonical, categoryHref } from "@/lib/seo";
 import type { Brand, CatalogProduct, CatalogProductDetail, Category } from "@/types";
 
 /** How many similar products the page shows: two rows of four on a wide screen. */
@@ -69,7 +69,7 @@ export function relatedCategories(
     links.push(link);
   };
   for (const c of [...own, ...(stocked(parent) ? [parent] : []), ...siblings]) {
-    add({ name: c.name, href: `/catalog/${c.slug}` });
+    add({ name: c.name, href: categoryHref(c.slug) });
   }
   const shown = links.slice(0, count);
 

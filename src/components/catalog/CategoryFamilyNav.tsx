@@ -2,6 +2,7 @@ import Link from "@/components/i18n/Link";
 import { catalogMessages } from "@/lib/i18n/messages/catalog";
 import { getMessages } from "@/lib/i18n/server";
 import type { CategoryFamily } from "@/lib/categories";
+import { categoryHref } from "@/lib/seo";
 
 const PILL =
   "inline-flex h-10 shrink-0 items-center rounded-full border px-3.5 text-xs md:h-7 md:px-3 font-medium whitespace-nowrap transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 dark:focus-visible:outline-white";
@@ -29,7 +30,7 @@ export async function CategoryFamilyNav({ family, current }: { family: CategoryF
           return (
             <li key={slug}>
               <Link
-                href={`/catalog/${slug}`}
+                href={categoryHref(slug)}
                 aria-current={here ? "page" : undefined}
                 className={`${PILL} ${here ? CURRENT : IDLE}`}
               >
