@@ -27,7 +27,7 @@ export const LEGACY_CATEGORIES: Record<string, string> = {
   "nargile-marpuclari": "marpuclar",
   "plastik-ve-ozel-sipsiler": "sipsiler",
   "nargile-malzemeleri-ve-aksesuarlari": "malzemeler",
-  "yedek-parca": "malzemeler",
+  "yedek-parca": "yedek-parca",
   "okey-tavla-ve-iskambil-kartlari": "oyun-eglence",
   "nargile-tutunu-markalari-ve-cesitleri": "bitkisel-urunler",
   kampanyalar: "kampanyalar",
@@ -50,7 +50,7 @@ export const LEGACY_CATEGORIES: Record<string, string> = {
   "legend-hookah": "legend",
   // Older names of the same shelves, seen in Search Console's 404 export
   // (2026-10-29) under the old store's product addresses.
-  "ozel-sipsiler": "sipsiler",
+  "ozel-sipsiler": "ozel-sipsiler",
   "oyun-aletleri": "oyun-eglence",
   marpuclar: "marpuclar",
   "wd-hookah": "celik-takimlar",
