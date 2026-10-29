@@ -93,6 +93,18 @@ const LEGACY_CATEGORIES: Record<string, string> = {
   // "Diğer" and its "Nargile Şerleri" held accessories, the latter none at all.
   diger: "malzemeler",
   "nargile-serleri": "malzemeler",
+  // Shorter addresses of the same shelves, absent from its sitemap but still
+  // reported as 404s by Search Console (2026-10-29): exact paths only — the
+  // old product addresses that start the same (/oduman-n2-…, /mr.wood-…,
+  // /legend-hookah-…) are products, answered by src/proxy.ts.
+  "nargile-malzemeleri": "malzemeler",
+  "rus-nargile-takimlari": "rus-takimlar",
+  "celik-nargile-takimlari": "celik-takimlar",
+  "lule-ve-lule-basliklari": "luleler",
+  siseler: "siseler",
+  oduman: "oduman",
+  "mr.wood": "mr-wood",
+  "legend-hookah": "legend",
 };
 
 /**

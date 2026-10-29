@@ -65,6 +65,28 @@ const CANONICAL_HOST = (() => {
   }
 })();
 
+/**
+ * The old store's listing parameters (?sort=p.price&order=ASC&limit=25,
+ * ?page=2), which its category links carried and the category redirects
+ * (next.config.ts) pass along to /catalog/…. The catalog reads none of them —
+ * its own `sort` takes only these keys (lib/catalogFilterParams) — so an
+ * address with them is the same page under another name, and is sent to it.
+ */
+const CATALOG_SORTS = new Set(["recommended", "price-asc", "price-desc", "name-asc"]);
+const OPENCART_LISTING = ["order", "limit", "page"];
+
+/** The catalog address without the old store's listing parameters; null when it has none. */
+function withoutOpenCartListing(request: NextRequest) {
+  const params = request.nextUrl.searchParams;
+  const sort = params.get("sort");
+  const stale = OPENCART_LISTING.filter((key) => params.has(key));
+  if (sort !== null && !CATALOG_SORTS.has(sort)) stale.push("sort");
+  if (stale.length === 0) return null;
+  const url = request.nextUrl.clone();
+  for (const key of stale) url.searchParams.delete(key);
+  return NextResponse.redirect(url, 301);
+}
+
 /** The API did not answer the lookup. */
 const UNAVAILABLE = Symbol("unavailable");
 
@@ -227,6 +249,11 @@ export async function proxy(request: NextRequest) {
   const language = /^\/(en|ar)(?=\/|$)/.exec(pathname)?.[1];
   const path = language ? pathname.slice(3) || "/" : pathname;
   if (language && /^\/admin(?:\/|$)/.test(path)) return moved(request, path);
+
+  if (/^\/catalog(?:\/|$)/.test(path) && request.nextUrl.search) {
+    const clean = withoutOpenCartListing(request);
+    if (clean) return clean;
+  }
 
   const redirect = await productRedirect(request, path, language ? `/${language}` : "");
   if (redirect) return redirect;
