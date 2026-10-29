@@ -21,6 +21,8 @@ interface CatalogPage {
 interface UseCatalogOptions {
   category: string | null;
   query: string;
+  /** A brand's page: its products, by the brand they belong to. */
+  brand?: string | null;
   /** Server-rendered anonymous (RETAIL) first page, or null if unavailable. */
   initialProducts: CatalogProduct[] | null;
   /** Products per page (must match the server-rendered page size). */
@@ -43,6 +45,7 @@ interface UseCatalogOptions {
 export function useCatalog({
   category,
   query,
+  brand = null,
   initialProducts,
   pageSize = CATALOG_PAGE_SIZE,
   seedQuery = "",
@@ -56,7 +59,7 @@ export function useCatalog({
   const loadError = useMessages(catalogMessages).grid.loadError;
 
   const viewer = hydrated ? (token ?? "anon") : null;
-  const key = viewer === null ? null : `${viewer}|${category ?? ""}|${query}|${attempt}`;
+  const key = viewer === null ? null : `${viewer}|${category ?? ""}|${brand ?? ""}|${query}|${attempt}`;
   const seed = initialProducts && query === seedQuery && attempt === 0 ? initialProducts : null;
   const seedIsFinal = viewer !== null && viewer === "anon" && seed !== null;
 
@@ -68,7 +71,7 @@ export function useCatalog({
   useEffect(() => {
     if (key === null || seedIsFinal) return;
     const controller = new AbortController();
-    fetchProducts({ category, q: query, limit: pageSize }, controller.signal)
+    fetchProducts({ category, q: query, brand, limit: pageSize }, controller.signal)
       .then((products) =>
         setPage({ key, products, error: null, hasMore: products.length === pageSize }),
       )
@@ -77,7 +80,7 @@ export function useCatalog({
         setPage({ key, products: [], error: getApiErrorMessage(err, loadError), hasMore: false });
       });
     return () => controller.abort();
-  }, [key, seedIsFinal, category, query, pageSize, loadError]);
+  }, [key, seedIsFinal, category, query, brand, pageSize, loadError]);
 
   // The listing as a whole — its size and price range for this viewer — asked
   // for beside the first page, so "48 / 312 ürün" is known before "Daha Fazla".
@@ -85,12 +88,12 @@ export function useCatalog({
   useEffect(() => {
     if (key === null) return;
     const controller = new AbortController();
-    fetchCatalogSummary({ category, q: query }, controller.signal)
+    fetchCatalogSummary({ category, q: query, brand }, controller.signal)
       .then((data) => setSummary({ key, data }))
       // Without it the grid counts what it has, as it always did.
       .catch(() => undefined);
     return () => controller.abort();
-  }, [key, category, query]);
+  }, [key, category, query, brand]);
 
   const fetched = page && page.key === key ? page : null;
   // While a new search loads, keep the previous results — but only the same
@@ -113,7 +116,7 @@ export function useCatalog({
     const base = view.products;
     setLoadingMore(true);
     try {
-      const next = await fetchProducts({ category, q: query, skip: base.length, limit: pageSize });
+      const next = await fetchProducts({ category, q: query, brand, skip: base.length, limit: pageSize });
       // Drop the page if the viewer, category or query changed meanwhile.
       if (keyRef.current !== requestKey) return;
       setPage({
@@ -128,7 +131,7 @@ export function useCatalog({
     } finally {
       setLoadingMore(false);
     }
-  }, [key, view, loadingMore, category, query, pageSize, loadError]);
+  }, [key, view, loadingMore, category, query, brand, pageSize, loadError]);
 
   return {
     products: view?.products ?? [],

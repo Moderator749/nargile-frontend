@@ -26,7 +26,7 @@ import { normalizeHex, readableInk } from "@/lib/color";
 import { formatCountdown, saleState } from "@/lib/flashSale";
 import { catalogMessages } from "@/lib/i18n/messages/catalog";
 import { productMessages } from "@/lib/i18n/messages/product";
-import { productImageAlt, type Breadcrumb } from "@/lib/seo";
+import { brandHref, productImageAlt, type Breadcrumb } from "@/lib/seo";
 import { PAGE_CONTAINER } from "@/lib/layout";
 import { hasColorChoice, initialVariantId, resolveVariant, variantInStock } from "@/lib/variants";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -252,7 +252,14 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
 
         <div className="flex min-w-0 flex-col">
           <p className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground">
-            {product.brand ?? category?.name ?? "Nargile Malzemesi"}
+            {/* The brand, a link to its page (every product it makes). */}
+            {product.brand && product.brand_slug ? (
+              <Link href={brandHref(product.brand_slug)} className="hover:text-foreground hover:underline">
+                {product.brand}
+              </Link>
+            ) : (
+              (product.brand ?? category?.name ?? "Nargile Malzemesi")
+            )}
           </p>
           <h1 className="mt-3 text-balance text-2xl font-bold leading-snug tracking-tight text-foreground sm:text-[26px]">
             {product.name}

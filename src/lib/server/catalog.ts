@@ -95,6 +95,22 @@ export function required<T>(list: T | null, what: string): T {
   return list;
 }
 
+/**
+ * A brand's products for its page (/<brand-slug>), all of them (no brand has
+ * a hundred), its sets first: by the brand they belong to (`brand_slug` in
+ * every answer says the API knows the relation), else — an API from before
+ * the relation — by the brand's search term, as brand pages always did.
+ * `byRelation` tells the page which, so its client-side reads ask the same.
+ */
+export async function getBrandProducts(
+  brand: { slug: string; search_term: string },
+): Promise<{ products: CatalogProduct[] | null; byRelation: boolean }> {
+  const params = new URLSearchParams({ brand: brand.slug, skip: "0", limit: "100" });
+  const products = await getJson<CatalogProduct[]>(`/products?${params}`);
+  if (products && products.every((p) => p.brand_slug === brand.slug)) return { products, byRelation: true };
+  return { products: await getPublicProducts(undefined, 100, 0, brand.search_term), byRelation: false };
+}
+
 export function getCategories(): Promise<Category[] | null> {
   return getJson<Category[]>("/categories");
 }

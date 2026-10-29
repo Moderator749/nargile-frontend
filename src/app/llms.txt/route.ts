@@ -1,7 +1,7 @@
 import { BILGI_DOCUMENTS, PERKS_PAGE, bilgiHref } from "@/lib/bilgi";
 import { ARTICLES, BLOG_HREF, articleHref } from "@/lib/blog";
 import { FAQ, FAQ_HREF } from "@/lib/faq";
-import { brandCanonical, categoryHref } from "@/lib/seo";
+import { brandHref, categoryHref } from "@/lib/seo";
 import { getBrands, getCategories, getPublicProducts, getStoreParameters } from "@/lib/server/catalog";
 import { getHomepage } from "@/lib/server/homepage";
 import { DEFAULT_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
@@ -78,8 +78,8 @@ export async function GET() {
       (brands ?? [])
         .filter((b) => b.is_active)
         .map(async (b) => {
-          const href = brandCanonical(b.slug, stocked);
-          if (!href.startsWith("/marka/")) return { name: b.name, href };
+          const href = brandHref(b.slug);
+          if (stocked.some((c) => c.slug === b.slug)) return { name: b.name, href };
           const found = await getPublicProducts(undefined, 1, 0, b.search_term);
           return found && found.length > 0 ? { name: b.name, href } : null;
         }),

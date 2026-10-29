@@ -4,11 +4,7 @@ import { getMessages } from "@/lib/i18n/server";
 import type { CategoryFamily } from "@/lib/categories";
 import { categoryHref } from "@/lib/seo";
 
-const PILL =
-  "inline-flex h-10 shrink-0 items-center rounded-full border px-3.5 text-xs md:h-7 md:px-3 font-medium whitespace-nowrap transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 dark:focus-visible:outline-white";
-const IDLE =
-  "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-900 hover:text-neutral-900 dark:border-border dark:bg-transparent dark:text-neutral-300 dark:hover:border-white dark:hover:text-white";
-const CURRENT = "border-neutral-900 bg-neutral-900 text-white dark:border-white dark:bg-white dark:text-neutral-900";
+import { CURRENT, IDLE, PILL } from "./pillStyles";
 
 /**
  * The category's family under its heading: "Tümü" (the group's own page),

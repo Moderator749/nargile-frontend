@@ -21,8 +21,12 @@ interface CatalogScreenProps {
   products: CatalogProduct[] | null;
   /** For the category column's brand rows; empty is fine (they fall back to a search). */
   brands?: Brand[];
-  /** A brand page: the grid shows this brand's search instead of a category. */
+  /** A brand page: the grid shows this brand's products instead of a category's. */
   brand?: Brand;
+  /** Whether a brand's products came by the brand relation (else its search term, an older API). */
+  brandByRelation?: boolean;
+  /** A brand page's kinds of product, as chips over the grid (CatalogView). */
+  groups?: { slug: string; name: string; ids: number[] }[];
   /** The page's introduction under its heading; clamped, the full text in the page. */
   intro?: string | null;
   /** A category's own passage at the page's foot, in place of the shop's "Alt SEO Metni". */
@@ -46,6 +50,8 @@ export async function CatalogScreen({
   products,
   brands = [],
   brand,
+  brandByRelation = false,
+  groups,
   intro,
   closing,
   searchable,
@@ -66,7 +72,8 @@ export async function CatalogScreen({
         categories={categories}
         activeCategory={activeCategory}
         initialProducts={products}
-        brand={brand ? { name: brand.name, searchTerm: brand.search_term } : undefined}
+        brand={brand ? { name: brand.name, searchTerm: brand.search_term, slug: brand.slug, byRelation: brandByRelation } : undefined}
+        groups={groups}
         heading={
           <>
             <CatalogHeading title={title} breadcrumbs={breadcrumbs} searchable={searchable} compact />

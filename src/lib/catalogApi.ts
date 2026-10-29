@@ -11,14 +11,16 @@ export interface CatalogQuery {
   category?: string | null;
   /** Free-text search over name, brand and product code. */
   q?: string;
+  /** Brand slug: that brand's products (its page, /<brand-slug>). */
+  brand?: string | null;
 }
 
 export async function fetchProducts(
-  { skip = 0, limit = CATALOG_PAGE_SIZE, category, q }: CatalogQuery = {},
+  { skip = 0, limit = CATALOG_PAGE_SIZE, category, q, brand }: CatalogQuery = {},
   signal?: AbortSignal,
 ): Promise<CatalogProduct[]> {
   const { data } = await api.get<CatalogProduct[]>("/products", {
-    params: { skip, limit, category: category || undefined, q: q || undefined },
+    params: { skip, limit, category: category || undefined, q: q || undefined, brand: brand || undefined },
     signal,
   });
   return data;
@@ -30,11 +32,11 @@ export async function fetchProducts(
  * the caller.
  */
 export async function fetchCatalogSummary(
-  { category, q }: Pick<CatalogQuery, "category" | "q">,
+  { category, q, brand }: Pick<CatalogQuery, "category" | "q" | "brand">,
   signal?: AbortSignal,
 ): Promise<CatalogSummary> {
   const { data } = await api.get<CatalogSummary>("/products/summary", {
-    params: { category: category || undefined, q: q || undefined },
+    params: { category: category || undefined, q: q || undefined, brand: brand || undefined },
     signal,
   });
   return data;

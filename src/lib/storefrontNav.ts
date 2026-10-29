@@ -94,6 +94,9 @@ export function navHref(
   // A category page only exists for a slug the catalog knows; linking to one it
   // does not would be a 404 with the visitor's click already spent.
   if (entry.slug && categories.has(entry.slug)) return categoryHref(entry.slug);
+  // A brand's former category ("Sultan Nargile" under Nargile Takımları): the
+  // brand's page has the same address.
+  if (entry.slug && brands.has(entry.slug)) return brandHref(entry.slug);
   const brand = entry.brand ? brands.get(entry.brand) : undefined;
   // The brand's own page: the same products its search finds, at a URL that
   // can be indexed and shared.
@@ -126,7 +129,7 @@ export function resolveNav(
     if (entry.enabled === false) return [];
     const label =
       entry.label.trim() ||
-      (entry.slug ? bySlug.get(entry.slug)?.name : undefined) ||
+      (entry.slug ? (bySlug.get(entry.slug)?.name ?? brandBySlug.get(entry.slug)?.name) : undefined) ||
       (entry.brand ? brandBySlug.get(entry.brand)?.name : undefined);
     // A nameless entry whose category is gone (or switched off) has nothing to say.
     if (!label) return [];

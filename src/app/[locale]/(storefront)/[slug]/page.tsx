@@ -28,6 +28,7 @@ import { nameWithCode } from "@/lib/slug";
 import { resolveNav } from "@/lib/storefrontNav";
 import { displayVariant, soldOut } from "@/lib/variants";
 
+import { BrandPage, brandMetadata } from "./brand";
 import { CategoryPage, categoryMetadata } from "./category";
 
 // Same freshness window as the catalog (a day; CATALOG_REVALIDATE); admin
@@ -35,12 +36,13 @@ import { CategoryPage, categoryMetadata } from "./category";
 export const revalidate = 86400;
 
 /*
- * /<slug> at the root: a category's page or a product's. The two share the
- * one namespace — the backend gives no product a category's slug, nor a
- * category a product's (app/services/root_slugs.py) — and the shop's own
- * pages (/cart, /blog…) are folders of their own, which Next serves first
- * (lib/rootRoutes). A slug is a category's when the category list (cached,
- * the same read every page makes) has it, else it is looked up as a product.
+ * /<slug> at the root: a category's page, a brand's or a product's. The three
+ * share the one namespace — the backend gives none of them another's slug
+ * (app/services/root_slugs.py) — and the shop's own pages (/cart, /blog…) are
+ * folders of their own, which Next serves first (lib/rootRoutes). A slug is a
+ * category's when the category list (cached, the same read every page makes)
+ * has it, else a brand's when the brand list has it exactly, else it is
+ * looked up as a product.
  */
 
 /**
@@ -50,14 +52,21 @@ export const revalidate = 86400;
  * cache after, instead of being drawn for every visitor and every crawl.
  */
 export async function generateStaticParams() {
-  const categories = (await getCategories()) ?? [];
-  return categories.map((c) => ({ slug: c.slug }));
+  const [categories, brands] = await Promise.all([getCategories(), getBrands()]);
+  const slugs = new Set([...(categories ?? []).map((c) => c.slug), ...(brands ?? []).filter((b) => b.is_active).map((b) => b.slug)]);
+  return [...slugs].map((slug) => ({ slug }));
 }
 
-/** The category this slug names, if any; throws when the API is down, so an outage is never a 404. */
+/**
+ * The category or brand this slug names, if any; throws when the API is down,
+ * so an outage is never a 404. A brand by its exact slug only: a slug that
+ * begins with a brand's name is more often a product's.
+ */
 async function findShelf(slug: string) {
-  const categories = required(await getCategories(), "/categories");
-  return { categories, shelf: categories.find((c) => c.slug === slug) ?? null };
+  const [categories, brands] = await Promise.all([required(await getCategories(), "/categories"), getBrands()]);
+  const shelf = categories.find((c) => c.slug === slug) ?? null;
+  const brand = shelf ? null : ((brands ?? []).find((b) => b.is_active && b.slug === slug) ?? null);
+  return { categories, brands: brands ?? [], shelf, brand };
 }
 
 async function load(slug: string) {
@@ -68,8 +77,9 @@ async function load(slug: string) {
 
 export async function generateMetadata(props: PageProps<"/[locale]/[slug]">): Promise<Metadata> {
   const { slug } = await props.params;
-  const [{ shelf }, i18n] = await Promise.all([findShelf(slug), getI18n()]);
+  const [{ shelf, brand }, i18n] = await Promise.all([findShelf(slug), getI18n()]);
   if (shelf) return categoryMetadata(shelf, i18n);
+  if (brand) return brandMetadata(brand, i18n);
   const { locale, t } = i18n;
   const { product, category } = await load(slug);
   if (!product) return { title: t.meta.productNotFound, robots: { index: false } };
@@ -122,8 +132,9 @@ export async function generateMetadata(props: PageProps<"/[locale]/[slug]">): Pr
 
 export default async function RootSlugPage(props: PageProps<"/[locale]/[slug]">) {
   const { slug } = await props.params;
-  const [{ categories: shelves, shelf }, i18n] = await Promise.all([findShelf(slug), getI18n()]);
+  const [{ categories: shelves, brands, shelf, brand }, i18n] = await Promise.all([findShelf(slug), getI18n()]);
   if (shelf) return <CategoryPage category={shelf} categories={shelves} {...i18n} />;
+  if (brand) return <BrandPage brand={brand} brands={brands} categories={shelves} {...i18n} />;
   return ProductPage(slug, i18n);
 }
 

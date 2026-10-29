@@ -29,6 +29,7 @@ import { catalogMessages } from "@/lib/i18n/messages/catalog";
 import { useAuthStore } from "@/store/useAuthStore";
 import type { CatalogProduct, Category } from "@/types";
 import { CATALOG_GRID, PAGE_CONTAINER } from "@/lib/layout";
+import { CURRENT, IDLE, PILL } from "@/components/catalog/pillStyles";
 
 /** Cards whose photos load eagerly: the first row at the widest grid. */
 const EAGER_CARDS = 4;
@@ -46,10 +47,18 @@ interface CatalogViewProps {
   /** The category's introduction: under the heading, or under the products on a phone. */
   intro?: ReactNode;
   /**
-   * A brand page: the grid is this brand's search, whatever the URL says, and
-   * `initialProducts` are its server-rendered first page.
+   * A brand page: the grid is this brand's products, whatever the URL says, and
+   * `initialProducts` are all of them, server-rendered. `byRelation`: asked
+   * for by the brand they belong to (`slug`); else by its search term, as on
+   * an API from before the relation.
    */
-  brand?: { name: string; searchTerm: string };
+  brand?: { name: string; searchTerm: string; slug?: string; byRelation?: boolean };
+  /**
+   * The kinds of product a brand's page holds (its products' groups:
+   * Nargile Takımları, Aksesuarlar…), as chips that narrow the grid to one,
+   * kept in the address as ?tur=<group>. A category's page has none.
+   */
+  groups?: { slug: string; name: string; ids: number[] }[];
   /** The always-open category column, beside the grid from `lg` up. */
   sidebar?: ReactNode;
 }
@@ -87,7 +96,7 @@ export function CatalogView(props: CatalogViewProps) {
           )}
           {/* A brand page's term is fixed by the route; its filters are in the URL all the same. */}
           <div>
-            <Suspense fallback={<CatalogGrid {...props} query={props.brand?.searchTerm ?? ""} initialFilters={EMPTY_FILTERS} />}>
+            <Suspense fallback={<CatalogGrid {...props} query={brandQuery(props.brand)} initialFilters={EMPTY_FILTERS} initialGroup={null} />}>
               <CatalogGridFromUrl {...props} />
             </Suspense>
           </div>
@@ -97,12 +106,27 @@ export function CatalogView(props: CatalogViewProps) {
   );
 }
 
+/** A brand page's built-in search: none when its products come by the brand relation. */
+const brandQuery = (brand: CatalogViewProps["brand"]) => (brand && !brand.byRelation ? brand.searchTerm : "");
+
+/** The URL parameter of a brand page's group chips. */
+const GROUP_PARAM = "tur";
+
 function CatalogGridFromUrl(props: CatalogViewProps) {
   const params = useSearchParams();
-  const query = props.brand ? props.brand.searchTerm : (params.get("q") ?? "").trim();
+  const query = props.brand ? brandQuery(props.brand) : (params.get("q") ?? "").trim();
+  const group = params.get(GROUP_PARAM);
   // Keyed on the term: a new search starts the grid over. The filters it
   // opens with are the address's (a reload, the back button, a shared link).
-  return <CatalogGrid key={query} {...props} query={query} initialFilters={filtersFromParams(params)} />;
+  return (
+    <CatalogGrid
+      key={query}
+      {...props}
+      query={query}
+      initialFilters={filtersFromParams(params)}
+      initialGroup={props.groups?.some((g) => g.slug === group) ? group : null}
+    />
+  );
 }
 
 function CatalogGrid({
@@ -110,18 +134,24 @@ function CatalogGrid({
   activeCategory,
   initialProducts,
   brand,
+  groups,
   query,
   initialFilters,
-}: CatalogViewProps & { query: string; initialFilters: CatalogFilters }) {
+  initialGroup,
+}: CatalogViewProps & { query: string; initialFilters: CatalogFilters; initialGroup: string | null }) {
   const user = useAuthStore((s) => s.user);
   const locale = useLocale();
   const t = useMessages(catalogMessages).grid;
   const [filters, setFilters] = useState<CatalogFilters>(initialFilters);
+  const [group, setGroup] = useState<string | null>(initialGroup);
   const catalog = useCatalog({
     category: activeCategory?.slug ?? null,
     query,
+    brand: brand?.byRelation ? (brand.slug ?? null) : null,
     initialProducts,
-    seedQuery: brand?.searchTerm ?? "",
+    seedQuery: brandQuery(brand),
+    // A brand's page has all its products at once (no brand has a hundred).
+    ...(brand ? { pageSize: 100 } : {}),
   });
   // A visitor's own search, as opposed to the brand page's built-in one.
   const searched = query && !brand ? query : "";
@@ -141,9 +171,16 @@ function CatalogGrid({
     summary?.price_min != null && summary.price_max != null
       ? { min: Math.floor(Number(summary.price_min)), max: Math.ceil(Number(summary.price_max)) }
       : loadedBounds;
+  const inGroup = useMemo(() => {
+    const ids = new Set(groups?.find((g) => g.slug === group)?.ids ?? []);
+    return ids.size === 0 ? null : ids;
+  }, [groups, group]);
   const shown = useMemo(
-    () => applyCatalogFilters(catalog.products, filters, now, locale),
-    [catalog.products, filters, now, locale],
+    () =>
+      applyCatalogFilters(catalog.products, filters, now, locale).filter(
+        (p) => inGroup === null || (p.category_id != null && inGroup.has(p.category_id)),
+      ),
+    [catalog.products, filters, now, locale, inGroup],
   );
   // "48 / 312 ürün" while a page of a longer listing is on screen.
   const total = listingTotal({
@@ -174,6 +211,15 @@ function CatalogGrid({
     window.history.replaceState(window.history.state, "", `${window.location.pathname}${search ? `?${search}` : ""}${window.location.hash}`);
   };
   const patch = (next: Partial<CatalogFilters>) => apply({ ...filters, ...next });
+  // A brand page's group chip, in the address the same way.
+  const pickGroup = (next: string | null) => {
+    setGroup(next);
+    const params = new URLSearchParams(window.location.search);
+    if (next) params.set(GROUP_PARAM, next);
+    else params.delete(GROUP_PARAM);
+    const search = params.toString();
+    window.history.replaceState(window.history.state, "", `${window.location.pathname}${search ? `?${search}` : ""}${window.location.hash}`);
+  };
   // A phone's two-or-one choice (the filter bar's switch); wider screens keep their columns.
   const density = useCatalogDensity();
   const grid = `${gridClass} ${density === "one" ? "max-md:grid-cols-1" : ""}`;
@@ -181,6 +227,9 @@ function CatalogGrid({
 
   return (
     <>
+      {groups && groups.length > 1 && (
+        <GroupChips groups={groups} value={group} onChange={pickGroup} allLabel={t.allProducts} />
+      )}
       <CatalogFilterBar
         value={filters}
         onChange={patch}
@@ -302,5 +351,35 @@ function CatalogGrid({
         </>
       )}
     </>
+  );
+}
+
+/**
+ * A brand page's kinds of product, one chip each, "all" first: picking one
+ * narrows the grid to it, as the filters do, without leaving the page.
+ */
+function GroupChips({
+  groups,
+  value,
+  onChange,
+  allLabel,
+}: {
+  groups: { slug: string; name: string }[];
+  value: string | null;
+  onChange: (group: string | null) => void;
+  allLabel: string;
+}) {
+  const chip = (active: boolean) => `${PILL} ${active ? CURRENT : IDLE}`;
+  return (
+    <div role="group" aria-label={allLabel} className="-mx-4 mb-4 flex gap-1.5 overflow-x-auto px-4 [scrollbar-width:none] md:mx-0 md:flex-wrap md:px-0">
+      <button type="button" aria-pressed={value === null} className={chip(value === null)} onClick={() => onChange(null)}>
+        {allLabel}
+      </button>
+      {groups.map((g) => (
+        <button key={g.slug} type="button" aria-pressed={value === g.slug} className={chip(value === g.slug)} onClick={() => onChange(g.slug)}>
+          {g.name}
+        </button>
+      ))}
+    </div>
   );
 }

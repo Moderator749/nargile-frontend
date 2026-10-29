@@ -2,7 +2,7 @@
 
 import type { Locale } from "@/lib/i18n/config";
 import { productMessages } from "@/lib/i18n/messages/product";
-import { brandCanonical, categoryHref } from "@/lib/seo";
+import { brandHref, categoryHref } from "@/lib/seo";
 import type { Brand, CatalogProduct, CatalogProductDetail, Category } from "@/types";
 
 /** How many similar products the page shows: two rows of four on a wide screen. */
@@ -75,11 +75,14 @@ export function relatedCategories(
 
   // The brand's page last, kept even when the categories filled the row: it
   // is the one link a shopper who likes this product most often wants.
-  const brand = product.brand
-    ? brands.find((b) => b.is_active && b.name.toLocaleLowerCase("tr") === product.brand!.toLocaleLowerCase("tr"))
-    : undefined;
+  // By the brand the product belongs to; by its name on an API from before the relation.
+  const brand = product.brand_slug
+    ? brands.find((b) => b.is_active && b.slug === product.brand_slug)
+    : product.brand
+      ? brands.find((b) => b.is_active && b.name.toLocaleLowerCase("tr") === product.brand!.toLocaleLowerCase("tr"))
+      : undefined;
   if (brand) {
-    const href = brandCanonical(brand.slug, categories);
+    const href = brandHref(brand.slug);
     if (!shown.some((link) => link.href === href)) shown.push({ name: productMessages[locale].allOfBrand(brand.name), href });
   }
   return shown;

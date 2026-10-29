@@ -6,8 +6,8 @@ import { FAQ_HREF } from "@/lib/faq";
 import { DEALS_HREF } from "@/lib/flashSale";
 import { INFO_LINKS } from "@/lib/footer";
 import { DEFAULT_LOCALE, LOCALES, localePath, type Locale } from "@/lib/i18n/config";
-import { brandCanonical, brandPageHref, productHref, categoryHref } from "@/lib/seo";
-import { getBrands, getCategories, getPublicProducts } from "@/lib/server/catalog";
+import { brandHref, productHref, categoryHref } from "@/lib/seo";
+import { getBrandProducts, getBrands, getCategories, getPublicProducts } from "@/lib/server/catalog";
 import { MEDIA_PATH, SITE_URL, canonicalMedia } from "@/lib/site";
 import { STORES_HREF, publishedStores, storeHref } from "@/lib/stores";
 import type { CatalogProduct } from "@/types";
@@ -79,12 +79,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // included), counted and dated by the API: an empty one says noindex, so it
   // is not listed either.
   const categoryPages = (categories ?? []).filter((c) => (c.product_count ?? 0) > 0);
-  // A brand page is listed only when it is its own canonical (no category of
-  // the same slug) and has something on sale.
+  // A brand page is listed when it has something on sale, and once: a brand
+  // whose category still has its slug is that category's page meanwhile.
   const brandPages = await Promise.all(
     (brands ?? [])
-      .filter((b) => b.is_active && brandCanonical(b.slug, categories) === brandPageHref(b.slug))
-      .map(async (b) => ({ brand: b, products: (await getPublicProducts(undefined, 100, 0, b.search_term)) ?? [] })),
+      // A brand whose category still has its slug is that page, listed with the categories.
+      .filter((b) => b.is_active && !(categories ?? []).some((c) => c.slug === b.slug))
+      .map(async (b) => ({ brand: b, products: (await getBrandProducts(b)).products ?? [] })),
   );
 
   return [
@@ -103,7 +104,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .filter(({ products }) => products.length > 0)
       .flatMap(({ brand, products }) =>
         // In a language when its products are (as the page itself says).
-        inLanguages(brandPageHref(brand.slug), LOCALES.filter((l) => products.some((p) => p.locales?.includes(l))), {
+        inLanguages(brandHref(brand.slug), LOCALES.filter((l) => products.some((p) => p.locales?.includes(l))), {
           lastModified: latest(products.map((p) => p.updated_at)),
           changeFrequency: "weekly",
           priority: 0.7,

@@ -8,7 +8,7 @@ import { AUTH_HINT_SCRIPT } from "@/lib/auth";
 import { geistMono, geistSans } from "@/lib/fonts";
 import { DIRECTION, LOCALES, OG_LOCALE, isLocale } from "@/lib/i18n/config";
 import { getDictionary } from "@/lib/i18n/dictionaries";
-import { getCategories } from "@/lib/server/catalog";
+import { getBrands, getCategories } from "@/lib/server/catalog";
 import { SIDEBAR_SCRIPT, shelvesScript } from "@/lib/sidebar";
 import { INDEXING_ALLOWED, SITE_NAME, SITE_URL } from "@/lib/site";
 import { THEME_SCRIPT } from "@/lib/theme";
@@ -58,8 +58,10 @@ export const viewport: Viewport = {
 export default async function RootLayout({ children, params }: LayoutProps<"/[locale]">) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
-  // From the catalog's cache; when the API cannot say, every slug reads as a product's.
-  const shelves = ((await getCategories()) ?? []).map((c) => c.slug);
+  // The listing pages at the root (categories, brands), from the catalog's
+  // cache; when the API cannot say, every slug reads as a product's.
+  const [categories, brands] = await Promise.all([getCategories(), getBrands()]);
+  const shelves = [...(categories ?? []).map((c) => c.slug), ...(brands ?? []).filter((b) => b.is_active).map((b) => b.slug)];
   return (
     <html
       lang={locale}

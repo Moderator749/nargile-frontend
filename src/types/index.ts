@@ -351,6 +351,8 @@ export interface Product {
   base_code: string;
   name: string;
   brand: string | null;
+  /** The brand's page, /<brand_slug>; null without a brand. Absent from an API before the brand relation. */
+  brand_slug?: string | null;
   description: string | null;
   /** "Açıklama ve SEO": overrides the page <title>; null falls back to the name. */
   meta_title?: string | null;

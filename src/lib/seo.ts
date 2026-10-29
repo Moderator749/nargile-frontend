@@ -46,31 +46,13 @@ export function productImageAlt(product: { name: string }, category?: { name: st
   return `${product.name}${category?.name ? ` - ${category.name}` : ""} | ${SITE_NAME}`;
 }
 
-/** A brand's landing page: every product the brand's search term finds. */
 /**
- * Brands whose page is folded into their category for good: the category is
- * the one page search engines are given (next.config.ts 301s the brand's
- * address there), so every link goes straight to it. Sultan Nargile's brand
- * slug ("sultan-nargile", once "sultan") is not its category's ("sultan").
+ * A brand's page, at the root too: /<slug>, beside categories and products
+ * (the three share the one namespace, app/services/root_slugs.py in the
+ * backend). Every product the brand makes, its sets first. /marka/<slug>,
+ * where brand pages were until 2026-10-29, leads here.
  */
-export const BRAND_CATEGORY: Record<string, string> = { "sultan-nargile": "sultan", sultan: "sultan" };
-
-/** Where a link to the brand goes: its category where it was folded into one, else its own page. */
-export const brandHref = (slug: string) => (BRAND_CATEGORY[slug] ? categoryHref(BRAND_CATEGORY[slug]) : brandPageHref(slug));
-
-/** The brand page's own address (/marka/<slug>). */
-export const brandPageHref = (slug: string) => `/marka/${slug}`;
-
-/**
- * Where the brand's content is canonical. Most house brands (Sultan, Legend,
- * Oduman…) also have a category of the same slug holding the same products;
- * two URLs with one product list would compete, so the category — curated by
- * hand — is the one search engines are pointed at.
- */
-export function brandCanonical(slug: string, categories: { slug: string }[] | null): string {
-  const category = BRAND_CATEGORY[slug] ?? slug;
-  return categories?.some((c) => c.slug === category) ? categoryHref(category) : brandPageHref(slug);
-}
+export const brandHref = (slug: string) => `/${slug}`;
 
 // ── Page metadata ─────────────────────────────────────────────────────────────
 
