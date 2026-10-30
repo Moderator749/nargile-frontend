@@ -8,6 +8,9 @@ import { defineMessages } from "@/lib/i18n/messages";
 import type { SortKey } from "@/lib/catalogFilters";
 import type { SegmentType } from "@/types";
 
+/** "Bayi, Toptan ve Kafe": a list of groups, as the language joins one. */
+const listOf = (locale: string, words: string[]) => new Intl.ListFormat(locale, { type: "conjunction" }).format(words);
+
 type BySegment = Record<SegmentType, string>;
 type BySort = Record<SortKey, string>;
 
@@ -138,7 +141,7 @@ export const catalogMessages = defineMessages({
       preparing: (done: number, total: number) => `PDF hazırlanıyor… ${done}/${total}`,
       pdfFailed: "PDF oluşturulamadı. Lütfen tekrar deneyin.",
       summary: (count: string, groups: SegmentType[]) =>
-        `${count} ürün · ${groups.map((g) => TR_SEGMENT[g]).join(" ve ")} fiyatları.`,
+        `${count} ürün · ${listOf("tr", groups.map((g) => TR_SEGMENT[g]))} fiyatları.`,
       skipped: (n: number) => ` Bu fiyat grubunda fiyatı olmayan ${n} ürün kataloğa alınmadı.`,
       printHint: " Dosya A4 sayfalar halinde, telefonda da bilgisayarda da aynı düzenle iner.",
     },
@@ -249,7 +252,7 @@ export const catalogMessages = defineMessages({
       preparing: (done: number, total: number) => `Preparing PDF… ${done}/${total}`,
       pdfFailed: "The PDF could not be created. Please try again.",
       summary: (count: string, groups: SegmentType[]) =>
-        `${count} products · ${groups.map((g) => EN_SEGMENT[g]).join(" and ")} prices.`,
+        `${count} products · ${listOf("en", groups.map((g) => EN_SEGMENT[g]))} prices.`,
       skipped: (n: number) =>
         ` ${enCount(n, "product has", "products have")} no price in this group and ${n === 1 ? "was" : "were"} left out.`,
       printHint: " The file comes as A4 pages, with the same layout on a phone as on a computer.",
@@ -360,7 +363,7 @@ export const catalogMessages = defineMessages({
       preparing: (done: number, total: number) => `جارٍ تجهيز ملف PDF… ${done}/${total}`,
       pdfFailed: "تعذّر إنشاء ملف PDF. يُرجى المحاولة مرة أخرى.",
       summary: (count: string, groups: SegmentType[]) =>
-        `${count} منتج · أسعار ${groups.map((g) => AR_SEGMENT_PRICES[g]).join(" و")}.`,
+        `${count} منتج · أسعار ${listOf("ar", groups.map((g) => AR_SEGMENT_PRICES[g]))}.`,
       skipped: (n: number) => ` لم يُضف إلى الكتالوج ${n} منتج ليس لها سعر في هذه الفئة.`,
       printHint: " يُنزَّل الملف بصفحات A4، وبالتنسيق نفسه على الهاتف والحاسوب.",
     },

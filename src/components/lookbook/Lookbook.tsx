@@ -182,7 +182,8 @@ function Plate({ item, shape }: { item: LookbookItem; shape: PlateShape }) {
           <div className={`${s.pad} pb-2 pt-2.5 ${wide ? "" : "border-t border-zinc-200"}`}>
             <div className="flex items-center justify-between gap-2">
               <span
-                className={`rounded-sm border px-1.5 py-[1px] font-mono font-semibold tracking-wider ${s.code}`}
+                // One line whatever the code ("NT770 G"): the pill never wraps or shrinks.
+                className={`shrink-0 whitespace-nowrap rounded-sm border px-1.5 py-[1px] font-mono font-semibold tracking-wider ${s.code}`}
                 style={{ borderColor: CARMINE, color: CARMINE }}
               >
                 {item.code || "—"}

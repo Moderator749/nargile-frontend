@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { FileDown, ShieldCheck, X } from "lucide-react";
+import { Check, FileDown, ShieldCheck, X } from "lucide-react";
 
 import { isAdminRole } from "@/lib/roles";
 import { ADMIN_CATALOG_GROUPS, CATALOG_GROUP_LABELS, PRICE_LIST_MAX, storeCatalogRequest } from "@/lib/priceList";
@@ -25,9 +25,9 @@ export function useIsAdmin(): boolean {
 /**
  * "PDF Oluştur", for an admin only, on the catalog's grid (catalog, category,
  * brand and search pages — not the homepage's sections): the products as
- * shown, as the printable price catalogue a B2B account downloads, at the
- * prices of whichever group the admin picks — Bayi, Toptan, Kafe or
- * Perakende. It opens the catalogue's preview, where "PDF İndir" makes the file.
+ * shown, as the price catalogue a B2B account downloads, at the prices of
+ * whichever groups the admin picks — any of Bayi, Toptan, Kafe and Perakende,
+ * side by side on each product's plate. It opens the catalogue's preview, where "PDF İndir" makes the file.
  *
  * Renders nothing at all for anyone else (or for an empty grid), so it takes
  * no room in the layout.
@@ -70,7 +70,7 @@ export function AdminCatalogPdf({
   );
 }
 
-/** The one question: which group's prices. A click on a group opens its catalogue. */
+/** The one question: which groups' prices. Several make one table per product, a row a group. */
 function GroupDialog({
   products,
   collection,
@@ -85,6 +85,9 @@ function GroupDialog({
   const titleId = useId();
   const panel = useRef<HTMLDivElement>(null);
   const count = Math.min(products.length, PRICE_LIST_MAX);
+  const [picked, setPicked] = useState<ReadonlySet<SegmentType>>(() => new Set(["RETAIL"]));
+  // In the plate's order (Bayi, Toptan, Kafe, Perakende), whatever order they were ticked in.
+  const groups = ADMIN_CATALOG_GROUPS.filter((g) => picked.has(g));
 
   useEffect(() => {
     panel.current?.querySelector<HTMLElement>("[data-group]")?.focus();
@@ -95,10 +98,19 @@ function GroupDialog({
 
   const router = useRouter();
 
-  function create(group: SegmentType) {
+  function toggle(group: SegmentType) {
+    setPicked((now) => {
+      const next = new Set(now);
+      if (!next.delete(group)) next.add(group);
+      return next;
+    });
+  }
+
+  function create() {
+    if (groups.length === 0) return;
     const key = storeCatalogRequest({
       productIds: products.slice(0, PRICE_LIST_MAX).map((p) => p.id),
-      groups: [group],
+      groups,
       collection,
       admin: true,
     });
@@ -132,26 +144,60 @@ function GroupDialog({
           </button>
         </div>
 
-        <p className="mt-4 text-sm font-medium">Hangi fiyat grubu için katalog oluşturulsun?</p>
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          {ADMIN_CATALOG_GROUPS.map((group) => (
-            <button
-              key={group}
-              type="button"
-              data-group={group}
-              onClick={() => create(group)}
-              className="flex h-12 items-center justify-center rounded-xl border border-border text-sm font-semibold transition-colors hover:border-red-500 hover:bg-red-50 hover:text-red-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 dark:hover:bg-red-500/10 dark:hover:text-red-300"
-            >
-              {CATALOG_GROUP_LABELS[group]}
-            </button>
-          ))}
-        </div>
+        <fieldset className="mt-4">
+          <legend className="text-sm font-medium">Hangi fiyat grupları kataloğa girsin?</legend>
+          <p className="mt-0.5 text-xs text-muted-foreground">Birden fazla seçin: her ürünün kartında seçilen grupların fiyatları alt alta yer alır.</p>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            {ADMIN_CATALOG_GROUPS.map((group) => {
+              const on = picked.has(group);
+              return (
+                <label
+                  key={group}
+                  className={`relative flex h-12 cursor-pointer items-center justify-center gap-2 rounded-xl border text-sm font-semibold transition-colors has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-red-600 ${
+                    on
+                      ? "border-red-600 bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-300"
+                      : "border-border hover:bg-foreground/[0.04]"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    data-group={group}
+                    checked={on}
+                    onChange={() => toggle(group)}
+                    className="sr-only"
+                  />
+                  <span
+                    aria-hidden
+                    className={`flex h-4 w-4 items-center justify-center rounded border ${on ? "border-red-600 bg-red-600 text-white" : "border-slate-400"}`}
+                  >
+                    {on && <Check className="h-3 w-3" strokeWidth={3} />}
+                  </span>
+                  {CATALOG_GROUP_LABELS[group]}
+                </label>
+              );
+            })}
+          </div>
+        </fieldset>
+
+        <button
+          type="button"
+          onClick={create}
+          disabled={groups.length === 0}
+          className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-red-600 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <FileDown className="h-4 w-4" aria-hidden />
+          {groups.length === 0
+            ? "En az bir grup seçin"
+            : groups.length === 1
+              ? `Kataloğu Oluştur (${CATALOG_GROUP_LABELS[groups[0]]})`
+              : `Kataloğu Oluştur (${groups.length} grup)`}
+        </button>
 
         <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
           Ekrandaki {count.toLocaleString("tr-TR")} ürün, gördüğünüz sırayla kataloğa eklenir.
           {products.length > PRICE_LIST_MAX && ` Bir katalog en fazla ${PRICE_LIST_MAX} ürün alır; ilk ${PRICE_LIST_MAX} ürün eklenecek.`}
           {hasMore && " Listede henüz yüklenmemiş ürünler var; onları da eklemek için önce “Daha fazla göster” ile yükleyin."}{" "}
-          Fiyatlar grubun liste fiyatlarıdır (fırsat indirimleri hariç). Önce önizleme açılır; dosyayı oradan “PDF İndir” ile indirin.
+          Fiyatlar grupların liste fiyatlarıdır (fırsat indirimleri hariç). Önce önizleme açılır; dosyayı oradan “PDF İndir” ile indirin.
         </p>
       </div>
     </div>

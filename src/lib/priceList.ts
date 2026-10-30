@@ -26,7 +26,10 @@ export const CATALOG_CHOICES: Record<B2BSegment, { pick: SegmentType[] } | { fix
   CAFE: { fixed: ["CAFE", "RETAIL"] },
 };
 
-/** An admin's catalogue from the storefront ("PDF Oluştur") takes any one group. */
+/**
+ * An admin's catalogue from the storefront ("PDF Oluştur") takes any groups,
+ * one or several: each product's plate then lists their prices in this order.
+ */
 export const ADMIN_CATALOG_GROUPS: readonly SegmentType[] = ["DEALER", "WHOLESALE", "CAFE", "RETAIL"];
 
 export const isB2BSegment = (code: SegmentType | null | undefined): code is B2BSegment =>
@@ -55,6 +58,30 @@ export async function fetchAdminCatalog(productIds: UUID[], segment: SegmentType
   return data;
 }
 
+/**
+ * An admin's rows at several groups' prices: one call per group (the
+ * endpoint prices one at a time), joined product by product, in the order the
+ * products were asked for. A product priced in none of the groups is left out,
+ * as one group's call leaves it out.
+ */
+export async function fetchAdminCatalogGroups(
+  productIds: UUID[],
+  groups: SegmentType[],
+  signal?: AbortSignal,
+): Promise<PriceListItem[]> {
+  const answers = await Promise.all(groups.map((g) => fetchAdminCatalog(productIds, g, signal)));
+  const joined = new Map<UUID, PriceListItem>();
+  for (const rows of answers) {
+    for (const row of rows) {
+      const seen = joined.get(row.product_id);
+      if (seen) seen.prices = { ...seen.prices, ...row.prices };
+      else joined.set(row.product_id, { ...row, prices: { ...row.prices } });
+    }
+  }
+  const order = new Map(productIds.map((id, i) => [id, i]));
+  return [...joined.values()].sort((a, b) => (order.get(a.product_id) ?? 0) - (order.get(b.product_id) ?? 0));
+}
+
 // ── Hand-off to the printing tab ─────────────────────────────────────────────
 // A catalogue can hold 200 products, too many ids for a link, so the request
 // waits in localStorage under a one-off key the new tab is opened with.
@@ -64,7 +91,7 @@ export interface PriceCatalogRequest {
   groups: SegmentType[];
   /** The page header's collection line: the category, the search, or "Tüm ürünler". */
   collection: string;
-  /** An admin's, from a storefront section's "PDF Oluştur": one group, any group. */
+  /** An admin's, from a storefront section's "PDF Oluştur": any groups, one or several. */
   admin?: boolean;
 }
 

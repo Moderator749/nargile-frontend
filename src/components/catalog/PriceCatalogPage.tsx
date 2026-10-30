@@ -13,7 +13,7 @@ import { formatDateParts } from "@/lib/format";
 import type { Locale } from "@/lib/i18n/config";
 import { INTL_LOCALE } from "@/lib/i18n/messages";
 import { catalogMessages } from "@/lib/i18n/messages/catalog";
-import { fetchAdminCatalog, fetchPriceList, readCatalogRequest, type PriceListItem } from "@/lib/priceList";
+import { fetchAdminCatalogGroups, fetchPriceList, readCatalogRequest, type PriceListItem } from "@/lib/priceList";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useAuthHydrated } from "@/store/useHasHydrated";
 import type { SegmentType } from "@/types";
@@ -60,9 +60,9 @@ export function PriceCatalogPage({ requestKey }: { requestKey: string }) {
   useEffect(() => {
     if (!hydrated || !token || !request) return;
     const controller = new AbortController();
-    // An admin's catalogue (one group, any group) comes from the admin endpoint.
+    // An admin's catalogue (any groups) comes from the admin endpoint.
     const rows = request.admin
-      ? fetchAdminCatalog(request.productIds, request.groups[0], controller.signal)
+      ? fetchAdminCatalogGroups(request.productIds, request.groups, controller.signal)
       : fetchPriceList(request.productIds, request.groups, controller.signal);
     rows
       .then(setItems)
