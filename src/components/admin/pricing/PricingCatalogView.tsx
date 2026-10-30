@@ -2,9 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, FileDown } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
-import { Lookbook, PrintableLookbook, printLookbook, splitVat, type LookbookItem } from "@/components/lookbook/Lookbook";
+import { LookbookDownload, LookbookPreview, splitVat, type LookbookItem } from "@/components/lookbook/Lookbook";
 import { Alert } from "@/components/ui/Alert";
 import { getApiErrorMessage } from "@/lib/errors";
 import { formatDateParts } from "@/lib/format";
@@ -55,9 +55,9 @@ function plateOf(record: PricingRecord, columns: CatalogColumn[]): LookbookItem 
 }
 
 /**
- * The price catalogue ("Fiyat Listesi") for rows picked in a pricing file. On
- * screen: a column picker and a preview. In print: only the catalogue, A4,
- * ready to save as PDF from the print dialog ("PDF olarak kaydet").
+ * The price catalogue ("Fiyat Listesi") for rows picked in a pricing file: a
+ * column picker, a preview, and "PDF İndir", which downloads the A4 file
+ * itself (no print dialog).
  */
 export function PricingCatalogView({ fileId, ids }: { fileId: number | null; ids: string[] }) {
   const [records, setRecords] = useState<PricingRecord[] | null>(null);
@@ -97,26 +97,15 @@ export function PricingCatalogView({ fileId, ids }: { fileId: number | null; ids
   }, [records]);
   const columns = allColumns.filter((c) => !hidden.has(c.key));
 
-  // The saved PDF is named after the page's title.
-  useEffect(() => {
-    if (!fileName) return;
-    const before = document.title;
-    document.title = `Sultan Nargile Fiyat Kataloğu - ${fileName} - ${date}`;
-    return () => {
-      document.title = before;
-    };
-  }, [fileName, date]);
-
   if (fileId === null || ids.length === 0) {
     return <Alert variant="error">Katalog için bir dosyadan en az bir satır seçin.</Alert>;
   }
   if (error) return <Alert variant="error">{error}</Alert>;
   if (!records) return <div className="h-96 rounded-2xl bg-slate-100 motion-safe:animate-pulse dark:bg-white/5" aria-busy />;
 
-  const sheet = <Lookbook collection={fileName} date={date} items={records.map((r) => plateOf(r, columns))} />;
+  const plates = records.map((r) => plateOf(r, columns));
   return (
     <>
-      <PrintableLookbook>{sheet}</PrintableLookbook>
 
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <Link
@@ -125,13 +114,18 @@ export function PricingCatalogView({ fileId, ids }: { fileId: number | null; ids
         >
           <ArrowLeft className="h-4 w-4" aria-hidden /> Fiyat Hesaplama Cetveli
         </Link>
-        <button
-          type="button"
-          onClick={() => void printLookbook()}
-          className="inline-flex h-10 items-center gap-2 rounded-lg bg-red-600 px-4 text-sm font-semibold text-white hover:bg-red-500"
-        >
-          <FileDown className="h-4 w-4" aria-hidden /> PDF olarak kaydet
-        </button>
+        <LookbookDownload
+          collection={fileName}
+          date={date}
+          items={plates}
+          fileTitle={`Sultan Nargile Fiyat Kataloğu - ${fileName} - ${date}`}
+          labels={{
+            download: "PDF İndir",
+            preparing: (done, total) => `PDF hazırlanıyor… ${done}/${total}`,
+            failed: "PDF oluşturulamadı. Lütfen tekrar deneyin.",
+          }}
+          className="inline-flex h-10 items-center gap-2 rounded-lg bg-red-600 px-4 text-sm font-semibold text-white hover:bg-red-500 disabled:cursor-wait disabled:opacity-80"
+        />
       </div>
 
       <fieldset className="mb-5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-white/10 dark:bg-white/[0.03]">
@@ -158,13 +152,12 @@ export function PricingCatalogView({ fileId, ids }: { fileId: number | null; ids
           ))}
         </div>
         <p className="mt-2 text-xs text-slate-500 dark:text-zinc-400">
-          Müşteriye göre seçin: örneğin bir kafeye yalnızca Kafe ve Perakende fiyatlarını gönderin. “PDF olarak kaydet”
-          açılan pencerede Hedef olarak “PDF olarak kaydet”i seçin; dosya katalog adıyla kaydedilir.
+          Müşteriye göre seçin: örneğin bir kafeye yalnızca Kafe ve Perakende fiyatlarını gönderin. “PDF İndir” dosyayı
+          A4 sayfalar halinde, katalog adıyla indirir.
         </p>
       </fieldset>
 
-      {/* The preview: the same sheet, on a white page. */}
-      <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-white/10">{sheet}</div>
+      <LookbookPreview collection={fileName} date={date} items={plates} />
     </>
   );
 }

@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, FileDown } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 
-import Link from "@/components/i18n/Link";
 import { useLocale, useMessages } from "@/components/i18n/LocaleProvider";
-import { Lookbook, PrintableLookbook, printLookbook, type LookbookItem, type LookbookLine } from "@/components/lookbook/Lookbook";
+import { useLocalePath } from "@/components/i18n/navigation";
+import { LookbookDownload, LookbookPreview, type LookbookItem, type LookbookLine } from "@/components/lookbook/Lookbook";
 import { Alert } from "@/components/ui/Alert";
 import { getApiErrorMessage } from "@/lib/errors";
 import { formatDateParts } from "@/lib/format";
@@ -37,19 +38,21 @@ function plateOf(item: PriceListItem, groups: SegmentType[], locale: Locale): Lo
 }
 
 /**
- * The B2B price catalogue, printed: the "Fiyat Listesi" lookbook of the
- * products the customer had on screen, in the price groups they chose. It
- * opens the print dialog by itself once the photos are in; the button does it
- * again. White-label: no logo, no contact block, and the file named after the
- * collection, not the shop.
+ * The price catalogue's preview: the "Fiyat Listesi" lookbook of the products
+ * the customer (or an admin) had on screen, in the price groups they chose —
+ * read on screen as a grid that fits any device, and downloaded with "PDF
+ * İndir" as a real .pdf file of A4 pages, never through the print dialog
+ * (which broke the pages on a phone). White-label: no logo, no contact block,
+ * and the file named after the collection, not the shop.
  */
 export function PriceCatalogPage({ requestKey }: { requestKey: string }) {
   const hydrated = useAuthHydrated();
   const token = useAuthStore((s) => s.token);
   const [items, setItems] = useState<PriceListItem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const printed = useRef(false);
   const locale = useLocale();
+  const router = useRouter();
+  const to = useLocalePath();
   const t = useMessages(catalogMessages).priceCatalog;
   const request = useMemo(() => (typeof window === "undefined" ? null : readCatalogRequest(requestKey)), [requestKey]);
   const date = useMemo(() => formatDateParts(new Date().toISOString(), INTL_LOCALE[locale]).date, [locale]);
@@ -74,25 +77,11 @@ export function PriceCatalogPage({ requestKey }: { requestKey: string }) {
     [items, request, locale],
   );
 
-  // The saved PDF is named after the page's title: the collection, not the
-  // shop. Set once the catalogue is in, after the page's own title has been.
-  const ready = plates.length > 0;
-  useEffect(() => {
-    if (!request || !ready) return;
-    const before = document.title;
-    document.title = t.documentTitle(request.collection, date);
-    return () => {
-      document.title = before;
-    };
-  }, [request, date, ready, t]);
-
-  // Straight to the print dialog, once, when the catalogue is ready.
-  useEffect(() => {
-    if (!plates.length || printed.current) return;
-    printed.current = true;
-    const t = setTimeout(() => void printLookbook(), 300);
-    return () => clearTimeout(t);
-  }, [plates]);
+  /** Back to the grid the catalogue was made from, or to the catalog when this page was opened on its own. */
+  function back() {
+    if (window.history.length > 1) router.back();
+    else router.push(to("/catalog"));
+  }
 
   if (!hydrated) return <div className="h-96 rounded-2xl bg-foreground/[0.04] motion-safe:animate-pulse" aria-busy />;
   if (!token) return <Alert variant="error">{t.signIn}</Alert>;
@@ -103,30 +92,33 @@ export function PriceCatalogPage({ requestKey }: { requestKey: string }) {
   if (!items) return <div className="h-96 rounded-2xl bg-foreground/[0.04] motion-safe:animate-pulse" aria-busy />;
   if (!plates.length) return <Alert variant="error">{t.nothingPriced}</Alert>;
 
-  const sheet = <Lookbook collection={request.collection} date={date} items={plates} />;
   const left = items.length - plates.length;
   return (
     <>
-      <PrintableLookbook>{sheet}</PrintableLookbook>
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <Link href="/catalog" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-4 w-4 rtl:-scale-x-100" aria-hidden /> {t.back}
-        </Link>
+      {/* The download stays in reach while the preview scrolls (on a phone, a long way). */}
+      <div className="sticky top-[var(--header-height,0px)] z-10 -mx-4 mb-4 flex flex-wrap items-center justify-between gap-3 bg-background/95 px-4 py-3 backdrop-blur sm:mx-0 sm:px-0">
         <button
           type="button"
-          onClick={() => void printLookbook()}
-          className="inline-flex h-10 items-center gap-2 rounded-full bg-red-600 px-5 text-sm font-semibold text-white hover:bg-red-500"
+          onClick={back}
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground"
         >
-          <FileDown className="h-4 w-4" aria-hidden /> {t.savePdf}
+          <ArrowLeft className="h-4 w-4 rtl:-scale-x-100" aria-hidden /> {t.back}
         </button>
+        <LookbookDownload
+          collection={request.collection}
+          date={date}
+          items={plates}
+          fileTitle={t.documentTitle(request.collection, date)}
+          labels={{ download: t.savePdf, preparing: t.preparing, failed: t.pdfFailed }}
+          className="inline-flex h-11 items-center gap-2 rounded-full bg-red-600 px-5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-red-500 disabled:cursor-wait disabled:opacity-80"
+        />
       </div>
       <p className="mb-5 text-sm text-muted-foreground">
         {t.summary(plates.length.toLocaleString(INTL_LOCALE[locale]), request.groups)}
         {left > 0 && t.skipped(left)}
         {t.printHint}
       </p>
-      {/* The preview: the same sheet, on a white page. */}
-      <div className="overflow-x-auto rounded-2xl border border-border bg-white p-6 shadow-sm">{sheet}</div>
+      <LookbookPreview collection={request.collection} date={date} items={plates} />
     </>
   );
 }

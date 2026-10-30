@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useRouter } from "next/navigation";
 import { FileDown, ShieldCheck, X } from "lucide-react";
 
 import { isAdminRole } from "@/lib/roles";
@@ -26,7 +27,7 @@ export function useIsAdmin(): boolean {
  * brand and search pages — not the homepage's sections): the products as
  * shown, as the printable price catalogue a B2B account downloads, at the
  * prices of whichever group the admin picks — Bayi, Toptan, Kafe or
- * Perakende. The catalogue opens in a new tab, ready for "PDF olarak kaydet".
+ * Perakende. It opens the catalogue's preview, where "PDF İndir" makes the file.
  *
  * Renders nothing at all for anyone else (or for an empty grid), so it takes
  * no room in the layout.
@@ -92,6 +93,8 @@ function GroupDialog({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  const router = useRouter();
+
   function create(group: SegmentType) {
     const key = storeCatalogRequest({
       productIds: products.slice(0, PRICE_LIST_MAX).map((p) => p.id),
@@ -99,8 +102,9 @@ function GroupDialog({
       collection,
       admin: true,
     });
-    window.open(`/fiyat-katalogu?k=${key}`, "_blank", "noopener");
+    // To the preview, in this tab; "PDF İndir" there makes the file.
     onClose();
+    router.push(`/fiyat-katalogu?k=${key}`);
   }
 
   return (
@@ -147,7 +151,7 @@ function GroupDialog({
           Ekrandaki {count.toLocaleString("tr-TR")} ürün, gördüğünüz sırayla kataloğa eklenir.
           {products.length > PRICE_LIST_MAX && ` Bir katalog en fazla ${PRICE_LIST_MAX} ürün alır; ilk ${PRICE_LIST_MAX} ürün eklenecek.`}
           {hasMore && " Listede henüz yüklenmemiş ürünler var; onları da eklemek için önce “Daha fazla göster” ile yükleyin."}{" "}
-          Fiyatlar grubun liste fiyatlarıdır (fırsat indirimleri hariç). Katalog yeni sekmede açılır; “PDF olarak kaydet” ile indirin.
+          Fiyatlar grubun liste fiyatlarıdır (fırsat indirimleri hariç). Önce önizleme açılır; dosyayı oradan “PDF İndir” ile indirin.
         </p>
       </div>
     </div>

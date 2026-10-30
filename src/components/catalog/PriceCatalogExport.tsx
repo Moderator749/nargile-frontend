@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { FileDown, X } from "lucide-react";
 
 import { useLocale, useMessages } from "@/components/i18n/LocaleProvider";
@@ -85,6 +86,7 @@ function ExportDialog({
   const panel = useRef<HTMLDivElement>(null);
   const locale = useLocale();
   const to = useLocalePath();
+  const router = useRouter();
   const t = useMessages(catalogMessages).priceCatalog;
   const [picked, setPicked] = useState<SegmentType | null>("pick" in choice ? choice.pick[0] : null);
   const groups = "fixed" in choice ? choice.fixed : picked ? [picked] : [];
@@ -104,9 +106,10 @@ function ExportDialog({
       groups,
       collection,
     });
-    // The printout in the page's language.
-    window.open(to(`/fiyat-katalogu?k=${key}`), "_blank", "noopener");
+    // To the preview, in the page's language and in this tab (a phone handles a
+    // second tab badly); "PDF İndir" there makes the file.
     onClose();
+    router.push(to(`/fiyat-katalogu?k=${key}`));
   }
 
   return (

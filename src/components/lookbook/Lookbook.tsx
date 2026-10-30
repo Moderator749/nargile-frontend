@@ -1,10 +1,12 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { FileDown, Loader2 } from "lucide-react";
 
 import { useMessages } from "@/components/i18n/LocaleProvider";
 import { lookbookMessages } from "@/lib/i18n/messages/home";
+import { downloadLookbookPdf, pdfFileName, pdfImageUrl } from "@/lib/lookbookPdf";
 import { lookbookPages, type PageLayout, type PlateShape } from "@/lib/lookbookPages";
 
 /*
@@ -15,9 +17,9 @@ import { lookbookPages, type PageLayout, type PlateShape } from "@/lib/lookbookP
  *
  * Design: obsidian type on white, hairline zinc rules, a single carmine
  * (#991b1b) accent. Figures in tabular mono, so signs and decimals line up.
- * Printing (see PrintableLookbook) shows only the lookbook, A4, one page a
- * sheet, never a plate cut across two; "PDF olarak kaydet" in the print dialog
- * makes the file.
+ * On screen it is read as LookbookPreview (the plates in a grid that fits any
+ * screen); the file is the A4 pages, one a sheet, made by LookbookDownload
+ * without the print dialog.
  *
  * In Arabic (a customer's list on /ar) the sheet mirrors: the title and the
  * labels at the right, the figures aligned to the end of their columns.
@@ -315,52 +317,121 @@ export function Lookbook({ collection, date, items }: { collection: string; date
   );
 }
 
-const PRINT_ROOT = "price-catalog-print";
-
 /**
- * Puts a print-only copy of `children` at the end of <body> and the rules that
- * print nothing else — the site's header, a sidebar, the toolbar — on A4.
+ * The catalogue on screen, for reading on any device: the same plates as the
+ * PDF, one to a row on a phone and two or three side by side on a wider
+ * screen, under the title, the collection and the date. The A4 pages are for
+ * the file (see LookbookDownload), not for the screen: shrunk to a phone they
+ * would be unreadable.
  */
-export function PrintableLookbook({ children }: { children: React.ReactNode }) {
-  // The copy goes to the end of <body>, which exists only in the browser.
-  const mounted = useSyncExternalStore(
-    () => () => {},
-    () => true,
-    () => false,
-  );
+export function LookbookPreview({ collection, date, items }: { collection: string; date: string; items: LookbookItem[] }) {
+  const t = useMessages(lookbookMessages);
   return (
-    <>
-      <style>{`
-        #${PRINT_ROOT} { display: none; }
-        @media print {
-          @page { size: A4 portrait; margin: 12mm; }
-          body > *:not(#${PRINT_ROOT}) { display: none !important; }
-          #${PRINT_ROOT} { display: block !important; }
-          /* Light whatever the visitor's theme: a dark one paints the sheet's margins black. */
-          :root { color-scheme: light !important; }
-          html, body { background: #fff !important; }
-          .catalog-page, .catalog-card { break-inside: avoid; page-break-inside: avoid; }
-          .catalog-sheet > .catalog-page { margin: 0 !important; }
-          .catalog-page + .catalog-page { break-before: page; page-break-before: always; }
-          * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        }
-      `}</style>
-      {mounted && createPortal(<div id={PRINT_ROOT}>{children}</div>, document.body)}
-    </>
+    <div className="rounded-2xl border border-border bg-white p-4 text-zinc-900 shadow-sm [color-scheme:light] sm:p-6">
+      <header className="relative mb-5 flex flex-wrap items-end justify-between gap-x-6 gap-y-2 border-b border-zinc-200 pb-3">
+        <div>
+          <span aria-hidden className="mb-2 block h-[3px] w-6" style={{ background: CARMINE }} />
+          <h2 className="text-2xl font-semibold leading-none tracking-[-0.02em] sm:text-[30px]">{t.title}</h2>
+        </div>
+        <p className="text-end">
+          <span className="block text-[10px] font-semibold uppercase tracking-[0.22em] text-zinc-800">{collection}</span>
+          <span className="mt-1 block font-mono text-[9px] tracking-wider text-zinc-500 tabular-nums">{date}</span>
+        </p>
+        <span aria-hidden className="absolute -bottom-px start-0 h-[2px] w-24" style={{ background: CARMINE }} />
+      </header>
+      <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {items.map((item) => (
+          // A quarter page's proportions (90 × 119 mm), so a plate looks as it does in the file.
+          <li key={item.id} className="aspect-[90/119] min-h-0">
+            <Plate item={item} shape="tall" />
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
-/** Waits for every photo in the print copy (or the PDF would have empty frames), then prints. */
-export async function printLookbook(): Promise<void> {
-  await Promise.all(
-    [...document.querySelectorAll<HTMLImageElement>(`#${PRINT_ROOT} img`)].map((img) =>
-      img.complete
-        ? null
-        : new Promise<void>((done) => {
-            img.addEventListener("load", () => done(), { once: true });
-            img.addEventListener("error", () => done(), { once: true });
-          }),
-    ),
+/**
+ * "PDF İndir": the A4 lookbook as a real .pdf file, made in the browser (see
+ * `lib/lookbookPdf`) — never the print dialog. While the file is made, the
+ * pages are drawn off screen at their own size, whatever the screen, and
+ * taken away again after; the button says how far it has got.
+ */
+export function LookbookDownload({
+  collection,
+  date,
+  items,
+  fileTitle,
+  labels,
+  className,
+}: {
+  collection: string;
+  date: string;
+  items: LookbookItem[];
+  /** The file's name, without ".pdf". */
+  fileTitle: string;
+  labels: { download: string; preparing: (done: number, total: number) => string; failed: string };
+  className: string;
+}) {
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const source = useRef<HTMLDivElement>(null);
+  const busy = progress !== null;
+  // The photos through the site's own optimiser: same-origin, so the snapshot may read them.
+  const pdfItems = useMemo(() => items.map((i) => ({ ...i, imageUrl: pdfImageUrl(i.imageUrl) })), [items]);
+
+  useEffect(() => {
+    if (!busy || !source.current) return;
+    let cancelled = false;
+    downloadLookbookPdf(source.current, pdfFileName(fileTitle), (done, total) => {
+      if (!cancelled) setProgress({ done, total });
+    })
+      .catch(() => {
+        if (!cancelled) setError(labels.failed);
+      })
+      .finally(() => {
+        if (!cancelled) setProgress(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // Once per click: `busy` turning on is the request.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [busy]);
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => {
+          setError(null);
+          setProgress({ done: 0, total: 0 });
+        }}
+        disabled={busy}
+        aria-busy={busy}
+        className={className}
+      >
+        {busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <FileDown className="h-4 w-4" aria-hidden />}
+        {busy && progress.total > 0 ? labels.preparing(progress.done, progress.total) : labels.download}
+      </button>
+      {error && (
+        <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+          {error}
+        </p>
+      )}
+      {busy &&
+        createPortal(
+          // Off screen, not hidden: a hidden page has no layout to photograph.
+          <div
+            ref={source}
+            aria-hidden
+            className="pointer-events-none fixed top-0 bg-white [color-scheme:light]"
+            style={{ left: "-10000px", width: "186mm" }}
+          >
+            <Lookbook collection={collection} date={date} items={pdfItems} />
+          </div>,
+          document.body,
+        )}
+    </>
   );
-  window.print();
 }
