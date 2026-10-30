@@ -408,10 +408,20 @@ export function LookbookDownload({
 
   useEffect(() => {
     if (!busy || !source.current) return;
+    const root = source.current;
     let cancelled = false;
-    downloadLookbookPdf(source.current, pdfFileName(fileTitle), (done, total) => {
-      if (!cancelled) setProgress({ done, total });
-    })
+    // Two frames and half a second before the first snapshot: an older phone
+    // has laid out and painted the off-screen pages by then.
+    const settled = new Promise<void>((done) =>
+      requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(done, 500))),
+    );
+    settled
+      .then(() => {
+        if (cancelled) return;
+        return downloadLookbookPdf(root, pdfFileName(fileTitle), (done, total) => {
+          if (!cancelled) setProgress({ done, total });
+        });
+      })
       .catch(() => {
         if (!cancelled) setError(labels.failed);
       })

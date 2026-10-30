@@ -143,6 +143,10 @@ export const catalogMessages = defineMessages({
       summary: (count: string, groups: SegmentType[]) =>
         `${count} ürün · ${listOf("tr", groups.map((g) => TR_SEGMENT[g]))} fiyatları.`,
       skipped: (n: number) => ` Bu fiyat grubunda fiyatı olmayan ${n} ürün kataloğa alınmadı.`,
+      groupUnpriced: (group: SegmentType, n: number, total: number) =>
+        n === total
+          ? `${TR_SEGMENT[group]}: bu ürünlerin hiçbirinde ${TR_SEGMENT[group]} fiyatı tanımlı değil, kataloğa bu satır girmez.`
+          : `${TR_SEGMENT[group]}: ${n} üründe ${TR_SEGMENT[group]} fiyatı tanımlı değil; o ürünlerin kartında bu satır yer almaz.`,
       printHint: " Dosya A4 sayfalar halinde, telefonda da bilgisayarda da aynı düzenle iner.",
     },
   },
@@ -255,6 +259,10 @@ export const catalogMessages = defineMessages({
         `${count} products · ${listOf("en", groups.map((g) => EN_SEGMENT[g]))} prices.`,
       skipped: (n: number) =>
         ` ${enCount(n, "product has", "products have")} no price in this group and ${n === 1 ? "was" : "were"} left out.`,
+      groupUnpriced: (group: SegmentType, n: number, total: number) =>
+        n === total
+          ? `${EN_SEGMENT[group]}: none of these products has a ${EN_SEGMENT[group]} price, so that row is left out.`
+          : `${EN_SEGMENT[group]}: ${enCount(n, "product has", "products have")} no ${EN_SEGMENT[group]} price; that row is left off ${n === 1 ? "its" : "their"} cards.`,
       printHint: " The file comes as A4 pages, with the same layout on a phone as on a computer.",
     },
   },
@@ -365,6 +373,10 @@ export const catalogMessages = defineMessages({
       summary: (count: string, groups: SegmentType[]) =>
         `${count} منتج · أسعار ${listOf("ar", groups.map((g) => AR_SEGMENT_PRICES[g]))}.`,
       skipped: (n: number) => ` لم يُضف إلى الكتالوج ${n} منتج ليس لها سعر في هذه الفئة.`,
+      groupUnpriced: (group: SegmentType, n: number, total: number) =>
+        n === total
+          ? `${AR_SEGMENT[group]}: لا يوجد سعر ${AR_SEGMENT[group]} لأيٍّ من هذه المنتجات، فلن يظهر هذا السطر.`
+          : `${AR_SEGMENT[group]}: ${n} منتج بلا سعر ${AR_SEGMENT[group]}؛ لا يظهر هذا السطر في بطاقاتها.`,
       printHint: " يُنزَّل الملف بصفحات A4، وبالتنسيق نفسه على الهاتف والحاسوب.",
     },
   },

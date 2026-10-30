@@ -93,6 +93,11 @@ export function PriceCatalogPage({ requestKey }: { requestKey: string }) {
   if (!plates.length) return <Alert variant="error">{t.nothingPriced}</Alert>;
 
   const left = items.length - plates.length;
+  // A chosen group a product has no price in is left off its plate; said here,
+  // so a group missing from the file is never a surprise.
+  const unpriced = request.groups
+    .map((g) => ({ group: g, count: items.filter((i) => !i.prices[g]).length }))
+    .filter((m) => m.count > 0);
   return (
     <>
       {/* The download stays in reach while the preview scrolls (on a phone, a long way). */}
@@ -118,6 +123,14 @@ export function PriceCatalogPage({ requestKey }: { requestKey: string }) {
         {left > 0 && t.skipped(left)}
         {t.printHint}
       </p>
+      {unpriced.length > 0 && (
+        <p
+          role="status"
+          className="mb-5 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200"
+        >
+          {unpriced.map((m) => t.groupUnpriced(m.group, m.count, items.length)).join(" ")}
+        </p>
+      )}
       <LookbookPreview collection={request.collection} date={date} items={plates} />
     </>
   );

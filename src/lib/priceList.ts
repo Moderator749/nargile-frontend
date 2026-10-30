@@ -48,13 +48,22 @@ export interface PriceListItem {
 }
 
 export async function fetchPriceList(productIds: UUID[], groups: SegmentType[], signal?: AbortSignal): Promise<PriceListItem[]> {
-  const { data } = await api.post<PriceListItem[]>("/products/price-list", { product_ids: productIds, groups }, { signal });
+  const { data } = await api.post<PriceListItem[]>(
+    "/products/price-list",
+    { product_ids: productIds, groups },
+    { signal, params: { t: Date.now() } },
+  );
   return data;
 }
 
 /** The same rows for an admin, at any one group's prices (admin only, checked by the server). */
 export async function fetchAdminCatalog(productIds: UUID[], segment: SegmentType, signal?: AbortSignal): Promise<PriceListItem[]> {
-  const { data } = await api.post<PriceListItem[]>("/admin/pricing/custom-catalog", { product_ids: productIds, segment }, { signal });
+  const { data } = await api.post<PriceListItem[]>(
+    "/admin/pricing/custom-catalog",
+    { product_ids: productIds, segment },
+    // A POST is not cached by any browser; the stamp rules out a cache on the way all the same.
+    { signal, params: { t: Date.now() } },
+  );
   return data;
 }
 
