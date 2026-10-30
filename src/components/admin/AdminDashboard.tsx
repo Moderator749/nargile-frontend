@@ -1,28 +1,16 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import axios from "axios";
-import { ArrowRight, ClipboardList, Euro, DollarSign, UserCheck, Users, Van } from "lucide-react";
+import { ArrowRight, ClipboardList, Euro, DollarSign, UserCheck, Users } from "lucide-react";
 
 import { AdminPageHeader, panelClass } from "@/components/admin/AdminShell";
-import { Pagination } from "@/components/admin/Pagination";
-import { CargoSelect } from "@/components/admin/orders/CargoSelect";
-import { OrderDecisionDialog } from "@/components/admin/orders/OrderDecisionDialog";
-import { ShipDialog } from "@/components/admin/orders/ShipDialog";
-import { trackingHref } from "@/lib/tracking";
-import { ExpandToggle, sheetId } from "@/components/admin/orders/ExpandToggle";
-import { OrderSheet } from "@/components/admin/orders/OrderSheet";
-import { canShipOrder, useOrderActions, type OrderActions, type OrderPatch } from "@/components/admin/orders/useOrderActions";
-import { StatusBadge } from "@/components/orders/StatusBadge";
 import { Alert } from "@/components/ui/Alert";
 import { adminDashboard, adminListOrdersPage } from "@/lib/adminApi";
 import { getApiErrorMessage } from "@/lib/errors";
-import { formatDateParts, formatMoney } from "@/lib/format";
-import { orderNetTotal } from "@/lib/ordersApi";
-import type { AdminDashboardData, AdminOrder, PeriodTotals } from "@/types";
-
-const ORDERS_PER_PAGE = 25;
+import { formatMoney } from "@/lib/format";
+import type { AdminDashboardData, PeriodTotals } from "@/types";
 
 const PERIODS: { key: "daily" | "weekly" | "monthly" | "yearly"; label: string; hint: string }[] = [
   { key: "daily", label: "Günlük", hint: "Bugün 00:00'dan bu yana" },
@@ -37,89 +25,6 @@ const KPIS: { title: string; value: (t: PeriodTotals) => string }[] = [
   { title: "Kredi kartı toplamı", value: (t) => formatMoney(t.card_total) },
   { title: "Havale toplamı", value: (t) => formatMoney(t.transfer_total) },
 ];
-
-/**
- * Row colour follows the sale type only (card grey, havale yellow), whatever the
- * status; the status is shown by the badge in the "Durum" column.
- */
-function rowTone(o: AdminOrder): string {
-  // Card orders are the plain case: clean white, with only havale tinted.
-  return o.payment_method === "BANK_TRANSFER" ? "bg-yellow-50 dark:bg-yellow-500/10" : "bg-white dark:bg-zinc-900";
-}
-
-const LEGEND = [
-  { label: "Kredi kartı", className: "border border-zinc-200 bg-white dark:border-white/15 dark:bg-zinc-900" },
-  { label: "Havale / EFT", className: "bg-yellow-100 dark:bg-yellow-500/20" },
-];
-
-/** A shipped order's carrier mark: the tracking code, or the shop's own run. */
-function ShippedMark({ o }: { o: AdminOrder }) {
-  if (o.shipping_method === "ISTANBUL_FREE")
-    return (
-      <span className="inline-flex items-center gap-1 whitespace-nowrap text-sky-700 dark:text-sky-300">
-        <Van className="h-3.5 w-3.5 shrink-0" aria-hidden /> İstanbul içi
-      </span>
-    );
-  if (o.tracking_code) {
-    const href = trackingHref(o);
-    return href ? (
-      <a
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="block truncate font-mono text-xs text-red-700 hover:underline dark:text-red-400"
-        title={`${o.tracking_code} · kargo takip sayfası`}
-      >
-        {o.tracking_code}
-      </a>
-    ) : (
-      <span className="block truncate font-mono text-xs" title={o.tracking_code}>
-        {o.tracking_code}
-      </span>
-    );
-  }
-  if (o.cargo_key)
-    return <span className="whitespace-nowrap text-slate-500 dark:text-zinc-400" title={`Kargo anahtarı ${o.cargo_key}`}>Şubeye teslim bekleniyor</span>;
-  return <span className="whitespace-nowrap text-slate-500 dark:text-zinc-400">Kargoya verildi</span>;
-}
-
-/**
- * The KARGO cell is the dispatch workflow: an approved order offers the two cargo
- * decisions, anything still earlier just waits, and a shipped one shows its
- * carrier mark. Carriage is never charged, so no price is shown here.
- */
-function CargoCell({ o, actions }: { o: AdminOrder; actions: OrderActions }) {
-  const notice = actions.notice(o.id);
-  return (
-    <>
-      {o.status === "SHIPPED" ? (
-        <ShippedMark o={o} />
-      ) : o.status === "DELIVERED" ? (
-        <span className="whitespace-nowrap font-medium text-emerald-700 dark:text-emerald-400">
-          {o.carrier === "STORE" ? "Mağazadan teslim" : "Teslim edildi"}
-        </span>
-      ) : o.status === "RETURNED" ? (
-        <span className="whitespace-nowrap font-medium text-violet-700 dark:text-violet-300">İade edildi</span>
-      ) : canShipOrder(o.status) ? (
-        <CargoSelect order={o} actions={actions} />
-      ) : o.status === "CANCELLED" ? (
-        <span className="text-slate-400 dark:text-zinc-500">—</span>
-      ) : (
-        <span className="whitespace-nowrap text-slate-500 dark:text-zinc-400">Kargo bekliyor</span>
-      )}
-      {notice && (
-        <p
-          role="status"
-          className={`mt-1 whitespace-normal text-[11px] leading-4 ${
-            notice.kind === "error" ? "text-red-600 dark:text-red-400" : "text-emerald-700 dark:text-emerald-400"
-          }`}
-        >
-          {notice.text}
-        </p>
-      )}
-    </>
-  );
-}
 
 /**
  * "Live rate" marker: a breathing emerald dot. TCMB publishes one bulletin a day
@@ -185,10 +90,6 @@ export function AdminDashboard() {
   const [data, setData] = useState<AdminDashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [queue, setQueue] = useState<{ transfer: number; approval: number } | null>(null);
-  const [page, setPage] = useState(0);
-  const [orders, setOrders] = useState<{ page: number; rows: AdminOrder[]; total: number } | null>(null);
-  const [ordersError, setOrdersError] = useState<string | null>(null);
-  const [open, setOpen] = useState<ReadonlySet<string>>(new Set());
 
   useEffect(() => {
     const controller = new AbortController();
@@ -207,36 +108,11 @@ export function AdminDashboard() {
     return () => controller.abort();
   }, []);
 
-  useEffect(() => {
-    const controller = new AbortController();
-    adminListOrdersPage({ page, pageSize: ORDERS_PER_PAGE }, controller.signal)
-      .then(({ orders: rows, total }) => {
-        setOrders({ page, rows, total });
-        setOrdersError(null);
-      })
-      .catch((err: unknown) => {
-        if (!axios.isCancel(err)) setOrdersError(getApiErrorMessage(err, "Siparişler yüklenemedi."));
-      });
-    return () => controller.abort();
-  }, [page]);
-
-  const patch = useCallback<OrderPatch>((id, changes) => {
-    setOrders((prev) => (prev ? { ...prev, rows: prev.rows.map((o) => (o.id === id ? { ...o, ...changes } : o)) } : prev));
-  }, []);
-  const actions = useOrderActions(patch);
-
-  const toggle = (id: string) =>
-    setOpen((prev) => {
-      const next = new Set(prev);
-      if (!next.delete(id)) next.add(id);
-      return next;
-    });
-
   const rate = (v: string | null) => (v ? Number(v).toLocaleString("tr-TR", { minimumFractionDigits: 4 }) : "—");
 
   return (
     <>
-      <AdminPageHeader title="Genel Bakış" description="Ödenmiş siparişlere göre satış özeti (Türkiye saati), üyeler ve son siparişler." />
+      <AdminPageHeader title="Genel Bakış" description="Ödenmiş siparişlere göre satış özeti (Türkiye saati) ve üyeler. Siparişlerin kendisi Sipariş Yönetimi'nde." />
 
       {error && (
         <div className="mb-6">
@@ -337,150 +213,6 @@ export function AdminDashboard() {
           Tüm siparişler, havale ve onay bekleyenler, kargo ve kurye işlemleri.
         </p>
       </div>
-
-      {/* Latest orders */}
-      <section aria-labelledby="recent-heading" className={`${panelClass} mt-6 overflow-hidden`}>
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-5 py-3 dark:border-white/10">
-          <h2 id="recent-heading" className="text-sm font-semibold">
-            Son siparişler
-          </h2>
-          <ul className="flex flex-wrap gap-3 text-xs text-slate-500 dark:text-zinc-400" aria-label="Renk açıklaması">
-            {LEGEND.map((l) => (
-              <li key={l.label} className="flex items-center gap-1.5">
-                <span className={`h-3 w-3 rounded-sm ${l.className}`} aria-hidden />
-                {l.label}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {ordersError ? (
-          <div className="p-4">
-            <Alert variant="error">{ordersError}</Alert>
-          </div>
-        ) : !orders ? (
-          <div className="h-64 motion-safe:animate-pulse" aria-busy />
-        ) : orders.rows.length === 0 ? (
-          <p className="px-5 py-12 text-center text-sm text-slate-500 dark:text-zinc-400">Henüz sipariş yok.</p>
-        ) : (
-          <div className={`transition-opacity ${orders.page === page ? "" : "opacity-60"}`}>
-            {/*
-              No horizontal scroll: `table-fixed` with percentage columns always
-              fits the container, and every cell truncates or stacks rather than
-              pushing the table wider. The two columns that are only nice to have
-              drop out on narrower screens (their data rides in a neighbouring
-              cell instead), and the percentages that remain are reflowed.
-            */}
-            <table className="w-full table-fixed text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:border-white/10 dark:text-zinc-500">
-                  <th scope="col" className="w-9 px-2 py-3">
-                    <span className="sr-only">Detay</span>
-                  </th>
-                  <th scope="col" className="w-[16%] px-3 py-3">Sipariş No</th>
-                  <th scope="col" className="hidden w-[22%] px-3 py-3 md:table-cell">Müşteri</th>
-                  <th scope="col" className="hidden w-[10%] px-3 py-3 lg:table-cell">Tarih</th>
-                  <th scope="col" className="hidden w-[11%] px-3 py-3 xl:table-cell">Satış şekli</th>
-                  <th scope="col" className="hidden w-[12%] px-3 py-3 text-right md:table-cell">Tutar</th>
-                  <th scope="col" className="w-[16%] px-3 py-3">Durum</th>
-                  <th scope="col" className="hidden w-[13%] px-3 py-3 md:table-cell">Kargo</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-white/10">
-                {orders.rows.map((o) => {
-                  const expanded = open.has(o.id);
-                  return (
-                    <Fragment key={o.id}>
-                      <tr className={rowTone(o)}>
-                        <td className="px-2 py-2.5 align-top">
-                          <ExpandToggle
-                            expanded={expanded}
-                            onToggle={() => toggle(o.id)}
-                            controls={sheetId(o.id)}
-                            orderNumber={o.order_number}
-                          />
-                        </td>
-                        <td className="px-3 py-2.5 align-top">
-                          <p className="truncate font-mono text-xs font-semibold" title={o.order_number}>
-                            {o.order_number}
-                          </p>
-                          {/* What the hidden columns would have shown, while they are hidden. */}
-                          <p className="truncate text-[11px] text-slate-500 lg:hidden dark:text-zinc-400">
-                            {formatDateParts(o.created_at).date}
-                          </p>
-                          <p className="truncate text-[11px] text-slate-500 md:hidden dark:text-zinc-400">
-                            {o.customer_name || o.customer_email} · {formatMoney(orderNetTotal(o))}
-                          </p>
-                        </td>
-                        <td className="hidden px-3 py-2.5 align-top md:table-cell">
-                          <p className="truncate font-medium" title={o.customer_name ?? undefined}>
-                            {o.customer_name || o.shipping_address?.full_name || "—"}
-                          </p>
-                          <p className="truncate text-xs text-slate-500 dark:text-zinc-400" title={o.customer_email}>
-                            {o.customer_email}
-                          </p>
-                        </td>
-                        <td className="hidden px-3 py-2.5 align-top text-xs lg:table-cell">
-                          <p className="truncate tabular-nums">{formatDateParts(o.created_at).date}</p>
-                          <p className="truncate tabular-nums text-slate-500 dark:text-zinc-400">
-                            {formatDateParts(o.created_at).time}
-                          </p>
-                        </td>
-                        <td className="hidden px-3 py-2.5 align-top text-xs xl:table-cell">
-                          {o.payment_method === "BANK_TRANSFER" ? "Havale / EFT" : "Kredi kartı"}
-                        </td>
-                        <td className="hidden whitespace-nowrap px-3 py-2.5 text-right align-top font-mono text-xs font-semibold tabular-nums md:table-cell">
-                          {formatMoney(orderNetTotal(o))}
-                          <span className="block text-[11px] font-normal text-slate-500 xl:hidden dark:text-zinc-400">
-                            {o.payment_method === "BANK_TRANSFER" ? "Havale" : "Kart"}
-                          </span>
-                        </td>
-                        <td className="px-3 py-2.5 align-top">
-                          <StatusBadge status={o.status} compact />
-                        </td>
-                        <td className="hidden px-3 py-2.5 align-top text-xs md:table-cell">
-                          <CargoCell o={o} actions={actions} />
-                        </td>
-                      </tr>
-                      {expanded && (
-                        <tr id={sheetId(o.id)}>
-                          <td colSpan={8} className="bg-white p-0 dark:bg-zinc-900">
-                            <OrderSheet
-                              order={o}
-                              busy={actions.busy(o.id)}
-                              notice={actions.notice(o.id)}
-                              onApprove={() => actions.approve(o)}
-                              onCancel={() => actions.cancel(o)}
-                            onShip={() => actions.ship(o)}
-                            onRefreshShipment={() => actions.refreshShipment(o)}
-                            onWithdrawShipment={() => actions.withdrawShipment(o)}
-                            onDeliverInStore={() => actions.deliverInStore(o)}
-                            onReturn={() => actions.decide("return", o)}
-                            onRecover={() => actions.decide("recover", o)}
-                            onSaveNote={(note) => actions.saveNote(o, note)}
-                            />
-                          </td>
-                        </tr>
-                      )}
-                    </Fragment>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {orders && orders.total > ORDERS_PER_PAGE && (
-          <div className="flex flex-col items-center gap-3 border-t border-slate-200 p-4 sm:flex-row sm:justify-between dark:border-white/10">
-            <p className="text-xs tabular-nums text-slate-500 dark:text-zinc-400">
-              {page * ORDERS_PER_PAGE + 1}–{Math.min((page + 1) * ORDERS_PER_PAGE, orders.total)} / {orders.total} sipariş
-            </p>
-            <Pagination page={page} pageCount={Math.ceil(orders.total / ORDERS_PER_PAGE)} onChange={setPage} label="Sipariş sayfaları" />
-          </div>
-        )}
-      </section>
-      <ShipDialog actions={actions} />
-      <OrderDecisionDialog actions={actions} />
     </>
   );
 }

@@ -11,6 +11,7 @@ import { ShipDialog } from "@/components/admin/orders/ShipDialog";
 import { StoreApproval } from "@/components/admin/orders/StoreApproval";
 import { ExpandToggle, sheetId } from "@/components/admin/orders/ExpandToggle";
 import { OrderSheet } from "@/components/admin/orders/OrderSheet";
+import { FulfillmentMark } from "@/components/admin/orders/FulfillmentMark";
 import { FAILURE_SOURCE } from "@/components/admin/orders/PaymentFailureCard";
 import { canApproveOrder, canShipOrder, useOrderActions, type OrderPatch } from "@/components/admin/orders/useOrderActions";
 import { StatusBadge } from "@/components/orders/StatusBadge";
@@ -60,13 +61,22 @@ function PaymentLabel({ method }: { method: AdminOrder["payment_method"] }) {
 }
 
 /**
+ * The money's status, apart from where the parcel is: an order that has left
+ * (shipped, delivered) was paid, and says so here — "Kargoya verildi" and
+ * "Teslim edildi" are the last column's, with the tracking code.
+ */
+function paymentStatus(status: OrderStatus): OrderStatus {
+  return status === "SHIPPED" || status === "DELIVERED" ? "APPROVED" : status;
+}
+
+/**
  * The order's financial standing under its payment method: the status badge,
  * and why it closed when it did (a failed card, a cancellation, a return).
  */
 function PaymentStatus({ order: o }: { order: AdminOrder }) {
   return (
     <div className="mt-1.5">
-      <StatusBadge status={o.status} compact />
+      <StatusBadge status={paymentStatus(o.status)} compact />
       {o.payment_failure && (
         <p className={`mt-1 text-[11px] font-semibold leading-4 ${FAILURE_SOURCE[o.payment_failure.source].textClassName}`}>
           {FAILURE_SOURCE[o.payment_failure.source].label}
@@ -239,6 +249,24 @@ export function AdminOrdersView() {
         </div>
       );
     }
+    // On the way or delivered: where it is, with any result line under it.
+    if (order.status === "SHIPPED" || order.status === "DELIVERED") {
+      return (
+        <div className="flex min-w-0 flex-col gap-1">
+          <FulfillmentMark o={order} />
+          {notice && (
+            <p
+              role="status"
+              className={`whitespace-normal text-left text-[11px] leading-4 ${
+                notice.kind === "error" ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"
+              }`}
+            >
+              {notice.text}
+            </p>
+          )}
+        </div>
+      );
+    }
     return notice?.kind === "success" ? (
       <p className="whitespace-normal text-left text-[11px] font-medium leading-4 text-emerald-600 dark:text-emerald-400" role="status">
         {notice.text}
@@ -357,9 +385,8 @@ export function AdminOrdersView() {
                   <th scope="col" className="hidden w-[14%] px-3 py-3 xl:table-cell">Ödeme</th>
                   <th scope="col" className="w-[13%] px-3 py-3 text-right">Tutar</th>
                   <th scope="col" className="w-[17%] px-3 py-3">Mağaza Onayı</th>
-                  <th scope="col" className="w-[16%] px-3 py-3 text-right">
-                    <span className="sr-only">İşlem</span>
-                  </th>
+                  {/* Payment decisions while the order waits, then the cargo ones, then where the parcel is. */}
+                  <th scope="col" className="w-[16%] px-3 py-3">Kargo</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-white/5">
@@ -456,7 +483,7 @@ export function AdminOrdersView() {
                           </p>
                           <AddressLine order={o} />
                         </div>
-                        <StatusBadge status={o.status} />
+                        <StatusBadge status={paymentStatus(o.status)} />
                       </div>
                       <div className="flex items-center justify-between text-sm">
                         <PaymentLabel method={o.payment_method} />
