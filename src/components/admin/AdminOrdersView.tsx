@@ -8,6 +8,7 @@ import { AdminPageHeader, panelClass } from "@/components/admin/AdminShell";
 import { CargoSelect } from "@/components/admin/orders/CargoSelect";
 import { OrderDecisionDialog } from "@/components/admin/orders/OrderDecisionDialog";
 import { ShipDialog } from "@/components/admin/orders/ShipDialog";
+import { StoreApproval } from "@/components/admin/orders/StoreApproval";
 import { ExpandToggle, sheetId } from "@/components/admin/orders/ExpandToggle";
 import { OrderSheet } from "@/components/admin/orders/OrderSheet";
 import { FAILURE_SOURCE } from "@/components/admin/orders/PaymentFailureCard";
@@ -55,6 +56,34 @@ function PaymentLabel({ method }: { method: AdminOrder["payment_method"] }) {
       <Icon className="h-4 w-4" aria-hidden />
       {bank ? "Havale / EFT" : "Kredi kartı"}
     </span>
+  );
+}
+
+/**
+ * The order's financial standing under its payment method: the status badge,
+ * and why it closed when it did (a failed card, a cancellation, a return).
+ */
+function PaymentStatus({ order: o }: { order: AdminOrder }) {
+  return (
+    <div className="mt-1.5">
+      <StatusBadge status={o.status} compact />
+      {o.payment_failure && (
+        <p className={`mt-1 text-[11px] font-semibold leading-4 ${FAILURE_SOURCE[o.payment_failure.source].textClassName}`}>
+          {FAILURE_SOURCE[o.payment_failure.source].label}
+        </p>
+      )}
+      {/* Why it closed: kept on a recovered order for its history, but said only while it is closed. */}
+      {(o.status === "CANCELLED" || o.status === "PAYMENT_FAILED") && o.cancel_reason && (
+        <p className="mt-1 max-w-32 truncate text-xs text-slate-500" title={o.cancel_reason}>
+          {o.cancel_reason}
+        </p>
+      )}
+      {o.status === "RETURNED" && o.return_reason && (
+        <p className="mt-1 max-w-32 truncate text-xs text-slate-500" title={o.return_reason}>
+          {o.return_reason}
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -165,7 +194,7 @@ export function AdminOrdersView() {
       const transfer = order.status === "AWAITING_TRANSFER";
       return (
         // Stacked and compact: side by side they overflowed the cell and ran into
-        // the Durum column.
+        // the column beside it.
         <div className="flex w-full flex-col items-stretch gap-1">
           <Button
             type="button"
@@ -311,9 +340,10 @@ export function AdminOrdersView() {
             {/*
               Desktop table, sized to its container — no horizontal scroll.
               `table-fixed` with percentage columns keeps the badge and the action
-              buttons inside their own cells (side by side they used to spill into
-              the Durum column), and the text cells truncate instead of widening.
-              "Ödeme" folds into the amount cell below xl, where the panel is narrower.
+              buttons inside their own cells, and the text cells truncate instead
+              of widening. ÖDEME is the money (method and status badge) and folds
+              into the amount cell below xl, where the panel is narrower; MAĞAZA
+              ONAYI is the shop's own release for packing, apart from the money.
             */}
             <div className="hidden md:block">
             <table className="w-full table-fixed text-sm">
@@ -322,11 +352,11 @@ export function AdminOrdersView() {
                   <th scope="col" className="w-9 px-2 py-3">
                     <span className="sr-only">Detay</span>
                   </th>
-                  <th scope="col" className="w-[20%] px-3 py-3">Sipariş</th>
-                  <th scope="col" className="w-[25%] px-3 py-3">Müşteri</th>
-                  <th scope="col" className="hidden w-[11%] px-3 py-3 xl:table-cell">Ödeme</th>
-                  <th scope="col" className="w-[12%] px-3 py-3 text-right">Tutar</th>
-                  <th scope="col" className="w-[16%] px-3 py-3">Durum</th>
+                  <th scope="col" className="w-[18%] px-3 py-3">Sipariş</th>
+                  <th scope="col" className="w-[20%] px-3 py-3">Müşteri</th>
+                  <th scope="col" className="hidden w-[14%] px-3 py-3 xl:table-cell">Ödeme</th>
+                  <th scope="col" className="w-[13%] px-3 py-3 text-right">Tutar</th>
+                  <th scope="col" className="w-[17%] px-3 py-3">Mağaza Onayı</th>
                   <th scope="col" className="w-[16%] px-3 py-3 text-right">
                     <span className="sr-only">İşlem</span>
                   </th>
@@ -368,34 +398,25 @@ export function AdminOrdersView() {
                         </td>
                         <td className="hidden px-3 py-3 align-top xl:table-cell">
                           <PaymentLabel method={o.payment_method} />
+                          <PaymentStatus order={o} />
                         </td>
                         <td className="px-3 py-3 text-right align-top font-semibold tabular-nums">
                           {formatMoney(orderNetTotal(o))}
                           <p className="text-xs font-normal text-slate-500 dark:text-zinc-500">
                             {o.items.reduce((n, i) => n + i.quantity, 0)} ürün
                           </p>
-                          <p className="text-xs font-normal text-slate-500 xl:hidden dark:text-zinc-500">
-                            {o.payment_method === "BANK_TRANSFER" ? "Havale" : "Kart"}
-                          </p>
+                          {/* ÖDEME, folded in where its own column is hidden. */}
+                          <div className="text-left text-xs font-normal xl:hidden">
+                            <p className="text-right text-slate-500 dark:text-zinc-500">
+                              {o.payment_method === "BANK_TRANSFER" ? "Havale" : "Kart"}
+                            </p>
+                            <div className="flex justify-end">
+                              <PaymentStatus order={o} />
+                            </div>
+                          </div>
                         </td>
                         <td className="px-3 py-3 align-top">
-                          <StatusBadge status={o.status} compact />
-                          {o.payment_failure && (
-                            <p className={`mt-1 text-[11px] font-semibold leading-4 ${FAILURE_SOURCE[o.payment_failure.source].textClassName}`}>
-                              {FAILURE_SOURCE[o.payment_failure.source].label}
-                            </p>
-                          )}
-                          {/* Why it closed: kept on a recovered order for its history, but said only while it is closed. */}
-                          {(o.status === "CANCELLED" || o.status === "PAYMENT_FAILED") && o.cancel_reason && (
-                            <p className="mt-1 max-w-32 truncate text-xs text-slate-500" title={o.cancel_reason}>
-                              {o.cancel_reason}
-                            </p>
-                          )}
-                          {o.status === "RETURNED" && o.return_reason && (
-                            <p className="mt-1 max-w-32 truncate text-xs text-slate-500" title={o.return_reason}>
-                              {o.return_reason}
-                            </p>
-                          )}
+                          <StoreApproval order={o} actions={actions} />
                         </td>
                         <td className="px-3 py-3 align-top">{renderAction(o)}</td>
                       </tr>
@@ -440,6 +461,10 @@ export function AdminOrdersView() {
                       <div className="flex items-center justify-between text-sm">
                         <PaymentLabel method={o.payment_method} />
                         <span className="font-semibold tabular-nums">{formatMoney(orderNetTotal(o))}</span>
+                      </div>
+                      <div>
+                        <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-zinc-500">Mağaza onayı</p>
+                        <StoreApproval order={o} actions={actions} />
                       </div>
                       {renderAction(o)}
                     </div>

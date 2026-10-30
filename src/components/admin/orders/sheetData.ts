@@ -96,6 +96,12 @@ export function orderHistory(order: AdminOrder): HistoryRow[] {
   // Before the payment: recovered and approved in one step, it was recovered first.
   if (order.recovered_at) rows.push({ at: order.recovered_at, action: "SİPARİŞ KURTARILDI", note: "İptal geri alındı" });
   if (order.paid_at) rows.push({ at: order.paid_at, action: "SİPARİŞ ONAYLANDI", note: "Ödeme alındı, sipariş onaylandı" });
+  if (order.store_approved_at)
+    rows.push({
+      at: order.store_approved_at,
+      action: "MAĞAZA ONAYLADI",
+      note: `Stok kontrol edildi, hazırlanabilir${order.store_approved_by_name ? ` · ${order.store_approved_by_name}` : ""}`,
+    });
   const left = order.status === "SHIPPED" || order.status === "DELIVERED" || order.status === "RETURNED";
   if (left && order.carrier !== "STORE" && (order.shipped_at || order.status === "SHIPPED"))
     rows.push({

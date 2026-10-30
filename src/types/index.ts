@@ -1182,6 +1182,9 @@ export interface AdminOrder extends Omit<Order, "items"> {
   payment_failure?: PaymentFailure | null;
   /** "Gizli Mağaza Notu": the shop's own note, never sent to the customer. */
   internal_note?: string | null;
+  /** "Mağaza Onayı": stock checked and packing released — apart from the payment status. */
+  store_approved_at?: ISODateTime | null;
+  store_approved_by_name?: string | null;
 }
 
 /**

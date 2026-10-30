@@ -483,6 +483,12 @@ export async function adminRecoverOrder(orderId: string, paid: boolean): Promise
   return data;
 }
 
+/** "Mağaza Onayı": gives (`approved`) or takes back the shop's release for packing. */
+export async function adminSetStoreApproval(orderId: string, approved: boolean): Promise<AdminOrder> {
+  const { data } = await api.post<AdminOrder>(`/admin/orders/${orderId}/store-approval`, { approved });
+  return data;
+}
+
 /** "Gizli Mağaza Notu": saves (or, empty, clears) the shop's own note on the order. */
 export async function adminSetInternalNote(orderId: string, note: string): Promise<AdminOrder> {
   const { data } = await api.put<AdminOrder>(`/admin/orders/${orderId}/internal-note`, { internal_note: note });

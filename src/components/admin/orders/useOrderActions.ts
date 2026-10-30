@@ -10,6 +10,7 @@ import {
   adminRefreshShipment,
   adminReturnOrder,
   adminSetInternalNote,
+  adminSetStoreApproval,
   adminShipOrder,
   adminWithdrawShipment,
   type ShipOrderBody,
@@ -45,6 +46,14 @@ export function canReturnOrder(status: OrderStatus): boolean {
 /** "Siparişi Kurtar": a cancellation can be undone (a failed card payment cannot: that customer never paid). */
 export function canRecoverOrder(status: OrderStatus): boolean {
   return status === "CANCELLED";
+}
+
+/**
+ * "Mağaza Onayı" is given and taken back only while the order is still in the
+ * shop: not once it has left, nor for one that came to nothing.
+ */
+export function storeApprovalOpen(status: OrderStatus): boolean {
+  return !["CANCELLED", "PAYMENT_FAILED", "RETURNED", "SHIPPED", "DELIVERED"].includes(status);
 }
 
 /** The İade or "Siparişi Kurtar" dialog, and the order it is open for. */
@@ -91,6 +100,8 @@ export interface OrderActions {
   confirmRecover: (order: AdminOrder, paid: boolean) => Promise<AdminOrder>;
   /** "Gizli Mağaza Notu": saves it, or rejects with the server's reason. */
   saveNote: (order: AdminOrder, note: string) => Promise<AdminOrder>;
+  /** "Mağaza Onayı": gives it, or (asking first) takes it back. */
+  storeApprove: (order: AdminOrder, approved: boolean) => Promise<void>;
 }
 
 /**
@@ -292,6 +303,19 @@ export function useOrderActions(patch: OrderPatch): OrderActions {
     [patch],
   );
 
+  const storeApprove = useCallback(
+    async (order: AdminOrder, approved: boolean) => {
+      if (!approved && !window.confirm(`${order.order_number}: mağaza onayı geri alınsın mı?`)) return;
+      await shipmentCall(
+        order,
+        (id) => adminSetStoreApproval(id, approved),
+        approved ? "Mağaza onayı verildi · hazırlanabilir" : "Mağaza onayı geri alındı",
+        "Mağaza onayı kaydedilemedi.",
+      );
+    },
+    [shipmentCall],
+  );
+
   return {
     busy: (id) => pending.has(id),
     notice: (id) => notices[id],
@@ -310,5 +334,6 @@ export function useOrderActions(patch: OrderPatch): OrderActions {
     confirmReturn,
     confirmRecover,
     saveNote,
+    storeApprove,
   };
 }
