@@ -70,8 +70,19 @@ export function splitVat(amount: number, vatRate: number, amountIsBeforeVat: boo
 }
 
 const CARMINE = "#991b1b";
-/** Label, before VAT, VAT, total: the same four tracks in the header and every row. */
-const matrixCols = "grid grid-cols-[1.15fr_1.2fr_1fr_1.3fr] items-baseline gap-x-2";
+/**
+ * The price table: label, before VAT, VAT, total. One grid for the whole
+ * table, the header and each row a subgrid of it, so every column lines up;
+ * the three price columns are as wide as their widest figure (never squeezed
+ * into a neighbour) and the label takes what is left.
+ *
+ * In a narrow plate (a phone's preview: under 19rem) there is no room for
+ * four columns side by side, so each row becomes the label and the total,
+ * with the VAT split on a small line beneath — the same figures, nothing
+ * overlapping. The A4 file's plates are always wide enough for the columns.
+ */
+const matrix = "grid grid-cols-[minmax(0,1fr)_auto_auto_auto] gap-x-2.5 @max-[19rem]:grid-cols-[minmax(0,1fr)_auto]";
+const matrixRow = "col-span-full grid grid-cols-subgrid items-baseline";
 
 /** A carmine corner mark, drawn on two edges of the frame: top start and bottom end. */
 function Corner({ at }: { at: "tl" | "br" }) {
@@ -158,7 +169,7 @@ function Plate({ item, shape }: { item: LookbookItem; shape: PlateShape }) {
   const wide = shape === "wide";
   return (
     // Double hairline: an outer rule, a breath of white, an inner rule.
-    <article className="catalog-card relative h-full min-h-0 border border-zinc-300 bg-white p-[1.2mm]">
+    <article className="catalog-card relative h-full min-h-0 break-inside-avoid border border-zinc-300 bg-white p-[1.2mm]">
       <Corner at="tl" />
       <Corner at="br" />
       <div className={`flex h-full min-h-0 border border-zinc-200 ${wide ? "flex-row" : "flex-col"}`}>
@@ -197,59 +208,71 @@ function Plate({ item, shape }: { item: LookbookItem; shape: PlateShape }) {
               )}
             </div>
             {/* As stored: CSS capitals in a Turkish page would turn "Steamulation" into "STEAMULATİON". */}
-            <p className={`font-semibold leading-snug text-zinc-900 ${s.name}`}>{item.name || "—"}</p>
+            {/* A little more than snug, with room below the last line: the clamp
+                cuts at the box, and Turkish capitals' dots and descenders need it. */}
+            <p className={`pb-px font-semibold leading-[1.4] text-zinc-900 ${s.name}`}>{item.name || "—"}</p>
           </div>
 
           {/* The price matrix: muted parts, the eye led to the total; retail set apart. */}
-          <div className="mt-auto">
-            <div
-              className={`${matrixCols} border-y border-zinc-200 bg-zinc-50 ${s.pad} ${s.head} font-semibold uppercase tracking-[0.14em] text-zinc-500`}
-            >
-              {/* The group column, unlabelled: the row names speak for themselves. */}
-              <span aria-hidden />
-              <span className="text-end">{t.exclVat}</span>
-              <span className="text-end">{t.vat}</span>
-              <span className="text-end">{t.total}</span>
+          <div className="@container mt-auto">
+            <div className={matrix}>
+              <div
+                className={`${matrixRow} border-y border-zinc-200 bg-zinc-50 ${s.pad} ${s.head} font-semibold uppercase leading-none tracking-[0.14em] text-zinc-500 @max-[19rem]:hidden`}
+              >
+                {/* The group column, unlabelled: the row names speak for themselves. */}
+                <span aria-hidden />
+                <span className="text-end">{t.exclVat}</span>
+                <span className="text-end">{t.vat}</span>
+                <span className="text-end">{t.total}</span>
+              </div>
+              {item.lines.map((l, i) => {
+                const retail = l.tone === "retail";
+                return (
+                  <div
+                    key={l.key}
+                    className={`${matrixRow} ${s.pad} ${s.row} gap-y-0.5 leading-tight tabular-nums ${
+                      i > 0 ? "border-t border-zinc-200" : "@max-[19rem]:border-t @max-[19rem]:border-zinc-200"
+                    } ${retail ? "bg-rose-50" : l.tone === "final" ? "bg-amber-50/70" : ""}`}
+                  >
+                    <span
+                      className={`min-w-0 truncate font-semibold uppercase tracking-[0.12em] ${s.label} ${retail ? "" : "text-zinc-600"}`}
+                      style={retail ? { color: CARMINE } : undefined}
+                    >
+                      {l.label}
+                    </span>
+                    {l.totalOnly ? (
+                      <>
+                        <span aria-hidden className="@max-[19rem]:hidden" />
+                        <span aria-hidden className="@max-[19rem]:hidden" />
+                      </>
+                    ) : (
+                      <>
+                        <span className={`whitespace-nowrap text-end font-mono text-zinc-500 ${s.excl} @max-[19rem]:hidden`}>
+                          {money(l.excl, l.currency)}
+                        </span>
+                        <span className={`whitespace-nowrap text-end font-mono text-zinc-400 ${s.vat} @max-[19rem]:hidden`}>
+                          +{money(l.vat, l.currency)}
+                        </span>
+                      </>
+                    )}
+                    <span
+                      className={`whitespace-nowrap text-end font-mono font-bold ${retail ? s.retailTotal : `${s.total} text-zinc-900`}`}
+                      style={retail ? { color: CARMINE } : undefined}
+                    >
+                      {money(l.total, l.currency)}
+                    </span>
+                    {/* A narrow plate's VAT split, under the label and the total. */}
+                    {!l.totalOnly && (
+                      <span className={`col-span-full hidden font-mono text-zinc-500 @max-[19rem]:block ${s.vat}`}>
+                        {money(l.excl, l.currency)} <span className="font-sans uppercase tracking-wider">{t.exclVat}</span>
+                        <span className="mx-1 text-zinc-300">·</span>+{money(l.vat, l.currency)}{" "}
+                        <span className="font-sans uppercase tracking-wider">{t.vat.replace(/^\+\s*/, "")}</span>
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-            {item.lines.map((l, i) => {
-              const retail = l.tone === "retail";
-              return (
-                <div
-                  key={l.key}
-                  className={`${matrixCols} ${s.pad} ${s.row} tabular-nums ${i > 0 ? "border-t border-zinc-200" : ""} ${
-                    retail ? "bg-rose-50" : l.tone === "final" ? "bg-amber-50/70" : ""
-                  }`}
-                >
-                  <span
-                    className={`truncate font-semibold uppercase tracking-[0.12em] ${s.label} ${retail ? "" : "text-zinc-600"}`}
-                    style={retail ? { color: CARMINE } : undefined}
-                  >
-                    {l.label}
-                  </span>
-                  {l.totalOnly ? (
-                    <>
-                      <span aria-hidden />
-                      <span aria-hidden />
-                    </>
-                  ) : (
-                    <>
-                      <span className={`whitespace-nowrap text-end font-mono text-zinc-500 ${s.excl}`}>
-                        {money(l.excl, l.currency)}
-                      </span>
-                      <span className={`whitespace-nowrap text-end font-mono text-zinc-400 ${s.vat}`}>
-                        +{money(l.vat, l.currency)}
-                      </span>
-                    </>
-                  )}
-                  <span
-                    className={`whitespace-nowrap text-end font-mono font-bold ${retail ? s.retailTotal : `${s.total} text-zinc-900`}`}
-                    style={retail ? { color: CARMINE } : undefined}
-                  >
-                    {money(l.total, l.currency)}
-                  </span>
-                </div>
-              );
-            })}
             {item.lines.length === 0 && <p className={`${s.pad} py-2 text-[8px] text-zinc-400`}>{t.noPrice}</p>}
           </div>
         </div>
@@ -340,10 +363,12 @@ export function LookbookPreview({ collection, date, items }: { collection: strin
         </p>
         <span aria-hidden className="absolute -bottom-px start-0 h-[2px] w-24" style={{ background: CARMINE }} />
       </header>
-      <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      {/* Two side by side only where each is wide enough for the price columns. */}
+      <ul className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         {items.map((item) => (
-          // A quarter page's proportions (90 × 119 mm), so a plate looks as it does in the file.
-          <li key={item.id} className="aspect-[90/119] min-h-0">
+          // A quarter page's proportions (90 × 119 mm), so a plate looks as it does in the file;
+          // on a phone a fixed height instead, so its stacked prices leave the photo room.
+          <li key={item.id} className="h-[28rem] min-h-0 md:aspect-[90/119] md:h-auto">
             <Plate item={item} shape="tall" />
           </li>
         ))}
