@@ -323,6 +323,33 @@ html[data-auth] .guest-only {
   [data-print-sheet] [data-print-hide] {
     display: none !important;
   }
+  /* One A4 page: tighter than on screen (smaller type, half the padding), and
+     a card or a line is never split across a page break. */
+  html:has([data-print-sheet]) {
+    background: #fff !important;
+  }
+  [data-print-sheet] > * + * {
+    margin-top: 0.5rem !important;
+  }
+  [data-print-sheet] .grid {
+    gap: 0.5rem !important;
+  }
+  [data-print-sheet] :is(.text-sm, .text-base) {
+    font-size: 12px !important;
+    line-height: 1.35 !important;
+  }
+  [data-print-sheet] :is(h4, th, td, p) {
+    padding-top: 0.25rem !important;
+    padding-bottom: 0.25rem !important;
+  }
+  [data-print-sheet] dl > div {
+    padding-top: 0.125rem !important;
+    padding-bottom: 0.125rem !important;
+  }
+  [data-print-sheet] section,
+  [data-print-sheet] tr {
+    break-inside: avoid;
+  }
 }
 
 /* Funnel smoke, carried over from sultannargile.com's own stylesheet: wisps

@@ -39,6 +39,9 @@ function TotalRow({ label, value, strong = false }: { label: string; value: stri
  * order + customer header, the two addresses, the note, the lines, the totals,
  * the command bar and the history.
  *
+ * YAZDIR prints it as a one-page A4 packing slip: the four cards two by two,
+ * and without the totals, the shipment's status line or the history.
+ *
  * Everything comes from the row the admin already has, so expanding costs no
  * request. Fields the system does not record yet (bank approval code, order
  * note) keep their slot and print an em dash rather than being dropped.
@@ -102,7 +105,7 @@ export function OrderSheet({
       {/* A failed card payment: why, first — it is what the admin opened it for. */}
       {order.payment_failure && <PaymentFailureCard failure={order.payment_failure} />}
 
-      <div className="grid gap-3 lg:grid-cols-2">
+      <div className="grid gap-3 lg:grid-cols-2 print:grid-cols-2">
         <SheetBlock title="Sipariş Detayları">
           <dl>
             <SheetField label="Sipariş No" value={order.order_number} mono />
@@ -130,7 +133,7 @@ export function OrderSheet({
         </SheetBlock>
       </div>
 
-      <div className="grid gap-3 lg:grid-cols-2">
+      <div className="grid gap-3 lg:grid-cols-2 print:grid-cols-2">
         <SheetBlock title="Fatura Adresi">
           <dl>
             {/* "Faturayı firmaya istiyorum": a personal order made out to a
@@ -223,7 +226,9 @@ export function OrderSheet({
           <p className="text-base font-bold uppercase tracking-wider text-slate-900 dark:text-zinc-100">{shipping.label}</p>
           <p className="text-xs text-slate-500 dark:text-zinc-400">{shipping.detail}</p>
         </div>
-        <dl className={boxClass}>
+        {/* Not on paper: the printed sheet is the packing slip, and what was
+            paid is the invoice's business. */}
+        <dl data-print-hide className={boxClass}>
           <TotalRow label="Ara Toplam" value={formatMoney(totals.subtotal)} />
           <TotalRow label="KDV" value={formatMoney(totals.vat)} />
           {totals.shipping > 0 && <TotalRow label="Kargo" value={formatMoney(totals.shipping)} />}
@@ -259,7 +264,8 @@ export function OrderSheet({
         </p>
       )}
 
-      <SheetBlock title="Sipariş Geçmişi">
+      {/* The panel's record, not the packer's: left off the printed sheet. */}
+      <SheetBlock title="Sipariş Geçmişi" print={false}>
         <OrderSheetHistory rows={orderHistory(order)} />
       </SheetBlock>
     </div>

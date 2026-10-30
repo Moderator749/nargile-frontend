@@ -40,7 +40,9 @@ export function OrderShipment({
   const href = trackingHref(order);
 
   return (
-    <SheetBlock title="Kargo">
+    // Waiting to be shipped, the block has nothing for paper but its status
+    // line, so the printed sheet leaves it out whole.
+    <SheetBlock title="Kargo" print={shipped}>
       {shipped ? (
         <dl>
           <SheetField label="Firma" value={carrierName(order) ?? "—"} />
@@ -67,6 +69,7 @@ export function OrderShipment({
           {order.carrier_status_text && (
             <SheetField
               label="Durum"
+              print={false}
               value={`${order.carrier_status_text}${order.carrier_synced_at ? ` · ${formatDate(order.carrier_synced_at)}` : ""}`}
             />
           )}
