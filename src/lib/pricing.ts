@@ -247,3 +247,27 @@ export async function deletePricingRecord(id: UUID): Promise<void> {
 export async function deletePricingFile(id: number): Promise<void> {
   await api.delete(`/admin/pricing/files/${id}`);
 }
+
+/** "Seçilenleri Sil": those rows only, never their file. Resolves to how many went. */
+export async function deletePricingRecords(ids: UUID[]): Promise<number> {
+  const { data } = await api.post<{ count: number }>("/admin/pricing/records/delete", { ids });
+  return data.count;
+}
+
+/** "Taşı": the rows into an existing file, or a new one by that name. */
+export async function movePricingRecords(ids: UUID[], target: FileTarget): Promise<{ count: number; file: PricingFile }> {
+  const { data } = await api.post<{ count: number; file: PricingFile }>("/admin/pricing/records/move", { ids, ...target });
+  return data;
+}
+
+/** "Yeniden Adlandır"; a name another file has is refused (409). */
+export async function renamePricingFile(id: number, name: string): Promise<PricingFile> {
+  const { data } = await api.patch<PricingFile>(`/admin/pricing/files/${id}`, { name });
+  return data;
+}
+
+/** "Çoğalt": a new file with a copy of every row; no name gives "<name> (kopya)". */
+export async function duplicatePricingFile(id: number, name?: string): Promise<PricingFile> {
+  const { data } = await api.post<PricingFile>(`/admin/pricing/files/${id}/duplicate`, name ? { name } : {});
+  return data;
+}
