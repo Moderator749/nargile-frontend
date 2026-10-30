@@ -196,7 +196,7 @@ export const pageMessages = defineMessages({
 
 /** Who carries a parcel, as a customer reads it (lib/tracking). Yurtiçi Kargo is a name and stays one. */
 export const carrierMessages = defineMessages({
-  tr: { yurtici: "Yurtiçi Kargo", other: "Kargo", own: "Kendi aracımızla" },
-  en: { yurtici: "Yurtiçi Kargo", other: "Carrier", own: "By our own vehicle" },
-  ar: { yurtici: "Yurtiçi Kargo", other: "شركة الشحن", own: "بسيارتنا الخاصة" },
+  tr: { yurtici: "Yurtiçi Kargo", other: "Kargo", own: "Kendi aracımızla", store: "Mağazadan teslim" },
+  en: { yurtici: "Yurtiçi Kargo", other: "Carrier", own: "By our own vehicle", store: "Collected in store" },
+  ar: { yurtici: "Yurtiçi Kargo", other: "شركة الشحن", own: "بسيارتنا الخاصة", store: "استلام من المتجر" },
 });

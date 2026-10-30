@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 
+import { OrderInternalNote } from "@/components/admin/orders/OrderInternalNote";
 import { OrderSheetActions } from "@/components/admin/orders/OrderSheetActions";
 import { OrderSheetHistory } from "@/components/admin/orders/OrderSheetHistory";
 import { OrderSheetLines } from "@/components/admin/orders/OrderSheetLines";
@@ -40,7 +41,8 @@ function TotalRow({ label, value, strong = false }: { label: string; value: stri
  * the command bar and the history.
  *
  * YAZDIR prints it as a one-page A4 packing slip: the four cards two by two,
- * and without the totals, the shipment's status line or the history.
+ * and without the totals, the shipment's status line, the shop's own note or
+ * the history.
  *
  * Everything comes from the row the admin already has, so expanding costs no
  * request. Fields the system does not record yet (bank approval code, order
@@ -53,8 +55,12 @@ export function OrderSheet({
   onApprove,
   onCancel,
   onShip,
+  onDeliverInStore,
   onRefreshShipment,
   onWithdrawShipment,
+  onReturn,
+  onRecover,
+  onSaveNote,
 }: {
   /** The row the panel has; the sheet re-reads the order itself. */
   order: AdminOrder;
@@ -64,8 +70,14 @@ export function OrderSheet({
   onCancel: () => void;
   /** "Kargola" and the shipment's own actions; see OrderShipment. */
   onShip?: () => void;
+  onDeliverInStore?: () => void;
   onRefreshShipment?: () => void;
   onWithdrawShipment?: () => void;
+  /** İade and "Siparişi Kurtar": open their dialogs (see OrderDecisionDialog). */
+  onReturn?: () => void;
+  onRecover?: () => void;
+  /** "Gizli Mağaza Notu"; without it the note block is not shown. */
+  onSaveNote?: (note: string) => Promise<AdminOrder>;
 }) {
   // What the order says now, not what the listing said when it was fetched —
   // see `useFreshOrder`. Everything below reads this.
@@ -120,9 +132,15 @@ export function OrderSheet({
           <dl>
             <SheetField label="Müşteri No" value={customerCode(order)} mono />
             <SheetField label="Adı Soyadı" value={order.customer_name ?? delivery?.full_name ?? null} />
-            <SheetField label="Mobil Tel" value={order.customer_phone ?? delivery?.phone ?? null} mono />
+            <SheetField
+              label="Mobil Tel"
+              value={order.customer_phone ?? delivery?.phone ?? null}
+              copy={order.customer_phone ?? delivery?.phone}
+              mono
+            />
             <SheetField
               label="Mail"
+              copy={order.customer_email}
               value={
                 <a href={`mailto:${order.customer_email}`} className="break-all underline decoration-slate-300 underline-offset-2 hover:text-red-600 dark:decoration-white/20 dark:hover:text-red-400">
                   {order.customer_email}
@@ -158,11 +176,11 @@ export function OrderSheet({
                 mono
               />
             )}
-            <SheetField label="Adres" value={addressLines(billingAddress ?? null)} />
+            <SheetField label="Adres" value={addressLines(billingAddress ?? null)} copy={addressLines(billingAddress ?? null)} />
             {/* Only an address abroad has one; a domestic sheet says nothing. */}
             {billing?.country && <SheetField label="Ülke" value={billing.country} />}
-            <SheetField label="Telefon" value={billingAddress?.phone ?? null} mono />
-            <SheetField label="Mobil" value={order.customer_phone ?? null} mono />
+            <SheetField label="Telefon" value={billingAddress?.phone ?? null} copy={billingAddress?.phone} mono />
+            <SheetField label="Mobil" value={order.customer_phone ?? null} copy={order.customer_phone} mono />
           </dl>
           {!billing && (
             <p className="mt-auto border-t border-slate-200 px-3 py-1.5 text-[11px] text-slate-500 dark:border-white/10 dark:text-zinc-400">
@@ -184,9 +202,9 @@ export function OrderSheet({
             {order.receiver_name && (
               <SheetField label="Teslim Alacak" value={`${order.receiver_name} · ${order.receiver_phone ?? ""}`} />
             )}
-            <SheetField label="Adres" value={addressLines(delivery)} />
-            <SheetField label="Telefon" value={delivery?.phone ?? null} mono />
-            <SheetField label="Mobil" value={order.customer_phone ?? null} mono />
+            <SheetField label="Adres" value={addressLines(delivery)} copy={addressLines(delivery)} />
+            <SheetField label="Telefon" value={delivery?.phone ?? null} copy={delivery?.phone} mono />
+            <SheetField label="Mobil" value={order.customer_phone ?? null} copy={order.customer_phone} mono />
             {/* How it travels, and what the customer asked for: the agreement to
                 bill the carriage to, or the ambar to hand the goods to. */}
             <SheetField label="Gönderim" value={shippingOption(order.shipping_method).title} />
@@ -241,6 +259,7 @@ export function OrderSheet({
         order={order}
         busy={busy}
         onShip={onShip}
+        onDeliverInStore={onDeliverInStore}
         onRefresh={onRefreshShipment}
         onWithdraw={onWithdrawShipment}
       />
@@ -250,6 +269,8 @@ export function OrderSheet({
         busy={busy}
         onApprove={onApprove}
         onCancel={onCancel}
+        onReturn={onReturn}
+        onRecover={onRecover}
         onPrint={print}
       />
 
@@ -263,6 +284,8 @@ export function OrderSheet({
           {notice.text}
         </p>
       )}
+
+      {onSaveNote && <OrderInternalNote key={order.id} order={order} onSave={onSaveNote} />}
 
       {/* The panel's record, not the packer's: left off the printed sheet. */}
       <SheetBlock title="Sipariş Geçmişi" print={false}>

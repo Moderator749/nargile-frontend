@@ -19,8 +19,9 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { useAuthHydrated } from "@/store/useHasHydrated";
 import type { Order } from "@/types";
 
-/** Orders a customer would come here about: on their way, or paid and about to be. */
-const following = (o: Order) => o.status === "SHIPPED" || o.status === "APPROVED";
+/** Orders a customer would come here about: on their way (or just delivered by the carrier), or paid and about to be. */
+const following = (o: Order) =>
+  o.status === "SHIPPED" || o.status === "APPROVED" || (o.status === "DELIVERED" && o.carrier !== "STORE");
 
 /**
  * "Kargo Takip": a Yurtiçi tracking number goes straight to Yurtiçi's own page
@@ -110,7 +111,7 @@ export function CargoTracking() {
                   <div>
                     <p className="font-mono text-sm font-semibold">{order.order_number}</p>
                     <p className="text-xs text-slate-500 dark:text-zinc-400">
-                      {order.status === "SHIPPED"
+                      {order.status === "SHIPPED" || order.status === "DELIVERED"
                         ? [
                             carrierName(order, locale),
                             order.shipped_at && t.shippedOn(formatDate(order.shipped_at, INTL_LOCALE[locale])),
@@ -131,7 +132,7 @@ export function CargoTracking() {
                       >
                         {t.track} <ExternalLink className="h-3.5 w-3.5" aria-hidden />
                       </a>
-                    ) : order.status === "SHIPPED" && order.tracking_code ? (
+                    ) : (order.status === "SHIPPED" || order.status === "DELIVERED") && order.tracking_code ? (
                       <span className="font-mono text-sm">{order.tracking_code}</span>
                     ) : null}
                   </div>

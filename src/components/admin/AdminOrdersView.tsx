@@ -6,6 +6,7 @@ import { CircleCheck, CreditCard, Landmark, RefreshCw, Van, XCircle } from "luci
 
 import { AdminPageHeader, panelClass } from "@/components/admin/AdminShell";
 import { CargoSelect } from "@/components/admin/orders/CargoSelect";
+import { OrderDecisionDialog } from "@/components/admin/orders/OrderDecisionDialog";
 import { ShipDialog } from "@/components/admin/orders/ShipDialog";
 import { ExpandToggle, sheetId } from "@/components/admin/orders/ExpandToggle";
 import { OrderSheet } from "@/components/admin/orders/OrderSheet";
@@ -28,6 +29,8 @@ const FILTERS: { value: OrderStatus | null; label: string }[] = [
   { value: "PENDING_APPROVAL", label: "Onay bekleyen" },
   { value: "APPROVED", label: "Onaylanan" },
   { value: "SHIPPED", label: "Kargoda" },
+  { value: "DELIVERED", label: "Teslim edildi" },
+  { value: "RETURNED", label: "İade" },
   { value: "CANCELLED", label: "İptal" },
   { value: "PAYMENT_FAILED", label: "Ödeme başarısız" },
 ];
@@ -224,6 +227,10 @@ export function AdminOrdersView() {
     onShip={() => actions.ship(order)}
     onRefreshShipment={() => actions.refreshShipment(order)}
     onWithdrawShipment={() => actions.withdrawShipment(order)}
+    onDeliverInStore={() => actions.deliverInStore(order)}
+    onReturn={() => actions.decide("return", order)}
+    onRecover={() => actions.decide("recover", order)}
+    onSaveNote={(note) => actions.saveNote(order, note)}
     />
   );
 
@@ -378,9 +385,15 @@ export function AdminOrdersView() {
                               {FAILURE_SOURCE[o.payment_failure.source].label}
                             </p>
                           )}
-                          {o.cancel_reason && (
+                          {/* Why it closed: kept on a recovered order for its history, but said only while it is closed. */}
+                          {(o.status === "CANCELLED" || o.status === "PAYMENT_FAILED") && o.cancel_reason && (
                             <p className="mt-1 max-w-32 truncate text-xs text-slate-500" title={o.cancel_reason}>
                               {o.cancel_reason}
+                            </p>
+                          )}
+                          {o.status === "RETURNED" && o.return_reason && (
+                            <p className="mt-1 max-w-32 truncate text-xs text-slate-500" title={o.return_reason}>
+                              {o.return_reason}
                             </p>
                           )}
                         </td>
@@ -452,6 +465,7 @@ export function AdminOrdersView() {
         )}
       </div>
       <ShipDialog actions={actions} />
+      <OrderDecisionDialog actions={actions} />
     </>
   );
 }

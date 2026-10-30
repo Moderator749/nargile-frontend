@@ -11,7 +11,7 @@ import { Dialog } from "@/components/ui/Dialog";
 import { Input } from "@/components/ui/Input";
 import { adminShippingIntegrations, type ShipOrderBody, type ShippingIntegrations } from "@/lib/adminApi";
 import { shippingOption } from "@/lib/shipping";
-import { CARRIER_LABELS } from "@/lib/tracking";
+import { CARRIER_LABELS, SHIP_CARRIERS } from "@/lib/tracking";
 import type { AdminOrder, Carrier } from "@/types";
 
 /** Who takes it unless the admin says otherwise: what the customer chose at checkout (the server's own default). */
@@ -125,7 +125,7 @@ function ShipForm({ order, actions }: { order: AdminOrder; actions: OrderActions
         <legend className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
           Kargo firması
         </legend>
-        {(Object.keys(CARRIER_LABELS) as Carrier[]).map((value) => (
+        {SHIP_CARRIERS.map((value) => (
           <label key={value} className={`${choice} ${idle}`}>
             <input
               type="radio"

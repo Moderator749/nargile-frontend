@@ -118,7 +118,7 @@ export function OrdersView({ placedOrderNumber }: { placedOrderNumber: string | 
                     {t.items(order.items.reduce((n, i) => n + i.quantity, 0))} ·{" "}
                     {order.payment_method === "BANK_TRANSFER" ? t.bankTransfer : t.creditCard}
                     {order.shipping_method !== "YURTICI_DOOR" && <> · {shippingOption(order.shipping_method, locale).title}</>}
-                    {order.status === "SHIPPED" && carrierName(order, locale) && <> · {carrierName(order, locale)}</>}
+                    {(order.status === "SHIPPED" || order.status === "DELIVERED") && carrierName(order, locale) && <> · {carrierName(order, locale)}</>}
                     {order.tracking_code && <> · {t.trackingNo} <span className="font-mono">{order.tracking_code}</span></>}
                   </p>
                   <p className="text-base font-bold tabular-nums">{formatMoney(orderNetTotal(order))}</p>
@@ -148,6 +148,11 @@ export function OrdersView({ placedOrderNumber }: { placedOrderNumber: string | 
                 {order.status === "CANCELLED" && order.cancel_reason && (
                   <p className="mt-2 text-xs text-slate-500 dark:text-zinc-400">
                     {t.cancelReason} {order.cancel_reason}
+                  </p>
+                )}
+                {order.status === "RETURNED" && order.return_reason && (
+                  <p className="mt-2 text-xs text-slate-500 dark:text-zinc-400">
+                    {t.returnReason} {order.return_reason}
                   </p>
                 )}
               </li>

@@ -31,6 +31,16 @@ export const ORDER_STATUS: Record<OrderStatus, { label: string; className: strin
     label: "Kargoya verildi",
     className: "bg-slate-900 text-white ring-slate-900 dark:bg-white dark:text-zinc-900 dark:ring-white",
   },
+  // Delivered: the deeper green of a finished order, next to the approved one's.
+  DELIVERED: {
+    label: "Teslim edildi",
+    className: "bg-emerald-700 text-white ring-emerald-700 dark:bg-emerald-500/30 dark:text-emerald-100 dark:ring-emerald-500/50",
+  },
+  // Violet: neither a cancellation (red) nor a failed payment (amber) — the goods came back.
+  RETURNED: {
+    label: "İade edildi",
+    className: "bg-violet-100 text-violet-800 ring-violet-300 dark:bg-violet-500/15 dark:text-violet-200 dark:ring-violet-500/40",
+  },
   CANCELLED: {
     label: "İptal edildi",
     className: "bg-red-100 text-red-800 ring-red-300 dark:bg-red-500/15 dark:text-red-200 dark:ring-red-500/40",

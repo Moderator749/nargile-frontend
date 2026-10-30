@@ -92,15 +92,28 @@ export function orderHistory(order: AdminOrder): HistoryRow[] {
       note: order.payment_method === "BANK_TRANSFER" ? "Havale / EFT ile sipariş alındı" : "Kredi kartı ile sipariş alındı",
     },
   ];
+  if (order.cancelled_at) rows.push({ at: order.cancelled_at, action: "SİPARİŞ İPTAL EDİLDİ", note: order.cancel_reason ?? "" });
+  // Before the payment: recovered and approved in one step, it was recovered first.
+  if (order.recovered_at) rows.push({ at: order.recovered_at, action: "SİPARİŞ KURTARILDI", note: "İptal geri alındı" });
   if (order.paid_at) rows.push({ at: order.paid_at, action: "SİPARİŞ ONAYLANDI", note: "Ödeme alındı, sipariş onaylandı" });
-  if (order.status === "SHIPPED")
+  const left = order.status === "SHIPPED" || order.status === "DELIVERED" || order.status === "RETURNED";
+  if (left && order.carrier !== "STORE" && (order.shipped_at || order.status === "SHIPPED"))
     rows.push({
       at: order.shipped_at ?? null,
       action: "KARGOYA VERİLDİ",
       note: [carrierName(order), order.tracking_code ? `Takip no: ${order.tracking_code}` : null].filter(Boolean).join(" · "),
     });
-  if (order.cancelled_at) rows.push({ at: order.cancelled_at, action: "SİPARİŞ İPTAL EDİLDİ", note: order.cancel_reason ?? "" });
-  return rows;
+  if (order.delivered_at)
+    rows.push({
+      at: order.delivered_at,
+      action: "TESLİM EDİLDİ",
+      note: order.carrier === "STORE" ? "Mağazada müşteriye teslim edildi" : (carrierName(order) ?? "Kargo teslim etti"),
+    });
+  if (order.returned_at) rows.push({ at: order.returned_at, action: "İADE EDİLDİ", note: order.return_reason ?? "" });
+  // Oldest first, as they happened: a recovered order was cancelled before it
+  // was paid. A shipment from before shipped_at was kept sits after the payment.
+  const when = (row: HistoryRow) => row.at ?? order.paid_at ?? order.created_at;
+  return rows.sort((a, b) => when(a).localeCompare(when(b)));
 }
 
 /**

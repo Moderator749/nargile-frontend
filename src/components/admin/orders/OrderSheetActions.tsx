@@ -1,7 +1,7 @@
-import { CircleCheck, FileText, Printer, XCircle } from "lucide-react";
+import { CircleCheck, FileText, Printer, RotateCcw, Undo2, XCircle } from "lucide-react";
 
 import { whatsappNumber } from "@/components/admin/orders/sheetData";
-import { canApproveOrder, canCancelOrder } from "@/components/admin/orders/useOrderActions";
+import { canApproveOrder, canCancelOrder, canRecoverOrder, canReturnOrder } from "@/components/admin/orders/useOrderActions";
 import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
 import type { AdminOrder } from "@/types";
 
@@ -13,22 +13,31 @@ const neutral =
 /**
  * The form's command bar: cancel and approve at the two ends, with the paperwork
  * actions between them. Approve/cancel are disabled once the order has left the
- * pending states — the server answers those with a 409.
+ * pending states — the server answers those with a 409. In cancel's place, an
+ * order that has gone out offers İade, and a cancelled one "Siparişi Kurtar".
  */
 export function OrderSheetActions({
   order,
   busy,
   onApprove,
   onCancel,
+  onReturn,
+  onRecover,
   onPrint,
 }: {
   order: AdminOrder;
   busy: boolean;
   onApprove: () => void;
   onCancel: () => void;
+  /** İade: opens its dialog (see OrderDecisionDialog). */
+  onReturn?: () => void;
+  /** "Siparişi Kurtar": opens its dialog. */
+  onRecover?: () => void;
   onPrint: () => void;
 }) {
-  const settled = `Sipariş ${order.status === "CANCELLED" ? "iptal edilmiş" : "işleme alınmış"}: bu işlem artık yapılamaz`;
+  const settled = `Sipariş ${
+    order.status === "CANCELLED" ? "iptal edilmiş" : order.status === "RETURNED" ? "iade edilmiş" : "işleme alınmış"
+  }: bu işlem artık yapılamaz`;
   const wa = whatsappNumber(order);
   const waHref = wa
     ? `https://wa.me/${wa}?text=${encodeURIComponent(`Merhaba, ${order.order_number} numaralı siparişiniz hakkında bilgi vermek istiyoruz.`)}`
@@ -39,15 +48,37 @@ export function OrderSheetActions({
       data-print-hide
       className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-300 bg-slate-100 p-2.5 dark:border-white/15 dark:bg-white/[0.04]"
     >
-      <button
-        type="button"
-        onClick={onCancel}
-        disabled={busy || !canCancelOrder(order.status)}
-        title={canCancelOrder(order.status) ? "Siparişi iptal et: stok ve kullanılan puanlar iade edilir" : settled}
-        className={`${base} bg-red-600 text-white shadow-sm hover:bg-red-500`}
-      >
-        <XCircle className="h-4 w-4" aria-hidden /> İptal
-      </button>
+      {canRecoverOrder(order.status) && onRecover ? (
+        <button
+          type="button"
+          onClick={onRecover}
+          disabled={busy}
+          title="İptali geri al: geç gelen havale gibi durumlar için siparişi yeniden aç"
+          className={`${base} bg-sky-600 text-white shadow-sm hover:bg-sky-500`}
+        >
+          <RotateCcw className="h-4 w-4" aria-hidden /> Siparişi Kurtar
+        </button>
+      ) : canReturnOrder(order.status) && onReturn ? (
+        <button
+          type="button"
+          onClick={onReturn}
+          disabled={busy}
+          title="Gönderilmiş sipariş geri geldi: iade olarak kaydet"
+          className={`${base} bg-violet-600 text-white shadow-sm hover:bg-violet-500`}
+        >
+          <Undo2 className="h-4 w-4" aria-hidden /> İade Al
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={busy || !canCancelOrder(order.status)}
+          title={canCancelOrder(order.status) ? "Siparişi iptal et: stok ve kullanılan puanlar iade edilir" : settled}
+          className={`${base} bg-red-600 text-white shadow-sm hover:bg-red-500`}
+        >
+          <XCircle className="h-4 w-4" aria-hidden /> İptal
+        </button>
+      )}
 
       <button
         type="button"

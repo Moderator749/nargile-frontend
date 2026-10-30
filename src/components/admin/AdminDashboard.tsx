@@ -8,6 +8,7 @@ import { ArrowRight, ClipboardList, Euro, DollarSign, UserCheck, Users, Van } fr
 import { AdminPageHeader, panelClass } from "@/components/admin/AdminShell";
 import { Pagination } from "@/components/admin/Pagination";
 import { CargoSelect } from "@/components/admin/orders/CargoSelect";
+import { OrderDecisionDialog } from "@/components/admin/orders/OrderDecisionDialog";
 import { ShipDialog } from "@/components/admin/orders/ShipDialog";
 import { trackingHref } from "@/lib/tracking";
 import { ExpandToggle, sheetId } from "@/components/admin/orders/ExpandToggle";
@@ -93,6 +94,12 @@ function CargoCell({ o, actions }: { o: AdminOrder; actions: OrderActions }) {
     <>
       {o.status === "SHIPPED" ? (
         <ShippedMark o={o} />
+      ) : o.status === "DELIVERED" ? (
+        <span className="whitespace-nowrap font-medium text-emerald-700 dark:text-emerald-400">
+          {o.carrier === "STORE" ? "Mağazadan teslim" : "Teslim edildi"}
+        </span>
+      ) : o.status === "RETURNED" ? (
+        <span className="whitespace-nowrap font-medium text-violet-700 dark:text-violet-300">İade edildi</span>
       ) : canShipOrder(o.status) ? (
         <CargoSelect order={o} actions={actions} />
       ) : o.status === "CANCELLED" ? (
@@ -447,6 +454,10 @@ export function AdminDashboard() {
                             onShip={() => actions.ship(o)}
                             onRefreshShipment={() => actions.refreshShipment(o)}
                             onWithdrawShipment={() => actions.withdrawShipment(o)}
+                            onDeliverInStore={() => actions.deliverInStore(o)}
+                            onReturn={() => actions.decide("return", o)}
+                            onRecover={() => actions.decide("recover", o)}
+                            onSaveNote={(note) => actions.saveNote(o, note)}
                             />
                           </td>
                         </tr>
@@ -469,6 +480,7 @@ export function AdminDashboard() {
         )}
       </section>
       <ShipDialog actions={actions} />
+      <OrderDecisionDialog actions={actions} />
     </>
   );
 }

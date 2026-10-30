@@ -14,7 +14,11 @@ export const CARRIER_LABELS: Record<Carrier, string> = {
   YURTICI: "Yurtiçi Kargo",
   OTHER: "Diğer kargo / ambar",
   OWN: "Kendi aracımız",
+  STORE: "Mağazadan teslim",
 };
+
+/** What "Kargola" offers: every carrier but the shop itself, which has its own action ("Mağazadan Teslim"). */
+export const SHIP_CARRIERS = (Object.keys(CARRIER_LABELS) as Carrier[]).filter((c) => c !== "STORE");
 
 type Shipment = Pick<Order, "carrier" | "carrier_name" | "tracking_code" | "tracking_url" | "shipping_method">;
 
@@ -31,6 +35,7 @@ export function carrierName(order: Shipment, locale: Locale = DEFAULT_LOCALE): s
   const m = carrierMessages[locale];
   if (order.carrier === "OTHER") return order.carrier_name || m.other;
   if (order.carrier === "OWN") return m.own;
+  if (order.carrier === "STORE") return m.store;
   return viaYurtici(order) ? m.yurtici : null;
 }
 

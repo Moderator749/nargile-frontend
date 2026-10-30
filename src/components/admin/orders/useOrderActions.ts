@@ -5,7 +5,11 @@ import { useCallback, useState } from "react";
 import {
   adminApproveOrder,
   adminCancelOrder,
+  adminDeliverInStore,
+  adminRecoverOrder,
   adminRefreshShipment,
+  adminReturnOrder,
+  adminSetInternalNote,
   adminShipOrder,
   adminWithdrawShipment,
   type ShipOrderBody,
@@ -28,9 +32,25 @@ export function canCancelOrder(status: OrderStatus): boolean {
   return PENDING.includes(status) || status === "APPROVED";
 }
 
-/** Paid and still here: ready to hand to the carrier. */
+/** Paid and still here: ready to hand to the carrier — or to the customer at the shop. */
 export function canShipOrder(status: OrderStatus): boolean {
   return status === "APPROVED";
+}
+
+/** Gone out (shipped or delivered): what comes back now is an İade, not a cancellation. */
+export function canReturnOrder(status: OrderStatus): boolean {
+  return status === "SHIPPED" || status === "DELIVERED";
+}
+
+/** "Siparişi Kurtar": a cancellation can be undone (a failed card payment cannot: that customer never paid). */
+export function canRecoverOrder(status: OrderStatus): boolean {
+  return status === "CANCELLED";
+}
+
+/** The İade or "Siparişi Kurtar" dialog, and the order it is open for. */
+export interface OrderDecision {
+  kind: "return" | "recover";
+  order: AdminOrder;
 }
 
 export interface OrderNotice {
@@ -60,6 +80,17 @@ export interface OrderActions {
   confirmShip: (order: AdminOrder, body: ShipOrderBody) => Promise<AdminOrder>;
   refreshShipment: (order: AdminOrder) => Promise<void>;
   withdrawShipment: (order: AdminOrder) => Promise<void>;
+  /** "Mağazadan Teslim": asks, then marks an approved order delivered at the shop. */
+  deliverInStore: (order: AdminOrder) => Promise<void>;
+  /** Opens the İade or "Siparişi Kurtar" dialog (see OrderDecisionDialog). */
+  decide: (kind: OrderDecision["kind"], order: AdminOrder) => void;
+  deciding: OrderDecision | null;
+  closeDecision: () => void;
+  /** The dialogs' answers; each resolves to the updated order, or rejects with the server's reason. */
+  confirmReturn: (order: AdminOrder, reason: string, restock: boolean) => Promise<AdminOrder>;
+  confirmRecover: (order: AdminOrder, paid: boolean) => Promise<AdminOrder>;
+  /** "Gizli Mağaza Notu": saves it, or rejects with the server's reason. */
+  saveNote: (order: AdminOrder, note: string) => Promise<AdminOrder>;
 }
 
 /**
@@ -196,6 +227,71 @@ export function useOrderActions(patch: OrderPatch): OrderActions {
     [shipmentCall],
   );
 
+  const deliverInStore = useCallback(
+    async (order: AdminOrder) => {
+      if (!window.confirm(`${order.order_number} mağazada müşteriye teslim edildi olarak işaretlensin mi? Kargo kaydı açılmaz.`)) return;
+      await shipmentCall(order, adminDeliverInStore, "Mağazadan teslim edildi", "Teslim olarak işaretlenemedi.");
+    },
+    [shipmentCall],
+  );
+
+  const [deciding, setDeciding] = useState<OrderDecision | null>(null);
+  const decide = useCallback((kind: OrderDecision["kind"], order: AdminOrder) => setDeciding({ kind, order }), []);
+  const closeDecision = useCallback(() => setDeciding(null), []);
+
+  /** A dialog's call: busy flag, the row patched, the result line; a failure goes back to the dialog. */
+  const decisionCall = useCallback(
+    async (order: AdminOrder, call: () => Promise<AdminOrder>, done: string, failed: string) => {
+      setBusy(order.id, true);
+      try {
+        const updated = await call();
+        patch(order.id, updated);
+        setNotices((n) => ({ ...n, [order.id]: { kind: "success", text: done } }));
+        return updated;
+      } catch (err) {
+        throw new Error(getApiErrorMessage(err, failed));
+      } finally {
+        setBusy(order.id, false);
+      }
+    },
+    [patch, setBusy],
+  );
+
+  const confirmReturn = useCallback(
+    (order: AdminOrder, reason: string, restock: boolean) =>
+      decisionCall(
+        order,
+        () => adminReturnOrder(order.id, reason, restock),
+        restock ? "İade edildi · ürünler stoğa geri alındı, puanlar düzeltildi" : "İade edildi · ürünler stoğa alınmadı, puanlar düzeltildi",
+        "İade kaydedilemedi.",
+      ),
+    [decisionCall],
+  );
+
+  const confirmRecover = useCallback(
+    (order: AdminOrder, paid: boolean) =>
+      decisionCall(
+        order,
+        () => adminRecoverOrder(order.id, paid),
+        paid ? "Sipariş kurtarıldı · ödendi olarak onaylandı" : "Sipariş kurtarıldı · ödeme bekleniyor",
+        "Sipariş kurtarılamadı.",
+      ),
+    [decisionCall],
+  );
+
+  const saveNote = useCallback(
+    async (order: AdminOrder, note: string) => {
+      try {
+        const updated = await adminSetInternalNote(order.id, note);
+        patch(order.id, { internal_note: updated.internal_note });
+        return updated;
+      } catch (err) {
+        throw new Error(getApiErrorMessage(err, "Not kaydedilemedi."));
+      }
+    },
+    [patch],
+  );
+
   return {
     busy: (id) => pending.has(id),
     notice: (id) => notices[id],
@@ -207,5 +303,12 @@ export function useOrderActions(patch: OrderPatch): OrderActions {
     confirmShip,
     refreshShipment,
     withdrawShipment,
+    deliverInStore,
+    decide,
+    deciding,
+    closeDecision,
+    confirmReturn,
+    confirmRecover,
+    saveNote,
   };
 }

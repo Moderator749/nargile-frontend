@@ -90,7 +90,7 @@ export function OrderConfirmation({ orderId }: { orderId: string }) {
 
   // The cart was kept while the card was being charged, so a failed payment
   // could be tried again; now that it is paid, it has done its job.
-  const paidByCard = order?.payment_method === "CREDIT_CARD" && (order.status === "APPROVED" || order.status === "SHIPPED");
+  const paidByCard = order?.payment_method === "CREDIT_CARD" && (order.status === "APPROVED" || order.status === "SHIPPED" || order.status === "DELIVERED");
   useEffect(() => {
     if (fromPaytr && paidByCard) useCartStore.getState().clearCart();
   }, [fromPaytr, paidByCard]);

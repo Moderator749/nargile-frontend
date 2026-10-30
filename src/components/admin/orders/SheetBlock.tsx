@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 
+import { CopyButton } from "@/components/admin/orders/CopyButton";
+
 /** One bordered box of the order form, with its uppercase caption bar. */
 export function SheetBlock({
   title,
@@ -32,12 +34,15 @@ export function SheetField({
   value,
   mono = false,
   print = true,
+  copy,
 }: {
   label: string;
   value: ReactNode;
   mono?: boolean;
   /** False: on screen only, left off YAZDIR's printed sheet. */
   print?: boolean;
+  /** The text a copy button beside the value puts on the clipboard; none when absent or empty. */
+  copy?: string | null;
 }) {
   return (
     <div
@@ -45,7 +50,10 @@ export function SheetField({
       className="grid grid-cols-[7.5rem_minmax(0,1fr)] items-baseline gap-2 border-b border-dashed border-slate-200 px-3 py-1.5 last:border-b-0 print:grid-cols-[6rem_minmax(0,1fr)] dark:border-white/10"
     >
       <dt className="text-[10px] font-semibold uppercase leading-4 tracking-wide text-slate-500 dark:text-zinc-400">{label}</dt>
-      <dd className={`min-w-0 break-words text-sm leading-5 ${mono ? "font-mono text-xs" : ""}`}>{value || "—"}</dd>
+      <dd className={`flex min-w-0 items-start justify-between gap-1.5 text-sm leading-5 ${mono ? "font-mono text-xs" : ""}`}>
+        <span className="min-w-0 break-words">{value || "—"}</span>
+        {copy && <CopyButton text={copy} label={label} />}
+      </dd>
     </div>
   );
 }

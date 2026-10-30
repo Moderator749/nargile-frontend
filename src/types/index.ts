@@ -51,6 +51,10 @@ export type OrderStatus =
   | "AWAITING_PAYMENT"
   | "APPROVED"
   | "SHIPPED"
+  /** In the customer's hands: the carrier delivered it, or it was handed over at the shop. */
+  | "DELIVERED"
+  /** İade: it had left (shipped or delivered) and came back. */
+  | "RETURNED"
   | "CANCELLED"
   | "PAYMENT_FAILED";
 /**
@@ -66,7 +70,8 @@ export type OrderStatus =
  * INTERNATIONAL_FREIGHT: export; freight and customs are quoted after the order.
  */
 /** Who took the parcel ("Kargola"): Yurtiçi, another carrier or ambar by name, or the shop's own van. */
-export type Carrier = "YURTICI" | "OTHER" | "OWN";
+/** STORE: collected at the shop ("Mağazadan Teslim"), never shipped. */
+export type Carrier = "YURTICI" | "OTHER" | "OWN" | "STORE";
 
 export type ShippingMethod =
   | "YURTICI_DOOR"
@@ -773,6 +778,11 @@ export interface Order {
   paid_at: ISODateTime | null;
   cancelled_at: ISODateTime | null;
   cancel_reason: string | null;
+  /** Brought back after a cancellation ("Siparişi Kurtar"); the cancellation stays on record. */
+  recovered_at?: ISODateTime | null;
+  delivered_at?: ISODateTime | null;
+  returned_at?: ISODateTime | null;
+  return_reason?: string | null;
   created_at: ISODateTime;
   items: OrderItem[];
 }
@@ -1170,6 +1180,8 @@ export interface AdminOrder extends Omit<Order, "items"> {
   items: AdminOrderItem[];
   /** Only on a PAYMENT_FAILED order: its "Ödeme Hata Kaydı (PayTR)". */
   payment_failure?: PaymentFailure | null;
+  /** "Gizli Mağaza Notu": the shop's own note, never sent to the customer. */
+  internal_note?: string | null;
 }
 
 /**

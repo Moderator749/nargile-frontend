@@ -465,6 +465,30 @@ export async function adminWithdrawShipment(orderId: string): Promise<AdminOrder
   return data;
 }
 
+/** "Mağazadan Teslim": an approved order collected at the shop is delivered at once. */
+export async function adminDeliverInStore(orderId: string): Promise<AdminOrder> {
+  const { data } = await api.post<AdminOrder>(`/admin/orders/${orderId}/deliver-in-store`);
+  return data;
+}
+
+/** İade: a shipped or delivered order came back; `restock` puts its goods back on sale. */
+export async function adminReturnOrder(orderId: string, reason: string, restock: boolean): Promise<AdminOrder> {
+  const { data } = await api.post<AdminOrder>(`/admin/orders/${orderId}/return`, { reason, restock });
+  return data;
+}
+
+/** "Siparişi Kurtar": a cancelled order back, approved (`paid`) or waiting for payment again. */
+export async function adminRecoverOrder(orderId: string, paid: boolean): Promise<AdminOrder> {
+  const { data } = await api.post<AdminOrder>(`/admin/orders/${orderId}/recover`, { paid });
+  return data;
+}
+
+/** "Gizli Mağaza Notu": saves (or, empty, clears) the shop's own note on the order. */
+export async function adminSetInternalNote(orderId: string, note: string): Promise<AdminOrder> {
+  const { data } = await api.put<AdminOrder>(`/admin/orders/${orderId}/internal-note`, { internal_note: note });
+  return data;
+}
+
 /** Cancels and returns the updated order in the list shape, so an open row can be replaced. */
 export async function adminCancelOrder(orderId: string, reason: string): Promise<AdminOrder> {
   const { data } = await api.post<AdminOrder>(`/admin/orders/${orderId}/cancel`, { reason });
