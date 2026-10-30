@@ -20,8 +20,9 @@ import type { SegmentType } from "@/types";
 
 /**
  * A product's plate. Toptan and Kafe rows carry the VAT split a business
- * buyer works with; the retail row is a shelf price, VAT-inclusive, as a
- * shopper reads it — its total only, nothing marked "+ KDV".
+ * buyer works with, in the currency the price was entered in (a USD price
+ * stays in USD); the retail row is a shelf price, VAT-inclusive and always in
+ * TL, as a shopper reads it — its total only, nothing marked "+ KDV".
  */
 function plateOf(item: PriceListItem, groups: SegmentType[], locale: Locale): LookbookItem {
   const lines = groups.flatMap<LookbookLine>((g) => {
@@ -30,9 +31,10 @@ function plateOf(item: PriceListItem, groups: SegmentType[], locale: Locale): Lo
     const excl = Number(p.price_excl_tax);
     const total = Number(p.price_incl_tax);
     const label = catalogMessages[locale].priceCatalog.groupLabel[g].toLocaleUpperCase(INTL_LOCALE[locale]);
+    const currency = p.currency;
     return g === "RETAIL"
-      ? [{ key: g, label, excl, vat: 0, total, currency: "TRY", tone: "retail", totalOnly: true }]
-      : [{ key: g, label, excl, vat: Math.round((total - excl) * 100) / 100, total, currency: "TRY" }];
+      ? [{ key: g, label, excl, vat: 0, total, currency, tone: "retail", totalOnly: true }]
+      : [{ key: g, label, excl, vat: Math.round((total - excl) * 100) / 100, total, currency }];
   });
   return { id: item.product_id, code: item.code, name: item.name, imageUrl: item.image_url, lines };
 }
