@@ -77,7 +77,6 @@ export const productMessages = defineMessages({
     },
     perks: {
       label: "Bireysel alışveriş avantajları",
-      heading: "Size Özel Alışveriş Avantajları",
     },
   },
   en: {
@@ -137,7 +136,6 @@ export const productMessages = defineMessages({
     },
     perks: {
       label: "Shopping perks for individual customers",
-      heading: "Your Shopping Perks",
     },
   },
   ar: {
@@ -197,7 +195,6 @@ export const productMessages = defineMessages({
     },
     perks: {
       label: "مزايا التسوق للأفراد",
-      heading: "مزايا تسوق خاصة بك",
     },
   },
 });

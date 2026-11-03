@@ -43,7 +43,7 @@ interface ProductDetailProps {
   breadcrumbs: Breadcrumb[];
   /** Kategoriler, beside the product; closed until "KATEGORİLER" opens it. */
   sidebar?: ReactNode;
-  /** The homepage's advantages, as it words them, for "Size Özel Alışveriş Avantajları". */
+  /** The homepage's advantages, as it words them, for the perks line under the button. */
   advantages: AdvantageSources;
 }
 
@@ -56,8 +56,8 @@ interface ProductDetailProps {
  * stock badge, the cart quantity, the button — reads the selected variant.
  *
  * The buying comes first, by the gallery: title, price, colour, quantity and
- * "Sepete Ekle"; the shop's advantages ("Size Özel Alışveriş Avantajları",
- * all of them, as the homepage states them) under the button. On a phone the
+ * "Sepete Ekle"; under the button one line of the shop's payment and loyalty
+ * advantages (havale, SultanPuan, Kumbara), so the description follows close. On a phone the
  * price and the button also ride in a bar over the tab bar (`BuyBar`) while
  * the page's own button is out of sight.
  *
@@ -369,6 +369,20 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
             />
             <BuyButton state={buy} onCommit={commit} className="flex-1 sm:flex-none sm:min-w-56" />
           </div>
+          {/* Havale, SultanPuan and Kumbara on one line under the button; a
+              firm's account sees only the havale discount, and only where this
+              product gives its list one. */}
+          {perksShown ? (
+            <div className="mt-3">
+              <RetailPerks params={params} sources={advantages} />
+            </div>
+          ) : (
+            product.segment_havale && (
+              <div className="mt-3">
+                <TransferPerk params={params} sources={advantages} />
+              </div>
+            )
+          )}
           <p className="mt-2 flex min-h-11 flex-wrap items-center gap-x-1.5 text-sm text-muted-foreground" aria-live="polite">
             {inCart > 0 && (
               <>
@@ -387,20 +401,6 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
             )}
           </p>
 
-          {/* The shop's advantages, every one of them, under the button rather
-              than between the price and it; a firm's account sees only the
-              havale discount, and only where this product gives its list one. */}
-          {perksShown ? (
-            <div className="mt-6 border-t border-border pt-6">
-              <RetailPerks params={params} sources={advantages} />
-            </div>
-          ) : (
-            product.segment_havale && (
-              <div className="mt-6 border-t border-border pt-6">
-                <TransferPerk params={params} sources={advantages} />
-              </div>
-            )
-          )}
 
           {/* A three-line preview rather than a wall of text, so "Sepete Ekle"
               stays the first thing below the price. */}
