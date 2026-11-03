@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 
-import { API_URL } from "@/lib/config";
+import { API_TIMEOUT_MS, API_URL } from "@/lib/config";
 import { isAdminRole } from "@/lib/roles";
 import type { User } from "@/types";
 
@@ -47,9 +47,11 @@ export async function POST(request: NextRequest) {
   const auth = request.headers.get("authorization");
   if (!auth?.startsWith("Bearer ")) return Response.json({ revalidated: false }, { status: 401 });
 
-  const me = await fetch(`${API_URL}/auth/me`, { headers: { Authorization: auth }, cache: "no-store" }).catch(
-    () => null,
-  );
+  const me = await fetch(`${API_URL}/auth/me`, {
+    headers: { Authorization: auth },
+    cache: "no-store",
+    signal: AbortSignal.timeout(API_TIMEOUT_MS),
+  }).catch(() => null);
   if (!me?.ok) return Response.json({ revalidated: false }, { status: 401 });
   const user = (await me.json()) as User;
   if (!isAdminRole(user.role)) return Response.json({ revalidated: false }, { status: 403 });

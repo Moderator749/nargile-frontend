@@ -1,7 +1,7 @@
 // Server-only read of the "Ana Sayfa Düzenleme" document, for the homepage,
 // the menus and the footer.
 
-import { API_URL } from "@/lib/config";
+import { API_TIMEOUT_MS, API_URL } from "@/lib/config";
 import { resolveHomepage } from "@/lib/homepage";
 import { CATALOG_REVALIDATE, inPageLanguage } from "@/lib/server/catalog";
 import type { Homepage, HomepageSettingsResponse } from "@/types";
@@ -22,6 +22,7 @@ async function readHomepage(): Promise<Homepage> {
   try {
     const res = await fetch(`${API_URL}/home/settings`, {
       next: { revalidate: CATALOG_REVALIDATE, tags: ["catalog"] },
+      signal: AbortSignal.timeout(API_TIMEOUT_MS),
     });
     if (!res.ok) return resolveHomepage(null);
     const body = (await res.json()) as HomepageSettingsResponse;

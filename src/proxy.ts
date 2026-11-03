@@ -31,14 +31,24 @@ import { OPENCART_CATEGORY_IDS, OPENCART_INFORMATION_IDS, OPENCART_PRODUCT_IDS, 
  * win over a slug by Next's own routing; the backend never gives a product a
  * slug one of them (or a redirect in next.config.ts) has taken
  * (RESERVED_ROOT_PATHS in its app/core/slugs.py). When the API cannot answer
- * a lookup here at all (down, slow, a 5xx), the address gets a 503: whether
- * it is an old product link cannot be told, and a 404 would tell search
- * engines the page is gone. Kept free of the app's own modules: proxy code is
- * built and run apart from the pages.
+ * a lookup here at all (down, slow, a 5xx), nothing is decided here: the
+ * address is sent on, for now (307), to the product page at /<slug>, whose
+ * own lookup is cached (ISR) and so answers through an outage; the 301 comes
+ * on the next visit, once the API answers again. Whether it was an old
+ * product link cannot be told, and a 404 would tell search engines the page
+ * is gone — but the proxy itself never answers with an error: every lookup
+ * is bounded (LOOKUP_TIMEOUT_MS) and every failure caught. Kept free of the
+ * app's own modules: proxy code is built and run apart from the pages.
  */
 
 /** The API itself, as src/lib/config.ts calls it on the server. */
 const API_URL = `${(process.env.BACKEND_URL ?? "http://127.0.0.1:8000").replace(/\/+$/, "")}/api/v1`;
+/**
+ * How long one lookup may take. A redirect is worth little after a wait, and
+ * an API that hangs must not hold every legacy address with it: past this,
+ * the lookup counts as unanswered (UNAVAILABLE) and the request moves on.
+ */
+const LOOKUP_TIMEOUT_MS = 3000;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const SLUG = /^[a-z0-9]+(?:[.-][a-z0-9]+)*$/;
@@ -109,45 +119,39 @@ function toLegacyShelf(request: NextRequest, category: string) {
   return NextResponse.redirect(url, 301);
 }
 
-/** The API did not answer the lookup. */
+/** The API did not answer the lookup: down, slow, a 5xx, or not JSON. */
 const UNAVAILABLE = Symbol("unavailable");
 
 /**
  * The slug of the published product this id or old address names; null when
- * the API says there is none, UNAVAILABLE when it could not say.
+ * the API says there is none, UNAVAILABLE when it could not say. Never
+ * throws: a failed lookup is an answer of its own, not an error page.
  */
 async function productSlug(ref: string): Promise<string | null | typeof UNAVAILABLE> {
   try {
     const res = await fetch(`${API_URL}/products/${encodeURIComponent(ref)}`, {
-      signal: AbortSignal.timeout(3000),
+      signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS),
     });
     if (res.status === 404) return null;
     if (!res.ok) return UNAVAILABLE;
     const { slug } = (await res.json()) as { slug?: string };
-    return slug || null;
+    return typeof slug === "string" && slug ? slug : null;
   } catch {
     return UNAVAILABLE;
   }
 }
 
-/** The page for an address the API could not look up: retry, or go home. */
-const UNAVAILABLE_PAGE = `<!doctype html>
-<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex"><title>Geçici bir sorun | Nargile Malzemesi</title>
-<style>body{margin:0;min-height:100vh;display:grid;place-items:center;font-family:system-ui,sans-serif;background:#fff;color:#171717;text-align:center;padding:16px;box-sizing:border-box}
-p{color:#737373;max-width:28rem;margin:12px auto 0;line-height:1.5}a{display:inline-block;margin:24px 6px 0;padding:12px 24px;border-radius:999px;font-weight:600;text-decoration:none}
-.retry{background:#dc2626;color:#fff}.home{color:#171717;box-shadow:inset 0 0 0 1px #e5e5e5}</style></head>
-<body><main><strong style="color:#dc2626;font-size:12px;letter-spacing:.25em">NARGİLE MALZEMESİ</strong>
-<h1 style="margin:8px 0 0;font-size:28px">Sayfa şu anda yüklenemedi</h1>
-<p>Bağlantıda kısa süreli bir sorun yaşadık. Birkaç saniye sonra yeniden deneyebilir ya da alışverişe ana sayfadan devam edebilirsiniz.</p>
-<a class="retry" href="">Tekrar Dene</a><a class="home" href="/">Ana sayfaya dön</a></main></body></html>`;
-
-/** 503 with Retry-After: search engines come back later instead of dropping the address. */
-function unavailable() {
-  return new NextResponse(UNAVAILABLE_PAGE, {
-    status: 503,
-    headers: { "Content-Type": "text/html; charset=utf-8", "Retry-After": "120", "Cache-Control": "no-store" },
-  });
+/**
+ * The same redirect, for now rather than for good: the API could not say
+ * where an old address goes, so the visitor is sent on with a 307 — never
+ * cached, by a browser or the CDN — to the product page by the address's own
+ * slug or id, whose lookup is cached and answers through an outage (and
+ * decides the 404 or the redirect itself). Search engines keep the old
+ * address and find the 301 on their next visit.
+ */
+function forNow(redirect: NextResponse) {
+  const location = redirect.headers.get("Location") ?? "/";
+  return NextResponse.redirect(location, { status: 307, headers: { "Cache-Control": "no-store" } });
 }
 
 function moved(request: NextRequest, pathname: string) {
@@ -194,7 +198,7 @@ function movedTo(request: NextRequest, pathname: string, query?: Record<string, 
  */
 async function legacyProduct(request: NextRequest, slug: string, go: (request: NextRequest, pathname: string) => NextResponse = moved) {
   const current = await productSlug(slug);
-  if (current === UNAVAILABLE) return unavailable();
+  if (current === UNAVAILABLE) return forNow(go(request, `/${slug}`));
   if (current) return go(request, `/${current}`);
   const next = RETIRED_PRODUCTS[slug];
   return next ? go(request, next.replace(/^\/(?:product|catalog)\//, "/")) : null;
@@ -232,6 +236,11 @@ async function openCartRoute(request: NextRequest) {
   return movedTo(request, "/");
 }
 
+/** A segment that could be an old product's slug: worth one lookup. */
+function isProductSlug(slug: string): boolean {
+  return slug.length <= 255 && SLUG.test(slug) && !FILE.test(slug) && !NOT_A_PRODUCT.test(slug);
+}
+
 /**
  * Legacy addresses that point at a product, answered with a 301 to its page:
  * /product/<slug> and /product/<uuid> in any language, a slug in capitals,
@@ -245,16 +254,17 @@ async function productRedirect(request: NextRequest, path: string, prefix: strin
     const ref = segments[1];
     if (!UUID.test(ref)) return moved(request, `${prefix}/${ref.toLowerCase()}`);
     const slug = await productSlug(ref);
-    if (slug === UNAVAILABLE) return unavailable();
+    if (slug === UNAVAILABLE) return forNow(moved(request, `${prefix}/${ref}`));
     if (slug) return moved(request, `${prefix}/${slug}`);
   } else if (segments.length === 1 && segments[0] !== segments[0].toLowerCase() && !FILE.test(segments[0])) {
     // Slugs are lowercase: a link typed in capitals has one address too.
     return moved(request, `${prefix}/${segments[0].toLowerCase()}`);
   } else if (!prefix && segments.length === 2) {
     // /<category>/<slug>; the shop's own sections (/catalog/…, /bilgi/…) and
-    // Next's files (/_next/…) are never the old store's.
+    // Next's files (/_next/…) are never the old store's, nor is what a
+    // scanner asks for (/wp-admin/admin-ajax.php): no lookup for those.
     const [category, slug] = segments.map((segment) => segment.toLowerCase());
-    if (!ROUTES.has(category) && SLUG.test(category) && !FILE.test(slug) && SLUG.test(slug) && slug.length <= 255) {
+    if (!ROUTES.has(category) && SLUG.test(category) && isProductSlug(slug)) {
       const found = await legacyProduct(request, slug);
       if (found) return found;
       // No such product: an old category's address still says where it was.
@@ -266,7 +276,7 @@ async function productRedirect(request: NextRequest, path: string, prefix: strin
     // down. Only under a category it had — /diger/te/… was a test shelf.
     const shelf = LEGACY_CATEGORIES[segments[1].toLowerCase()];
     const slug = segments[2].toLowerCase();
-    if (shelf && !FILE.test(slug) && SLUG.test(slug) && slug.length <= 255) {
+    if (shelf && isProductSlug(slug)) {
       return (await legacyProduct(request, slug)) ?? toLegacyShelf(request, shelf);
     }
   }

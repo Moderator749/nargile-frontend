@@ -1,7 +1,7 @@
 // Server-only catalog reads for SEO rendering. Uses fetch (not axios) so results
 // participate in Next.js caching. Always anonymous: public RETAIL prices only.
 
-import { API_URL, CATALOG_PAGE_SIZE } from "@/lib/config";
+import { API_TIMEOUT_MS, API_URL, CATALOG_PAGE_SIZE } from "@/lib/config";
 import { DEFAULT_LOCALE } from "@/lib/i18n/config";
 import { getLocale } from "@/lib/i18n/server";
 import { BUILT_IN_HOME_MEMORY } from "@/lib/homeSectionCopy";
@@ -46,10 +46,12 @@ async function getJson<T>(path: string): Promise<T | null> {
   try {
     const res = await fetch(`${API_URL}${await inLanguage(path)}`, {
       next: { revalidate: CATALOG_REVALIDATE, tags: ["catalog"] },
+      signal: AbortSignal.timeout(API_TIMEOUT_MS),
     });
     return res.ok ? ((await res.json()) as T) : null;
   } catch {
-    // Backend unreachable (e.g. during a build): the client fetches on mount instead.
+    // Backend unreachable, hanging, or not JSON (e.g. during a build): the
+    // client fetches on mount instead.
     return null;
   }
 }
@@ -77,13 +79,19 @@ async function getJsonOrNotFound<T>(path: string): Promise<T | null> {
   try {
     res = await fetch(`${API_URL}${await inLanguage(path)}`, {
       next: { revalidate: CATALOG_REVALIDATE, tags: ["catalog"] },
+      signal: AbortSignal.timeout(API_TIMEOUT_MS),
     });
   } catch (cause) {
     throw new BackendUnavailableError(path, { cause });
   }
   if (res.status === 404) return null;
   if (!res.ok) throw new BackendUnavailableError(`${path} answered ${res.status}`);
-  return (await res.json()) as T;
+  try {
+    return (await res.json()) as T;
+  } catch (cause) {
+    // A 200 that is not JSON (a proxy's error page in the API's place) is no answer either.
+    throw new BackendUnavailableError(`${path} answered with no JSON`, { cause });
+  }
 }
 
 /**
@@ -185,7 +193,10 @@ export const FLASH_SALE_LIMIT = 50;
 export async function getFlashSaleProducts(): Promise<CatalogProduct[] | null> {
   try {
     // The section is a grid now: ask for every live deal, not a rail's worth.
-    const res = await fetch(`${API_URL}${await inLanguage(`/products/flash-sales?limit=${FLASH_SALE_LIMIT}`)}`, { cache: "no-store" });
+    const res = await fetch(`${API_URL}${await inLanguage(`/products/flash-sales?limit=${FLASH_SALE_LIMIT}`)}`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(API_TIMEOUT_MS),
+    });
     return res.ok ? ((await res.json()) as CatalogProduct[]) : null;
   } catch {
     return null;
@@ -284,7 +295,10 @@ export async function getFreeShippingFrom(): Promise<number | null> {
 
 async function getLiveStoreParameters(): Promise<StoreParameters> {
   try {
-    const res = await fetch(`${API_URL}/settings/parameters`, { cache: "no-store" });
+    const res = await fetch(`${API_URL}/settings/parameters`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(API_TIMEOUT_MS),
+    });
     return res.ok ? ((await res.json()) as StoreParameters) : DEFAULT_STORE_PARAMETERS;
   } catch {
     return DEFAULT_STORE_PARAMETERS;
