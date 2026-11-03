@@ -186,7 +186,9 @@ async function ProductPage(slug: string, { locale, t }: Awaited<ReturnType<typeo
         category={category}
         categories={categories}
         breadcrumbs={crumbs}
-        sidebar={<CategorySidebar items={resolveNav(home.navigation.sidebar, categories, brands ?? [])} fit />}
+        // Keyed: the client page sets it among its own children, and an element
+        // a server component hands over arrives unchecked for a key.
+        sidebar={<CategorySidebar key="sidebar" items={resolveNav(home.navigation.sidebar, categories, brands ?? [])} fit />}
         advantages={advantageSources(home)}
       />
       {(similar.length > 0 || related.length > 0) && (
