@@ -5,6 +5,8 @@ import { ArrowDown, Loader2, Trash2 } from "lucide-react";
 
 import { clockTime, dayLabel, turkeyDay, type ChannelMessage } from "@/lib/teamChannel";
 
+import { MessageBody } from "./MessageBody";
+
 /** A message within this long of the one before it, from the same person, joins it without a name line. */
 const RUN_MS = 5 * 60_000;
 /** Within this far of the bottom counts as "at the bottom": new messages scroll into view. */
@@ -23,6 +25,8 @@ export function MessageList({
   open,
   onLoadEarlier,
   onDelete,
+  canOpenLinks,
+  onNavigate,
 }: {
   messages: ChannelMessage[];
   loaded: boolean;
@@ -30,6 +34,10 @@ export function MessageList({
   open: boolean;
   onLoadEarlier: () => Promise<void>;
   onDelete: (id: number) => Promise<void>;
+  /** An admin's: the order and product chips are links. */
+  canOpenLinks: boolean;
+  /** A chip was followed. */
+  onNavigate: () => void;
 }) {
   const box = useRef<HTMLDivElement>(null);
   const atBottom = useRef(true);
@@ -150,7 +158,7 @@ export function MessageList({
                         m.mine ? "bg-red-600 text-white dark:bg-red-500" : "bg-slate-100 text-slate-900 dark:bg-white/[0.06] dark:text-zinc-100"
                       }`}
                     >
-                      {m.body}
+                      <MessageBody body={m.body} mine={m.mine} canOpen={canOpenLinks} onNavigate={onNavigate} />
                     </p>
                     {m.can_delete && (
                       <button

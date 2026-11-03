@@ -4,6 +4,7 @@ import { useEffect, useRef, type KeyboardEvent } from "react";
 import { usePathname } from "next/navigation";
 import { MessagesSquare, X } from "lucide-react";
 
+import { isAdminRole } from "@/lib/roles";
 import { badgeText, titleWithCount } from "@/lib/teamChannel";
 import { useTeamChannel } from "@/store/useTeamChannel";
 import type { User } from "@/types";
@@ -76,6 +77,12 @@ export function TeamChannel({ user }: { user: User }) {
     }
   }
 
+  const admin = isAdminRole(user.role);
+  /** A link followed: on a phone the drawer covers the page it opens, so it gives way. */
+  const followed = () => {
+    if (window.matchMedia("(max-width: 639px)").matches) setOpen(false);
+  };
+
   const count = data.unreadCount;
   return (
     <>
@@ -144,9 +151,11 @@ export function TeamChannel({ user }: { user: User }) {
           open={open}
           onLoadEarlier={data.loadEarlier}
           onDelete={data.remove}
+          canOpenLinks={admin}
+          onNavigate={followed}
         />
 
-        <Composer onSend={data.send} inputRef={input} />
+        <Composer onSend={data.send} inputRef={input} canPickProducts={admin} />
       </aside>
     </>
   );

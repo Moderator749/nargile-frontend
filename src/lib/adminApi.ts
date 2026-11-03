@@ -65,13 +65,21 @@ import type { HomeTranslations } from "@/lib/homeTranslations";
 export const ADMIN_PAGE_SIZE = 50;
 
 export async function adminListOrders(
-  params: { status?: OrderStatus | null; shippingMethod?: ShippingMethod | null; skip?: number; limit?: number },
+  params: {
+    status?: OrderStatus | null;
+    shippingMethod?: ShippingMethod | null;
+    /** An order number, or its last six characters ("#A1B2C3"). */
+    number?: string | null;
+    skip?: number;
+    limit?: number;
+  },
   signal?: AbortSignal,
 ): Promise<AdminOrder[]> {
   const { data } = await api.get<AdminOrder[]>("/admin/orders", {
     params: {
       status: params.status ?? undefined,
       shipping_method: params.shippingMethod ?? undefined,
+      number: params.number || undefined,
       skip: params.skip ?? 0,
       limit: params.limit ?? ADMIN_PAGE_SIZE,
     },

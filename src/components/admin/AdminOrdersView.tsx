@@ -2,7 +2,8 @@
 
 import { Fragment, useCallback, useEffect, useState } from "react";
 import axios from "axios";
-import { CircleCheck, CreditCard, Landmark, RefreshCw, Van, XCircle } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { CircleCheck, CreditCard, Landmark, RefreshCw, Search, Van, X, XCircle } from "lucide-react";
 
 import { AdminPageHeader, panelClass } from "@/components/admin/AdminShell";
 import { CargoSelect } from "@/components/admin/orders/CargoSelect";
@@ -119,12 +120,23 @@ function AddressLine({ order }: { order: AdminOrder }) {
   );
 }
 
+/** The address's name for the order an Ekip Kanalı link opens. */
+const ORDER_PARAM = "siparis";
+
 /**
  * The order management page, /admin/orders ("Siparişler" in the sidebar): every
  * order, filtered by status and İstanbul delivery, with approval, cancellation
  * and dispatch on each row. Genel Bakış links here rather than embedding it.
+ *
+ * `?siparis=<number or #A1B2C3>` — where Ekip Kanalı's order links lead —
+ * shows only the order it names, its sheet open, under a line that says so
+ * and leads back to every order; picking a status tab leads back too.
  */
 export function AdminOrdersView() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const number = searchParams.get(ORDER_PARAM)?.trim().replace(/^#/, "") || null;
   const [status, setStatus] = useState<OrderStatus | null>(null);
   const [istanbulOnly, setIstanbulOnly] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -132,21 +144,30 @@ export function AdminOrdersView() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [open, setOpen] = useState<ReadonlySet<string>>(new Set());
 
-  const shippingMethod = istanbulOnly ? ("ISTANBUL_FREE" as const) : null;
-  const key = `${status ?? "ALL"}:${istanbulOnly}:${attempt}`;
+  // Looking one order up, the tab and the İstanbul filter stand aside.
+  const shippingMethod = istanbulOnly && !number ? ("ISTANBUL_FREE" as const) : null;
+  const listStatus = number ? null : status;
+  const key = `${number ? `#${number}` : (status ?? "ALL")}:${istanbulOnly}:${attempt}`;
 
   useEffect(() => {
     const controller = new AbortController();
-    adminListOrders({ status, shippingMethod }, controller.signal)
-      .then((orders) => setList({ key, orders, error: null, hasMore: orders.length === ADMIN_PAGE_SIZE }))
+    adminListOrders({ status: listStatus, shippingMethod, number }, controller.signal)
+      .then((orders) => {
+        setList({ key, orders, error: null, hasMore: orders.length === ADMIN_PAGE_SIZE });
+        // The order a link named, opened; a handful at most (a shared suffix).
+        if (number) setOpen(new Set(orders.slice(0, 3).map((o) => o.id)));
+      })
       .catch((err: unknown) => {
         if (axios.isCancel(err)) return;
         setList({ key, orders: [], error: getApiErrorMessage(err, "Siparişler yüklenemedi."), hasMore: false });
       });
     return () => controller.abort();
-  }, [key, status, shippingMethod]);
+  }, [key, listStatus, shippingMethod, number]);
 
   const current = list?.key === key ? list : null;
+
+  /** Back to every order, on this tab. */
+  const clearNumber = () => router.replace(pathname, { scroll: false });
 
   // The tabs' counts: on opening, on "Yenile", on every tab or filter change,
   // and every minute while the page is in view.
@@ -184,7 +205,7 @@ export function AdminOrdersView() {
     if (!current || loadingMore) return;
     setLoadingMore(true);
     try {
-      const next = await adminListOrders({ status, shippingMethod, skip: current.orders.length });
+      const next = await adminListOrders({ status: listStatus, shippingMethod, number, skip: current.orders.length });
       setList((prev) =>
         prev && prev.key === key
           ? { ...prev, orders: [...prev.orders, ...next], hasMore: next.length === ADMIN_PAGE_SIZE }
@@ -312,7 +333,7 @@ export function AdminOrdersView() {
             count on the last one is never cut off at the edge. */}
         <div role="tablist" aria-label="Sipariş durumu" className="flex gap-1 overflow-x-auto [scrollbar-width:none] sm:flex-wrap sm:overflow-visible">
           {FILTERS.map((f) => {
-            const active = f.value === status;
+            const active = !number && f.value === status;
             const count = f.value && COUNTED.has(f.value) ? (counts[f.value] ?? 0) : 0;
             return (
               <button
@@ -320,7 +341,10 @@ export function AdminOrdersView() {
                 type="button"
                 role="tab"
                 aria-selected={active}
-                onClick={() => setStatus(f.value)}
+                onClick={() => {
+                  setStatus(f.value);
+                  if (number) clearNumber();
+                }}
                 className={`inline-flex h-9 shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-4 text-sm font-medium transition-colors duration-200 ${
                   active
                     ? "bg-red-600 text-white shadow-sm shadow-red-600/20"
@@ -350,6 +374,27 @@ export function AdminOrdersView() {
         </label>
       </div>
 
+      {number && (
+        // The way back sits by the words, on the left: an open Ekip Kanalı drawer
+        // covers the page's right edge, and this line is where its links lead.
+        <div role="status" className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-900 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-100">
+          <p className="flex min-w-0 items-center gap-2">
+            <Search className="h-4 w-4 shrink-0" aria-hidden />
+            <span className="truncate">
+              <span className="font-mono font-semibold">{number.length === 6 ? `#${number.toUpperCase()}` : number}</span>
+              {current && ` · ${current.orders.length === 0 ? "bu numarada sipariş yok" : `${current.orders.length} sipariş`}`}
+            </span>
+          </p>
+          <button
+            type="button"
+            onClick={clearNumber}
+            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold transition-colors hover:bg-red-100 focus-visible:outline-2 focus-visible:outline-red-500 dark:hover:bg-red-500/20"
+          >
+            <X className="h-3.5 w-3.5" aria-hidden /> Tüm siparişler
+          </button>
+        </div>
+      )}
+
       <div className={panelClass}>
         {!current ? (
           <div className="space-y-2 p-4" aria-busy>
@@ -362,7 +407,9 @@ export function AdminOrdersView() {
             <Alert variant="error">{current.error}</Alert>
           </div>
         ) : current.orders.length === 0 ? (
-          <p className="px-4 py-16 text-center text-sm text-slate-500 dark:text-zinc-400">Bu durumda sipariş yok.</p>
+          <p className="px-4 py-16 text-center text-sm text-slate-500 dark:text-zinc-400">
+            {number ? "Bu numarayla eşleşen sipariş bulunamadı." : "Bu durumda sipariş yok."}
+          </p>
         ) : (
           <>
             {/*
