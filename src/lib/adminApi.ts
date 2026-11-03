@@ -367,10 +367,15 @@ export async function adminCategoryProductOrder(categoryId: number, signal?: Abo
   return data;
 }
 
-/** Rank these first on the category's page, in this order; the rest follow by name. */
-export async function adminSetCategoryProductOrder(categoryId: number, productIds: string[]): Promise<CategoryProductOrderRow[]> {
+/** Rank these first on the category's page, in this order; the rest follow by name; `bottomIds` close it, in theirs. */
+export async function adminSetCategoryProductOrder(
+  categoryId: number,
+  productIds: string[],
+  bottomIds: string[] = [],
+): Promise<CategoryProductOrderRow[]> {
   const { data } = await api.put<CategoryProductOrderRow[]>(`/admin/categories/${categoryId}/product-order`, {
     product_ids: productIds,
+    bottom_ids: bottomIds,
   });
   return data;
 }

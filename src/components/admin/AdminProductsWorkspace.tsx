@@ -30,7 +30,7 @@ const TABS: { value: Tab; label: string; Icon: typeof Boxes; description: string
     label: "Kategori Vitrin Sıralaması",
     Icon: ArrowDownUp,
     description:
-      "Bir kategori sayfasındaki ürünlerin “Önerilen” sırası. Ürünü tutamaçtan sürükleyin ya da en üste taşıyın; her değişiklik hemen kaydedilir. Sıraya alınmamış ürünler arkadan ada göre gelir.",
+      "Bir kategori sayfasındaki ürünlerin “Önerilen” sırası. Ürünü tutamaçtan sürükleyin ya da en üste / en alta taşıyın; birkaçını işaretleyip birlikte de taşıyabilirsiniz. Her değişiklik hemen kaydedilir. Sıraya alınmamış ürünler ada göre gelir; en alta taşınanlar, sonradan eklenen ürünler de dahil, hep en sonda kalır.",
   },
   {
     value: "brands",

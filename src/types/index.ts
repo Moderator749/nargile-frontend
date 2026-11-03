@@ -285,8 +285,10 @@ export interface CategoryProductOrderRow {
   brand: string | null;
   image_url: string | null;
   is_published: boolean;
-  /** Its place in the admin's order; null when not ranked (it follows the ranked, by name). */
+  /** Its place in the admin's order (in its part: the top's or the bottom's); null when not ranked (it follows the ranked, by name). */
   position: number | null;
+  /** Kept at the bottom ("En altta sabit"): after the unranked, products added later included. */
+  bottom: boolean;
 }
 
 /** The languages a product or category is translated into besides Turkish. */
