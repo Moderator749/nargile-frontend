@@ -178,8 +178,14 @@ const priceOf = (p: CatalogProduct) => Number(displayVariant(p)?.price?.price_in
  * held to the brand itself, since a search also matches names and codes that
  * merely mention it), dearest first — so it opens on the hookah sets rather
  * than on coal and tongs — cut to the row's length.
+ *
+ * Held to the brand by its slug, the brand row's own address: a product's
+ * `brand` is written as the brand row names itself ("Sultan Nargile", "Legend
+ * Hookah"), not as the word searched for, so comparing names emptied every row
+ * whose brand is called more than its search word. The name is the fallback
+ * for an API that does not send the slug.
  */
-async function getBrandShowcase(brand: string): Promise<CatalogProduct[]> {
+async function getBrandShowcase(brand: string, slug: string): Promise<CatalogProduct[]> {
   const found: CatalogProduct[] = [];
   for (let skip = 0; skip < BRAND_MAX; skip += BRAND_PAGE) {
     const page = await getPublicProducts(undefined, BRAND_PAGE, skip, brand);
@@ -187,7 +193,11 @@ async function getBrandShowcase(brand: string): Promise<CatalogProduct[]> {
     found.push(...page);
     if (page.length < BRAND_PAGE) break;
   }
-  const own = found.filter((p) => p.brand?.toLocaleLowerCase("tr-TR") === brand.toLocaleLowerCase("tr-TR"));
+  const own = found.filter((p) =>
+    p.brand_slug !== undefined
+      ? p.brand_slug === slug
+      : p.brand?.toLocaleLowerCase("tr-TR") === brand.toLocaleLowerCase("tr-TR"),
+  );
   return showable(own, own.length)
     .sort((a, b) => priceOf(b) - priceOf(a))
     .slice(0, BRAND_SHOWCASE_COUNT);
@@ -233,7 +243,7 @@ export default async function HomePage() {
       // Asked for with room to spare: some products have no photo or no price.
       getBestsellers(PICKS_COUNT * 2),
       getNewestProducts(PICKS_COUNT * 2),
-      Promise.all(BRAND_SHOWCASES.map(({ brand }) => getBrandShowcase(brand))),
+      Promise.all(BRAND_SHOWCASES.map(({ brand, slug }) => getBrandShowcase(brand, slug))),
       getSultanPuanShowcase(),
       // With room to spare, as the picks: some have no photo or no price.
       getPublicProducts(LULE_CATEGORY_SLUG, LULE_COUNT * 2),
