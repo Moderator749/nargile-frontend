@@ -77,6 +77,10 @@ export const productMessages = defineMessages({
     },
     perks: {
       label: "Bireysel alışveriş avantajları",
+      // Each benefit as a sentence around its figure, which is drawn as a badge.
+      transfer: ["Havale ile ", " İndirim"],
+      sultanpuan: ["", " SultanPuan Kazanımı"],
+      kumbara: ["", " Kumbara Bonusu"],
     },
   },
   en: {
@@ -136,6 +140,9 @@ export const productMessages = defineMessages({
     },
     perks: {
       label: "Shopping perks for individual customers",
+      transfer: ["", " off by bank transfer"],
+      sultanpuan: ["Earn ", " in SultanPuan"],
+      kumbara: ["Kumbara bonus from ", ""],
     },
   },
   ar: {
@@ -195,6 +202,9 @@ export const productMessages = defineMessages({
     },
     perks: {
       label: "مزايا التسوق للأفراد",
+      transfer: ["خصم ", " بالتحويل البنكي"],
+      sultanpuan: ["اكسب ", " نقاط SultanPuan"],
+      kumbara: ["مكافأة Kumbara من ", ""],
     },
   },
 });

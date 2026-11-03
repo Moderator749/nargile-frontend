@@ -355,7 +355,7 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
             />
           )}
 
-          <div ref={buyRow} className="mt-8 flex flex-wrap items-center gap-3">
+          <div ref={buyRow} className="mt-6 flex flex-wrap items-center gap-3">
             <QuantityStepper
               value={quantity}
               onChange={(q) => {
@@ -383,7 +383,10 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
               </div>
             )
           )}
-          <p className="mt-2 flex min-h-11 flex-wrap items-center gap-x-1.5 text-sm text-muted-foreground" aria-live="polite">
+          {/* Its height is kept whether or not the colour is in the cart, so the
+              description never moves when the cart loads: a finger's 44px on a
+              phone, a pointer's 32px from `sm`. */}
+          <p className="mt-1 flex min-h-11 flex-wrap items-center gap-x-1.5 text-sm text-muted-foreground sm:min-h-8" aria-live="polite">
             {inCart > 0 && (
               <>
                 {t.inYourCart(inCart)} ·
@@ -393,7 +396,7 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
                     if (variant) useCartStore.getState().removeItem(variant.id);
                     setDraft(null);
                   }}
-                  className="inline-flex min-h-11 items-center px-1 font-medium text-foreground underline-offset-2 hover:underline"
+                  className="inline-flex min-h-11 items-center px-1 font-medium text-foreground underline-offset-2 hover:underline sm:min-h-8"
                 >
                   {t.removeFromCart}
                 </button>
