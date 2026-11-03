@@ -25,10 +25,13 @@ import {
 } from "lucide-react";
 
 import { SortableList } from "@/components/admin/SortableList";
+import { StaffHome } from "@/components/admin/team/StaffHome";
+import { TeamChannel } from "@/components/admin/team/TeamChannel";
 import { fetchMe } from "@/lib/authApi";
 import { applySavedOrder, isDefaultOrder } from "@/lib/savedOrder";
-import { isAdminRole } from "@/lib/roles";
+import { isAdminRole, isTeamRole } from "@/lib/roles";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useTeamChannel } from "@/store/useTeamChannel";
 import { useAuthHydrated } from "@/store/useHasHydrated";
 
 interface NavItem {
@@ -209,9 +212,30 @@ function Gate({ title, body, action }: { title: string; body: string; action?: R
   );
 }
 
+/** A staff account's menu: the channel, nothing it would be refused. */
+function StaffNav() {
+  const setOpen = useTeamChannel((s) => s.setOpen);
+  return (
+    <nav aria-label="Yönetim menüsü" className="lg:mt-4">
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className={`${NAV_LINK} h-10 w-full bg-red-50 text-sm font-medium text-red-700 dark:bg-red-500/10 dark:text-red-400`}
+      >
+        <MessagesSquare className="h-4 w-4 shrink-0" aria-hidden />
+        Ekip Kanalı
+      </button>
+    </nav>
+  );
+}
+
 /**
  * Client-side gate + chrome for /admin. Real protection is server-side: every
  * admin API call is checked by get_current_admin_user and fails with 401/403.
+ *
+ * The panel team comes in: the admins to the whole panel, staff to Ekip
+ * Kanalı only — the rest of the panel's API is the admins', so a staff
+ * account sees the channel's way in on whatever panel page it opens.
  */
 export function AdminShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -248,9 +272,10 @@ export function AdminShell({ children }: { children: ReactNode }) {
     );
   }
 
-  if (!isAdminRole(user.role)) {
-    return <Gate title="Erişim yetkiniz yok" body="Bu sayfa yalnızca yönetici hesaplarına açıktır." />;
+  if (!isTeamRole(user.role)) {
+    return <Gate title="Erişim yetkiniz yok" body="Bu sayfa yalnızca panel ekibine açıktır." />;
   }
+  const admin = isAdminRole(user.role);
 
   const under = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
   const isActive = (href: string, exact?: boolean, also: readonly string[] = []) =>
@@ -264,9 +289,10 @@ export function AdminShell({ children }: { children: ReactNode }) {
         <p className="hidden px-3 pt-2 pb-2 text-xs font-bold uppercase tracking-wider text-red-600 lg:block dark:text-red-500">
           Kontrol Merkezi
         </p>
-        <AdminNav isActive={isActive} />
+        {admin ? <AdminNav isActive={isActive} /> : <StaffNav />}
       </aside>
-      <main className="min-w-0 flex-1">{children}</main>
+      <main className="min-w-0 flex-1">{admin ? children : <StaffHome />}</main>
+      <TeamChannel user={user} />
     </div>
   );
 }

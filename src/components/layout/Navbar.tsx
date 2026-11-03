@@ -15,7 +15,7 @@ import { TopNav } from "@/components/layout/TopNav";
 import { SearchField } from "@/components/search/SearchField";
 import { UserMenu } from "@/components/layout/UserMenu";
 import { chromeMessages } from "@/lib/i18n/messages/layout";
-import { isAdminRole } from "@/lib/roles";
+import { isTeamRole } from "@/lib/roles";
 import { useAuthStore } from "@/store/useAuthStore";
 import { selectCartCount, useCartStore } from "@/store/useCartStore";
 import { useCategoryDrawer } from "@/store/useCategoryDrawer";
@@ -107,7 +107,7 @@ export function Navbar({
 
   // Doors only some accounts have; the menu below is the same for everyone.
   const accountLinks = [
-    ...(isAdminRole(user?.role) ? [{ href: "/admin", label: m.admin }] : []),
+    ...(isTeamRole(user?.role) ? [{ href: "/admin", label: m.admin }] : []),
   ];
   // Open to everyone: a tracking number works without an account, and a
   // signed-in customer sees their own shipments there too.
