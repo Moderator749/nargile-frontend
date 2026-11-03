@@ -1,4 +1,5 @@
 import { api } from "@/lib/api";
+import { collectAllPages } from "@/lib/catalogParts";
 import { CATALOG_PAGE_SIZE } from "@/lib/config";
 import type { CartLineInfo, CatalogProduct, CatalogSummary, CatalogProductDetail, Category, SearchSuggestions, StockCheckLine } from "@/types";
 
@@ -24,6 +25,28 @@ export async function fetchProducts(
     signal,
   });
   return data;
+}
+
+/** The most products `GET /products` serves at once (the server's limit). */
+const LISTING_PAGE_MAX = 100;
+
+/**
+ * Every product of a listing (a category, a brand, a search), priced for the
+ * caller and in the listing's own order: counted first, then its pages fetched
+ * together. For a price catalogue, which takes the listing whole however much
+ * of it the grid has loaded.
+ */
+export async function fetchAllProducts(
+  { category, q, brand }: Pick<CatalogQuery, "category" | "q" | "brand">,
+  signal?: AbortSignal,
+): Promise<CatalogProduct[]> {
+  // Without a count the pages are followed one by one, as far as they go.
+  const total = await fetchCatalogSummary({ category, q, brand }, signal).then(
+    (summary) => summary.total,
+    () => null,
+  );
+  signal?.throwIfAborted();
+  return collectAllPages((skip, limit) => fetchProducts({ category, q, brand, skip, limit }, signal), total, LISTING_PAGE_MAX);
 }
 
 /**

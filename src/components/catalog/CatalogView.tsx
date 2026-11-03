@@ -1,12 +1,14 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { SearchX } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 
 import { AdminCatalogPdf, useIsAdmin } from "@/components/catalog/AdminCatalogPdf";
 import { useLocale, useMessages } from "@/components/i18n/LocaleProvider";
 import { PriceCatalogExport } from "@/components/catalog/PriceCatalogExport";
+import type { CatalogListing } from "@/components/catalog/useCatalogListing";
+import { fetchAllProducts } from "@/lib/catalogApi";
 import { isExportAccount } from "@/lib/exportAccount";
 import { isB2BSegment } from "@/lib/priceList";
 import { CatalogFilterBar } from "@/components/catalog/CatalogFilterBar";
@@ -144,10 +146,12 @@ function CatalogGrid({
   const t = useMessages(catalogMessages).grid;
   const [filters, setFilters] = useState<CatalogFilters>(initialFilters);
   const [group, setGroup] = useState<string | null>(initialGroup);
+  const listingCategory = activeCategory?.slug ?? null;
+  const listingBrand = brand?.byRelation ? (brand.slug ?? null) : null;
   const catalog = useCatalog({
-    category: activeCategory?.slug ?? null,
+    category: listingCategory,
     query,
-    brand: brand?.byRelation ? (brand.slug ?? null) : null,
+    brand: listingBrand,
     initialProducts,
     seedQuery: brandQuery(brand),
     // A brand's page has all its products at once (no brand has a hundred).
@@ -175,12 +179,20 @@ function CatalogGrid({
     const ids = new Set(groups?.find((g) => g.slug === group)?.ids ?? []);
     return ids.size === 0 ? null : ids;
   }, [groups, group]);
-  const shown = useMemo(
-    () =>
-      applyCatalogFilters(catalog.products, filters, now, locale).filter(
+  // The grid's filters, order and group chip: for the cards, and for a price
+  // catalogue's whole listing.
+  const narrow = useCallback(
+    (products: CatalogProduct[]) =>
+      applyCatalogFilters(products, filters, now, locale).filter(
         (p) => inGroup === null || (p.category_id != null && inGroup.has(p.category_id)),
       ),
-    [catalog.products, filters, now, locale, inGroup],
+    [filters, now, locale, inGroup],
+  );
+  const shown = useMemo(() => narrow(catalog.products), [narrow, catalog.products]);
+  // The listing whole, for a price catalogue, whatever "Daha fazla göster" has loaded of it.
+  const loadAll = useCallback(
+    (signal: AbortSignal) => fetchAllProducts({ category: listingCategory, q: query, brand: listingBrand }, signal),
+    [listingCategory, query, listingBrand],
   );
   // "48 / 312 ürün" while a page of a longer listing is on screen.
   const total = listingTotal({
@@ -224,6 +236,13 @@ function CatalogGrid({
   const density = useCatalogDensity();
   const grid = `${gridClass} ${density === "one" ? "max-md:grid-cols-1" : ""}`;
   const collection = brand ? brand.name : searched ? t.searchCollection(searched) : (activeCategory?.name ?? t.allProducts);
+  const narrowed = filters.min.trim() !== "" || filters.max.trim() !== "" || filters.inStock || inGroup !== null;
+  const listing: CatalogListing = {
+    products: shown,
+    loadAll: catalog.hasMore ? loadAll : undefined,
+    select: narrow,
+    scope: narrowed ? "filtered" : brand ? "brand" : searched ? "search" : activeCategory ? "category" : "all",
+  };
 
   return (
     <>
@@ -238,9 +257,9 @@ function CatalogGrid({
         // group's prices, a Bayi / Toptan / Kafe account's at the ones below it.
         trailing={
           isAdmin ? (
-            <AdminCatalogPdf products={shown} collection={collection} hasMore={catalog.hasMore} />
+            <AdminCatalogPdf listing={listing} collection={collection} />
           ) : canExport ? (
-            <PriceCatalogExport products={shown} collection={collection} hasMore={catalog.hasMore} />
+            <PriceCatalogExport listing={listing} collection={collection} />
           ) : undefined
         }
       />

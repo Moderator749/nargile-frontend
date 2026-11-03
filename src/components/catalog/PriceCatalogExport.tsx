@@ -2,10 +2,12 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { FileDown, X } from "lucide-react";
+import { FileDown, Loader2, RotateCw, X } from "lucide-react";
 
+import { type CatalogListing, useCatalogListing } from "@/components/catalog/useCatalogListing";
 import { useLocale, useMessages } from "@/components/i18n/LocaleProvider";
 import { useLocalePath } from "@/components/i18n/navigation";
+import { catalogParts } from "@/lib/catalogParts";
 import { isExportAccount } from "@/lib/exportAccount";
 import { INTL_LOCALE } from "@/lib/i18n/messages";
 import { catalogMessages } from "@/lib/i18n/messages/catalog";
@@ -16,28 +18,20 @@ import {
   storeCatalogRequest,
 } from "@/lib/priceList";
 import { useAuthStore } from "@/store/useAuthStore";
-import type { CatalogProduct, SegmentType } from "@/types";
+import type { SegmentType } from "@/types";
 
 /**
- * "Fiyat Kataloğu İndir": the products on screen — the category, the search
- * and every filter as they stand, in the grid's order — as a white-label PDF
- * price catalogue for a B2B account to send its own customers.
+ * "Fiyat Kataloğu İndir": the listing whole — the category, the brand or the
+ * search, through every filter as it stands and in the grid's order, however
+ * much of it "Daha fazla göster" has loaded — as a white-label PDF price
+ * catalogue for a B2B account to send its own customers; over 200 products,
+ * in parts of 200, a button each.
  *
  * Only for Bayi, Toptan and Kafe accounts, and each is offered only the price
  * groups below its own (a dealer must not hand a café its dealer price): the
  * dialog shows those, and the server refuses anything else.
  */
-export function PriceCatalogExport({
-  products,
-  collection,
-  hasMore,
-}: {
-  /** The grid as shown: filtered and sorted. */
-  products: CatalogProduct[];
-  collection: string;
-  /** More products behind "Daha fazla göster" that are not on screen yet. */
-  hasMore: boolean;
-}) {
+export function PriceCatalogExport({ listing, collection }: { listing: CatalogListing; collection: string }) {
   const user = useAuthStore((s) => s.user);
   const [open, setOpen] = useState(false);
   const t = useMessages(catalogMessages).priceCatalog;
@@ -49,7 +43,7 @@ export function PriceCatalogExport({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        disabled={products.length === 0}
+        disabled={listing.products.length === 0}
         className="inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl border border-red-600 bg-red-600 px-3 text-[11px] max-md:w-9 max-md:justify-center max-md:px-0 font-bold uppercase tracking-wider text-white shadow-sm transition-colors duration-200 hover:border-red-500 hover:bg-red-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40"
       >
         <FileDown className="h-3.5 w-3.5" aria-hidden />
@@ -59,9 +53,8 @@ export function PriceCatalogExport({
       {open && (
         <ExportDialog
           choice={CATALOG_CHOICES[segment]}
-          products={products}
+          listing={listing}
           collection={collection}
-          hasMore={hasMore}
           onClose={() => setOpen(false)}
         />
       )}
@@ -71,15 +64,13 @@ export function PriceCatalogExport({
 
 function ExportDialog({
   choice,
-  products,
+  listing,
   collection,
-  hasMore,
   onClose,
 }: {
   choice: (typeof CATALOG_CHOICES)[keyof typeof CATALOG_CHOICES];
-  products: CatalogProduct[];
+  listing: CatalogListing;
   collection: string;
-  hasMore: boolean;
   onClose: () => void;
 }) {
   const titleId = useId();
@@ -90,7 +81,10 @@ function ExportDialog({
   const t = useMessages(catalogMessages).priceCatalog;
   const [picked, setPicked] = useState<SegmentType | null>("pick" in choice ? choice.pick[0] : null);
   const groups = "fixed" in choice ? choice.fixed : picked ? [picked] : [];
-  const count = Math.min(products.length, PRICE_LIST_MAX);
+  const state = useCatalogListing(listing);
+  const products = state.status === "ready" ? state.products : [];
+  const parts = catalogParts(products.length, PRICE_LIST_MAX);
+  const number = (n: number) => n.toLocaleString(INTL_LOCALE[locale]);
 
   useEffect(() => {
     panel.current?.querySelector<HTMLElement>("input, button")?.focus();
@@ -99,18 +93,18 @@ function ExportDialog({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  function create() {
-    if (groups.length === 0) return;
-    const key = storeCatalogRequest({
-      productIds: products.slice(0, PRICE_LIST_MAX).map((p) => p.id),
-      groups,
-      collection,
-    });
+  /** Part `n` of the catalogue (the only one, up to 200 products); the preview can go on to the others. */
+  function create(n: number) {
+    if (groups.length === 0 || products.length === 0) return;
+    const key = storeCatalogRequest({ productIds: products.map((p) => p.id), groups, collection });
     // To the preview, in the page's language and in this tab (a phone handles a
     // second tab badly); "PDF İndir" there makes the file.
     onClose();
-    router.push(to(`/fiyat-katalogu?k=${key}`));
+    router.push(to(`/fiyat-katalogu?k=${key}${parts.length > 1 ? `&bolum=${n}` : ""}`));
   }
+
+  const createButton =
+    "inline-flex h-10 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-red-600 px-5 text-sm font-semibold text-white hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50";
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4" onMouseDown={onClose}>
@@ -161,11 +155,37 @@ function ExportDialog({
           </p>
         )}
 
-        <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
-          {t.order(count.toLocaleString(INTL_LOCALE[locale]))}
-          {products.length > PRICE_LIST_MAX && t.overLimit(PRICE_LIST_MAX)}
-          {hasMore && t.notLoaded} {t.newTab}
+        <p className="mt-4 text-xs leading-relaxed text-muted-foreground" aria-live="polite">
+          {state.status === "loading" ? (
+            <span className="flex items-center gap-1.5">
+              <Loader2 className="h-3 w-3 animate-spin" aria-hidden /> {t.counting}
+            </span>
+          ) : state.status === "error" ? (
+            <span className="flex flex-wrap items-center gap-x-2 text-red-600 dark:text-red-400">
+              {t.listFailed}
+              <button type="button" onClick={state.retry} className="inline-flex items-center gap-1 font-semibold underline-offset-2 hover:underline">
+                <RotateCw className="h-3 w-3" aria-hidden /> {t.retry}
+              </button>
+            </span>
+          ) : (
+            <>
+              {t.total(listing.scope, number(products.length))}
+              {parts.length > 1 && t.inParts(PRICE_LIST_MAX, parts.length)}
+            </>
+          )}{" "}
+          {t.newTab}
         </p>
+
+        {state.status === "ready" && parts.length > 1 && (
+          // Over 200 products: a button a part, the preview going on from one to the next.
+          <div role="group" aria-label={t.parts} className="mt-5 grid gap-2">
+            {parts.map((part) => (
+              <button key={part.n} type="button" onClick={() => create(part.n)} disabled={groups.length === 0} className={createButton}>
+                <FileDown className="h-4 w-4" aria-hidden /> {t.part(part.n, number(part.from), number(part.to))}
+              </button>
+            ))}
+          </div>
+        )}
 
         <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <button
@@ -175,14 +195,25 @@ function ExportDialog({
           >
             {t.cancel}
           </button>
-          <button
-            type="button"
-            onClick={create}
-            disabled={groups.length === 0}
-            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-full bg-red-600 px-5 text-sm font-semibold text-white hover:bg-red-500 disabled:opacity-50"
-          >
-            <FileDown className="h-4 w-4" aria-hidden /> {t.create}
-          </button>
+          {!(state.status === "ready" && parts.length > 1) && (
+            <button
+              type="button"
+              onClick={() => create(1)}
+              disabled={state.status !== "ready" || groups.length === 0 || products.length === 0}
+              aria-busy={state.status === "loading"}
+              className={createButton}
+            >
+              {state.status === "loading" ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> {t.gathering}
+                </>
+              ) : (
+                <>
+                  <FileDown className="h-4 w-4" aria-hidden /> {t.create}
+                </>
+              )}
+            </button>
+          )}
         </div>
       </div>
     </div>

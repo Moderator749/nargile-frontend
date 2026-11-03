@@ -8,12 +8,13 @@ import { useLocale, useMessages } from "@/components/i18n/LocaleProvider";
 import { useLocalePath } from "@/components/i18n/navigation";
 import { LookbookDownload, LookbookPreview, type LookbookItem, type LookbookLine } from "@/components/lookbook/Lookbook";
 import { Alert } from "@/components/ui/Alert";
+import { catalogParts, partOf } from "@/lib/catalogParts";
 import { getApiErrorMessage } from "@/lib/errors";
 import { formatDateParts } from "@/lib/format";
 import type { Locale } from "@/lib/i18n/config";
 import { INTL_LOCALE } from "@/lib/i18n/messages";
 import { catalogMessages } from "@/lib/i18n/messages/catalog";
-import { fetchAdminCatalogGroups, fetchPriceList, readCatalogRequest, type PriceListItem } from "@/lib/priceList";
+import { PRICE_LIST_MAX, fetchAdminCatalogGroups, fetchPriceList, readCatalogRequest, type PriceListItem } from "@/lib/priceList";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useAuthHydrated } from "@/store/useHasHydrated";
 import type { SegmentType } from "@/types";
@@ -46,33 +47,50 @@ function plateOf(item: PriceListItem, groups: SegmentType[], locale: Locale): Lo
  * İndir" as a real .pdf file of A4 pages, never through the print dialog
  * (which broke the pages on a phone). White-label: no logo, no contact block,
  * and the file named after the collection, not the shop.
+ *
+ * A catalogue of more than 200 products comes in parts of 200 (`part`, from
+ * the address): each its own preview and file, "Bölüm 1/2" on its cover, with
+ * the parts side by side above it to go from one to the next.
  */
-export function PriceCatalogPage({ requestKey }: { requestKey: string }) {
+export function PriceCatalogPage({ requestKey, part: asked }: { requestKey: string; part: number }) {
   const hydrated = useAuthHydrated();
   const token = useAuthStore((s) => s.token);
-  const [items, setItems] = useState<PriceListItem[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  // Kept with the part they are for, so another part's never show while this one loads.
+  const [loaded, setLoaded] = useState<{ part: number; items: PriceListItem[] | null; error: string | null } | null>(null);
   const locale = useLocale();
   const router = useRouter();
   const to = useLocalePath();
   const t = useMessages(catalogMessages).priceCatalog;
   const request = useMemo(() => (typeof window === "undefined" ? null : readCatalogRequest(requestKey)), [requestKey]);
   const date = useMemo(() => formatDateParts(new Date().toISOString(), INTL_LOCALE[locale]).date, [locale]);
+  const parts = useMemo(() => catalogParts(request?.productIds.length ?? 0, PRICE_LIST_MAX), [request]);
+  const { part, items: ids } = useMemo(() => partOf(request?.productIds ?? [], asked, PRICE_LIST_MAX), [request, asked]);
+  const n = part?.n ?? 1;
 
   useEffect(() => {
-    if (!hydrated || !token || !request) return;
+    if (!hydrated || !token || !request || ids.length === 0) return;
     const controller = new AbortController();
     // An admin's catalogue (any groups) comes from the admin endpoint.
     const rows = request.admin
-      ? fetchAdminCatalogGroups(request.productIds, request.groups, controller.signal)
-      : fetchPriceList(request.productIds, request.groups, controller.signal);
+      ? fetchAdminCatalogGroups(ids, request.groups, controller.signal)
+      : fetchPriceList(ids, request.groups, controller.signal);
     rows
-      .then(setItems)
+      .then((items) => setLoaded({ part: n, items, error: null }))
       .catch((err) => {
-        if (!controller.signal.aborted) setError(getApiErrorMessage(err, t.loadError));
+        if (!controller.signal.aborted) setLoaded({ part: n, items: null, error: getApiErrorMessage(err, t.loadError) });
       });
     return () => controller.abort();
-  }, [hydrated, token, request, t.loadError]);
+  }, [hydrated, token, request, ids, n, t.loadError]);
+  const current = loaded?.part === n ? loaded : null;
+  const items = current?.items ?? null;
+  const error = current?.error ?? null;
+  // A part's name goes on its cover and into its file's name: "Nargile Takımları · Bölüm 1/2".
+  const collection = request ? (parts.length > 1 ? `${request.collection} · ${t.partOf(n, parts.length)}` : request.collection) : "";
+  // A file name cannot hold the "/": its range instead ("… - Bölüm 1 (1–200) - 03.11.2026.pdf").
+  const fileCollection =
+    request && part && parts.length > 1
+      ? `${request.collection} - ${t.part(n, part.from.toLocaleString(INTL_LOCALE[locale]), part.to.toLocaleString(INTL_LOCALE[locale]))}`
+      : collection;
 
   const plates = useMemo(
     () => (items && request ? items.map((i) => plateOf(i, request.groups, locale)).filter((p) => p.lines.length > 0) : []),
@@ -90,9 +108,46 @@ export function PriceCatalogPage({ requestKey }: { requestKey: string }) {
   if (!request) {
     return <Alert variant="error">{t.missingRequest}</Alert>;
   }
-  if (error) return <Alert variant="error">{error}</Alert>;
-  if (!items) return <div className="h-96 rounded-2xl bg-foreground/[0.04] motion-safe:animate-pulse" aria-busy />;
-  if (!plates.length) return <Alert variant="error">{t.nothingPriced}</Alert>;
+  // The parts side by side, over whichever of them is open, while it loads too.
+  const nav =
+    parts.length > 1 ? (
+      <nav aria-label={t.parts} className="mb-4 flex flex-wrap gap-2">
+        {parts.map((p) => (
+          <button
+            key={p.n}
+            type="button"
+            aria-current={p.n === n ? "page" : undefined}
+            onClick={() => router.replace(to(`/fiyat-katalogu?k=${encodeURIComponent(requestKey)}&bolum=${p.n}`))}
+            className={`inline-flex h-9 items-center rounded-full px-4 text-sm font-medium tabular-nums transition-colors ${
+              p.n === n ? "bg-foreground text-background" : "ring-1 ring-inset ring-border hover:bg-foreground/[0.04]"
+            }`}
+          >
+            {t.part(p.n, p.from.toLocaleString(INTL_LOCALE[locale]), p.to.toLocaleString(INTL_LOCALE[locale]))}
+          </button>
+        ))}
+      </nav>
+    ) : null;
+  if (error)
+    return (
+      <>
+        {nav}
+        <Alert variant="error">{error}</Alert>
+      </>
+    );
+  if (!items)
+    return (
+      <>
+        {nav}
+        <div className="h-96 rounded-2xl bg-foreground/[0.04] motion-safe:animate-pulse" aria-busy />
+      </>
+    );
+  if (!plates.length)
+    return (
+      <>
+        {nav}
+        <Alert variant="error">{t.nothingPriced}</Alert>
+      </>
+    );
 
   const left = items.length - plates.length;
   // A chosen group a product has no price in is left off its plate; said here,
@@ -102,6 +157,7 @@ export function PriceCatalogPage({ requestKey }: { requestKey: string }) {
     .filter((m) => m.count > 0);
   return (
     <>
+      {nav}
       {/* The download stays in reach while the preview scrolls (on a phone, a long way). */}
       <div className="sticky top-[var(--header-height,0px)] z-10 -mx-4 mb-4 flex flex-wrap items-center justify-between gap-3 bg-background/95 px-4 py-3 backdrop-blur sm:mx-0 sm:px-0">
         <button
@@ -112,10 +168,12 @@ export function PriceCatalogPage({ requestKey }: { requestKey: string }) {
           <ArrowLeft className="h-4 w-4 rtl:-scale-x-100" aria-hidden /> {t.back}
         </button>
         <LookbookDownload
-          collection={request.collection}
+          // A part's own button: one part's file in the making never runs on into the next.
+          key={n}
+          collection={collection}
           date={date}
           items={plates}
-          fileTitle={t.documentTitle(request.collection, date)}
+          fileTitle={t.documentTitle(fileCollection, date)}
           labels={{ download: t.savePdf, preparing: t.preparing, failed: t.pdfFailed }}
           className="inline-flex h-11 items-center gap-2 rounded-full bg-red-600 px-5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-red-500 disabled:cursor-wait disabled:opacity-80"
         />
@@ -133,7 +191,7 @@ export function PriceCatalogPage({ requestKey }: { requestKey: string }) {
           {unpriced.map((m) => t.groupUnpriced(m.group, m.count, items.length)).join(" ")}
         </p>
       )}
-      <LookbookPreview collection={request.collection} date={date} items={plates} />
+      <LookbookPreview collection={collection} date={date} items={plates} />
     </>
   );
 }

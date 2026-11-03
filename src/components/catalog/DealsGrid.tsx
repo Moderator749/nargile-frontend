@@ -12,6 +12,7 @@ import { PriceCatalogExport } from "@/components/catalog/PriceCatalogExport";
 import { ProductCard } from "@/components/catalog/ProductCard";
 import { Button } from "@/components/ui/Button";
 import { useNow } from "@/hooks/useNow";
+import type { CatalogListing } from "@/components/catalog/useCatalogListing";
 import { fetchFlashSaleProducts } from "@/lib/catalogApi";
 import { EMPTY_FILTERS, applyCatalogFilters, priceBounds, type CatalogFilters } from "@/lib/catalogFilters";
 import { isExportAccount } from "@/lib/exportAccount";
@@ -85,6 +86,9 @@ export function DealsGrid({
   const bounds = useMemo(() => priceBounds(products, now), [products, now]);
   const shown = useMemo(() => applyCatalogFilters(products, filters, now, locale), [products, filters, now, locale]);
   const patch = (next: Partial<CatalogFilters>) => setFilters((f) => ({ ...f, ...next }));
+  // Every deal is on screen at once: the catalogue takes them as shown.
+  const narrowed = filters.min.trim() !== "" || filters.max.trim() !== "" || filters.inStock;
+  const listing: CatalogListing = { products: shown, scope: narrowed ? "filtered" : "deals" };
 
   return (
     <>
@@ -96,9 +100,9 @@ export function DealsGrid({
         // group's prices, a Bayi / Toptan / Kafe account's at the ones below it.
         trailing={
           isAdmin ? (
-            <AdminCatalogPdf products={shown} collection={collection} />
+            <AdminCatalogPdf listing={listing} collection={collection} />
           ) : canExport ? (
-            <PriceCatalogExport products={shown} collection={collection} hasMore={false} />
+            <PriceCatalogExport listing={listing} collection={collection} />
           ) : undefined
         }
       />

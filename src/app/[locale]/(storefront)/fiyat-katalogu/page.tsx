@@ -11,12 +11,18 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: m.priceCatalogTitle, robots: { index: false, follow: false } };
 }
 
-/** /fiyat-katalogu?k=<hand-off key> — opened by "Fiyat Kataloğu İndir" on the catalog page. */
+const first = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value);
+
+/**
+ * /fiyat-katalogu?k=<hand-off key>[&bolum=<n>] — opened by "Fiyat Kataloğu
+ * İndir" or "PDF Oluştur" on the catalog page; `bolum` is the part of a
+ * catalogue of more than 200 products.
+ */
 export default async function Page(props: PageProps<"/[locale]/fiyat-katalogu">) {
-  const k = (await props.searchParams).k;
+  const { k, bolum } = await props.searchParams;
   return (
     <main className={`${PAGE_CONTAINER} flex-1 py-8`}>
-      <PriceCatalogPage requestKey={(Array.isArray(k) ? k[0] : k) ?? ""} />
+      <PriceCatalogPage requestKey={first(k) ?? ""} part={Number(first(bolum)) || 1} />
     </main>
   );
 }

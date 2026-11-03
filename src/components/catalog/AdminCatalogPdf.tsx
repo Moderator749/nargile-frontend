@@ -3,13 +3,20 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { Check, FileDown, ShieldCheck, X } from "lucide-react";
+import { Check, FileDown, Loader2, RotateCw, ShieldCheck, X } from "lucide-react";
 
+import { type CatalogListing, useCatalogListing } from "@/components/catalog/useCatalogListing";
+import { catalogParts } from "@/lib/catalogParts";
+import { catalogMessages } from "@/lib/i18n/messages/catalog";
 import { isAdminRole } from "@/lib/roles";
 import { ADMIN_CATALOG_GROUPS, CATALOG_GROUP_LABELS, PRICE_LIST_MAX, storeCatalogRequest } from "@/lib/priceList";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useAuthHydrated } from "@/store/useHasHydrated";
-import type { CatalogProduct, SegmentType } from "@/types";
+import type { SegmentType } from "@/types";
+
+/** The panel speaks Turkish, whatever the storefront's language. */
+const t = catalogMessages.tr.priceCatalog;
+const tr = (n: number) => n.toLocaleString("tr-TR");
 
 /**
  * Whether the visitor is signed in as an admin. False on the server and until
@@ -24,29 +31,28 @@ export function useIsAdmin(): boolean {
 
 /**
  * "PDF Oluştur", for an admin only, on the catalog's grid (catalog, category,
- * brand and search pages — not the homepage's sections): the products as
- * shown, as the price catalogue a B2B account downloads, at the prices of
- * whichever groups the admin picks — any of Bayi, Toptan, Kafe and Perakende,
- * side by side on each product's plate. It opens the catalogue's preview, where "PDF İndir" makes the file.
+ * brand and search pages — not the homepage's sections): the listing whole,
+ * through the grid's filters and in its order, however much of it "Daha
+ * fazla göster" has loaded, as the price catalogue a B2B account downloads, at
+ * the prices of whichever groups the admin picks — any of Bayi, Toptan, Kafe
+ * and Perakende, side by side on each product's plate. Over 200 products it
+ * comes in parts of 200, a button each. It opens the catalogue's preview,
+ * where "PDF İndir" makes the file.
  *
  * Renders nothing at all for anyone else (or for an empty grid), so it takes
  * no room in the layout.
  */
 export function AdminCatalogPdf({
-  products,
+  listing,
   collection,
-  hasMore = false,
 }: {
-  /** The grid as shown: filtered and sorted. */
-  products: CatalogProduct[];
+  listing: CatalogListing;
   /** The catalogue's collection line: the category, the brand or the search. */
   collection: string;
-  /** More products behind "Daha fazla göster" that are not on screen yet. */
-  hasMore?: boolean;
 }) {
   const isAdmin = useIsAdmin();
   const [open, setOpen] = useState(false);
-  if (!isAdmin || products.length === 0) return null;
+  if (!isAdmin || listing.products.length === 0) return null;
 
   return (
     <>
@@ -63,7 +69,7 @@ export function AdminCatalogPdf({
       </button>
       {open &&
         createPortal(
-          <GroupDialog products={products} collection={collection} hasMore={hasMore} onClose={() => setOpen(false)} />,
+          <GroupDialog listing={listing} collection={collection} onClose={() => setOpen(false)} />,
           document.body,
         )}
     </>
@@ -71,20 +77,12 @@ export function AdminCatalogPdf({
 }
 
 /** The one question: which groups' prices. Several make one table per product, a row a group. */
-function GroupDialog({
-  products,
-  collection,
-  hasMore,
-  onClose,
-}: {
-  products: CatalogProduct[];
-  collection: string;
-  hasMore: boolean;
-  onClose: () => void;
-}) {
+function GroupDialog({ listing, collection, onClose }: { listing: CatalogListing; collection: string; onClose: () => void }) {
   const titleId = useId();
   const panel = useRef<HTMLDivElement>(null);
-  const count = Math.min(products.length, PRICE_LIST_MAX);
+  const state = useCatalogListing(listing);
+  const products = state.status === "ready" ? state.products : [];
+  const parts = catalogParts(products.length, PRICE_LIST_MAX);
   const [picked, setPicked] = useState<ReadonlySet<SegmentType>>(() => new Set(["RETAIL"]));
   // In the plate's order (Bayi, Toptan, Kafe, Perakende), whatever order they were ticked in.
   const groups = ADMIN_CATALOG_GROUPS.filter((g) => picked.has(g));
@@ -106,18 +104,18 @@ function GroupDialog({
     });
   }
 
-  function create() {
-    if (groups.length === 0) return;
-    const key = storeCatalogRequest({
-      productIds: products.slice(0, PRICE_LIST_MAX).map((p) => p.id),
-      groups,
-      collection,
-      admin: true,
-    });
+  /** Part `n` of the catalogue (the only one, up to 200 products); the preview can go on to the others. */
+  function create(n: number) {
+    if (groups.length === 0 || products.length === 0) return;
+    const key = storeCatalogRequest({ productIds: products.map((p) => p.id), groups, collection, admin: true });
     // To the preview, in this tab; "PDF İndir" there makes the file.
     onClose();
-    router.push(`/fiyat-katalogu?k=${key}`);
+    router.push(`/fiyat-katalogu?k=${key}${parts.length > 1 ? `&bolum=${n}` : ""}`);
   }
+
+  const groupLabel = groups.length === 1 ? CATALOG_GROUP_LABELS[groups[0]] : `${groups.length} grup`;
+  const createButton =
+    "inline-flex h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-red-600 px-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50"
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 p-4" onMouseDown={onClose}>
@@ -179,24 +177,57 @@ function GroupDialog({
           </div>
         </fieldset>
 
-        <button
-          type="button"
-          onClick={create}
-          disabled={groups.length === 0}
-          className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-red-600 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <FileDown className="h-4 w-4" aria-hidden />
-          {groups.length === 0
-            ? "En az bir grup seçin"
-            : groups.length === 1
-              ? `Kataloğu Oluştur (${CATALOG_GROUP_LABELS[groups[0]]})`
-              : `Kataloğu Oluştur (${groups.length} grup)`}
-        </button>
+        {state.status !== "ready" || groups.length === 0 || parts.length <= 1 ? (
+          <button
+            type="button"
+            onClick={() => create(1)}
+            disabled={state.status !== "ready" || groups.length === 0 || products.length === 0}
+            aria-busy={state.status === "loading"}
+            className={`mt-4 ${createButton}`}
+          >
+            {state.status === "loading" ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> {t.gathering}
+              </>
+            ) : (
+              <>
+                <FileDown className="h-4 w-4" aria-hidden />
+                {groups.length === 0 ? "En az bir grup seçin" : `Kataloğu Oluştur (${groupLabel})`}
+              </>
+            )}
+          </button>
+        ) : (
+          <div className="mt-4">
+            <p className="text-sm font-medium">Kataloğu Oluştur ({groupLabel})</p>
+            <div role="group" aria-label={t.parts} className="mt-2 grid gap-2">
+              {parts.map((part) => (
+                <button key={part.n} type="button" onClick={() => create(part.n)} className={createButton}>
+                  <FileDown className="h-4 w-4" aria-hidden />
+                  {t.part(part.n, tr(part.from), tr(part.to))}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
-        <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
-          Ekrandaki {count.toLocaleString("tr-TR")} ürün, gördüğünüz sırayla kataloğa eklenir.
-          {products.length > PRICE_LIST_MAX && ` Bir katalog en fazla ${PRICE_LIST_MAX} ürün alır; ilk ${PRICE_LIST_MAX} ürün eklenecek.`}
-          {hasMore && " Listede henüz yüklenmemiş ürünler var; onları da eklemek için önce “Daha fazla göster” ile yükleyin."}{" "}
+        <p className="mt-4 text-xs leading-relaxed text-muted-foreground" aria-live="polite">
+          {state.status === "loading" ? (
+            <span className="flex items-center gap-1.5">
+              <Loader2 className="h-3 w-3 animate-spin" aria-hidden /> {t.counting}
+            </span>
+          ) : state.status === "error" ? (
+            <span className="flex flex-wrap items-center gap-x-2 text-red-600 dark:text-red-400">
+              {t.listFailed}
+              <button type="button" onClick={state.retry} className="inline-flex items-center gap-1 font-semibold underline-offset-2 hover:underline">
+                <RotateCw className="h-3 w-3" aria-hidden /> {t.retry}
+              </button>
+            </span>
+          ) : (
+            <>
+              {t.total(listing.scope, tr(products.length))}
+              {parts.length > 1 && t.inParts(PRICE_LIST_MAX, parts.length)}
+            </>
+          )}{" "}
           Fiyatlar grupların liste fiyatlarıdır (fırsat indirimleri hariç). Önce önizleme açılır; dosyayı oradan “PDF İndir” ile indirin.
         </p>
       </div>

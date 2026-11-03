@@ -6,6 +6,7 @@
 
 import { defineMessages } from "@/lib/i18n/messages";
 import type { SortKey } from "@/lib/catalogFilters";
+import type { ListingScope } from "@/lib/catalogParts";
 import type { SegmentType } from "@/types";
 
 /** "Bayi, Toptan ve Kafe": a list of groups, as the language joins one. */
@@ -19,6 +20,32 @@ const EN_SEGMENT: BySegment = { RETAIL: "Retail", CAFE: "Café", WHOLESALE: "Who
 const AR_SEGMENT: BySegment = { RETAIL: "تجزئة", CAFE: "مقهى", WHOLESALE: "جملة", DEALER: "موزع" };
 /** Arabic "أسعار …": the group as the price's owner (أسعار الجملة, أسعار المقاهي). */
 const AR_SEGMENT_PRICES: BySegment = { RETAIL: "التجزئة", CAFE: "المقاهي", WHOLESALE: "الجملة", DEALER: "الموزعين" };
+
+/** A catalogue's products, as its count's sentence names them ("Kategorideki toplam 118 ürün"). */
+const TR_SCOPE: Record<ListingScope, string> = {
+  category: "Kategorideki",
+  brand: "Markadaki",
+  search: "Aramadaki",
+  all: "Katalogdaki",
+  deals: "Fırsatlardaki",
+  filtered: "Filtrelere uyan",
+};
+const EN_SCOPE: Record<ListingScope, string> = {
+  category: "in this category",
+  brand: "of this brand",
+  search: "found by this search",
+  all: "in the catalog",
+  deals: "on offer",
+  filtered: "matching your filters",
+};
+const AR_SCOPE: Record<ListingScope, string> = {
+  category: "منتجات هذه الفئة",
+  brand: "منتجات هذه العلامة التجارية",
+  search: "نتائج البحث",
+  all: "منتجات الكتالوج",
+  deals: "منتجات العروض",
+  filtered: "المنتجات المطابقة للتصفية",
+};
 
 const enCount = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
@@ -122,9 +149,15 @@ export const catalogMessages = defineMessages({
       groupPrices: (segment: SegmentType) => `${TR_SEGMENT[segment]} Fiyatları`,
       cafeFixed:
         "Kafe alış fiyatlarınızı ve müşterileriniz için Perakende satış fiyatlarını içeren kataloğunuz hazırlanacaktır.",
-      order: (count: string) => `Ekrandaki ${count} ürün, gördüğünüz sırayla kataloğa eklenir.`,
-      overLimit: (max: number) => ` Bir katalog en fazla ${max} ürün alır; ilk ${max} ürün eklenecek.`,
-      notLoaded: " Listede henüz yüklenmemiş ürünler var; onları da eklemek için önce “Daha fazla göster” ile yükleyin.",
+      total: (scope: ListingScope, count: string) => `${TR_SCOPE[scope]} toplam ${count} ürün, gördüğünüz sırayla kataloğa ekleniyor.`,
+      inParts: (max: number, parts: number) => ` Bir katalog en fazla ${max} ürün aldığı için ${parts} bölüm halinde hazırlanır.`,
+      counting: "Ürünler sayılıyor…",
+      gathering: "Hazırlanıyor…",
+      listFailed: "Ürün listesi alınamadı.",
+      retry: "Tekrar dene",
+      part: (n: number, from: string, to: string) => `Bölüm ${n} (${from}–${to})`,
+      partOf: (n: number, of: number) => `Bölüm ${n}/${of}`,
+      parts: "Katalog bölümleri",
       newTab: "Önce kataloğun önizlemesi açılır; oradan “PDF İndir” ile dosyayı indirin.",
       cancel: "Vazgeç",
       create: "Kataloğu oluştur",
@@ -239,9 +272,15 @@ export const catalogMessages = defineMessages({
       whichGroup: "Which price group should the catalog show?",
       groupPrices: (segment: SegmentType) => `${EN_SEGMENT[segment]} Prices`,
       cafeFixed: "Your catalog will show your café purchase prices and the retail prices for your customers.",
-      order: (count: string) => `The ${count} products on screen go into the catalog in the order you see them.`,
-      overLimit: (max: number) => ` A catalog holds up to ${max} products; the first ${max} will be added.`,
-      notLoaded: " Some products in this list are not loaded yet; to include them, load them first with “Show more products”.",
+      total: (scope: ListingScope, count: string) => `All ${count} products ${EN_SCOPE[scope]} go into the catalog in the order you see them.`,
+      inParts: (max: number, parts: number) => ` A catalog holds up to ${max} products, so it comes in ${parts} parts.`,
+      counting: "Counting products…",
+      gathering: "Preparing…",
+      listFailed: "The product list could not be loaded.",
+      retry: "Try again",
+      part: (n: number, from: string, to: string) => `Part ${n} (${from}–${to})`,
+      partOf: (n: number, of: number) => `Part ${n}/${of}`,
+      parts: "Catalog parts",
       newTab: "A preview of the catalog opens first; download the file from there with “Download PDF”.",
       cancel: "Cancel",
       create: "Create catalog",
@@ -354,9 +393,15 @@ export const catalogMessages = defineMessages({
       whichGroup: "حسب أي فئة أسعار يُنشأ الكتالوج؟",
       groupPrices: (segment: SegmentType) => `أسعار ${AR_SEGMENT_PRICES[segment]}`,
       cafeFixed: "سيتضمن الكتالوج أسعار الشراء الخاصة بمقهاكم وأسعار التجزئة لعملائكم.",
-      order: (count: string) => `تُضاف المنتجات المعروضة على الشاشة (${count}) إلى الكتالوج بالترتيب الذي تراه.`,
-      overLimit: (max: number) => ` يتسع الكتالوج لـ ${max} منتج كحد أقصى؛ ستُضاف أول ${max} منتج.`,
-      notLoaded: " في القائمة منتجات لم تُحمَّل بعد؛ لإضافتها، حمّلها أولاً عبر «عرض المزيد من المنتجات».",
+      total: (scope: ListingScope, count: string) => `تُضاف جميع ${AR_SCOPE[scope]} (${count}) إلى الكتالوج بالترتيب الذي تراه.`,
+      inParts: (max: number, parts: number) => ` يتسع الكتالوج لـ ${max} منتج كحد أقصى، لذا يُجهَّز في ${parts} أجزاء.`,
+      counting: "جارٍ عدّ المنتجات…",
+      gathering: "جارٍ التجهيز…",
+      listFailed: "تعذّر تحميل قائمة المنتجات.",
+      retry: "إعادة المحاولة",
+      part: (n: number, from: string, to: string) => `الجزء ${n} (${from}–${to})`,
+      partOf: (n: number, of: number) => `الجزء ${n}/${of}`,
+      parts: "أجزاء الكتالوج",
       newTab: "تُفتح أولاً معاينة للكتالوج؛ نزّل الملف من هناك عبر «تنزيل PDF».",
       cancel: "إلغاء",
       create: "إنشاء الكتالوج",
