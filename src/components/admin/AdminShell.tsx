@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  BarChart3,
   Boxes,
   Calculator,
   ClipboardList,
@@ -43,6 +44,8 @@ interface NavItem {
 const NAV: NavItem[] = [
   { href: "/admin", label: "Genel Bakış", icon: LayoutDashboard, exact: true },
   { href: "/admin/orders", label: "Siparişler", icon: ClipboardList },
+  // Sales and profitability, every table exportable to Excel.
+  { href: "/admin/reports", label: "Raporlar", icon: BarChart3 },
   {
     href: "/admin/products",
     label: "Ürünler & Stok",
