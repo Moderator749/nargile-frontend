@@ -31,6 +31,7 @@ import {
   type PricingRecord,
   type PricingSegment,
 } from "@/lib/pricing";
+import { type PricingOrigin, originOf } from "@/lib/pricingOrigin";
 
 type Tab = "calculator" | "drafts" | "files";
 
@@ -86,14 +87,17 @@ function draftFrom(r: PricingRecord): SheetDraft {
 /**
  * "Fiyat Hesaplama Cetveli": the calculator, the drafts it saved ("Taslaklar"),
  * and the named files ("Dosyalar"). A saved row can be loaded back into the
- * calculator, changed, and saved again as a new row.
+ * calculator, changed, and saved over ("Kaydet") — or as a new row ("Farklı
+ * Kaydet"). Each list goes by the last save, newest first.
  */
 export function AdminPricingView() {
   const [tab, setTab] = useState<Tab>("calculator");
   // Two sheets, as on paper: Cetvel 1 from a cost before VAT, Cetvel 2 after.
-  const [sheets, setSheets] = useState<{ EXCL: { key: number; draft: SheetDraft }; INCL: { key: number; draft: SheetDraft } }>({
-    EXCL: { key: 0, draft: emptySheet("EXCL") },
-    INCL: { key: 0, draft: emptySheet("INCL") },
+  // Each with the saved row it was loaded from, which "Kaydet" writes over.
+  type Sheet = { key: number; draft: SheetDraft; origin: PricingOrigin | null };
+  const [sheets, setSheets] = useState<{ EXCL: Sheet; INCL: Sheet }>({
+    EXCL: { key: 0, draft: emptySheet("EXCL"), origin: null },
+    INCL: { key: 0, draft: emptySheet("INCL"), origin: null },
   });
   const [files, setFiles] = useState<PricingFile[]>([]);
   const [drafts, setDrafts] = useState<PricingRecord[] | null>(null);
@@ -138,7 +142,7 @@ export function AdminPricingView() {
   // A saved row goes back into the sheet of its own VAT basis.
   const load = (r: PricingRecord) => {
     const mode = r.sheet.vat_mode;
-    setSheets((s) => ({ ...s, [mode]: { key: s[mode].key + 1, draft: draftFrom(r) } }));
+    setSheets((s) => ({ ...s, [mode]: { key: s[mode].key + 1, draft: draftFrom(r), origin: originOf(r) } }));
     setTab("calculator");
     requestAnimationFrame(() =>
       document.getElementById(`cetvel-${mode}`)?.scrollIntoView({ behavior: "smooth", block: "start" }),
@@ -298,6 +302,7 @@ export function AdminPricingView() {
             key={`EXCL-${sheets.EXCL.key}`}
             title="Cetvel 1 · KDV hariç maliyet"
             initial={sheets.EXCL.draft}
+            origin={sheets.EXCL.origin}
             files={files}
             onSaved={reload}
           />
@@ -307,6 +312,7 @@ export function AdminPricingView() {
             key={`INCL-${sheets.INCL.key}`}
             title="Cetvel 2 · KDV dahil maliyet"
             initial={sheets.INCL.draft}
+            origin={sheets.INCL.origin}
             files={files}
             onSaved={reload}
           />

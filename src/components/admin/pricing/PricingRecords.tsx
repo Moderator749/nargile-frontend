@@ -1,9 +1,16 @@
 "use client";
 
-import { CheckCircle2, ImageOff, RotateCcw, Trash2 } from "lucide-react";
+import { CheckCircle2, History, ImageOff, RotateCcw, Trash2 } from "lucide-react";
 
-import { formatDate } from "@/lib/format";
+import { formatDate, formatDateParts } from "@/lib/format";
 import type { PricingCurrency, PricingRecord, StoredColumn } from "@/lib/pricing";
+import { appliedState } from "@/lib/pricingOrigin";
+
+/** "03.11.2026 14:05": a save, to the minute — two saves of a day are told apart. */
+const stamp = (iso: string) => {
+  const { date, time } = formatDateParts(iso);
+  return `${date} ${time}`;
+};
 
 const SYMBOL: Record<PricingCurrency, string> = { TRY: "₺", USD: "$", EUR: "€" };
 const money = (v: string | null, c: PricingCurrency) =>
@@ -88,7 +95,8 @@ export function PricingRecords({
                   {r.product_name || "Adsız ürün"}
                 </p>
                 <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">
-                  {formatDate(r.created_at)} ·{" "}
+                  {/* The last save; a row saved over says so. */}
+                  {r.updated_at !== r.created_at ? `Güncellendi ${stamp(r.updated_at)}` : stamp(r.created_at)} ·{" "}
                   {s.vat_mode === "EXCL" ? (
                     `KDV hariç · ${c}`
                   ) : (
@@ -100,12 +108,21 @@ export function PricingRecords({
               </div>
               </div>
               <div className="flex items-center gap-2">
-                {r.applied_at && (
+                {appliedState(r) === "current" && (
                   <span
                     className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/30"
-                    title={`Siteye uygulandı: ${formatDate(r.applied_at)}`}
+                    title={`Siteye uygulandı: ${formatDate(r.applied_at!)}`}
                   >
                     <CheckCircle2 className="h-3.5 w-3.5" aria-hidden /> Sitede
+                  </span>
+                )}
+                {/* Applied, then saved over without applying: the site has the earlier figures. */}
+                {appliedState(r) === "earlier" && (
+                  <span
+                    className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-800 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/30"
+                    title={`Sitedeki fiyatlar bu kaydın önceki halinden (uygulandı: ${formatDate(r.applied_at!)}). Güncel hali siteye uygulanmadı: cetvele yükleyip “Kaydet ve siteye uygula” ile uygulayabilirsiniz.`}
+                  >
+                    <History className="h-3.5 w-3.5" aria-hidden /> Sitede · önceki hali
                   </span>
                 )}
                 <button

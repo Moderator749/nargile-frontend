@@ -91,6 +91,8 @@ export interface PricingRecord {
     skipped: string[];
   } | null;
   created_at: ISODateTime;
+  /** Last saved; after `applied_at`, the site has its earlier version's prices. The lists go by it. */
+  updated_at: ISODateTime;
 }
 
 export interface PricingFile {
@@ -224,19 +226,31 @@ export async function fetchPricingRecords(fileId: number | null, signal?: AbortS
   return data;
 }
 
-export async function saveDraft(sheet: PricingSheetInput): Promise<PricingRecord> {
-  const { data } = await api.post<PricingRecord>("/admin/pricing/draft", { sheet });
+// Each save adds a row, or — given `replaceId` — overwrites that one, which
+// ends up where the save goes ("Kaydet" on a loaded row, "Üzerine Yaz").
+
+export async function saveDraft(sheet: PricingSheetInput, replaceId?: UUID): Promise<PricingRecord> {
+  const { data } = await api.post<PricingRecord>("/admin/pricing/draft", { sheet, replace_id: replaceId ?? null });
   return data;
 }
 
-export async function saveToFile(target: FileTarget, sheet: PricingSheetInput): Promise<PricingRecord> {
-  const { data } = await api.post<PricingRecord>("/admin/pricing/file", { ...target, sheet });
+export async function saveToFile(target: FileTarget, sheet: PricingSheetInput, replaceId?: UUID): Promise<PricingRecord> {
+  const { data } = await api.post<PricingRecord>("/admin/pricing/file", { ...target, sheet, replace_id: replaceId ?? null });
   return data;
 }
 
 /** Saves the row in the file, then writes its prices to the product its code names. */
-export async function saveAndApply(target: FileTarget, sheet: PricingSheetInput): Promise<ApplyResult> {
-  const { data } = await api.post<ApplyResult>("/admin/pricing/apply-to-product", { ...target, sheet });
+export async function saveAndApply(target: FileTarget, sheet: PricingSheetInput, replaceId?: UUID): Promise<ApplyResult> {
+  const { data } = await api.post<ApplyResult>("/admin/pricing/apply-to-product", { ...target, sheet, replace_id: replaceId ?? null });
+  return data;
+}
+
+/**
+ * The rows a save of `code` would sit beside where it goes — `target`'s file,
+ * or the drafts for null — newest first ("Mevcut Dosya Bulundu").
+ */
+export async function matchingRecords(code: string, target: FileTarget | null): Promise<PricingRecord[]> {
+  const { data } = await api.get<PricingRecord[]>("/admin/pricing/records/matching", { params: { code, ...(target ?? {}) } });
   return data;
 }
 
