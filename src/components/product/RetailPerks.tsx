@@ -26,25 +26,27 @@ export const showsRetailPerks = (user: Pick<User, "account_type" | "segment_code
 
 /**
  * The ones a product page states. Of the homepage's advantages, the ways a
- * bireysel buyer's payment and loyalty pay off — havale, SultanPuan, Kumbara;
- * the installments, the volume discount, the free van and the courier are left
- * to the homepage and the cart, so the description sits close under the button.
+ * bireysel buyer's basket and loyalty pay off — the cart discount, SultanPuan,
+ * Kumbara. Havale is left to the price box above, which already gives its
+ * price; the installments, the free van and the courier to the homepage and
+ * the cart, so the description sits close under the button.
  */
-const PRODUCT_PAGE_PERKS = ["transfer", "sultanpuan", "kumbara"] as const satisfies readonly AdvantageKey[];
+const PRODUCT_PAGE_PERKS = ["volume", "sultanpuan", "kumbara"] as const satisfies readonly AdvantageKey[];
+type PerkKey = (typeof PRODUCT_PAGE_PERKS)[number];
 const isProductPagePerk = (key: AdvantageKey): key is PerkKey => (PRODUCT_PAGE_PERKS as readonly AdvantageKey[]).includes(key);
 
 /**
- * The shop's payment and loyalty advantages as one line under "Sepete Ekle":
- * "Havale & EFT %5 – %7 | SultanPuan %10 | Kumbara 20.000 TL", each in the
- * homepage's words (`storeAdvantages`) with the live figures of "Parametreler",
- * and only while the homepage shows it. Each leads to its section on
- * "Ayrıcalıklar ve Avantajlar"; its fuller sentence is the link's title.
+ * The shop's basket and loyalty advantages as one row under "Sepete Ekle",
+ * each a figure over its name: "%5 – %8 30.000 TL+ / Sepette İndirim",
+ * "%10 / SultanPuan Kazanımı", "20.000 TL+ / Kumbara Bonusu", with the live
+ * figures of "Parametreler", and only while the homepage shows it. Each leads
+ * to its section on "Ayrıcalıklar ve Avantajlar"; its fuller sentence is the
+ * link's title.
  *
  * Shown to a bireysel account and to a visitor who has not signed in — never
  * to a kafe, a bayi or a toptan account, whose discounts are zero by rule
  * (`lib/perks`, mirroring the server): offering them here would be offering
- * something checkout will not honour. Such an account sees `TransferPerk`
- * instead, where the product gives its list the havale discount.
+ * something checkout will not honour.
  */
 export function RetailPerks({ params, sources }: { params: StoreParameters; sources: AdvantageSources }) {
   const user = useAuthStore((s) => s.user);
@@ -55,75 +57,72 @@ export function RetailPerks({ params, sources }: { params: StoreParameters; sour
 }
 
 /**
- * A firm's account (kafe, bayi, toptan) on a product whose switch gives its
- * list the havale discount (`segment_havale`): of the advantages, that one
- * alone — the others are retail offers checkout will not honour for it. The
- * Avantaj Çubuğu's own words and the live tiers of "Parametreler", as the
- * retail list states it, whether or not the homepage shows the bar.
+ * Each perk's mark and colours: the saving green, the crown gold, the piggy
+ * bank the shop's red. The badges are solid, each text at 4.5:1 or better on
+ * its fill, in both themes.
  */
-export function TransferPerk({ params, sources }: { params: StoreParameters; sources: AdvantageSources }) {
-  const { percent } = useMessages(homeMessages);
-  const transfer = storeAdvantages({ ...sources, sections: { ...sources.sections, perks: true } }, params, percent).filter(
-    (advantage) => advantage.key === "transfer",
-  );
-  return <AdvantageList advantages={transfer} />;
-}
-
-type PerkKey = (typeof PRODUCT_PAGE_PERKS)[number];
-
-/** Each perk's mark and tint: the saving green, the crown gold, the piggy bank the shop's red. */
 const PERK_STYLE: Record<PerkKey, { Icon: LucideIcon; icon: string; badge: string }> = {
-  transfer: {
+  volume: {
     Icon: BadgePercent,
     icon: "text-emerald-600 dark:text-emerald-400",
-    badge: "bg-emerald-50 text-emerald-700 ring-emerald-600/15 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/20",
+    badge: "bg-emerald-700 text-white dark:bg-emerald-400 dark:text-emerald-950",
   },
   sultanpuan: {
     Icon: Crown,
-    icon: "text-amber-600 dark:text-amber-400",
-    badge: "bg-amber-50 text-amber-800 ring-amber-600/20 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/20",
+    icon: "text-amber-500 dark:text-amber-400",
+    badge: "bg-amber-400 text-amber-950 dark:bg-amber-400 dark:text-amber-950",
   },
   kumbara: {
     Icon: PiggyBank,
     icon: "text-red-600 dark:text-red-400",
-    badge: "bg-red-50 text-red-700 ring-red-600/15 dark:bg-red-500/10 dark:text-red-300 dark:ring-red-400/20",
+    badge: "bg-red-600 text-white",
   },
 };
 
 const COLUMNS = ["grid-cols-1", "grid-cols-1", "grid-cols-2", "grid-cols-3"] as const;
+
+/** "(30.000 TL+)" → "30.000 TL+": beside a badge, the brackets are noise. */
+const bare = (threshold: string | null) => threshold?.replace(/^\((.*)\)$/, "$1") ?? null;
 
 function AdvantageList({ advantages }: { advantages: StoreAdvantage[] }) {
   const t = useMessages(productMessages).perks;
   const shown = advantages.filter((a): a is StoreAdvantage & { key: PerkKey } => isProductPagePerk(a.key) && a.value !== null);
   if (shown.length === 0) return null;
 
-  // One strip: the perks side by side across it from `sm`; on a phone as many
-  // equal micro-cards, icon over words, parted by hairlines.
+  // One card, its perks in equal cells parted by hairlines. Where the card is
+  // wide enough for it (a desktop column, a tablet) each cell sets its icon
+  // beside the figure and the name; in a narrower one (a phone, a laptop's
+  // two-column page) the icon stands over them, centred.
   return (
     <ul
       aria-label={t.label}
-      className={`grid ${COLUMNS[shown.length]} divide-x divide-stone-200/70 rounded-lg border border-stone-200/70 bg-stone-50/80 py-2 rtl:divide-x-reverse sm:flex sm:items-center sm:justify-between sm:gap-3 sm:divide-x-0 sm:px-3 dark:divide-white/10 dark:border-white/10 dark:bg-white/[0.03]`}
+      className={`@container grid ${COLUMNS[shown.length]} divide-x divide-stone-200 rounded-xl border border-stone-200 bg-white py-2.5 shadow-sm dark:divide-white/10 dark:border-white/10 dark:bg-white/[0.04]`}
     >
       {shown.map(({ key, anchor, value, threshold, note }) => {
         const { Icon, icon, badge } = PERK_STYLE[key];
-        const [before, after] = t[key];
         // Kumbara's figure is where the bonus starts: "20.000 TL+".
         const figure = key === "kumbara" ? `${value}+` : value;
+        const from = key === "volume" ? bare(threshold) : null;
         return (
-          <li key={key} className="min-w-0 px-1.5 sm:px-0">
+          <li key={key} className="min-w-0 px-2 @xl:px-3">
             <Link
               href={`${PERKS_PAGE.href}#${anchor}`}
               title={[threshold, note].filter(Boolean).join(" ")}
-              className="group flex flex-col items-center gap-1 rounded-md text-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:flex-row sm:gap-2 sm:text-start"
+              className="group flex h-full flex-col items-center gap-1.5 rounded-lg text-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent @xl:flex-row @xl:items-start @xl:gap-2.5 @xl:text-start"
             >
-              <Icon className={`h-3.5 w-3.5 shrink-0 ${icon}`} strokeWidth={2} aria-hidden />
-              <span className="text-[11px] font-medium leading-snug text-stone-700 transition-colors duration-200 group-hover:text-stone-950 dark:text-zinc-300 dark:group-hover:text-white">
-                {before}
-                {/* A figure reads left to right in every language: "20.000 TL+", not "+TL 20.000". */}
-                <span dir="ltr" className={`mx-0.5 inline-block whitespace-nowrap rounded px-1 font-semibold tabular-nums ring-1 ring-inset ${badge}`}>
-                  {figure}
+              <Icon className={`h-5 w-5 shrink-0 @xl:mt-0.5 ${icon}`} strokeWidth={2.25} aria-hidden />
+              <span className="flex min-w-0 flex-col items-center gap-0.5 @xl:items-start">
+                {/* The badge next to the icon in either direction; a figure itself
+                    reads left to right in every language: "20.000 TL+", not "+TL 20.000". */}
+                <span className="flex flex-wrap items-baseline justify-center gap-x-1.5 gap-y-0.5 @xl:justify-start">
+                  <span dir="ltr" className={`whitespace-nowrap rounded-md px-2 py-0.5 text-sm font-bold tabular-nums shadow-sm ring-1 ring-inset ring-black/10 ${badge}`}>
+                    {figure}
+                  </span>
+                  {from && <span dir="ltr" className="whitespace-nowrap text-xs font-medium tabular-nums text-stone-500 dark:text-zinc-400">{from}</span>}
                 </span>
-                {after}
+                <span className="text-[13px] font-medium leading-tight text-stone-800 transition-colors duration-200 group-hover:text-stone-950 sm:text-sm dark:text-zinc-200 dark:group-hover:text-white">
+                  {t[key]}
+                </span>
               </span>
             </Link>
           </li>

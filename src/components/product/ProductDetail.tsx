@@ -10,7 +10,7 @@ import { QuantityStepper } from "@/components/cart/QuantityStepper";
 import { ColorPicker } from "@/components/product/ColorPicker";
 import { CrossSells } from "@/components/product/CrossSells";
 import { ProductDescription } from "@/components/product/ProductDescription";
-import { RetailPerks, TransferPerk, showsRetailPerks } from "@/components/product/RetailPerks";
+import { RetailPerks, showsRetailPerks } from "@/components/product/RetailPerks";
 import type { AdvantageSources } from "@/lib/storeAdvantages";
 import { isExportAccount } from "@/lib/exportAccount";
 import { ProductGallery } from "@/components/product/ProductGallery";
@@ -179,6 +179,11 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
     const t = setTimeout(() => setAdded(false), 1600);
     return () => clearTimeout(t);
   }, [added]);
+
+  function removeFromCart() {
+    if (variant) useCartStore.getState().removeItem(variant.id);
+    setDraft(null);
+  }
 
   /** Not in the cart: add `quantity`. In the cart: set it to exactly `quantity`. Either way held to the stock. */
   async function commit() {
@@ -355,7 +360,7 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
             />
           )}
 
-          <div ref={buyRow} className="mt-6 flex flex-wrap items-center gap-3">
+          <div ref={buyRow} className="mt-6 flex flex-wrap items-center gap-3 sm:flex-nowrap">
             <QuantityStepper
               value={quantity}
               onChange={(q) => {
@@ -367,42 +372,23 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
               max={maxQuantity}
               limitReached={limitHit && quantity === maxQuantity}
             />
-            <BuyButton state={buy} onCommit={commit} className="flex-1 sm:flex-none sm:min-w-56" />
+            <BuyButton state={buy} onCommit={commit} className="flex-1 sm:w-56 sm:flex-none sm:shrink" />
+            {/* From `sm`, what is in the cart sits beside the button, two short
+                lines no taller than it, so the row keeps its height either way. */}
+            <InCartNote count={inCart} onRemove={removeFromCart} stacked className="hidden min-w-0 shrink-0 sm:flex" />
           </div>
-          {/* Havale, SultanPuan and Kumbara on one line under the button; a
-              firm's account sees only the havale discount, and only where this
-              product gives its list one. */}
-          {perksShown ? (
+          {/* The cart discount, SultanPuan and Kumbara in one row under the
+              button. Havale is the price box's to state, so a firm's account,
+              whose only perk would be that, gets no row. */}
+          {perksShown && (
             <div className="mt-3">
               <RetailPerks params={params} sources={advantages} />
             </div>
-          ) : (
-            product.segment_havale && (
-              <div className="mt-3">
-                <TransferPerk params={params} sources={advantages} />
-              </div>
-            )
           )}
-          {/* Its height is kept whether or not the colour is in the cart, so the
-              description never moves when the cart loads: a finger's 44px on a
-              phone, a pointer's 32px from `sm`. */}
-          <p className="mt-1 flex min-h-11 flex-wrap items-center gap-x-1.5 text-sm text-muted-foreground sm:min-h-8" aria-live="polite">
-            {inCart > 0 && (
-              <>
-                {t.inYourCart(inCart)} ·
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (variant) useCartStore.getState().removeItem(variant.id);
-                    setDraft(null);
-                  }}
-                  className="inline-flex min-h-11 items-center px-1 font-medium text-foreground underline-offset-2 hover:underline sm:min-h-8"
-                >
-                  {t.removeFromCart}
-                </button>
-              </>
-            )}
-          </p>
+          {/* On a phone it has a line of its own, under the perks; its height is
+              kept whether or not the colour is in the cart, so the description
+              never moves when the cart loads. */}
+          <InCartNote count={inCart} onRemove={removeFromCart} className="mt-1 min-h-11 sm:hidden" />
 
 
           {/* A three-line preview rather than a wall of text, so "Sepete Ekle"
@@ -441,8 +427,42 @@ type BuyState =
   | { kind: "update"; disabled: boolean }
   | { kind: "goToCart"; justAdded: boolean };
 
+/**
+ * "Sepetinizde 2 adet · Sepetten çıkar": what of this colour is in the cart,
+ * and a way to take it out. One line on a phone; `stacked`, the count over
+ * the way out, where it sits beside the button. Rendered for each place,
+ * shown in one: a hidden live region is not read out, so it is said once.
+ */
+function InCartNote({ count, onRemove, stacked = false, className = "" }: { count: number; onRemove: () => void; stacked?: boolean; className?: string }) {
+  const t = useMessages(productMessages);
+  return (
+    <p
+      className={`${className} text-sm text-muted-foreground ${stacked ? "flex-col items-start justify-center leading-tight" : "flex flex-wrap items-center gap-x-1.5"}`}
+      aria-live="polite"
+    >
+      {count > 0 && (
+        <>
+          <span className="whitespace-nowrap">
+            {t.inYourCart(count)}
+            {!stacked && " ·"}
+          </span>
+          <button
+            type="button"
+            onClick={onRemove}
+            className={`inline-flex items-center whitespace-nowrap font-medium text-foreground underline-offset-2 hover:underline ${
+              stacked ? "min-h-6 text-xs" : "min-h-11 px-1"
+            }`}
+          >
+            {t.removeFromCart}
+          </button>
+        </>
+      )}
+    </p>
+  );
+}
+
 const BUY_BUTTON =
-  "inline-flex h-12 items-center justify-center gap-2 rounded-full px-7 text-sm font-semibold transition-[background-color,transform] duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-safe:active:scale-[0.98]";
+  "inline-flex h-11 items-center justify-center gap-2 rounded-full px-7 text-sm font-semibold transition-[background-color,transform] duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-safe:active:scale-[0.98]";
 
 /**
  * "Sepete Ekle", "Sepeti Güncelle", or — once the colour is in the cart as
