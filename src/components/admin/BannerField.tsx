@@ -13,9 +13,10 @@ const MAX_BYTES = 5 * 1024 * 1024;
 
 /**
  * A category page's banner: dropped or chosen, stored wide (adminUploadBanner),
- * and previewed at the page's own 4:1, with the strips a phone crops off
- * (it shows 3:1, from the middle) shaded — so the words and the subject are
- * placed where every screen sees them. Empty: the page shows no banner.
+ * and previewed as the recommended 6:1 strip with what the page crops off
+ * shaded — about a fifth of each side on a phone (it shows ~3.7:1), a tenth
+ * of the top and bottom on a wide screen (~7.4:1) — so the words and the
+ * subject go where every screen sees them. Empty: the page shows no banner.
  */
 export function BannerField({ value, onChange }: { value: string | null; onChange: (value: string | null) => void }) {
   const [busy, setBusy] = useState(false);
@@ -38,14 +39,17 @@ export function BannerField({ value, onChange }: { value: string | null; onChang
       <p className="text-sm font-medium text-slate-700 dark:text-zinc-300">Kategori banner&apos;ı</p>
       {value && (
         <figure className="space-y-1">
-          <div className="relative aspect-[4/1] overflow-hidden rounded-lg bg-slate-100 ring-1 ring-black/5 dark:bg-zinc-800 dark:ring-white/10">
-            <Image src={value} alt="" fill sizes="384px" unoptimized className="object-cover" />
-            {/* 4:1 shown as 3:1 on a phone: an eighth off each side. */}
-            <span className="absolute inset-y-0 left-0 w-[12.5%] border-r border-dashed border-white/80 bg-black/45" aria-hidden />
-            <span className="absolute inset-y-0 right-0 w-[12.5%] border-l border-dashed border-white/80 bg-black/45" aria-hidden />
+          <div className="relative aspect-[6/1] overflow-hidden rounded-lg bg-slate-100 ring-1 ring-black/5 dark:bg-zinc-800 dark:ring-white/10">
+            <Image src={value} alt="" fill sizes="384px" unoptimized className="h-full w-full object-cover" />
+            {/* A phone: ~19% off each side. */}
+            <span className="absolute inset-y-0 left-0 w-[19%] border-r border-dashed border-white/80 bg-black/45" aria-hidden />
+            <span className="absolute inset-y-0 right-0 w-[19%] border-l border-dashed border-white/80 bg-black/45" aria-hidden />
+            {/* A wide screen: ~10% off the top and the bottom. */}
+            <span className="absolute inset-x-0 top-0 h-[10%] border-b border-dashed border-white/60 bg-black/30" aria-hidden />
+            <span className="absolute inset-x-0 bottom-0 h-[10%] border-t border-dashed border-white/60 bg-black/30" aria-hidden />
           </div>
           <figcaption className="text-[11px] text-slate-500 dark:text-zinc-400">
-            Gölgeli kenarlar telefonda kırpılır; yazı ve ana görsel ortada kalsın.
+            Gölgeli kenarlar kırpılabilir (yanlar telefonda, üst ve alt geniş ekranda); yazı ve ana görsel ortada kalsın.
           </figcaption>
         </figure>
       )}
@@ -77,8 +81,9 @@ export function BannerField({ value, onChange }: { value: string | null; onChang
         <p className="text-[11px] text-red-600 dark:text-red-400">{error}</p>
       ) : (
         <p className="text-[11px] text-slate-500 dark:text-zinc-500">
-          Kategori sayfasında başlığın altında, tam genişlikte görünür. 2400×600 (4:1) önerilir; az yazılı, görsel ağırlıklı
-          olsun — her dilde aynı görsel gösterilir. Boş bırakılırsa banner alanı hiç görünmez.
+          Kategori sayfasında başlığın altında ince bir şerit olarak, tam genişlikte görünür (telefonda 96 px, masaüstünde
+          128 px yüksek). Önerilen: 2400×400 (6:1) ince şerit; az yazılı, görsel ağırlıklı olsun — her dilde aynı görsel
+          gösterilir. Boş bırakılırsa banner alanı hiç görünmez.
         </p>
       )}
     </div>
