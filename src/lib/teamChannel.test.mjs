@@ -2,7 +2,20 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { badgeText, clockTime, dayLabel, mergeMessages, titleWithCount, turkeyDay } from "./teamChannel.ts";
+import {
+  CLOSED_EVERY,
+  IDLE_AFTER,
+  IDLE_EVERY,
+  OPEN_EVERY,
+  badgeText,
+  clockTime,
+  dayLabel,
+  mergeMessages,
+  pollEvery,
+  titleWithCount,
+  turkeyDay,
+  untilIdle,
+} from "./teamChannel.ts";
 
 const msg = (id, body = `m${id}`) => ({
   id, body, sender_id: "u", sender_name: "Ali", created_at: "2026-11-03T09:00:00Z", mine: false, can_delete: false,
@@ -33,4 +46,24 @@ test("the tab's title carries the unread count, and loses it at zero", () => {
   assert.equal(titleWithCount("Raporlar", 150), "(99+) Raporlar");
   assert.equal(badgeText(7), "7");
   assert.equal(badgeText(100), "99+");
+});
+
+test("the drawer asks every 5 s open, every 30 s open but unattended, every minute shut", () => {
+  assert.equal(OPEN_EVERY, 5_000);
+  assert.equal(IDLE_EVERY, 30_000);
+  assert.equal(CLOSED_EVERY, 60_000);
+  assert.equal(pollEvery(true, false), OPEN_EVERY);
+  assert.equal(pollEvery(true, true), IDLE_EVERY);
+  // Shut, being away changes nothing: the badge is already asked rarely.
+  assert.equal(pollEvery(false, false), CLOSED_EVERY);
+  assert.equal(pollEvery(false, true), CLOSED_EVERY);
+});
+
+test("ten minutes without a sign of life counts as away", () => {
+  assert.equal(IDLE_AFTER, 600_000);
+  const last = 1_000_000;
+  assert.equal(untilIdle(last, last), IDLE_AFTER);
+  assert.equal(untilIdle(last, last + 60_000), 540_000);
+  assert.equal(untilIdle(last, last + IDLE_AFTER), 0);
+  assert.equal(untilIdle(last, last + IDLE_AFTER + 5_000), 0);
 });

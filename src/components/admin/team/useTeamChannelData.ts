@@ -15,12 +15,8 @@ import {
   type DailyNote,
   type Unread,
 } from "@/lib/teamApi";
-import { mergeMessages, type ChannelMessage } from "@/lib/teamChannel";
+import { IDLE_AFTER, mergeMessages, pollEvery, untilIdle, type ChannelMessage } from "@/lib/teamChannel";
 
-/** While the drawer is open: new messages within a few seconds. */
-const OPEN_EVERY = 5_000;
-/** While it is closed: only the badge, once a minute. */
-const CLOSED_EVERY = 60_000;
 /** Günün Notu changes rarely: asked again at most this often. */
 const NOTE_EVERY = 60_000;
 const FIRST_PAGE = 50;
@@ -35,11 +31,57 @@ function useTabVisible(): boolean {
   return useSyncExternalStore(subscribeVisibility, () => document.visibilityState === "visible", () => true);
 }
 
+const ACTIVITY = ["pointermove", "pointerdown", "keydown", "wheel", "touchstart"] as const;
+
+/**
+ * Whether nobody has moved the mouse, typed or touched the page for
+ * IDLE_AFTER. The first sign of life ends it; so does the tab coming back.
+ */
+function useIdle(): boolean {
+  const [idle, setIdle] = useState(false);
+  useEffect(() => {
+    let last = Date.now();
+    let away = false;
+    let timer: ReturnType<typeof setTimeout>;
+    const check = () => {
+      const left = untilIdle(last, Date.now());
+      if (left > 0) {
+        timer = setTimeout(check, left);
+      } else {
+        away = true;
+        setIdle(true);
+      }
+    };
+    // Only a timestamp on each event: a mouse move costs next to nothing.
+    const active = () => {
+      last = Date.now();
+      if (!away) return;
+      away = false;
+      setIdle(false);
+      timer = setTimeout(check, IDLE_AFTER);
+    };
+    const shown = () => {
+      if (document.visibilityState === "visible") active();
+    };
+    timer = setTimeout(check, IDLE_AFTER);
+    for (const name of ACTIVITY) window.addEventListener(name, active, { capture: true, passive: true });
+    document.addEventListener("visibilitychange", shown);
+    return () => {
+      clearTimeout(timer);
+      for (const name of ACTIVITY) window.removeEventListener(name, active, { capture: true });
+      document.removeEventListener("visibilitychange", shown);
+    };
+  }, []);
+  return idle;
+}
+
 /**
  * Ekip Kanalı's data, kept fresh by polling — no socket. Open: the newer
  * messages (`after_id`) every few seconds, the note now and then, and what
- * has been seen marked read. Closed: the unread count once a minute. In a
- * background tab: nothing, until it is in front again (then at once). One
+ * has been seen marked read; every half minute once nobody has touched the
+ * page for ten minutes, and at once when someone does. Closed: the unread
+ * count once a minute. In a background tab: nothing, until it is in front
+ * again (then at once). One
  * request at a time; a change of state cancels the one in flight.
  */
 export function useTeamChannelData(open: boolean) {
@@ -50,6 +92,7 @@ export function useTeamChannelData(open: boolean) {
   const [note, setNote] = useState<DailyNote | null>(null);
   const [error, setError] = useState<string | null>(null);
   const visible = useTabVisible();
+  const every = pollEvery(open, useIdle());
 
   // The newest message held (null: nothing asked yet), when the note was last
   // asked, and how far the server has been told this member has read.
@@ -104,7 +147,7 @@ export function useTeamChannelData(open: boolean) {
         if (axios.isCancel(err) || stopped) return;
         setError(getApiErrorMessage(err, "Ekip Kanalı'na şu an ulaşılamıyor; yeniden deneniyor."));
       }
-      if (!stopped) timer = setTimeout(tick, open ? OPEN_EVERY : CLOSED_EVERY);
+      if (!stopped) timer = setTimeout(tick, every);
     };
     void tick();
     return () => {
@@ -112,7 +155,7 @@ export function useTeamChannelData(open: boolean) {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [open, visible]);
+  }, [open, visible, every]);
 
   /** Post; the answer is shown at once, and replying counts as reading. */
   async function send(body: string) {

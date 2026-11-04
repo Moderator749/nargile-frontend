@@ -4,6 +4,24 @@
  * the unread count in the tab's title.
  */
 
+/** While the drawer is open: new messages within a few seconds. */
+export const OPEN_EVERY = 5_000;
+/** Open, but nobody at the screen: a panel left on all day asks less. */
+export const IDLE_EVERY = 30_000;
+/** While it is closed: only the badge, once a minute. */
+export const CLOSED_EVERY = 60_000;
+/** No mouse, key or touch for this long, and the member counts as away. */
+export const IDLE_AFTER = 10 * 60_000;
+
+/** How long the drawer waits between two polls. */
+export function pollEvery(open: boolean, idle: boolean): number {
+  if (!open) return CLOSED_EVERY;
+  return idle ? IDLE_EVERY : OPEN_EVERY;
+}
+
+/** How long until the member, last active at `last`, counts as away (0: already). */
+export const untilIdle = (last: number, now: number) => Math.max(0, last + IDLE_AFTER - now);
+
 export interface ChannelMessage {
   id: number;
   sender_id: string | null;
