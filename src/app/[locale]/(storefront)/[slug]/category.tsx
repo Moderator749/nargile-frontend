@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { CatalogScreen } from "@/components/catalog/CatalogScreen";
-import { categoryCopy, categoryFamily, hasCategoryCopy, parentCategory } from "@/lib/categories";
+import { ancestorsOf, categoryCopy, categoryFamily, hasCategoryCopy } from "@/lib/categories";
 import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n/config";
 import type { getI18n } from "@/lib/i18n/server";
 import { getBrands, getPublicProducts } from "@/lib/server/catalog";
@@ -52,14 +52,13 @@ export async function CategoryPage({
   const slug = category.slug;
   const [products, brands] = await Promise.all([getPublicProducts(slug), getBrands()]);
   const name = category.name;
-  const parent = parentCategory(category, categories);
   return (
     <CatalogScreen
       title={name}
       breadcrumbs={[
-        // Ana Sayfa > (Grup >) Kategori, the first steps of the product's own trail.
+        // Ana Sayfa > (Grup > (Alt kategori >)) Kategori, the first steps of the product's own trail.
         { name: t.nav.crumbHome, href: "/" },
-        ...(parent ? [{ name: parent.name, href: categoryHref(parent.slug) }] : []),
+        ...ancestorsOf(category, categories).map((c) => ({ name: c.name, href: categoryHref(c.slug) })),
         { name, href: categoryHref(slug) },
       ]}
       family={categoryFamily(category, categories)}

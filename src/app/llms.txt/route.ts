@@ -1,12 +1,13 @@
 import { BILGI_DOCUMENTS, PERKS_PAGE, bilgiHref } from "@/lib/bilgi";
 import { ARTICLES, BLOG_HREF, articleHref } from "@/lib/blog";
 import { FAQ, FAQ_HREF } from "@/lib/faq";
+import { categoryTree, flattenTree } from "@/lib/categories";
 import { brandHref, categoryHref } from "@/lib/seo";
 import { getBrands, getCategories, getPublicProducts, getStoreParameters } from "@/lib/server/catalog";
 import { getHomepage } from "@/lib/server/homepage";
 import { DEFAULT_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 import { formatRate } from "@/lib/storeParameters";
-import type { Category, ParameterTier, StoreParameters } from "@/types";
+import type { ParameterTier, StoreParameters } from "@/types";
 
 /*
  * /llms.txt (https://llmstxt.org): the shop in one Markdown page for AI
@@ -67,8 +68,6 @@ export async function GET() {
     getStoreParameters(),
   ]);
   const stocked = (categories ?? []).filter((c) => (c.product_count ?? 0) > 0);
-  const topLevel = stocked.filter((c) => c.parent_id === null);
-  const childrenOf = (parent: Category) => stocked.filter((c) => c.parent_id === parent.id);
 
   // A brand is listed where its products are: its category of the same slug,
   // or its own page when it has products on sale (a brand whose products are
@@ -109,14 +108,11 @@ export async function GET() {
     "## Kategoriler",
     "",
     `- [Tüm ürünler](${url("/catalog")}): Kataloğun tamamı; ?q= ile arama yapılabilir.`,
-    ...topLevel.flatMap((c) => [
-      `- [${line(c.name)}](${url(categoryHref(c.slug))}): ${c.product_count} ürün`,
-      ...childrenOf(c).map((s) => `  - [${line(s.name)}](${url(categoryHref(s.slug))}): ${s.product_count} ürün`),
-    ]),
-    // A subcategory whose parent has nothing of its own still has a page.
-    ...stocked
-      .filter((c) => c.parent_id !== null && !topLevel.some((t) => t.id === c.parent_id))
-      .map((c) => `- [${line(c.name)}](${url(categoryHref(c.slug))}): ${c.product_count} ürün`),
+    // Indented by level. A count includes the subcategories', so a stocked
+    // category's whole trail above it is stocked too: nothing is left loose.
+    ...flattenTree(categoryTree(stocked)).map(
+      ({ category: c, depth }) => `${"  ".repeat(depth)}- [${line(c.name)}](${url(categoryHref(c.slug))}): ${c.product_count} ürün`,
+    ),
     "",
   ];
 

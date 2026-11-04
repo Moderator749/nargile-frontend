@@ -1,7 +1,6 @@
 import { Cog, Flame, Layers, Leaf, Package, Shield, Wind, Wrench, type LucideIcon } from "lucide-react";
 
 import type { Locale } from "@/lib/i18n/config";
-import type { Category, CategoryNode } from "@/types";
 
 interface CategoryCopy {
   icon: LucideIcon;
@@ -124,43 +123,17 @@ export function categoryCopy(slug: string | null | undefined, locale: Locale = "
   return { icon: copy.icon, description: copy.description[locale] };
 }
 
-const bySortThenName = (a: Category, b: Category) =>
-  (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.name.localeCompare(b.name, "tr");
-
-/** Two-level tree: top-level groups, each with its subcategories, in menu order. */
-export function categoryTree(categories: Category[]): CategoryNode[] {
-  const children = new Map<number, Category[]>();
-  for (const c of categories) {
-    if (c.parent_id !== null) children.set(c.parent_id, [...(children.get(c.parent_id) ?? []), c]);
-  }
-  return categories
-    .filter((c) => c.parent_id === null)
-    .sort(bySortThenName)
-    .map((c) => ({ ...c, children: (children.get(c.id) ?? []).sort(bySortThenName) }));
-}
-
-/** A group and the subcategories of it that list something, for the row under a category's heading. */
-export interface CategoryFamily {
-  group: Category;
-  members: Category[];
-}
-
-/**
- * The family a category belongs to: its group (itself, when it is one) and the
- * group's subcategories with products, in menu order — so "Nargile Takımları"
- * leads on to each kind of set, and each kind to its neighbours and back to
- * all of them. Null when the category has no group or the group no stocked
- * subcategory.
- */
-export function categoryFamily(category: Category, categories: Category[]): CategoryFamily | null {
-  const group = category.parent_id === null ? category : categories.find((c) => c.id === category.parent_id);
-  if (!group) return null;
-  const members = categories
-    .filter((c) => c.parent_id === group.id && (c.product_count ?? 0) > 0)
-    .sort(bySortThenName);
-  return members.length > 0 ? { group, members } : null;
-}
-
-/** The category's group, when it is under one. */
-export const parentCategory = (category: Category | null | undefined, categories: Category[]): Category | undefined =>
-  category?.parent_id != null ? categories.find((c) => c.id === category.parent_id) : undefined;
+// The hierarchy (three levels) lives in a module of its own, free of icons, for its tests.
+export {
+  ancestorsOf,
+  canPlaceUnder,
+  categoryFamily,
+  categoryTree,
+  flattenTree,
+  MAX_CATEGORY_DEPTH,
+  pathOf,
+  rootOf,
+  subtreeIds,
+  type CategoryFamily,
+  type FlatCategory,
+} from "@/lib/categoryTree";

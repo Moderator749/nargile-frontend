@@ -6,7 +6,7 @@ import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 import { adminSelectClass, isSiteOrHttpsLink } from "@/components/admin/ContentEditor";
 import { BrokenCategoryNote, inputClass } from "@/components/admin/homepage/fields";
 import { Switch } from "@/components/ui/Switch";
-import { categoryTree } from "@/lib/categories";
+import { categoryTree, flattenTree } from "@/lib/categories";
 import { brokenCategoryLink } from "@/lib/catalogLinks";
 import { navHref } from "@/lib/storefrontNav";
 import type { Brand, Category, HomeNavItem } from "@/types";
@@ -145,14 +145,12 @@ function Entry({
               {item.slug && !categories.some((c) => c.slug === item.slug) && (
                 <option value={item.slug}>{item.slug} (bulunamadı)</option>
               )}
-              {categoryTree(categories)
-                .flatMap((group) => [group, ...group.children])
-                .map((c) => (
-                  <option key={c.id} value={c.slug}>
-                    {c.parent_id ? "— " : ""}
-                    {c.name}
-                  </option>
-                ))}
+              {flattenTree(categoryTree(categories)).map(({ category: c, depth }) => (
+                <option key={c.id} value={c.slug}>
+                  {"— ".repeat(depth)}
+                  {c.name}
+                </option>
+              ))}
             </select>
           ) : kind === "brand" ? (
             <select
@@ -249,8 +247,8 @@ export function CategoryMenuEditor({
   // A new entry starts on the first category not already in this menu.
   function add() {
     const taken = new Set(items.map((i) => i.href ?? (i.slug ? categoryHref(i.slug) : "")));
-    const free = categoryTree(categories)
-      .flatMap((g) => [g, ...g.children])
+    const free = flattenTree(categoryTree(categories))
+      .map(({ category }) => category)
       .find((c) => !taken.has(categoryHref(c.slug)));
     onChange([
       ...items,

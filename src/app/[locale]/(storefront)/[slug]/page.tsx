@@ -6,7 +6,7 @@ import { ProductDetail } from "@/components/product/ProductDetail";
 import { RelatedCategories } from "@/components/product/RelatedCategories";
 import { SimilarProducts } from "@/components/product/SimilarProducts";
 import { JsonLd } from "@/components/seo/JsonLd";
-import { categoryCopy, hasCategoryCopy, parentCategory } from "@/lib/categories";
+import { ancestorsOf, categoryCopy, hasCategoryCopy } from "@/lib/categories";
 import { DEFAULT_LOCALE, localePath } from "@/lib/i18n/config";
 import { RETIRED_PRODUCTS } from "@/lib/legacy/opencart";
 import { getI18n } from "@/lib/i18n/server";
@@ -167,11 +167,10 @@ async function ProductPage(slug: string, { locale, t }: Awaited<ReturnType<typeo
   const similar = pickSimilar(categoryList, product);
   const related = relatedCategories(product, categories, brands ?? [], undefined, locale);
 
-  // Ana Sayfa > (Grup >) Kategori > Ürün: the path a visitor takes from a menu to here.
-  const group = parentCategory(category, categories);
+  // Ana Sayfa > (Grup > (Alt kategori >)) Kategori > Ürün: the path a visitor takes from a menu to here.
   const crumbs: Breadcrumb[] = [
     { name: t.nav.crumbHome, href: "/" },
-    ...(group ? [{ name: group.name, href: categoryHref(group.slug) }] : []),
+    ...ancestorsOf(category, categories).map((c) => ({ name: c.name, href: categoryHref(c.slug) })),
     ...(category ? [{ name: category.name, href: categoryHref(category.slug) }] : []),
     { name: product.name, href: productHref(product) },
   ];

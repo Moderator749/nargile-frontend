@@ -258,9 +258,9 @@ export interface Category {
   updated_at?: string | null;
 }
 
-/** A top-level category with its subcategories (menu, tabs). */
+/** A category with its subcategories, and theirs (three levels at most). */
 export interface CategoryNode extends Category {
-  children: Category[];
+  children: CategoryNode[];
 }
 
 /** "Markalar" menu and homepage marquee. Links to a catalog name search. */

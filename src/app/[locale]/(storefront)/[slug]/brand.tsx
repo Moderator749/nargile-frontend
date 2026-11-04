@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { CatalogScreen } from "@/components/catalog/CatalogScreen";
+import { rootOf, subtreeIds } from "@/lib/categories";
 import { DEFAULT_LOCALE, LOCALES, type Locale } from "@/lib/i18n/config";
 import type { getI18n } from "@/lib/i18n/server";
 import { textToHtml } from "@/lib/richText";
@@ -22,15 +23,15 @@ const ownDescription = (brand: { description?: string | null }, locale: string) 
   locale === DEFAULT_LOCALE && !!brand.description?.trim();
 
 /**
- * The kinds of product among `products`: each one's group (its category's
- * parent, or the category itself at the top), in the menu's order, with every
- * category id that falls under it.
+ * The kinds of product among `products`: each one's group (the top-level
+ * category above its category, or the category itself at the top), in the
+ * menu's order, with every category id that falls under it, at any depth.
  */
 function groupsOf(products: CatalogProduct[], categories: Category[]) {
   const byId = new Map(categories.map((c) => [c.id, c]));
   const groupOf = (id: number | null) => {
     const category = id != null ? byId.get(id) : undefined;
-    return category ? (category.parent_id != null ? byId.get(category.parent_id) ?? category : category) : undefined;
+    return category ? rootOf(category, categories) : undefined;
   };
   const present = new Map<number, Category>();
   for (const p of products) {
@@ -42,7 +43,7 @@ function groupsOf(products: CatalogProduct[], categories: Category[]) {
     .map((g) => ({
       slug: g.slug,
       name: g.name,
-      ids: [g.id, ...categories.filter((c) => c.parent_id === g.id).map((c) => c.id)],
+      ids: subtreeIds(g.id, categories),
     }));
 }
 

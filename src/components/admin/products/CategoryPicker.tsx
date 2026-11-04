@@ -4,11 +4,14 @@ import { useState } from "react";
 import { Star, X } from "lucide-react";
 
 import { sheetInputClass, sheetLabelClass } from "@/components/admin/products/SheetParts";
-import { categoryTree } from "@/lib/categories";
+import { ancestorsOf, categoryTree, flattenTree } from "@/lib/categories";
 import type { AdminCategory } from "@/types";
 import { foldSearch } from "@/lib/searchFold";
 
 const fold = foldSearch;
+
+/** A row's indent by its level: group, subcategory, sub-subcategory. */
+const INDENT = ["", "pl-8", "pl-14"];
 
 /**
  * "Kategori", several at once: the product is listed under every category
@@ -30,20 +33,21 @@ export function CategoryPicker({
 }) {
   const [filter, setFilter] = useState("");
   const byId = new Map(categories.map((c) => [c.id, c]));
-  const isLive = (c: AdminCategory) => c.is_active !== false && (c.parent_id === null || byId.get(c.parent_id)?.is_active !== false);
+  // On, with every category above it on: what the storefront shows.
+  const isLive = (c: AdminCategory) => [...ancestorsOf(c, categories), c].every((x) => x.is_active !== false);
 
   const toggle = (id: number) => onChange(value.includes(id) ? value.filter((v) => v !== id) : [...value, id]);
   const makePrimary = (id: number) => onChange([id, ...value.filter((v) => v !== id)]);
 
   const q = fold(filter.trim());
-  // Groups with their subcategories under them, as the menu shows them. Active
-  // categories only — the ones the storefront shows — except those the product
-  // is already in, so they are not lost.
-  const rows = categoryTree(categories)
-    .flatMap((group) => [group, ...group.children])
-    .map((c) => byId.get(c.id))
-    .filter((c): c is AdminCategory => !!c && (isLive(c) || value.includes(c.id)))
-    .filter((c) => !q || fold(c.name).includes(q) || (c.parent_id !== null && fold(byId.get(c.parent_id)?.name ?? "").includes(q)));
+  // Groups with their subcategories (and theirs) under them, as the menu shows
+  // them. Active categories only — the ones the storefront shows — except those
+  // the product is already in, so they are not lost. A search matches the
+  // category or anything above it: "oduman" finds Oduman Lüleler too.
+  const rows = flattenTree(categoryTree(categories))
+    .map(({ category, depth }) => ({ c: byId.get(category.id), depth }))
+    .filter((r): r is { c: AdminCategory; depth: number } => !!r.c && (isLive(r.c) || value.includes(r.c.id)))
+    .filter(({ c }) => !q || [...ancestorsOf(c, categories), c].some((x) => fold(x.name).includes(q)));
 
   return (
     <div>
@@ -100,11 +104,11 @@ export function CategoryPicker({
         className={sheetInputClass}
       />
       <ul className="mt-1.5 max-h-56 overflow-y-auto rounded-lg border border-slate-200 py-1 dark:border-white/10">
-        {rows.map((c) => (
+        {rows.map(({ c, depth }) => (
           <li key={c.id}>
             <label
-              className={`flex cursor-pointer items-center gap-2 px-3 py-1.5 text-sm hover:bg-slate-50 dark:hover:bg-white/5 ${
-                c.parent_id === null ? "font-semibold text-slate-900 dark:text-zinc-100" : "pl-8 text-slate-700 dark:text-zinc-300"
+              className={`flex cursor-pointer items-center gap-2 px-3 py-1.5 text-sm hover:bg-slate-50 dark:hover:bg-white/5 ${INDENT[depth] ?? INDENT[2]} ${
+                depth === 0 ? "font-semibold text-slate-900 dark:text-zinc-100" : "text-slate-700 dark:text-zinc-300"
               }`}
             >
               <input

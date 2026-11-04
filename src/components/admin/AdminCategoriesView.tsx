@@ -18,7 +18,7 @@ import {
   adminListProducts,
   adminUpdateCategory,
 } from "@/lib/adminApi";
-import { categoryTree } from "@/lib/categories";
+import { canPlaceUnder, categoryTree, flattenTree, MAX_CATEGORY_DEPTH } from "@/lib/categories";
 import { getApiErrorMessage } from "@/lib/errors";
 import { refreshStorefront } from "@/lib/revalidate";
 import type { AdminCategory, AdminProduct, TranslatedLocale } from "@/types";
@@ -64,8 +64,12 @@ const EMPTY: FormState = {
   translations: NO_TRANSLATIONS,
 };
 
+/** A tree row's indent by its level: group, subcategory, sub-subcategory. */
+const ROW_INDENT = ["", "pl-8", "pl-16"];
+
 /**
- * The catalog's categories: the two-level tree (groups → sub-categories) with
+ * The catalog's categories: the tree (groups → subcategories → theirs, three
+ * levels at most) with
  * add, rename, delete, on/off and cover image, and product → category moves.
  * Lives in "Ana Sayfa Düzenleme" › Katalog Kategorileri; `onChange` tells the
  * editor around it when the tree changed, so its pickers and link checks
@@ -99,9 +103,16 @@ export function AdminCategoriesView({ onChange }: { onChange?: () => void } = {}
 
   const tree = useMemo(() => categoryTree(categories ?? []), [categories]);
   const byId = useMemo(() => new Map((categories ?? []).map((c) => [c.id, c])), [categories]);
-  // Two levels: a parent must be top-level, and a group with children stays top-level.
-  const editingHasChildren = !!editing && tree.some((g) => g.id === editing.id && g.children.length > 0);
-  const parentOptions = tree.filter((g) => g.id !== editing?.id);
+  // A parent is a group or a subcategory; the ones this category can't go
+  // under (its own branch, or a fourth level with what it brings) are shown
+  // greyed out, so the form offers only what the server takes.
+  const parentOptions = flattenTree(tree)
+    .filter(({ depth }) => depth < MAX_CATEGORY_DEPTH - 1)
+    .map(({ category, depth }) => ({
+      category,
+      depth,
+      allowed: canPlaceUnder(editing?.id ?? null, category.id, categories ?? []),
+    }));
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((f) => ({ ...f, [key]: value }));
@@ -189,8 +200,8 @@ export function AdminCategoriesView({ onChange }: { onChange?: () => void } = {}
     }
   }
 
-  const row = (c: AdminCategory, depth: 0 | 1) => (
-    <li key={c.id} className={`flex items-center gap-3 py-2.5 ${depth ? "pl-8" : ""}`}>
+  const row = (c: AdminCategory, depth: number) => (
+    <li key={c.id} className={`flex items-center gap-3 py-2.5 ${ROW_INDENT[depth] ?? ROW_INDENT[2]}`}>
       <div className="min-w-0 flex-1">
         <p className={`truncate text-sm ${depth ? "" : "font-semibold"} ${c.is_active ? "" : "text-slate-400 line-through dark:text-zinc-500"}`}>
           {c.name}
@@ -209,10 +220,13 @@ export function AdminCategoriesView({ onChange }: { onChange?: () => void } = {}
         #{c.sort_order}
       </span>
       <div className="flex gap-1">
-        {!depth && (
+        {/* A group and a subcategory take children; the third level is the last. */}
+        {depth < MAX_CATEGORY_DEPTH - 1 ? (
           <button type="button" onClick={() => startCreate(c.id)} aria-label={`${c.name} altına kategori ekle`} className={iconBtn}>
             <Plus className="h-4 w-4" aria-hidden />
           </button>
+        ) : (
+          <span className="h-8 w-8" aria-hidden />
         )}
         <button type="button" onClick={() => startEdit(c)} aria-label={`Düzenle: ${c.name}`} className={iconBtn}>
           <Pencil className="h-4 w-4" aria-hidden />
@@ -227,8 +241,9 @@ export function AdminCategoriesView({ onChange }: { onChange?: () => void } = {}
   return (
     <>
       <p className="mb-6 text-sm text-slate-600 dark:text-zinc-400">
-        Katalogdaki gruplar ve alt kategoriler: ürün formundaki kategori listesi ve mağazadaki kategori sayfaları
-        (/…) buradan gelir. Bir grup sayfası, alt kategorilerindeki ürünleri de listeler.
+        Katalogdaki gruplar ve alt kategoriler, en fazla 3 seviye (Ana grup › Alt kategori › Alt-alt kategori): ürün
+        formundaki kategori listesi ve mağazadaki kategori sayfaları (/…) buradan gelir. Bir kategori sayfası, altındaki
+        bütün kategorilerin ürünlerini de listeler.
       </p>
 
       <div className="grid gap-6 @4xl:grid-cols-[1fr_24rem]">
@@ -251,10 +266,7 @@ export function AdminCategoriesView({ onChange }: { onChange?: () => void } = {}
             <ul className="mt-4 divide-y divide-slate-200 dark:divide-white/10">
               {tree.map((g) => (
                 <li key={g.id}>
-                  <ul>
-                    {row(byId.get(g.id)!, 0)}
-                    {g.children.map((c) => row(byId.get(c.id)!, 1))}
-                  </ul>
+                  <ul>{flattenTree([g]).map(({ category, depth }) => row(byId.get(category.id)!, depth))}</ul>
                 </li>
               ))}
             </ul>
@@ -372,24 +384,23 @@ export function AdminCategoriesView({ onChange }: { onChange?: () => void } = {}
           </details>
           <div className="space-y-1.5">
             <label htmlFor="cat-parent" className="block text-sm font-medium text-slate-700 dark:text-zinc-300">
-              Üst grup
+              Üst kategori
             </label>
-            <select
-              id="cat-parent"
-              value={form.parentId}
-              onChange={(e) => set("parentId", e.target.value)}
-              disabled={editingHasChildren}
-              className={selectClass}
-            >
+            <select id="cat-parent" value={form.parentId} onChange={(e) => set("parentId", e.target.value)} className={selectClass}>
               <option value="">— Ana grup (menüde başlık)</option>
-              {parentOptions.map((g) => (
-                <option key={g.id} value={g.id}>
-                  {g.name}
+              {parentOptions.map(({ category, depth, allowed }) => (
+                <option key={category.id} value={category.id} disabled={!allowed}>
+                  {"   ".repeat(depth)}
+                  {depth ? "↳ " : ""}
+                  {category.name}
                 </option>
               ))}
             </select>
-            {editingHasChildren && (
-              <p className="text-xs text-slate-500 dark:text-zinc-400">Alt kategorisi olan bir grup ana grup olarak kalır.</p>
+            {parentOptions.some((o) => !o.allowed) && (
+              <p className="text-xs text-slate-500 dark:text-zinc-400">
+                Menü en fazla 3 seviye; soluk seçenekler bu kategoriyi (alt kategorileriyle birlikte) 3 seviyenin altına
+                iter ya da kendi dalının içine koyar.
+              </p>
             )}
           </div>
           <Input
@@ -495,16 +506,13 @@ function ProductMapper({ categories, onMoved }: { categories: AdminCategory[]; o
     }
   }
 
-  const categoryOptions = tree.flatMap((g) => [
-    <option key={g.id} value={g.id}>
-      {g.name}
-    </option>,
-    ...g.children.map((c) => (
-      <option key={c.id} value={c.id}>
-        {"   "}↳ {c.name}
-      </option>
-    )),
-  ]);
+  const flat = flattenTree(tree);
+  const label = (name: string, depth: number) => `${"   ".repeat(depth)}${depth ? "↳ " : ""}${name}`;
+  const categoryOptions = flat.map(({ category: c, depth }) => (
+    <option key={c.id} value={c.id}>
+      {label(c.name, depth)}
+    </option>
+  ));
 
   return (
     <section aria-labelledby="mapper-heading" className={`${panelClass} mt-6 p-5 sm:p-6`}>
@@ -533,16 +541,11 @@ function ProductMapper({ categories, onMoved }: { categories: AdminCategory[]; o
         </label>
         <select id="mapper-filter" value={filter} onChange={(e) => setFilter(e.target.value)} className={selectClass}>
           <option value="">Tüm kategoriler</option>
-          {tree.flatMap((g) => [
-            <option key={g.slug} value={g.slug}>
-              {g.name}
-            </option>,
-            ...g.children.map((c) => (
-              <option key={c.slug} value={c.slug}>
-                {"   "}↳ {c.name}
-              </option>
-            )),
-          ])}
+          {flat.map(({ category: c, depth }) => (
+            <option key={c.slug} value={c.slug}>
+              {label(c.name, depth)}
+            </option>
+          ))}
         </select>
       </div>
 

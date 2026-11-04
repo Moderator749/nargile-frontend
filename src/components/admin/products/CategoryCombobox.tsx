@@ -3,37 +3,34 @@
 import { useId, useMemo, useRef, useState } from "react";
 import { Check, ChevronsUpDown } from "lucide-react";
 
+import { ancestorsOf, categoryTree, flattenTree } from "@/lib/categories";
 import { foldSearch } from "@/lib/searchFold";
 import type { AdminCategory } from "@/types";
 
 interface Option {
   id: number;
   name: string;
-  /** Its group's name, for a subcategory. */
+  /** The categories above it, "Nargile Takımları › Oduman Nargile"; null for a group. */
   group: string | null;
+  /** 0 for a group, 1 for its subcategory, 2 below that. */
+  depth: number;
 }
 
-/** Groups first, each followed by its subcategories, in the menu's order. */
+/** Groups first, each followed by its subcategories (and theirs), in the menu's order. */
 function categoryOptions(categories: AdminCategory[]): Option[] {
-  const byOrder = (a: AdminCategory, b: AdminCategory) =>
-    (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.name.localeCompare(b.name, "tr");
-  const groups = categories.filter((c) => c.parent_id === null).sort(byOrder);
-  const known = new Set(groups.map((g) => g.id));
-  const options: Option[] = [];
-  for (const g of groups) {
-    options.push({ id: g.id, name: g.name, group: null });
-    for (const c of categories.filter((x) => x.parent_id === g.id).sort(byOrder)) {
-      options.push({ id: c.id, name: c.name, group: g.name });
-    }
-  }
+  const options: Option[] = flattenTree(categoryTree(categories)).map(({ category, depth }) => ({
+    id: category.id,
+    name: category.name,
+    group: depth ? ancestorsOf(category, categories).map((c) => c.name).join(" › ") : null,
+    depth,
+  }));
   // A subcategory whose group is gone still gets a line.
-  for (const c of categories.filter((x) => x.parent_id !== null && !known.has(x.parent_id))) {
-    options.push({ id: c.id, name: c.name, group: null });
-  }
+  const listed = new Set(options.map((o) => o.id));
+  for (const c of categories.filter((x) => !listed.has(x.id))) options.push({ id: c.id, name: c.name, group: null, depth: 0 });
   return options;
 }
 
-/** "Nargile Takımları › Gövde": a subcategory with its group, as the closed box shows it. */
+/** "Nargile Takımları › Oduman Nargile › Oduman Lüleler": a subcategory with its trail, as the closed box shows it. */
 const pathOf = (o: Option) => (o.group ? `${o.group} › ${o.name}` : o.name);
 
 /**
@@ -160,7 +157,7 @@ export function CategoryCombobox({
               aria-selected={o.id === value}
               onMouseEnter={() => setActive(i)}
               onClick={() => choose(o)}
-              className={`flex cursor-pointer items-center gap-2 py-2 pe-3 ${o.group && !q ? "ps-7" : "ps-3"} ${
+              className={`flex cursor-pointer items-center gap-2 py-2 pe-3 ${q ? "ps-3" : (["ps-3", "ps-7", "ps-11"][o.depth] ?? "ps-11")} ${
                 i === active ? "bg-slate-100 dark:bg-white/10" : ""
               } ${o.group ? "" : "font-medium"}`}
             >
