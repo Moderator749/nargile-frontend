@@ -74,18 +74,19 @@ export async function CatalogHeading({
 
 /**
  * Where the shop has written one, the category's introduction: two lines and
- * "Devamını Oku". Under the heading from `md` up; on a phone it waits under
- * the products, its name over it, so the grid starts right under the title
- * (CatalogView places it). All of it is in the HTML either way.
+ * "Devamını Oku", straight under the title on every screen, over the banner.
+ * All of it is in the HTML.
  */
 export async function CatalogIntro({ title, html }: { title: string; html: string }) {
   const t = await getMessages(catalogMessages);
   return (
-    <section aria-label={t.about(title)} className="max-w-3xl">
-      <p aria-hidden className="mb-2 text-[11px] font-medium uppercase tracking-[0.25em] text-muted-foreground">
-        {t.about(title)}
-      </p>
-      <ReadMore id="kategori-aciklamasi" html={html} lines={4} className="text-sm text-muted-foreground" />
+    // Plain muted text under the title, no heading of its own (a screen reader
+    // still hears what it is about); long text clamped, all of it in the page.
+    // No bottom margin: ReadMore's row for "Devamını Oku", kept whether or not
+    // the text overflows (so nothing jumps once that is measured), is the gap
+    // to the banner.
+    <section aria-label={t.about(title)} className="-mt-2 max-w-3xl">
+      <ReadMore id="kategori-aciklamasi" html={html} lines={2} className="text-sm text-muted-foreground" />
     </section>
   );
 }
