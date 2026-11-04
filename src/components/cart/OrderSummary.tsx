@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Building2, Check, Lock, Send, Ship, TrendingUp, Truck } from "lucide-react";
+import { Building2, Check, Crown, Lock, Send, Ship, TrendingUp, Truck } from "lucide-react";
 
 import { LegalConsent, MarketingConsent, type Agreements } from "@/components/cart/LegalConsent";
 import { useLocale, useMessages } from "@/components/i18n/LocaleProvider";
@@ -180,6 +180,50 @@ const wholeLira = (n: number, locale: Locale) =>
  * in the shop's red that grows in from its start. Past it, the card turns
  * green with a tick: "Tebrikler! Kargonuz Ücretsiz".
  */
+/**
+ * The Sultan Puan this order earns, as a reward rather than a footnote: the
+ * free-shipping card's shape (rounded, ringed, an icon in a disc) in warm gold
+ * instead of green, so it stands apart from the green boxes above it without
+ * shouting. The amount is the line's weight; what it is worth in lira, at the
+ * shop's rate, beside it. Nothing at all for no points.
+ */
+function LoyaltyEarnCard({ points, rate }: { points: number | null | undefined; rate: number }) {
+  const t = useMessages(cartMessages).summary;
+  const locale = useLocale();
+  if (!points || !(points > 0)) return null;
+  const worth = rate > 0 ? formatMoney(points * rate) : null;
+  return (
+    <div className="rounded-xl border border-amber-300/80 bg-gradient-to-br from-amber-50 via-amber-50 to-orange-50 px-3.5 py-3 text-amber-950 dark:border-amber-400/30 dark:from-amber-400/15 dark:via-amber-500/10 dark:to-orange-500/5 dark:text-amber-50">
+      <div className="flex items-center gap-3">
+        <span
+          aria-hidden
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-amber-300 to-amber-500 text-amber-950 shadow-[inset_0_1px_0_rgb(255_255_255/0.55),0_1px_2px_rgb(180_83_9/0.35)] ring-1 ring-amber-600/25"
+        >
+          <Crown className="h-5 w-5" strokeWidth={2.25} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-amber-700 dark:text-amber-300">{t.pointsTitle}</p>
+          {/* The amount and its worth on one line where there is room; the worth wraps under it where not. */}
+          <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-1">
+            <p className="whitespace-nowrap leading-tight">
+              <strong dir="ltr" className="text-lg font-extrabold tabular-nums">
+                {points.toLocaleString(INTL_LOCALE[locale])}
+              </strong>{" "}
+              <span className="text-[13px] font-semibold">Sultan Puan</span>
+            </p>
+            {worth && (
+              <span className="whitespace-nowrap rounded-full bg-white/80 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-amber-800 ring-1 ring-inset ring-amber-200 dark:bg-white/10 dark:text-amber-200 dark:ring-amber-400/25">
+                {t.pointsWorth(worth)}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+      <p className="mt-2 text-[11px] leading-4 text-amber-800/85 dark:text-amber-200/80">{t.pointsWhen}</p>
+    </div>
+  );
+}
+
 function FreeShippingProgress({
   subtotal,
   threshold,
@@ -450,10 +494,8 @@ export function OrderSummary(props: OrderSummaryProps) {
                 <VolumeNudge quote={quote} />
               </div>
             )}
-            {!props.quoteOnly && loyalty && quote.loyalty_points_to_earn > 0 && (
-              <p className="text-xs text-zinc-600 dark:text-zinc-400">
-                {t.pointsToEarn(quote.loyalty_points_to_earn.toLocaleString(INTL_LOCALE[locale]))}
-              </p>
+            {!props.quoteOnly && loyalty && (
+              <LoyaltyEarnCard points={quote.loyalty_points_to_earn} rate={Number(params.loyalty.conversion_rate)} />
             )}
             {!props.quoteOnly && !quote.perks_eligible && (
               <p className="text-xs text-slate-500 dark:text-zinc-400">{t.b2bNote}</p>

@@ -186,7 +186,9 @@ export const cartMessages = defineMessages({
         "Fiyatlarınız hesabınıza tanımlı fiyat listesinden gelir. Havale/EFT ile ödemede işaretli ürünlerde havale indirimi uygulanır; ciro ve Sultan Puan indirimleri bireysel (perakende) hesaplara tanımlıdır.",
       b2bNote:
         "Fiyatlarınız hesabınıza tanımlı fiyat listesinden gelir; ciro, havale ve Sultan Puan indirimleri bireysel (perakende) hesaplara tanımlıdır.",
-      pointsToEarn: (points: string) => `Siparişiniz onaylandığında ${points} Sultan Puan kazanacaksınız.`,
+      pointsTitle: "Bu siparişten kazanacağınız",
+      pointsWorth: (money: string) => `≈ ${money} değerinde`,
+      pointsWhen: "Siparişiniz onaylandığında hesabınıza eklenir; sonraki alışverişlerinizde indirim olarak kullanabilirsiniz.",
       calculating: "Kargo ve indirimler hesaplanıyor…",
       guestNote: (threshold: string) =>
         `Ciro ve havale indirimleri ödeme adımında hesaplanır; firma hesapları kendi fiyatlarını giriş yaparak görür. ${threshold} üzeri kargo ücretsiz (kömürde koşullu); altında gönderim ücreti teslimatta alıcı tarafından ödenir.`,
@@ -342,7 +344,9 @@ export const cartMessages = defineMessages({
         "Your prices come from the price list assigned to your account. Paying by bank transfer takes the transfer discount off the marked products; volume and Sultan Puan discounts apply to individual (retail) accounts.",
       b2bNote:
         "Your prices come from the price list assigned to your account; volume, bank transfer and Sultan Puan discounts apply to individual (retail) accounts.",
-      pointsToEarn: (points: string) => `You will earn ${points} Sultan Puan once your order is approved.`,
+      pointsTitle: "You'll earn with this order",
+      pointsWorth: (money: string) => `worth ≈ ${money}`,
+      pointsWhen: "Added to your account once your order is approved; use them as a discount on your next purchases.",
       calculating: "Calculating shipping and discounts…",
       guestNote: (threshold: string) =>
         `Volume and bank transfer discounts are calculated at checkout; business accounts see their own prices once signed in. Shipping is free over ${threshold} (conditions apply to charcoal); below that, the recipient pays for shipping on delivery.`,
@@ -498,7 +502,9 @@ export const cartMessages = defineMessages({
         "تأتي أسعارك من قائمة الأسعار المخصّصة لحسابك. عند الدفع بالتحويل البنكي يُطبَّق خصم التحويل على المنتجات المميزة؛ أما خصومات حجم المشتريات وSultan Puan فمخصّصة لحسابات الأفراد (التجزئة).",
       b2bNote:
         "تأتي أسعارك من قائمة الأسعار المخصّصة لحسابك؛ خصومات حجم المشتريات والتحويل البنكي وSultan Puan مخصّصة لحسابات الأفراد (التجزئة).",
-      pointsToEarn: (points: string) => `ستكسب ${points} نقطة Sultan Puan عند الموافقة على طلبك.`,
+      pointsTitle: "ستكسب من هذا الطلب",
+      pointsWorth: (money: string) => `بقيمة ≈ ${money}`,
+      pointsWhen: "تُضاف إلى حسابك عند الموافقة على طلبك، ويمكنك استخدامها كخصم في مشترياتك القادمة.",
       calculating: "جارٍ حساب الشحن والخصومات…",
       guestNote: (threshold: string) =>
         `تُحتسب خصومات حجم المشتريات والتحويل البنكي في خطوة الدفع، وترى حسابات الشركات أسعارها بعد تسجيل الدخول. الشحن مجاني فوق ${threshold} (بشروط للفحم)؛ وما دون ذلك يدفع المستلم رسوم الشحن عند التسليم.`,
