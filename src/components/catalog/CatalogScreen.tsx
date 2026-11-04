@@ -1,4 +1,5 @@
 import { CatalogHeading, CatalogIntro } from "@/components/catalog/CatalogHeading";
+import { CategoryBanner } from "@/components/catalog/CategoryBanner";
 import { CategoryClosing } from "@/components/catalog/CategoryClosing";
 import { CategoryFamilyNav } from "@/components/catalog/CategoryFamilyNav";
 import { SeoIntro } from "@/components/home/SeoIntro";
@@ -27,14 +28,16 @@ interface CatalogScreenProps {
   brandByRelation?: boolean;
   /** A brand page's kinds of product, as chips over the grid (CatalogView). */
   groups?: { slug: string; name: string; ids: number[] }[];
-  /** The page's introduction under its heading; clamped, the full text in the page. */
+  /** The page's introduction, at its foot under the products; clamped, the full text in the page. */
   intro?: string | null;
   /** A category's own passage at the page's foot, in place of the shop's "Alt SEO Metni". */
   closing?: { title: string; html: string | null } | null;
   /** The whole catalog, where the header's search lands (see CatalogHeading). */
   searchable?: boolean;
-  /** A category's group and its kinds, as links under the heading. */
+  /** A category's group and its kinds, as links under the filter bar. */
   family?: CategoryFamily | null;
+  /** A category's wide banner under its heading; none = no space kept. */
+  banner?: string | null;
 }
 
 /**
@@ -56,6 +59,7 @@ export async function CatalogScreen({
   closing,
   searchable,
   family,
+  banner,
 }: CatalogScreenProps) {
   const [home, locale] = await Promise.all([getHomepage(), getLocale()]);
   const pageHref = breadcrumbs[breadcrumbs.length - 1].href;
@@ -74,21 +78,25 @@ export async function CatalogScreen({
         initialProducts={products}
         brand={brand ? { name: brand.name, searchTerm: brand.search_term, slug: brand.slug, byRelation: brandByRelation } : undefined}
         groups={groups}
+        // Breadcrumb and title, the banner, then (in the grid) the filter
+        // bar, the family's chips and the products.
         heading={
           <>
             <CatalogHeading title={title} breadcrumbs={breadcrumbs} searchable={searchable} compact />
-            {family && activeCategory && <CategoryFamilyNav family={family} current={activeCategory.slug} />}
+            {banner && <CategoryBanner src={banner} alt={title} />}
           </>
         }
+        // Keyed: the grid sets it beside a brand page's chips, and an element a
+        // server component hands over arrives unchecked for a key.
+        chips={family && activeCategory ? <CategoryFamilyNav key="family" family={family} current={activeCategory.slug} /> : undefined}
         intro={intro ? <CatalogIntro title={title} html={intro} /> : undefined}
-        sidebar={<CategorySidebar items={resolveNav(home.navigation.sidebar, categories, brands)} fit />}
+        sidebar={<CategorySidebar key="sidebar" items={resolveNav(home.navigation.sidebar, categories, brands)} fit />}
       />
 
       {/* The shop in a few plain paragraphs, straight under the grid (its own
           top padding is the gap), so every listing page ends the same way
-          above the footer. A category's own
-          description is not repeated here: it is in the grid's column, under
-          its heading (under the products on a phone). */}
+          above the footer. A category's own description is not repeated
+          here: it closes the grid's column, under the products. */}
       {closing ? <CategoryClosing title={closing.title} html={closing.html} /> : <SeoIntro copy={home.seo_intro} />}
     </main>
   );

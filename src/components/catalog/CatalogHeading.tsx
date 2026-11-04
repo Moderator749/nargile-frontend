@@ -82,10 +82,10 @@ export async function CatalogIntro({ title, html }: { title: string; html: strin
   const t = await getMessages(catalogMessages);
   return (
     <section aria-label={t.about(title)} className="max-w-3xl">
-      <p aria-hidden className="mb-2 text-[11px] font-medium uppercase tracking-[0.25em] text-muted-foreground md:hidden">
+      <p aria-hidden className="mb-2 text-[11px] font-medium uppercase tracking-[0.25em] text-muted-foreground">
         {t.about(title)}
       </p>
-      <ReadMore id="kategori-aciklamasi" html={html} lines={2} className="text-sm text-muted-foreground" />
+      <ReadMore id="kategori-aciklamasi" html={html} lines={4} className="text-sm text-muted-foreground" />
     </section>
   );
 }

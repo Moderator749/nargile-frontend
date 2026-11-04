@@ -173,6 +173,16 @@ export async function adminUploadImages(files: File[], name?: string): Promise<U
   return data;
 }
 
+/** A category page's banner: stored as a WebP up to 2560px wide (wider than a product photo's 1800). */
+export async function adminUploadBanner(file: File): Promise<UploadedImage> {
+  const form = new FormData();
+  form.append("file", file);
+  const { data } = await api.post<UploadedImage>("/admin/uploads/banner", form, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return data;
+}
+
 /** The whole sheet in one request; the server writes its five tables atomically. */
 export async function adminCreateProductSheet(body: ProductSheet): Promise<SavedProductSheet> {
   const { data } = await api.post<SavedProductSheet>("/admin/products/sheet", body);

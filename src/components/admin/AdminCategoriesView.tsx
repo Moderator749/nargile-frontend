@@ -9,6 +9,7 @@ import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Switch } from "@/components/ui/Switch";
+import { BannerField } from "@/components/admin/BannerField";
 import { ImageField } from "@/components/admin/homepage/fields";
 import {
   adminAssignProductCategory,
@@ -35,6 +36,8 @@ interface FormState {
   sortOrder: string;
   isActive: boolean;
   imageUrl: string | null;
+  /** The category page's wide banner; null = none. */
+  bannerUrl: string | null;
   description: string;
   /** The passage closing the page, in place of the shop's "Alt SEO Metni". */
   seoTitle: string;
@@ -58,6 +61,7 @@ const EMPTY: FormState = {
   sortOrder: "0",
   isActive: true,
   imageUrl: null,
+  bannerUrl: null,
   description: "",
   seoTitle: "",
   seoText: "",
@@ -128,6 +132,7 @@ export function AdminCategoriesView({ onChange }: { onChange?: () => void } = {}
       sortOrder: String(c.sort_order),
       isActive: c.is_active,
       imageUrl: c.image_url ?? null,
+      bannerUrl: c.banner_url ?? null,
       description: c.description ?? "",
       seoTitle: c.seo_title ?? "",
       seoText: c.seo_text ?? "",
@@ -157,6 +162,7 @@ export function AdminCategoriesView({ onChange }: { onChange?: () => void } = {}
       sort_order: Math.max(0, Number.parseInt(form.sortOrder, 10) || 0),
       is_active: form.isActive,
       image_url: form.imageUrl?.trim() || null,
+      banner_url: form.bannerUrl?.trim() || null,
       description: form.description.trim() || null,
       seo_title: form.seoTitle.trim() || null,
       seo_text: blankHtml(form.seoText) ? null : form.seoText.trim(),
@@ -290,6 +296,7 @@ export function AdminCategoriesView({ onChange }: { onChange?: () => void } = {}
             placeholder="boş: addan üretilir"
             hint="Sayfa adresi: /<slug> (sitenin kökünde, ürünlerle aynı alanda; bir ürünün ya da sitenin bir sayfasının adresi olamaz). Değiştirirseniz eski adres yeni adrese yönlendirilir."
           />
+          <BannerField value={form.bannerUrl} onChange={(url) => set("bannerUrl", url)} />
           <div className="space-y-1.5">
             <p id="cat-description-label" className="block text-sm font-medium text-slate-700 dark:text-zinc-300">
               Kategori açıklaması
@@ -300,7 +307,7 @@ export function AdminCategoriesView({ onChange }: { onChange?: () => void } = {}
               value={form.description}
               onChange={(html) => set("description", html)}
               minHeight="7rem"
-              placeholder="Kategori sayfasında başlığın altında görünür; uzun metin iki satırdan sonra “Devamını Oku” ile açılır."
+              placeholder="Kategori sayfasının altında, ürünlerin ardından görünür; uzun metin “Devamını Oku” ile açılır."
             />
             <p className="text-xs text-slate-500 dark:text-zinc-400">
               İlk cümleler arama sonuçlarındaki açıklama olarak da kullanılır. Boş bırakılırsa hazır metin gösterilir.

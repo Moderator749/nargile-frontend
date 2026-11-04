@@ -5,10 +5,10 @@ import Image from "next/image";
 import { ImageUp, Loader2, Trash2 } from "lucide-react";
 
 const ACCEPTED = ["image/png", "image/jpeg", "image/webp"];
-const MAX_BYTES = 1024 * 1024;
+const MB = 1024 * 1024;
 
 interface ImageDropZoneProps {
-  /** Called with a validated file (PNG/JPEG/WebP, ≤ 1 MB). */
+  /** Called with a validated file (PNG/JPEG/WebP, ≤ `maxBytes`). */
   onFile: (file: File) => void;
   /** Shown when a file is rejected before upload. */
   onReject: (message: string) => void;
@@ -21,6 +21,8 @@ interface ImageDropZoneProps {
   onClear?: () => void;
   /** That button's words (default "Kaldır"). */
   clearLabel?: string;
+  /** The largest file taken (default 1 MB; the server checks again). */
+  maxBytes?: number;
 }
 
 /**
@@ -36,6 +38,7 @@ export function ImageDropZone({
   label = "Görsel",
   onClear,
   clearLabel = "Kaldır",
+  maxBytes = MB,
 }: ImageDropZoneProps) {
   const input = useRef<HTMLInputElement>(null);
   // dragenter/leave also fire for child elements: count them so the highlight doesn't flicker.
@@ -46,7 +49,7 @@ export function ImageDropZone({
   function accept(file: File | undefined) {
     if (!file || inactive) return;
     if (!ACCEPTED.includes(file.type)) return onReject("Yalnızca PNG, JPEG veya WebP görseller yüklenebilir.");
-    if (file.size > MAX_BYTES) return onReject("Görsel en fazla 1 MB olabilir.");
+    if (file.size > maxBytes) return onReject(`Görsel en fazla ${maxBytes / MB} MB olabilir.`);
     onFile(file);
   }
 
@@ -103,7 +106,7 @@ export function ImageDropZone({
           >
             dosya seçin
           </button>
-          . PNG, JPEG, WebP · en fazla 1 MB.
+          . PNG, JPEG, WebP · en fazla {maxBytes / MB} MB.
         </p>
         {onClear && preview && !busy && (
           <button

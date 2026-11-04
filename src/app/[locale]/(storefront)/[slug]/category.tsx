@@ -62,6 +62,7 @@ export async function CategoryPage({
         { name, href: categoryHref(slug) },
       ]}
       family={categoryFamily(category, categories)}
+      banner={category.banner_url}
       categories={categories}
       activeCategory={category}
       products={products}

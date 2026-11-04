@@ -241,12 +241,14 @@ export interface Category {
   slug: string;
   /** The languages it is translated into, Turkish first. */
   locales?: string[];
-  /** Two-level menu: null = top-level group. */
+  /** The menu (three levels at most): null = top-level group. */
   parent_id: number | null;
   /** Order among siblings (ascending). */
   sort_order?: number;
   /** Cover photo for its showcase tile; null = a product photo is borrowed. */
   image_url?: string | null;
+  /** The wide banner (about 4:1) under its page's heading; null = none, the space closed. */
+  banner_url?: string | null;
   /** The page's introduction as the admin wrote it; null = the built-in copy, if any. */
   description?: string | null;
   /** The passage closing its page (heading, HTML), in place of the shop's "Alt SEO Metni"; Turkish only. */
@@ -336,6 +338,8 @@ export interface CategoryWrite {
   sort_order: number;
   is_active: boolean;
   image_url: string | null;
+  /** Its page's banner; null removes it. */
+  banner_url?: string | null;
   /** Sent: replaces the category's translations (a language left out is dropped). Omitted: kept. */
   translations?: Partial<Record<TranslatedLocale, CategoryTranslation>> | null;
 }

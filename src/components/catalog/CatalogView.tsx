@@ -46,8 +46,10 @@ interface CatalogViewProps {
   initialProducts: CatalogProduct[] | null;
   /** The category's name and its trail, server-rendered. */
   heading: ReactNode;
-  /** The category's introduction: under the heading, or under the products on a phone. */
+  /** The category's introduction, under the products: the page's own words for search, out of the way of the grid. */
   intro?: ReactNode;
+  /** A category's chips (its subcategories, or its neighbours), under the filter bar. */
+  chips?: ReactNode;
   /**
    * A brand page: the grid is this brand's products, whatever the URL says, and
    * `initialProducts` are all of them, server-rendered. `byRelation`: asked
@@ -89,19 +91,13 @@ export function CatalogView(props: CatalogViewProps) {
 
         <div className="flex min-w-0 flex-1 flex-col">
           {props.heading}
-          {/* On a phone the introduction goes after the products (`order-last`),
-              so the first row of cards is in view under the title. */}
-          {props.intro && (
-            <div className="max-md:order-last max-md:mt-10 max-md:border-t max-md:border-border max-md:pt-6 md:-mt-2 md:mb-4">
-              {props.intro}
-            </div>
-          )}
           {/* A brand page's term is fixed by the route; its filters are in the URL all the same. */}
           <div>
             <Suspense fallback={<CatalogGrid {...props} query={brandQuery(props.brand)} initialFilters={EMPTY_FILTERS} initialGroup={null} />}>
               <CatalogGridFromUrl {...props} />
             </Suspense>
           </div>
+          {props.intro && <div className="mt-10 border-t border-border pt-6">{props.intro}</div>}
         </div>
       </div>
     </section>
@@ -137,6 +133,7 @@ function CatalogGrid({
   initialProducts,
   brand,
   groups,
+  chips,
   query,
   initialFilters,
   initialGroup,
@@ -246,9 +243,6 @@ function CatalogGrid({
 
   return (
     <>
-      {groups && groups.length > 1 && (
-        <GroupChips groups={groups} value={group} onChange={pickGroup} allLabel={t.allProducts} />
-      )}
       <CatalogFilterBar
         value={filters}
         onChange={patch}
@@ -263,6 +257,17 @@ function CatalogGrid({
           ) : undefined
         }
       />
+      {/* Under the filters, over the grid: a category's family (chips that
+          are links) or a brand page's kinds of product (chips that narrow). */}
+      {(chips || (groups && groups.length > 1)) && (
+        // The filter box's own margin is for the grid; chips sit closer to it.
+        <div className="md:-mt-4">
+          {chips}
+          {groups && groups.length > 1 && (
+            <GroupChips groups={groups} value={group} onChange={pickGroup} allLabel={t.allProducts} />
+          )}
+        </div>
+      )}
 
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         {/* The grid's heading, over the cards' own <h3>s: the collection's name
