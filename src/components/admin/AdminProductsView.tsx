@@ -26,7 +26,9 @@ import { fetchCategories } from "@/lib/catalogApi";
 import { getApiErrorMessage } from "@/lib/errors";
 import { refreshStorefront } from "@/lib/revalidate";
 import { formatMoney } from "@/lib/format";
-import type { AdminProduct, AdminVariant, Category, ProductSort, Segment } from "@/types";
+import { loadExchangeRates } from "@/lib/money";
+import { inLira, pickPriceRow } from "@/lib/retailPrice";
+import type { AdminProduct, AdminVariant, Category, ExchangeRates, ProductSort, Segment } from "@/types";
 
 const LOW_STOCK = 10;
 
@@ -137,6 +139,7 @@ export function AdminProductsView({
   const [category, setCategory] = useState<string>(initial.category);
   const [categories, setCategories] = useState<Category[]>([]);
   const [segments, setSegments] = useState<Segment[] | null>(null);
+  const [rates, setRates] = useState<ExchangeRates | null>(null);
   const [list, setList] = useState<ListState | null>(null);
   // The page belongs to one search/category: a new filter starts again at page 1.
   const [paging, setPaging] = useState<{ filter: string; page: number }>(() => ({
@@ -161,7 +164,13 @@ export function AdminProductsView({
       .catch(() => {
         // Products still load; without segments the retail price shows as "—".
       });
-    return () => controller.abort();
+    // The day's TCMB rates, for what a dollar or euro price comes to in lira.
+    let live = true;
+    void loadExchangeRates().then((r) => live && setRates(r));
+    return () => {
+      live = false;
+      controller.abort();
+    };
   }, []);
 
   const filter = `${category}|${query}|${sort.by ?? ""}|${sort.dir}`;
@@ -208,11 +217,25 @@ export function AdminProductsView({
   const shown = current ?? list;
   const retailSegmentId = segments?.find((s) => s.code === "RETAIL")?.id;
 
-  function retailPrice(variant: AdminVariant | null): string {
-    const row = retailSegmentId
-      ? variant?.prices.find((p) => p.segment_id === retailSegmentId && p.currency === "TRY")
-      : undefined;
-    return row ? formatMoney(row.price_incl_tax) : "—";
+  /**
+   * The retail price as it was entered — "120,00 $" for a product priced in
+   * dollars — and, under a foreign one, what it comes to in lira today (muted).
+   * "—" only when the product has no retail price at all.
+   */
+  function retailPrice(variant: AdminVariant | null) {
+    const row = variant ? pickPriceRow(variant.prices, retailSegmentId) : null;
+    if (!row) return "—";
+    const lira = inLira(row, rates?.rates);
+    return (
+      <>
+        <span className="block">{formatMoney(row.price_incl_tax, row.currency)}</span>
+        {lira !== null && (
+          <span className="block text-[11px] text-slate-500 dark:text-zinc-400" title="TCMB efektif satış kuruyla, bugünkü TL karşılığı">
+            ≈ {formatMoney(lira)}
+          </span>
+        )}
+      </>
+    );
   }
 
   /** The stock of every colour together — the one stock every buyer draws from. */
