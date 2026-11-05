@@ -67,12 +67,12 @@ function Question({ item, more }: { item: BlogQuestion; more: string }) {
 }
 
 /**
- * "Blog / SSS": the shop's fourteen short guides as an accordion, just over
+ * "Blog / SSS": the shop's short guides as an accordion, just over
  * "Alt SEO Metni" — the first four in view, the rest one "Tüm Yazıları Gör"
  * away — and the same questions as the page's FAQPage JSON-LD.
  *
  * Every answer is in the server's HTML, open or not: a closed <details> and
- * the folded ten are hidden from view only, so a crawler reads all fourteen,
+ * the folded ten are hidden from view only, so a crawler reads every one,
  * as the JSON-LD says it should find them. Rendered on the server; only the
  * fold's toggle is a client component, and only the page's language is sent.
  */

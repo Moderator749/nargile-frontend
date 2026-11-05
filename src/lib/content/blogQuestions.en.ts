@@ -246,36 +246,6 @@ export const BLOG_QUESTIONS_EN: BlogQuestion[] = [
     ]
   },
   {
-    "id": "hangi-marka-nargile-tutunu-daha-iyidir",
-    "question": "Which Hookah Tobacco Brand is Better?",
-    "answer": [
-      {
-        "h": "The Most Preferred Brands"
-      },
-      {
-        "p": "In the hookah world, the answer to the question \"which tobacco is the best\" depends entirely on personal tastes and flavor preferences. However, there are powerful brands in the industry that stand out for their quality and have proven track records."
-      },
-      {
-        "h": "Proven and Successful Domestic Brands"
-      },
-      {
-        "p": "Brands manufactured in our country that have achieved great success in the global market—such as Manterra, Daim, Adalya, Revoshi, Jibiar, and Rozanna—are continuously developing their product variety day by day and increasing their market share. These brands offer extremely high-quality flavors that are highly preferred and in high demand by consumers. Having proven themselves worldwide, these manufacturers offer a wide spectrum of aromas to hookah enthusiasts."
-      },
-      {
-        "h": "How Do You Find the Right Flavor?"
-      },
-      {
-        "p": "Since flavors are entirely a matter of taste and personal preference, the best way to find the right product is to experience different aromas. By experimenting with the alternatives offered by these reliable brands, users will discover their own favorite mixes and the aromas best suited to their palate over time."
-      },
-      {
-        "h": "Discover with Sultan Nargile"
-      },
-      {
-        "p": "Receiving professional support regarding tobacco diversity and selecting the right content will simplify your processes. By contacting Sultan Nargile, which handles both the wholesale and retail sales of these leading brands, you can obtain detailed information about the flavor profiles and rich contents of the products, request up-to-date product lists, and easily order the tobaccos that best fit your taste."
-      }
-    ]
-  },
-  {
     "id": "hangi-nargile-marpucunu-satin-almaliyim",
     "question": "Which hookah hose should I buy?",
     "answer": [

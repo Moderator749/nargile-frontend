@@ -1,7 +1,9 @@
 /**
- * "Blog / SSS" on the homepage, over "Alt SEO Metni": the fourteen questions
+ * "Blog / SSS" on the homepage, over "Alt SEO Metni": thirteen of the questions
  * of sultannargile.com's blog (its CMS as the page loaded it on 2026-11-05), each with its answer, and the same list as the page's FAQPage
- * JSON-LD.
+ * JSON-LD. Left out: its "Hangi marka nargile tütünü daha iyidir?", which
+ * recommends tobacco brands and points to ordering tobacco — promotion that
+ * Law 4207 bars, on a shop that does not sell tobacco.
  *
  * Answers are blocks — a sub-heading, a paragraph or a list — so the page
  * draws them without guessing at a text's line breaks. The four lüle
@@ -262,33 +264,6 @@ export const BLOG_QUESTIONS: BlogQuestion[] = [
           "Nargile şişesi temizliği de aynı şekilde şişeler için üretilmiş fırçalar ile yapılmaktadır. Deterjan kullanılabilir. Dışı dekorlu boyalı şişelerde, dış yüzeyine dikkat edilmeli, sünger veya fırça sürülmemelidir. İçine fırça ve sünger gibi temizlik malzemesi girmeyen ağzı dar şişelerde temizlik yapmak zordur. İçine yarım çay bardağı yağ sökücü veya çamaşır suyu döküp ağzına kadar su ile doldurmalı ve 2 saat kadar bekledikten sonra durulanmalıdır.",
           "Nargile takımınızın temizliği için bulaşık makinası tercih edilmemelidir."
         ]
-      }
-    ]
-  },
-  {
-    "id": "hangi-marka-nargile-tutunu-daha-iyidir",
-    "question": "Hangi marka nargile tütünü daha iyidir?",
-    "answer": [
-      {
-        "p": "Nargile dünyasında \"en iyi tütün\" sorusunun cevabı tamamen kişisel zevklere ve damak tadına bağlıdır. Ancak sektörde kalitesiyle öne çıkan ve kendisini kanıtlamış güçlü markalar bulunmaktadır."
-      },
-      {
-        "h": "Kendini Kanıtlamış Başarılı Yerli Markalar"
-      },
-      {
-        "p": "Ülkemizde üretilen ve küresel pazarda büyük başarılar elde eden Manterra, Daim, Adalya, Revoshi, Jibiar ve Rozanna gibi markalar, ürün çeşitliliklerini her geçen gün geliştirmekte ve pazardaki paylarını artırmaktadır. Bu markaların tüketiciler tarafından çok sık tercih edilen ve yoğun talep gören son derece kaliteli aromaları mevcuttur. Kendilerini dünya çapında ispatlamış olan bu üreticiler, nargile severlere geniş bir aroma yelpazesi sunmaktadır."
-      },
-      {
-        "h": "Doğru Aromayı Nasıl Bulursunuz?"
-      },
-      {
-        "p": "Tatlar tamamen bir zevk meselesi ve kişisel tercih olduğu için en doğru ürünü bulmanın yolu farklı aromaları deneyimlemekten geçer. Kullanıcılar, bu güvenilir markaların sunduğu alternatifler arasında denemeler yaparak kendi favori karışımlarını ve damak tatlarına en uygun aromaları zaman içinde keşfedeceklerdir."
-      },
-      {
-        "h": "Sultan Nargile ile Keşfedin"
-      },
-      {
-        "p": "Tütün çeşitliliği ve doğru içerik seçimi konusunda profesyonel destek almak süreçlerinizi kolaylaştıracaktır. Bu lider markaların toptan ve perakende satışını gerçekleştirmekte olan Sultan Nargile ile iletişime geçerek ürünlerin tat profilleri ve zengin içerikleri hakkında detaylı bilgi alabilir, güncel ürün listelerini talep ederek damak zevkinize en uygun tütünleri kolayca sipariş edebilirsiniz."
       }
     ]
   },
