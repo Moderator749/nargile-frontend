@@ -1,7 +1,7 @@
 /**
- * "Blog / SSS" on the homepage, over "Alt SEO Metni": thirteen of the questions
- * of sultannargile.com's blog (its CMS as the page loaded it on 2026-11-05), each with its answer, and the same list as the page's FAQPage
- * JSON-LD. Left out: its "Hangi marka nargile tütünü daha iyidir?", which
+ * The blog's questions: thirteen of sultannargile.com's (its CMS as the page
+ * loaded it on 2026-11-05), each with its answer — /blog's list and FAQPage
+ * JSON-LD, and the dialog the footer's "Tüm yazıları gör" opens. Left out: its "Hangi marka nargile tütünü daha iyidir?", which
  * recommends tobacco brands and points to ordering tobacco — promotion that
  * Law 4207 bars, on a shop that does not sell tobacco.
  *

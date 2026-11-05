@@ -52,21 +52,39 @@ export const bilgiMessages = defineMessages({
 export const blogMessages = defineMessages({
   tr: {
     title: "Blog",
-    description: "Nargile lülesi, ekipman seçimi ve içim üzerine Sultan Nargile rehberleri.",
+    description:
+      "Nargile hakkında merak edilenler: lüle, takım, marpuç ve kömür seçimi; hazırlık ve temizlik üzerine Sultan Nargile rehberleri.",
+    questionsTitle: "Nargile Hakkında Merak Edilenler",
+    questionsIntro: "Lüle, takım, marpuç ve kömür seçimi; hazırlık ve temizlik üzerine kısa rehberler.",
+    readArticle: "Yazının tamamı",
+    openBlog: "Blog sayfasında aç",
+    loading: "Yükleniyor",
     notFound: "Yazı bulunamadı",
     moreArticles: "Diğer yazılar",
     browseBowls: "Lüleleri incele",
   },
   en: {
     title: "Blog",
-    description: "Sultan Nargile guides to hookah bowls, choosing your hookah gear and getting a better session.",
+    description:
+      "Your hookah questions, answered: Sultan Nargile guides to choosing bowls, sets, hoses and charcoal, and to preparing and cleaning your hookah.",
+    questionsTitle: "Your Hookah Questions, Answered",
+    questionsIntro: "Short guides to choosing bowls, sets, hoses and charcoal, and to preparing and cleaning your hookah.",
+    readArticle: "Read the full article",
+    openBlog: "Open the blog page",
+    loading: "Loading",
     notFound: "Article not found",
     moreArticles: "More articles",
     browseBowls: "Browse hookah bowls",
   },
   ar: {
     title: "المدونة",
-    description: "أدلة Sultan Nargile حول رؤوس الشيشة واختيار معدات الشيشة والحصول على جلسة أفضل.",
+    description:
+      "كل ما تسأل عنه حول الشيشة: أدلة Sultan Nargile لاختيار الرأس والطقم والخرطوم والفحم، ولتحضير الشيشة وتنظيفها.",
+    questionsTitle: "كل ما تسأل عنه حول الشيشة",
+    questionsIntro: "أدلة قصيرة لاختيار الرأس والطقم والخرطوم والفحم، ولتحضير الشيشة وتنظيفها.",
+    readArticle: "اقرأ المقال كاملًا",
+    openBlog: "افتح صفحة المدونة",
+    loading: "جارٍ التحميل",
     notFound: "المقال غير موجود",
     moreArticles: "مقالات أخرى",
     browseBowls: "تصفّح رؤوس الشيشة",

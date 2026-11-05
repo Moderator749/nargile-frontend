@@ -1,6 +1,7 @@
-import type { ComponentType } from "react";
+import type { ComponentType, ReactNode } from "react";
 import { ArrowRight, Clock, Link2, MapPin } from "lucide-react";
 
+import { BlogQuestionsButton } from "@/components/blog/BlogQuestionsDialog";
 import Link from "@/components/i18n/Link";
 import { LogoEmblem, LogoWordmark } from "@/components/brand/Logo";
 import { InstagramIcon, YouTubeIcon } from "@/components/icons/SocialIcons";
@@ -44,9 +45,20 @@ function ArrowLinks({ links }: { links: { label: string; href: string }[] }) {
 /**
  * One of the three link columns, with its pill under the list when it has one.
  * `always`: links the column shows whatever the editor left in it (the legal
- * texts under "Bilgi Sayfaları"), after its own, each once.
+ * texts under "Bilgi Sayfaları"), after its own, each once. `cta`: the pill
+ * drawn some other way than as a plain link.
  */
-function LinkColumn({ id, column, always = [] }: { id: string; column: HomeFooterColumn; always?: { label: string; href: string }[] }) {
+function LinkColumn({
+  id,
+  column,
+  always = [],
+  cta,
+}: {
+  id: string;
+  column: HomeFooterColumn;
+  always?: { label: string; href: string }[];
+  cta?: (href: string, label: string) => ReactNode;
+}) {
   const own = new Set(column.links.map((link) => link.href));
   return (
     <nav aria-labelledby={id}>
@@ -54,12 +66,16 @@ function LinkColumn({ id, column, always = [] }: { id: string; column: HomeFoote
         {column.title}
       </h2>
       <ArrowLinks links={[...column.links, ...always.filter((link) => !own.has(link.href))]} />
-      {column.cta_label && column.cta_href && (
-        <Link href={column.cta_href} className={pillClass}>
-          {column.cta_label}
-          <ArrowRight className="h-3.5 w-3.5 rtl:-scale-x-100" aria-hidden />
-        </Link>
-      )}
+      {column.cta_label &&
+        column.cta_href &&
+        (cta ? (
+          cta(column.cta_href, column.cta_label)
+        ) : (
+          <Link href={column.cta_href} className={pillClass}>
+            {column.cta_label}
+            <ArrowRight className="h-3.5 w-3.5 rtl:-scale-x-100" aria-hidden />
+          </Link>
+        ))}
     </nav>
   );
 }
@@ -192,7 +208,12 @@ export async function SiteFooter({ footer }: { footer: HomeFooter }) {
             )}
           </section>
 
-          <LinkColumn id="footer-blog" column={footer.blog} />
+          {/* "Tüm yazıları gör" opens every question of the blog over the page. */}
+          <LinkColumn
+            id="footer-blog"
+            column={footer.blog}
+            cta={(href, label) => <BlogQuestionsButton href={href} label={label} className={pillClass} />}
+          />
           {/* Every legal text a shop has to show, under "Bilgi Sayfaları" with the
               rest. Cancellation and returns are article 6 of the distance sales
               agreement, so that link covers them. */}
