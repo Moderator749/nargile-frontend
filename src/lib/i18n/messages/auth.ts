@@ -10,6 +10,7 @@
 
 import { EXPORT_NOTICE } from "@/lib/exportAccount";
 import { defineMessages } from "@/lib/i18n/messages";
+import type { CustomerGroup } from "@/components/auth/registrationDraft";
 import type { AccountType, B2BSegment, BillingEntity, InternationalKind } from "@/types";
 
 /* ------------------------------------------------------------------ pages */
@@ -280,6 +281,14 @@ export interface RegistrationCopy {
   passwordHint: (min: number) => string;
   submit: string;
   submitting: string;
+  /** Under the username, when what they typed had to be changed; `spaces` adds what a space became. */
+  usernameCleaned: string;
+  usernameSpaces: string;
+  /** The fold the optional fields wait behind. */
+  extras: string;
+  optional: string;
+  /** Above the button, after a press that found something to fix. */
+  fixFields: string;
   /** The optional ticari elektronik ileti box, and the name of the text its link opens. */
   marketingConsent: string;
   marketingConsentHint: string;
@@ -301,8 +310,13 @@ const TR_DOMESTIC: RegistrationCopy = {
   usernameHint: "İsteğe bağlı · e-posta yerine bununla da giriş yapabilirsiniz",
   password: "Şifre",
   passwordHint: (min) => `En az ${min} karakter`,
-  submit: "Hesap Oluştur",
-  submitting: "Hesap oluşturuluyor…",
+  submit: "Kayıt Ol",
+  submitting: "Kayıt yapılıyor…",
+  usernameCleaned: "Kullanıcı adında boşluk ve özel karakter bulunamaz.",
+  usernameSpaces: "Boşluk yerine alt çizgi (_) kullanıldı.",
+  extras: "Ek Bilgiler",
+  optional: "İsteğe bağlı",
+  fixFields: "Lütfen yukarıdaki kırmızı ile işaretli alanları kontrol edin.",
   marketingConsent:
     "Kampanya, indirim ve duyurulardan haberdar olmak için ticari elektronik ileti (SMS ve E-posta) almayı onaylıyorum.",
   marketingConsentHint:
@@ -323,8 +337,13 @@ const EN_INTERNATIONAL: RegistrationCopy = {
   usernameHint: "Optional · you can sign in with this instead of your email",
   password: "Password",
   passwordHint: (min) => `At least ${min} characters`,
-  submit: "Create account",
-  submitting: "Creating your account…",
+  submit: "Sign up",
+  submitting: "Signing you up…",
+  usernameCleaned: "A username cannot contain spaces or special characters.",
+  usernameSpaces: "Spaces were replaced with an underscore (_).",
+  extras: "More details",
+  optional: "Optional",
+  fixFields: "Please check the fields marked in red above.",
   marketingConsent: "I agree to receive commercial electronic messages (SMS and e-mail) about campaigns, discounts and news.",
   marketingConsentHint:
     "Optional. Order and password messages are sent regardless; you can change this in your account at any time.",
@@ -358,6 +377,11 @@ const AR_INTERNATIONAL: RegistrationCopy = {
   passwordHint: (min) => `${min} أحرف على الأقل`,
   submit: "إنشاء الحساب",
   submitting: "جارٍ إنشاء حسابك…",
+  usernameCleaned: "لا يمكن أن يحتوي اسم المستخدم على مسافات أو رموز خاصة.",
+  usernameSpaces: "استُبدلت المسافات بشرطة سفلية (_).",
+  extras: "معلومات إضافية",
+  optional: "اختياري",
+  fixFields: "يرجى مراجعة الحقول المحددة باللون الأحمر أعلاه.",
   marketingConsent:
     "أوافق على تلقّي رسائل إلكترونية تجارية (SMS وبريد إلكتروني) لأبقى على اطلاع بالحملات والخصومات والإعلانات.",
   marketingConsentHint:
@@ -379,12 +403,11 @@ export const registrationMessages = defineMessages<{
   domestic: RegistrationCopy;
   international: RegistrationCopy;
   accountType: string;
-  /** The card titles and their button, by account type. */
+  /** The first question's answers: who is buying. */
+  groups: Record<CustomerGroup, { title: string; hint: string }>;
+  /** Which kind of business, asked once they have said they are one. */
+  businessKind: string;
   accountTypes: Record<AccountType, string>;
-  cta: string;
-  internationalCta: string;
-  /** Either side of the card's button name; `after` carries its own leading space. */
-  pickFirst: [before: string, after: string];
   documentNoticeLabel: string;
   documentNotice: string;
   personalSection: string;
@@ -404,7 +427,14 @@ export const registrationMessages = defineMessages<{
   tr: {
     domestic: TR_DOMESTIC,
     international: EN_INTERNATIONAL,
-    accountType: "Hesap türü",
+    accountType: "Kimin için alışveriş yapıyorsunuz?",
+    groups: {
+      INDIVIDUAL: { title: "Bireysel Müşteri", hint: "Kendi kullanımınız için alışveriş" },
+      BUSINESS: { title: "Kurumsal / İşletme", hint: "Kafe, restoran, nargile ve tütün bayi" },
+      // In English, on purpose: whoever this card is for cannot read the others.
+      INTERNATIONAL: { title: "Yurt Dışı / International", hint: "Export customers outside Turkey" },
+    },
+    businessKind: "İşletme türü",
     accountTypes: {
       INDIVIDUAL: "Bireysel",
       CAFE: "Kafe & Restoran",
@@ -414,9 +444,6 @@ export const registrationMessages = defineMessages<{
       SOLE_PROPRIETOR: "Şahıs Firması",
       COMPANY: "Şirket",
     },
-    cta: "Üye Ol",
-    internationalCta: "Register",
-    pickFirst: ["Hesap türünüzü seçip", " düğmesine basın; yalnızca size uygun alanlar sorulacak."],
     documentNoticeLabel: "NOT:",
     documentNotice: "Üyelik onayında vergi levhası ve varsa TAPDK belgesi istenecektir.",
     personalSection: "Kişisel Bilgiler",
@@ -436,7 +463,13 @@ export const registrationMessages = defineMessages<{
   en: {
     domestic: EN_DOMESTIC,
     international: EN_INTERNATIONAL,
-    accountType: "Account type",
+    accountType: "Who are you buying for?",
+    groups: {
+      INDIVIDUAL: { title: "Individual", hint: "Shopping for your own use" },
+      BUSINESS: { title: "Business", hint: "Cafés, restaurants, hookah and tobacco shops in Turkey" },
+      INTERNATIONAL: { title: "International / export", hint: "Wholesale buyers outside Turkey" },
+    },
+    businessKind: "Type of business",
     accountTypes: {
       INDIVIDUAL: "Individual",
       CAFE: "Café & lounge",
@@ -445,9 +478,6 @@ export const registrationMessages = defineMessages<{
       SOLE_PROPRIETOR: "Sole trader",
       COMPANY: "Company",
     },
-    cta: "Sign up",
-    internationalCta: "Sign up",
-    pickFirst: ["Choose your account type and press", "; you will only be asked what applies to you."],
     documentNoticeLabel: "NOTE:",
     documentNotice:
       "To approve your account we will ask for your tax certificate (vergi levhası) and, if you have one, your TAPDK licence.",
@@ -468,7 +498,13 @@ export const registrationMessages = defineMessages<{
   ar: {
     domestic: AR_DOMESTIC,
     international: AR_INTERNATIONAL,
-    accountType: "نوع الحساب",
+    accountType: "لمن تتسوّق؟",
+    groups: {
+      INDIVIDUAL: { title: "أفراد", hint: "تسوّق لاستخدامك الشخصي" },
+      BUSINESS: { title: "شركات / منشآت", hint: "مقاهٍ ومطاعم ومتاجر شيشة وتبغ داخل تركيا" },
+      INTERNATIONAL: { title: "خارج تركيا / تصدير", hint: "مشترو الجملة خارج تركيا" },
+    },
+    businessKind: "نوع النشاط",
     accountTypes: {
       INDIVIDUAL: "أفراد",
       CAFE: "مقاهي ولاونج",
@@ -477,9 +513,6 @@ export const registrationMessages = defineMessages<{
       SOLE_PROPRIETOR: "مؤسسة فردية",
       COMPANY: "شركة",
     },
-    cta: "إنشاء حساب",
-    internationalCta: "إنشاء حساب",
-    pickFirst: ["اختر نوع حسابك ثم اضغط زر", "؛ لن نسألك إلا عن الحقول التي تخصك."],
     documentNoticeLabel: "ملاحظة:",
     documentNotice: "للموافقة على العضوية سنطلب شهادتك الضريبية (vergi levhası) ورخصة TAPDK إن وُجدت.",
     personalSection: "البيانات الشخصية",
@@ -699,6 +732,7 @@ export const registrationProblemMessages = defineMessages({
       platename: "Vergi levhasındaki isim / şirket adını girin.",
       taxOffice: "Vergi dairesini girin.",
       entity: "Şahıs firması mı şirket mi olduğunuzu seçin.",
+      kind: "İşletme türünüzü seçin.",
       contactName: "Yetkili kişinin adı soyadını girin.",
       fullName: "İsim soyisim girin.",
       phone: "Geçerli bir cep telefonu girin.",
@@ -734,6 +768,7 @@ export const registrationProblemMessages = defineMessages({
       platename: "Enter the name / company name on the tax certificate.",
       taxOffice: "Enter the tax office.",
       entity: "Choose whether you are a sole trader or a company.",
+      kind: "Choose your type of business.",
       contactName: "Enter the authorised person's full name.",
       fullName: "Enter your full name.",
       phone: "Enter a valid mobile number.",
@@ -769,6 +804,7 @@ export const registrationProblemMessages = defineMessages({
       platename: "أدخل الاسم / اسم الشركة كما في الشهادة الضريبية.",
       taxOffice: "أدخل مكتب الضرائب.",
       entity: "حدّد ما إذا كنت مؤسسة فردية أم شركة.",
+      kind: "اختر نوع نشاطك.",
       contactName: "أدخل الاسم الكامل للشخص المسؤول.",
       fullName: "أدخل الاسم الكامل.",
       phone: "أدخل رقم جوال صحيحاً.",

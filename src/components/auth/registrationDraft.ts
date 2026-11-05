@@ -2,10 +2,11 @@
  * The sign-up form's state and its checks, in one place.
  *
  * The form asks for different things depending on who is registering, so the
- * draft holds every field and `registrationProblem` decides which of them
- * matter. The checks mirror `app/schemas/registration.py`, in the order the
- * fields appear on screen, so the message always points at the next thing to
- * fix. The server validates again regardless — this only saves a round trip.
+ * draft holds every field and `registrationErrors` decides which of them
+ * matter. The checks mirror `app/schemas/registration.py`, and each one is
+ * filed under the field it is about, so the form can say it under that field
+ * and take the customer to the first of them. The server validates again
+ * regardless — this only saves a round trip.
  *
  * Nothing here is about delivery or pricing: where an order goes is asked at
  * checkout, once there is an order to route, and which price group a firm
@@ -20,9 +21,9 @@ import {
   isValidVkn,
 } from "@/lib/trIdentity";
 import type { Locale } from "@/lib/i18n/config";
+import { USERNAME } from "@/lib/username";
 import {
   internationalMessages,
-  registrationMessages,
   registrationProblemMessages,
 } from "@/lib/i18n/messages/auth";
 import type {
@@ -37,26 +38,33 @@ import type {
 /** A customer's shortest password; mirrors CUSTOMER_PASSWORD_MIN (app/core/security.py). Admin accounts need 8, enforced by the server. */
 export const MIN_PASSWORD_LENGTH = 6;
 const EMAIL = /^[^@\s]+@[^@\s.]+(\.[^@\s.]+)+$/;
-const USERNAME = /^[A-Za-z0-9][A-Za-z0-9._-]{1,28}[A-Za-z0-9]$/;
 
 /**
- * The four cards, by what the customer sells rather than how they are
- * registered: a kafe and a tobacco shop are approved on different documents and
- * bought from on different terms, while şahıs firması or şirket is a question
- * about the invoice and is asked in the invoice section.
+ * The first question, in two big answers and a third for abroad: who is
+ * buying. Which kind of business it is — a kafe and a tobacco shop are
+ * approved on different documents and bought from on different terms — is
+ * asked inside the business fields, once the customer has said they are one.
  */
-const CARDS: AccountType[] = ["INDIVIDUAL", "CAFE", "TOBACCO_SHOP", "INTERNATIONAL"];
-/** In Turkish; AccountTypePicker shows each card in the page's language (registrationMessages). */
-export const ACCOUNT_TYPES: { value: AccountType; title: string; cta: string }[] = CARDS.map((value) => ({
-  value,
-  title: registrationMessages.tr.accountTypes[value],
-  cta: value === "INTERNATIONAL" ? registrationMessages.tr.internationalCta : registrationMessages.tr.cta,
-}));
+export type CustomerGroup = "INDIVIDUAL" | "BUSINESS" | "INTERNATIONAL";
+export const CUSTOMER_GROUPS: CustomerGroup[] = ["INDIVIDUAL", "BUSINESS", "INTERNATIONAL"];
 
-/** The two cards that are a Turkish firm, and are asked for an invoice identity. */
-export const TURKISH_BUSINESS_TYPES: AccountType[] = ["CAFE", "TOBACCO_SHOP"];
-export const isTurkishBusiness = (accountType: AccountType) =>
-  TURKISH_BUSINESS_TYPES.includes(accountType);
+/** The two kinds of Turkish business; şahıs firması or şirket is a question about the invoice. */
+export type BusinessKind = "CAFE" | "TOBACCO_SHOP";
+export const TURKISH_BUSINESS_TYPES: BusinessKind[] = ["CAFE", "TOBACCO_SHOP"];
+
+/**
+ * A draft's account type: one the server knows, or "BUSINESS" — a Turkish
+ * business that has not yet said which kind, which the form will not send.
+ */
+export type DraftAccountType = AccountType | "BUSINESS";
+
+export const isTurkishBusiness = (accountType: DraftAccountType) =>
+  accountType === "BUSINESS" || (TURKISH_BUSINESS_TYPES as DraftAccountType[]).includes(accountType);
+
+export function groupOf(accountType: DraftAccountType): CustomerGroup {
+  if (accountType === "INTERNATIONAL") return "INTERNATIONAL";
+  return isTurkishBusiness(accountType) ? "BUSINESS" : "INDIVIDUAL";
+}
 
 /**
  * What an international customer buys for. Both are businesses — there is no
@@ -94,7 +102,7 @@ export interface CompanyDraft {
 }
 
 export interface RegistrationDraft {
-  accountType: AccountType;
+  accountType: DraftAccountType;
   email: string;
   password: string;
   username: string;
@@ -145,7 +153,7 @@ const EMPTY_COMPANY: CompanyDraft = {
   tax_number: "",
 };
 
-export function emptyDraft(accountType: AccountType = "INDIVIDUAL"): RegistrationDraft {
+export function emptyDraft(accountType: DraftAccountType = "INDIVIDUAL"): RegistrationDraft {
   return {
     accountType,
     email: "",
@@ -160,7 +168,7 @@ export function emptyDraft(accountType: AccountType = "INDIVIDUAL"): Registratio
     corporateInvoice: false,
     company: { ...EMPTY_COMPANY },
     corporateAddress: { ...EMPTY_ADDRESS },
-  internationalKind: "WHOLESALER",
+    internationalKind: "WHOLESALER",
     internationalAddress: { ...EMPTY_INTERNATIONAL_ADDRESS },
     marketingConsent: false,
   };
@@ -171,7 +179,7 @@ export function emptyDraft(accountType: AccountType = "INDIVIDUAL"): Registratio
  * numbers, the address — and drops what belongs to the type being left, so a
  * field that is no longer on screen can never be submitted.
  */
-export function switchAccountType(draft: RegistrationDraft, accountType: AccountType): RegistrationDraft {
+export function switchAccountType(draft: RegistrationDraft, accountType: DraftAccountType): RegistrationDraft {
   const international = accountType === "INTERNATIONAL";
   const individual = accountType === "INDIVIDUAL";
   return {
@@ -200,111 +208,128 @@ export function addressTouched(address: AddressDraft): boolean {
   return Object.values(address).some((value) => value.trim() !== "");
 }
 
+/**
+ * Every field the form can complain about. An address's fields are named by
+ * which address they belong to; "street" stands for the pair the rule is
+ * about (a mahalle/köy or a cadde/sokak), and is said under the first of them.
+ */
+type AddressKey = "city" | "district" | "street";
+export type FieldKey =
+  | "kind"
+  | "entity"
+  | "company.title"
+  | "company.plate"
+  | "company.taxOffice"
+  | "company.taxNumber"
+  | "contactName"
+  | "fullName"
+  | "phone"
+  | "landline"
+  | "email"
+  | "username"
+  | "password"
+  | "nationalId"
+  | `billing.${AddressKey}`
+  | `corporate.${AddressKey}`
+  | "intl.country"
+  | "intl.city"
+  | "intl.line1";
+export type FieldErrors = Partial<Record<FieldKey, string>>;
+
+/**
+ * The fields that sit under "Ek Bilgiler" rather than on the form itself:
+ * nobody has to give them, so they wait behind one click. The form opens that
+ * section when one of them needs fixing.
+ */
+export function isExtraField(key: FieldKey, accountType: DraftAccountType): boolean {
+  if (key === "username" || key === "landline") return true;
+  if (groupOf(accountType) !== "INDIVIDUAL") return false;
+  // An individual's TC number, address and corporate invoice are all optional.
+  return key === "nationalId" || key === "entity" || key.startsWith("company.") || key.startsWith("billing.") || key.startsWith("corporate.");
+}
+
 type DomesticWords = (typeof registrationProblemMessages)[Locale]["domestic"];
 
-function addressProblem(address: AddressDraft, label: string, m: DomesticWords): string | null {
-  if (!address.city) return m.city(label);
-  if (address.district.trim().length < 2) return m.district(label);
-  if (!address.neighbourhood.trim() && !address.street.trim()) {
-    return m.street(label);
-  }
-  return null;
+function addressErrors(
+  address: AddressDraft,
+  prefix: "billing" | "corporate",
+  label: string,
+  m: DomesticWords,
+  errors: FieldErrors,
+) {
+  if (!address.neighbourhood.trim() && !address.street.trim()) errors[`${prefix}.street`] = m.street(label);
+  if (address.district.trim().length < 2) errors[`${prefix}.district`] = m.district(label);
+  if (!address.city) errors[`${prefix}.city`] = m.city(label);
 }
 
-function taxNumberProblem(company: CompanyDraft, entity: BillingEntity | "", m: DomesticWords): string | null {
+function companyErrors(company: CompanyDraft, entityMessage: string, m: DomesticWords, errors: FieldErrors) {
+  if (!company.entity_type) errors.entity = entityMessage;
+  if (company.title.trim().length < 2) errors["company.title"] = m.companyTitle;
+  if (company.tax_plate_name.trim().length < 2) errors["company.plate"] = m.platename;
+  if (company.tax_office.trim().length < 2) errors["company.taxOffice"] = m.taxOffice;
   const given = company.tax_number.trim();
-  if (entity === "COMPANY") {
-    return isValidVkn(given) ? null : m.companyVkn;
+  if (company.entity_type === "COMPANY" ? !isValidVkn(given) : !isValidTaxId(given)) {
+    errors["company.taxNumber"] = company.entity_type === "COMPANY" ? m.companyVkn : m.taxId;
   }
-  if (!isValidTaxId(given)) return m.taxId;
-  return null;
 }
 
-function companyProblem(company: CompanyDraft, entity: BillingEntity | "", m: DomesticWords): string | null {
-  if (company.title.trim().length < 2) return m.companyTitle;
-  if (company.tax_plate_name.trim().length < 2) {
-    return m.platename;
-  }
-  if (company.tax_office.trim().length < 2) return m.taxOffice;
-  return taxNumberProblem(company, entity, m);
-}
-
-function internationalProblem(draft: RegistrationDraft, locale: Locale): string | null {
+function internationalErrors(draft: RegistrationDraft, locale: Locale): FieldErrors {
   const m = registrationProblemMessages[locale].international;
   const address = draft.internationalAddress;
-  if (draft.company.title.trim().length < 2) return m.companyTitle;
-  if (draft.contactName.trim().length < 2) return m.contactName;
-  if (!isValidInternationalPhone(draft.phone)) {
-    return m.phone;
-  }
-  if (!EMAIL.test(draft.email.trim())) return m.email;
-  if (draft.username.trim() && !USERNAME.test(draft.username.trim())) {
-    return m.username;
-  }
-  if (draft.password.length < MIN_PASSWORD_LENGTH) {
-    return m.password(MIN_PASSWORD_LENGTH);
-  }
-  if (!address.country) return m.country;
-  if (address.city.trim().length < 2) return m.city;
-  if (address.address_line1.trim().length < 3) {
-    return m.address;
-  }
+  const errors: FieldErrors = {};
+  if (draft.company.title.trim().length < 2) errors["company.title"] = m.companyTitle;
+  if (draft.contactName.trim().length < 2) errors.contactName = m.contactName;
+  if (!isValidInternationalPhone(draft.phone)) errors.phone = m.phone;
+  if (!EMAIL.test(draft.email.trim())) errors.email = m.email;
+  if (draft.username.trim() && !USERNAME.test(draft.username.trim())) errors.username = m.username;
+  if (draft.password.length < MIN_PASSWORD_LENGTH) errors.password = m.password(MIN_PASSWORD_LENGTH);
+  if (!address.country) errors["intl.country"] = m.country;
+  if (address.city.trim().length < 2) errors["intl.city"] = m.city;
+  if (address.address_line1.trim().length < 3) errors["intl.line1"] = m.address;
   // No check on the tax / VAT number: there are as many formats as there are
   // jurisdictions, and a wrong guess would turn a customer away.
-  return null;
+  return errors;
 }
 
 /**
- * Mirrors the server's checks, in the order the fields appear; null = ready to
- * send. The message is in `locale` (Turkish by default, where the
- * international branch is answered in English, like its form).
+ * Mirrors the server's checks, every field at once; empty = ready to send.
+ * The messages are in `locale` (Turkish by default, where the international
+ * branch is answered in English, like its form).
  */
-export function registrationProblem(draft: RegistrationDraft, locale: Locale = "tr"): string | null {
-  if (draft.accountType === "INTERNATIONAL") return internationalProblem(draft, locale);
+export function registrationErrors(draft: RegistrationDraft, locale: Locale = "tr"): FieldErrors {
+  if (draft.accountType === "INTERNATIONAL") return internationalErrors(draft, locale);
   const m = registrationProblemMessages[locale].domestic;
   const business = isTurkishBusiness(draft.accountType);
+  const errors: FieldErrors = {};
 
   if (business) {
-    if (!draft.company.entity_type) return m.entity;
-    const problem = companyProblem(draft.company, draft.company.entity_type, m);
-    if (problem) return problem;
-    if (draft.contactName.trim().length < 2) return m.contactName;
+    if (draft.accountType === "BUSINESS") errors.kind = m.kind;
+    companyErrors(draft.company, m.entity, m, errors);
+    if (draft.contactName.trim().length < 2) errors.contactName = m.contactName;
   } else if (draft.fullName.trim().length < 2) {
-    return m.fullName;
+    errors.fullName = m.fullName;
   }
 
-  if (!isValidPhone(draft.phone)) return m.phone;
-  if (draft.landlinePhone.trim() && !isValidPhone(draft.landlinePhone)) {
-    return m.landline;
-  }
-  if (!EMAIL.test(draft.email.trim())) return m.email;
-  if (draft.username.trim() && !USERNAME.test(draft.username.trim())) {
-    return m.username;
-  }
-  if (draft.password.length < MIN_PASSWORD_LENGTH) {
-    return m.password(MIN_PASSWORD_LENGTH);
-  }
+  if (!isValidPhone(draft.phone)) errors.phone = m.phone;
+  if (draft.landlinePhone.trim() && !isValidPhone(draft.landlinePhone)) errors.landline = m.landline;
+  if (!EMAIL.test(draft.email.trim())) errors.email = m.email;
+  if (draft.username.trim() && !USERNAME.test(draft.username.trim())) errors.username = m.username;
+  if (draft.password.length < MIN_PASSWORD_LENGTH) errors.password = m.password(MIN_PASSWORD_LENGTH);
   // A şahıs firması is a person and may give theirs; a şirket is not asked.
   if (draft.nationalId.trim() && draft.company.entity_type !== "COMPANY" && !isValidTckn(draft.nationalId.trim())) {
-    return m.nationalId;
+    errors.nationalId = m.nationalId;
   }
 
   // A firm needs one for its invoice; an individual is invoiced where they say,
   // if they say — but a half-filled address is an error either way.
-  if (business || addressTouched(draft.billing)) {
-    const problem = addressProblem(draft.billing, m.billingAddress, m);
-    if (problem) return problem;
-  }
+  if (business || addressTouched(draft.billing)) addressErrors(draft.billing, "billing", m.billingAddress, m, errors);
 
   if (!business && draft.corporateInvoice) {
-    if (!draft.company.entity_type) return m.invoiceEntity;
-    const problem =
-      companyProblem(draft.company, draft.company.entity_type, m) ??
-      addressProblem(draft.corporateAddress, m.corporateAddress, m);
-    if (problem) return problem;
+    companyErrors(draft.company, m.invoiceEntity, m, errors);
+    addressErrors(draft.corporateAddress, "corporate", m.corporateAddress, m, errors);
   }
 
-  return null;
+  return errors;
 }
 
 const trimmed = (value: string) => value.trim() || null;
@@ -361,6 +386,8 @@ function toInternationalPayload(draft: RegistrationDraft): RegistrationCreate {
 /** The draft as the server's registration payload: only the fields the chosen account type has. */
 export function toPayload(draft: RegistrationDraft): RegistrationCreate {
   if (draft.accountType === "INTERNATIONAL") return toInternationalPayload(draft);
+  // registrationErrors stops a business that has not said which kind.
+  if (draft.accountType === "BUSINESS") throw new Error("A business's kind is not chosen yet");
   const business = isTurkishBusiness(draft.accountType);
   const sendCompany = business || draft.corporateInvoice;
   return {

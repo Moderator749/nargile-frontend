@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { AlertCircle } from "lucide-react";
 
 /**
  * One group of the sign-up form: a legend, an optional line of explanation, and
@@ -36,11 +37,23 @@ export function FormSection({
  * nothing looks unavailable — that look belongs to `disabled`, which keeps the
  * not-allowed cursor.
  */
-export function radioCardClass(selected: boolean, disabled = false): string {
+export function radioCardClass(selected: boolean, disabled = false, invalid = false): string {
   const base =
     "flex gap-3 rounded-lg border p-3 text-sm transition-[color,background-color,border-color,opacity] duration-200 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-red-500/40";
   if (disabled) return `${base} cursor-not-allowed border-slate-200 opacity-60 dark:border-white/10`;
+  // Nothing picked yet and the form needs an answer: every card says so.
+  if (invalid) return `${base} cursor-pointer border-red-500 bg-red-50/40 hover:border-red-600 dark:border-red-400/80 dark:bg-red-500/5`;
   return selected
     ? `${base} cursor-pointer border-red-600 bg-red-50/60 ring-1 ring-red-600 dark:border-red-400 dark:bg-red-500/10 dark:ring-red-400`
     : `${base} cursor-pointer border-slate-200 bg-slate-50 opacity-70 hover:border-slate-400 hover:opacity-100 has-[:focus-visible]:opacity-100 dark:border-white/10 dark:bg-white/[0.02] dark:hover:border-white/25`;
+}
+
+/** A radio group's error, under its cards, worded and styled as a field's. */
+export function GroupError({ children }: { children: ReactNode }) {
+  return (
+    <p className="mt-1.5 flex items-start gap-1.5 text-xs font-medium text-red-600 dark:text-red-400">
+      <AlertCircle className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden />
+      <span>{children}</span>
+    </p>
+  );
 }

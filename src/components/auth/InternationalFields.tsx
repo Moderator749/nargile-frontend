@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { Ship } from "lucide-react";
 
+import { UNBOUND, type Bind } from "@/components/auth/fieldBinding";
 import { radioCardClass } from "@/components/auth/FormSection";
 import {
   INTERNATIONAL_KINDS,
@@ -66,11 +67,13 @@ export function InternationalIdentityFields({
   onKindChange,
   company,
   onCompanyChange,
+  bind = UNBOUND,
 }: {
   kind: InternationalKind;
   onKindChange: (kind: InternationalKind) => void;
   company: CompanyDraft;
   onCompanyChange: (value: CompanyDraft) => void;
+  bind?: Bind;
 }) {
   const m = useMessages(internationalMessages);
   return (
@@ -80,6 +83,7 @@ export function InternationalIdentityFields({
         <Input
           label={m.companyName}
           autoComplete="organization"
+          {...bind("company.title")}
           maxLength={255}
           required
           value={company.title}
@@ -118,9 +122,11 @@ function useCountries() {
 export function InternationalAddressFields({
   value,
   onChange,
+  bind = UNBOUND,
 }: {
   value: InternationalAddressDraft;
   onChange: (value: InternationalAddressDraft) => void;
+  bind?: Bind;
 }) {
   const m = useMessages(internationalMessages);
   const countries = useCountries();
@@ -132,6 +138,7 @@ export function InternationalAddressFields({
         <Select
           label={m.country}
           autoComplete="country"
+          {...bind("intl.country")}
           required
           value={value.country}
           onChange={(e) => set({ country: e.target.value })}
@@ -148,6 +155,7 @@ export function InternationalAddressFields({
         <Input
           label={m.city}
           autoComplete="address-level1"
+          {...bind("intl.city")}
           maxLength={80}
           required
           value={value.city}
@@ -168,6 +176,7 @@ export function InternationalAddressFields({
         <Input
           label={m.line1}
           autoComplete="address-line1"
+          {...bind("intl.line1")}
           maxLength={200}
           required
           placeholder={m.line1Placeholder}

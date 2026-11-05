@@ -4,17 +4,25 @@ import { useId, useState, type InputHTMLAttributes } from "react";
 import { Eye, EyeOff } from "lucide-react";
 
 import { useMessages } from "@/components/i18n/LocaleProvider";
+import { INVALID_FIELD, VALID_FIELD, fieldMessage } from "@/components/ui/FieldMessage";
 import { uiMessages } from "@/lib/i18n/messages/layout";
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string;
   hint?: string;
+  /** Shown in red under the field, which turns red too. */
+  error?: string;
+  /** Shown in amber under the field: something worth knowing, not a fault. */
+  warning?: string;
+  /** Red without a message of its own: one rule about two fields, said under the other. */
+  invalid?: boolean;
 }
 
-export function Input({ label, hint, type = "text", id, className = "", ...props }: InputProps) {
+export function Input({ label, hint, error, warning, invalid = false, type = "text", id, className = "", ...props }: InputProps) {
   const generatedId = useId();
   const inputId = id ?? generatedId;
-  const hintId = hint ? `${inputId}-hint` : undefined;
+  const message = fieldMessage(inputId, { error, warning, hint });
+  const bad = !!error || invalid;
   const isPassword = type === "password";
   const [revealed, setRevealed] = useState(false);
   const m = useMessages(uiMessages);
@@ -29,8 +37,11 @@ export function Input({ label, hint, type = "text", id, className = "", ...props
           {...props}
           id={inputId}
           type={isPassword && revealed ? "text" : type}
-          aria-describedby={hintId}
-          className={`block h-11 w-full rounded-lg border border-slate-300 dark:border-white/15 bg-white dark:bg-zinc-900 px-3 text-sm text-slate-900 dark:text-zinc-100 shadow-sm placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20 disabled:bg-slate-100 dark:disabled:bg-white/5 ${isPassword ? "pe-10" : ""} ${className}`}
+          aria-describedby={message.describedBy}
+          aria-invalid={bad || undefined}
+          // What the form looks for to scroll to the first field to fix.
+          data-invalid={bad ? "" : undefined}
+          className={`block h-11 w-full rounded-lg border bg-white dark:bg-zinc-900 px-3 text-sm text-slate-900 dark:text-zinc-100 shadow-sm placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 transition-colors duration-200 ${bad ? INVALID_FIELD : VALID_FIELD} disabled:bg-slate-100 dark:disabled:bg-white/5 ${isPassword ? "pe-10" : ""} ${className}`}
         />
         {isPassword && (
           <button
@@ -43,11 +54,7 @@ export function Input({ label, hint, type = "text", id, className = "", ...props
           </button>
         )}
       </div>
-      {hint && (
-        <p id={hintId} className="text-xs text-slate-500 dark:text-zinc-400">
-          {hint}
-        </p>
-      )}
+      {message.node}
     </div>
   );
 }

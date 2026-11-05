@@ -1,5 +1,6 @@
 "use client";
 
+import { UNBOUND, type Bind } from "@/components/auth/fieldBinding";
 import { useMessages } from "@/components/i18n/LocaleProvider";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
@@ -16,14 +17,22 @@ export function AddressFields({
   value,
   onChange,
   required,
+  prefix,
+  bind = UNBOUND,
 }: {
   value: AddressDraft;
   onChange: (value: AddressDraft) => void;
   /** Marks district and province as required; the rest is never mandatory. */
   required: boolean;
+  /** Which address this is, for the form's checks. */
+  prefix: "billing" | "corporate";
+  bind?: Bind;
 }) {
   const m = useMessages(companyFieldMessages).address;
   const set = (patch: Partial<AddressDraft>) => onChange({ ...value, ...patch });
+  // One rule covers the pair — a mahalle/köy or a cadde/sokak — so both turn
+  // red, and the message is said once, under the first.
+  const pair = bind(`${prefix}.street`);
 
   return (
     <div className="grid gap-4 sm:grid-cols-6">
@@ -32,6 +41,7 @@ export function AddressFields({
           label={m.neighbourhood}
           autoComplete="address-level3"
           maxLength={120}
+          {...pair}
           value={value.neighbourhood}
           onChange={(e) => set({ neighbourhood: e.target.value })}
         />
@@ -41,6 +51,8 @@ export function AddressFields({
           label={m.street}
           autoComplete="street-address"
           maxLength={120}
+          onBlur={pair.onBlur}
+          invalid={!!pair.error}
           value={value.street}
           onChange={(e) => set({ street: e.target.value })}
         />
@@ -73,6 +85,7 @@ export function AddressFields({
         <Input
           label={m.district}
           autoComplete="address-level2"
+          {...bind(`${prefix}.district`)}
           maxLength={80}
           required={required}
           value={value.district}
@@ -83,6 +96,7 @@ export function AddressFields({
         <Select
           label={m.city}
           autoComplete="address-level1"
+          {...bind(`${prefix}.city`)}
           required={required}
           value={value.city}
           onChange={(e) => set({ city: e.target.value })}

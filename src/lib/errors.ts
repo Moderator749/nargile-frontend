@@ -42,6 +42,13 @@ export function translateApiDetail(detail: string, locale?: Locale): string {
   return detail;
 }
 
+/** The backend's `detail` string, as it came, when the failure carried one. */
+export function apiDetailOf(error: unknown): string | null {
+  if (!axios.isAxiosError<ApiError>(error)) return null;
+  const detail = error.response?.data?.detail;
+  return typeof detail === "string" ? detail : null;
+}
+
 /** Turns an API failure into a short, user-facing message in the page's language (Turkish by default). */
 export function getApiErrorMessage(error: unknown, fallback: string, locale?: Locale): string {
   if (!axios.isAxiosError<ApiError>(error)) return fallback;

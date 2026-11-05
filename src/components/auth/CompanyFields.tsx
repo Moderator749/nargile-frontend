@@ -1,6 +1,7 @@
 "use client";
 
-import { radioCardClass } from "@/components/auth/FormSection";
+import { UNBOUND, groupInvalid, type Bind } from "@/components/auth/fieldBinding";
+import { GroupError, radioCardClass } from "@/components/auth/FormSection";
 import type { CompanyDraft } from "@/components/auth/registrationDraft";
 import { useMessages } from "@/components/i18n/LocaleProvider";
 import { Input } from "@/components/ui/Input";
@@ -23,12 +24,14 @@ export function CompanyFields({
   onChange,
   nationalId,
   onNationalIdChange,
+  bind = UNBOUND,
 }: {
   value: CompanyDraft;
   onChange: (value: CompanyDraft) => void;
   /** Pass both to offer the owner's TC number where it applies. */
   nationalId?: string;
   onNationalIdChange?: (value: string) => void;
+  bind?: Bind;
 }) {
   const m = useMessages(companyFieldMessages);
   const set = (patch: Partial<CompanyDraft>) => onChange({ ...value, ...patch });
@@ -44,14 +47,15 @@ export function CompanyFields({
         : m.plateEither;
   // Shown for a şahıs firması, which is a person; a şirket is not one.
   const askTc = value.entity_type === "SOLE_PROPRIETOR" && onNationalIdChange !== undefined;
+  const entityError = bind("entity").error;
 
   return (
     <div className="space-y-4">
-      <fieldset>
+      <fieldset {...groupInvalid(entityError)}>
         <legend className="text-sm font-medium text-slate-700 dark:text-zinc-300">{m.entityType}</legend>
         <div className="mt-2 grid gap-2 sm:grid-cols-2">
           {ENTITIES.map((option) => (
-            <label key={option} className={radioCardClass(value.entity_type === option)}>
+            <label key={option} className={radioCardClass(value.entity_type === option, false, !!entityError)}>
               <input
                 type="radio"
                 name="billing_entity_type"
@@ -64,12 +68,14 @@ export function CompanyFields({
             </label>
           ))}
         </div>
+        {entityError && <GroupError>{entityError}</GroupError>}
       </fieldset>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Input
           label={m.title}
           autoComplete="organization"
+          {...bind("company.title")}
           maxLength={255}
           required
           value={value.title}
@@ -79,6 +85,7 @@ export function CompanyFields({
         <Input
           label={plateLabel}
           maxLength={150}
+          {...bind("company.plate")}
           required
           hint={m.plateHint}
           value={value.tax_plate_name}
@@ -90,6 +97,7 @@ export function CompanyFields({
         <Input
           label={m.taxOffice}
           maxLength={100}
+          {...bind("company.taxOffice")}
           required
           value={value.tax_office}
           onChange={(e) => set({ tax_office: e.target.value })}
@@ -97,6 +105,7 @@ export function CompanyFields({
         <Input
           label={m.taxNumber}
           inputMode="numeric"
+          {...bind("company.taxNumber")}
           // Ten for a şirket. A sole trader's levha may still carry their
           // 11-digit TC as its vergi no, so the field does not cut one short —
           // the hint names the usual case, and the TC has a field of its own.
@@ -112,6 +121,7 @@ export function CompanyFields({
             inputMode="numeric"
             maxLength={11}
             hint={m.optional}
+            {...bind("nationalId")}
             value={nationalId ?? ""}
             onChange={(e) => onNationalIdChange(e.target.value.replace(/\D/g, ""))}
           />
