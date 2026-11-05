@@ -46,18 +46,33 @@ declare global {
   }
 }
 
+/** The listing pages at the root: every category, and every active brand. */
+export const shelvesOf = (categories: { slug: string }[], brands: { slug: string; is_active: boolean }[]) => [
+  ...categories.map((c) => c.slug),
+  ...brands.filter((b) => b.is_active).map((b) => b.slug),
+];
+
 /** The slug of a root page (/<slug>, /en/<slug>), or null. */
 function rootSlug(pathname: string): string | null {
   return isRootSlugPath(pathname) ? pathname.split("/").filter(Boolean).pop()! : null;
 }
 
-const isShelf = (slug: string | null) =>
-  slug !== null && typeof window !== "undefined" && (window.__shelves ?? []).includes(slug);
+/** The page's list: the one the layout wrote, in the browser; none on the server. */
+const pageShelves = () => (typeof window !== "undefined" ? (window.__shelves ?? []) : []);
 
-export const opensByDefault = (pathname: string) => OPEN_BY_DEFAULT.test(pathname) || isShelf(rootSlug(pathname));
+const isShelf = (slug: string | null, shelves: readonly string[]) => slug !== null && shelves.includes(slug);
+
+/**
+ * `shelves`: the list to read a /<slug> by. Leave it out in the browser, where
+ * the page's own is used. Give it whenever the answer has to be the same on
+ * the server and in the browser — a render's — since the server has no page
+ * to read one from, and would take every category's page for a product's.
+ */
+export const opensByDefault = (pathname: string, shelves: readonly string[] = pageShelves()) =>
+  OPEN_BY_DEFAULT.test(pathname) || isShelf(rootSlug(pathname), shelves);
 export const closesByDefault = (pathname: string) => {
   const slug = rootSlug(pathname);
-  return slug !== null && !isShelf(slug);
+  return slug !== null && !isShelf(slug, pageShelves());
 };
 
 /** The category slugs for the pre-paint script, written by the layout before it. */

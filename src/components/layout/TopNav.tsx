@@ -129,7 +129,16 @@ const LINK =
  * with it — one slow rhythm, so it reads as something to open. Below `lg` the
  * column lives in a drawer, and the same cell opens it.
  */
-export function TopNav({ categories, links }: { categories: ResolvedNav[]; links: ResolvedNav[] }) {
+export function TopNav({
+  categories,
+  links,
+  shelves,
+}: {
+  categories: ResolvedNav[];
+  links: ResolvedNav[];
+  /** The category and brand slugs: which /<slug> opens with the column (lib/sidebar). */
+  shelves: string[];
+}) {
   // Without its language (/en/cart is /cart), as every check below expects.
   const pathname = usePagePath();
   const t = useT();
@@ -138,7 +147,12 @@ export function TopNav({ categories, links }: { categories: ResolvedNav[]; links
   const setDrawer = useCategoryDrawer((s) => s.setOpen);
   // The column's own state lives on <html>, set before first paint; this only
   // follows it, so the chevron and the label always say what is on screen.
-  const collapsed = useSyncExternalStore(subscribeSidebar, isSidebarCollapsed, () => !opensByDefault(pathname));
+  // The server's guess — and the browser's first render, which must match it
+  // to the letter — is the page's default, worked out from the same list on
+  // both sides: read from `window` instead, a category's page was "closed" on
+  // the server and "open" in the browser, and the button kept the server's
+  // label over an open column (a hydration mismatch React does not repair).
+  const collapsed = useSyncExternalStore(subscribeSidebar, isSidebarCollapsed, () => !opensByDefault(pathname, shelves));
 
   // Arriving on a page by a link: the column as that page opens with. Before
   // paint, so a category page never shows a frame without it.

@@ -60,6 +60,7 @@ export function Navbar({
   categories,
   links,
   showMenu = true,
+  shelves = [],
 }: {
   /** The sidebar's fifteen, for the bar's drawer on a phone. */
   categories: ResolvedNav[];
@@ -67,6 +68,8 @@ export function Navbar({
   links: ResolvedNav[];
   /** The horizontal menu under the header; the admin panel's layout turns it off. */
   showMenu?: boolean;
+  /** The category and brand slugs, the same list the layout writes for the pre-paint script (lib/sidebar). */
+  shelves?: string[];
 }) {
   const t = useT();
   const m = useMessages(chromeMessages);
@@ -236,7 +239,7 @@ export function Navbar({
 
         {/* Module 3: the horizontal menu. Links only — no dropdowns. Not in the
             admin panel. */}
-        {showMenu && <TopNav categories={categories} links={links} />}
+        {showMenu && <TopNav categories={categories} links={links} shelves={shelves} />}
       </div>
     </>
   );

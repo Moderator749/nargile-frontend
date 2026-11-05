@@ -11,6 +11,7 @@ import { SiteFooter } from "@/components/layout/SiteFooter";
 import { TopBanner } from "@/components/layout/TopBanner";
 import { getBrands, getCategories } from "@/lib/server/catalog";
 import { getHomepage } from "@/lib/server/homepage";
+import { shelvesOf } from "@/lib/sidebar";
 import { resolveNav } from "@/lib/storefrontNav";
 
 /**
@@ -35,7 +36,7 @@ export async function StorefrontChrome({ children }: { children: ReactNode }) {
       <TopBanner />
       {/* "Açılış duyurusu": once per visitor while the admin has it on. */}
       <AnnouncementPopup />
-      <Navbar categories={sidebar} links={menu} />
+      <Navbar categories={sidebar} links={menu} shelves={shelvesOf(categories ?? [], brands ?? [])} />
       {children}
       {home.sections.footer && <SiteFooter footer={home.footer} />}
       {/* The phone's bottom bar, with the room it takes kept free under the
