@@ -5,29 +5,27 @@ import { useId, useState } from "react";
 import { useMessages } from "@/components/i18n/LocaleProvider";
 import { DEFAULT_SEO_INTRO } from "@/lib/homepage";
 import { homeMessages } from "@/lib/i18n/messages/home";
+import { htmlToText, shiftHeadings, toHtml } from "@/lib/richText";
 import type { HomeSeoIntro } from "@/types";
 
 const PARAGRAPH = "text-sm leading-relaxed text-gray-600 md:text-base dark:text-zinc-400";
 
-/** The fold's paragraphs: split at blank lines, single line breaks kept within one. */
-const paragraphs = (text: string) =>
-  text
-    .split(/\n\s*\n/)
-    .map((p) => p.trim())
-    .filter(Boolean);
-
 /**
- * The page's one passage of plain Turkish about the business, set like a
- * magazine standfirst: a short centred column, a heading, the first paragraph,
- * and "Devamını Oku" for the rest.
+ * The page's one passage about the business, set like a magazine standfirst:
+ * a short centred column, a heading, the first paragraph, and "Devamını Oku"
+ * for the rest — a buying guide in its own headings, lists and links to the
+ * categories, read left to right (or right to left) like any longer text.
  *
  * The copy is "Alt SEO Metni" in Ana Sayfa Düzenleme; any field left empty
- * shows the shop's own (DEFAULT_SEO_INTRO).
+ * shows the shop's own (DEFAULT_SEO_INTRO). The rest is the editor's HTML,
+ * cleaned when it was saved (as is its translation), or plain text from before
+ * the editor, made paragraphs here; its headings sit one level under the
+ * passage's own <h2>.
  *
- * The rest is folded, not left out: every paragraph is in the markup from the
- * server, there to be read by a crawler as much as by a visitor, and the fold
- * only hides it from view (and from the keyboard and screen readers while
- * shut). It opens by easing its height from nothing to its own.
+ * The rest is folded, not left out: all of it is in the markup from the
+ * server, there to be read by a crawler as much as by a visitor, and its links
+ * followed; the fold only hides it from view (and from the keyboard and screen
+ * readers while shut). It opens by easing its height from nothing to its own.
  */
 export function SeoIntro({ copy }: { copy?: Partial<HomeSeoIntro> | null }) {
   const [open, setOpen] = useState(false);
@@ -35,7 +33,9 @@ export function SeoIntro({ copy }: { copy?: Partial<HomeSeoIntro> | null }) {
   const t = useMessages(homeMessages);
   const title = copy?.title?.trim() || DEFAULT_SEO_INTRO.title;
   const first = copy?.summary?.trim() || DEFAULT_SEO_INTRO.summary;
-  const rest = paragraphs(copy?.content?.trim() || DEFAULT_SEO_INTRO.content);
+  const content = copy?.content?.trim();
+  // The editor leaves "<p></p>" behind a cleared field: no words, the shop's copy.
+  const rest = shiftHeadings(toHtml(content && htmlToText(content) ? content : DEFAULT_SEO_INTRO.content));
 
   return (
     <section
@@ -51,7 +51,7 @@ export function SeoIntro({ copy }: { copy?: Partial<HomeSeoIntro> | null }) {
       </h2>
       <p className={`whitespace-pre-line ${PARAGRAPH}`}>{first}</p>
 
-      {rest.length > 0 && (
+      {rest && (
         <>
           <div
             id={moreId}
@@ -61,11 +61,7 @@ export function SeoIntro({ copy }: { copy?: Partial<HomeSeoIntro> | null }) {
             }`}
           >
             <div className="overflow-hidden">
-              {rest.map((text, i) => (
-                <p key={i} className={`mt-4 whitespace-pre-line ${PARAGRAPH}`}>
-                  {text}
-                </p>
-              ))}
+              <div className={`rich-text mt-4 text-start ${PARAGRAPH}`} dangerouslySetInnerHTML={{ __html: rest }} />
             </div>
           </div>
           <button

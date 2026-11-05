@@ -1957,7 +1957,7 @@ export interface HomeSeoIntro {
   title: string;
   /** The paragraph always shown. */
   summary: string;
-  /** What "Devamını Oku" opens; a blank line starts a new paragraph. */
+  /** What "Devamını Oku" opens: the editor's HTML (plain text from before it: a blank line starts a new paragraph). */
   content: string;
 }
 

@@ -5,6 +5,7 @@ import { ArrowDown, ArrowUp, Loader2, Plus, Trash2, X } from "lucide-react";
 
 import { adminSelectClass, isSiteOrHttpsLink } from "@/components/admin/ContentEditor";
 import { ImageDropZone } from "@/components/admin/ImageDropZone";
+import { RichTextEditor } from "@/components/admin/RichTextEditor";
 import { adminUploadImages } from "@/lib/adminApi";
 import { getApiErrorMessage } from "@/lib/errors";
 import { HOME_ICONS } from "@/lib/homeIcons";
@@ -85,6 +86,41 @@ export function TextArea({
         onChange={(e) => onChange(e.target.value)}
         className={`${inputClass} h-auto py-2 leading-relaxed`}
       />
+      {hint && <p className="text-[11px] text-slate-500 dark:text-zinc-500">{hint}</p>}
+    </div>
+  );
+}
+
+/**
+ * A rich text (headings, lists, bold, links), in the panel's editor. The count
+ * is of the HTML the API stores, which is what its limit is on.
+ */
+export function RichTextArea({
+  label,
+  value,
+  onChange,
+  max,
+  hint,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  max: number;
+  hint?: string;
+  placeholder?: string;
+}) {
+  const id = useId();
+  const over = value.length > max;
+  return (
+    <div className="space-y-1">
+      <p id={`${id}-label`} className={`${labelClass} flex justify-between`}>
+        {label}
+        <span className={`font-mono tabular-nums ${over ? "font-semibold text-red-600 dark:text-red-400" : ""}`}>
+          {value.length}/{max}
+        </span>
+      </p>
+      <RichTextEditor id={id} labelledBy={`${id}-label`} value={value} onChange={onChange} minHeight="14rem" placeholder={placeholder} />
       {hint && <p className="text-[11px] text-slate-500 dark:text-zinc-500">{hint}</p>}
     </div>
   );

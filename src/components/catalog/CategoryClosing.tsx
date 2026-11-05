@@ -2,9 +2,11 @@ import { ReadMore } from "@/components/ui/ReadMore";
 
 /**
  * A category's own passage at the foot of its page, in place of the shop's
- * "Alt SEO Metni" (SeoIntro), and set the same way: a heading over the text,
- * centred, its first lines shown and the rest a "Devamını Oku" away — all of
- * it in the HTML for search engines.
+ * "Alt SEO Metni" (SeoIntro), and set the same way: a centred heading over the
+ * text, its first lines shown and the rest a "Devamını Oku" away — all of it
+ * in the HTML for search engines. The text itself reads from the start of the
+ * line: a buying guide's lists and subheadings, centred, leave their bullets
+ * stranded at the margin.
  */
 export function CategoryClosing({ title, html }: { title: string; html: string | null }) {
   return (
@@ -21,7 +23,7 @@ export function CategoryClosing({ title, html }: { title: string; html: string |
           html={html}
           lines={4}
           nested
-          className="text-sm leading-relaxed text-gray-600 md:text-base dark:text-zinc-400"
+          className="text-start text-sm leading-relaxed text-gray-600 md:text-base dark:text-zinc-400"
         />
       )}
     </section>

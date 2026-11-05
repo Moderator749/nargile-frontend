@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { Loader2, Save } from "lucide-react";
+import { useEffect, useId, useMemo, useState } from "react";
+import { Copy, Loader2, Save } from "lucide-react";
 
+import { RichTextEditor } from "@/components/admin/RichTextEditor";
 import { Alert } from "@/components/ui/Alert";
 import { adminGetHomeTranslations, adminSaveHomeTranslations } from "@/lib/adminApi";
 import { API_URL } from "@/lib/config";
@@ -10,6 +11,7 @@ import { getApiErrorMessage } from "@/lib/errors";
 import { BUILT_IN_HOME_MEMORY } from "@/lib/homeSectionCopy";
 import { collectTexts, type TextMemory } from "@/lib/homeTranslations";
 import { refreshStorefront } from "@/lib/revalidate";
+import { looksLikeHtml } from "@/lib/richText";
 import type { Homepage } from "@/types";
 import { foldSearch } from "@/lib/searchFold";
 
@@ -29,6 +31,45 @@ async function liveTexts(signal: AbortSignal): Promise<unknown[]> {
       .then((res) => (res.ok ? res.json() : null))
       .catch(() => null);
   return Promise.all([get("/home/content"), get("/banners/active"), get("/announcements/popup")]);
+}
+
+/**
+ * A rich text's translation ("Alt SEO Metni"'s passage): written in the same
+ * editor as the Turkish, and started, if wanted, from a copy of it, so its
+ * headings, lists and links stay where they were and only the words change.
+ */
+function RichTranslation({
+  lang,
+  label,
+  source,
+  value,
+  onChange,
+}: {
+  lang: Lang;
+  label: string;
+  source: string;
+  value: string;
+  onChange: (html: string) => void;
+}) {
+  const id = useId();
+  return (
+    <div dir={lang === "ar" ? "rtl" : "ltr"} lang={lang} className="min-w-0 space-y-1.5">
+      <p id={`${id}-label`} className="text-xs font-medium text-slate-600 dark:text-zinc-400">
+        {label}
+      </p>
+      <RichTextEditor id={id} labelledBy={`${id}-label`} value={value} onChange={onChange} minHeight="10rem" />
+      {!value && (
+        <button
+          type="button"
+          onClick={() => onChange(source)}
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-red-600 dark:text-zinc-400 dark:hover:text-red-400"
+        >
+          <Copy className="h-3.5 w-3.5" aria-hidden />
+          Türkçesini kopyala (başlıklar ve bağlantılarla)
+        </button>
+      )}
+    </div>
+  );
 }
 
 /**
@@ -128,6 +169,30 @@ export function TranslationsTab({ doc }: { doc: Homepage }) {
       <ul className="divide-y divide-slate-200 rounded-2xl border border-slate-200 dark:divide-white/10 dark:border-white/10">
         {shown.map((text) => {
           const rows = Math.min(8, Math.max(1, Math.ceil(text.length / 70)));
+          const translate = (key: Lang, value: string) =>
+            setMemory((m) => (m ? { ...m, [key]: { ...m[key], [text]: value } } : m));
+          if (looksLikeHtml(text)) {
+            // A rich text: the Turkish as it reads on the page, its
+            // translations in the editor.
+            return (
+              <li key={text} className="grid gap-3 p-4 @3xl:grid-cols-3">
+                <div
+                  className="rich-text max-h-96 overflow-y-auto text-sm text-slate-800 dark:text-zinc-200"
+                  dangerouslySetInnerHTML={{ __html: text }}
+                />
+                {LANGS.map(({ key, label }) => (
+                  <RichTranslation
+                    key={key}
+                    lang={key}
+                    label={label}
+                    source={text}
+                    value={memory[key][text] ?? ""}
+                    onChange={(html) => translate(key, html)}
+                  />
+                ))}
+              </li>
+            );
+          }
           return (
             <li key={text} className="grid gap-3 p-4 @3xl:grid-cols-3">
               <p className="whitespace-pre-line text-sm text-slate-800 dark:text-zinc-200">{text}</p>
@@ -140,7 +205,7 @@ export function TranslationsTab({ doc }: { doc: Homepage }) {
                     lang={key}
                     placeholder={label}
                     value={memory[key][text] ?? ""}
-                    onChange={(e) => setMemory((m) => (m ? { ...m, [key]: { ...m[key], [text]: e.target.value } } : m))}
+                    onChange={(e) => translate(key, e.target.value)}
                     className={fieldClass}
                   />
                 </label>

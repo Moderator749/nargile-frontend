@@ -24,6 +24,7 @@ import {
   ListEditor,
   LinkField,
   Panel,
+  RichTextArea,
   TextArea,
   TextField,
 } from "@/components/admin/homepage/fields";
@@ -616,10 +617,14 @@ export function ShowcaseTab({
 
 // ── Alt SEO Metni ────────────────────────────────────────────────────────────
 
+/** The longest "Devamı" the API keeps, as HTML (app/schemas/homepage.py). */
+const SEO_INTRO_CONTENT_MAX = 12_000;
+
 /**
  * "Alt SEO Tanıtım Metni": the passage that closes the homepage and every
  * catalog page above the footer. An empty field shows the shop's own copy for
- * it, so clearing one is how it goes back to the default.
+ * it, so clearing one is how it goes back to the default. "Devamı" is a rich
+ * text — a buying guide with its own headings and links to the categories.
  */
 export function SeoIntroTab({ value, set }: { value: Homepage["seo_intro"]; set: Set<"seo_intro"> }) {
   return (
@@ -643,12 +648,11 @@ export function SeoIntroTab({ value, set }: { value: Homepage["seo_intro"]; set:
             rows={4}
             onChange={(summary) => set({ ...value, summary })}
           />
-          <TextArea
+          <RichTextArea
             label="Devamı (“Devamını Oku” ile açılan metin)"
-            hint="Boş bir satır yeni paragraf başlatır. Metin kapalıyken de sayfada bulunur; arama motorları okur."
+            hint="Ara başlıklar için H2, onların altı için H3 kullanın; sayfada bölüm başlığının altına yerleşirler (H3 / H4). Kategorilere bağlantı verirken site içi adresi yazın, örn. /nargile-takimlari. Metin kapalıyken de sayfada bulunur; arama motorları okur ve bağlantıları izler."
             value={value.content}
-            max={6000}
-            rows={10}
+            max={SEO_INTRO_CONTENT_MAX}
             onChange={(content) => set({ ...value, content })}
           />
         </div>
