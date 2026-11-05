@@ -1,8 +1,8 @@
 import { ReadMore } from "@/components/ui/ReadMore";
 
 /**
- * A category's own passage at the foot of its page, in place of the shop's
- * "Alt SEO Metni" (SeoIntro), and set the same way: a centred heading over the
+ * A category's own passage at the foot of its page, set like the homepage's
+ * "Alt SEO Metni" (SeoIntro): a centred heading over the
  * text, its first lines shown and the rest a "Devamını Oku" away — all of it
  * in the HTML for search engines. The text itself reads from the start of the
  * line: a buying guide's lists and subheadings, centred, leave their bullets

@@ -357,8 +357,8 @@ export function AdminCategoriesView({
           <fieldset className="space-y-3 rounded-lg border border-slate-200 p-3 dark:border-white/10">
             <legend className="px-1 text-sm font-medium text-slate-700 dark:text-zinc-300">Sayfa sonu metni</legend>
             <p className="text-xs text-slate-500 dark:text-zinc-400">
-              Ürünlerin altındaki başlık ve yazı. Boş bırakılırsa ortak “Alt SEO Metni” (Ana Sayfa Düzenleme)
-              gösterilir. Yalnızca Türkçe sayfada.
+              Ürünlerin altındaki başlık ve yazı. Boş bırakılırsa sayfa ürünlerle biter (ana sayfanın
+              “Alt SEO Metni” burada tekrarlanmaz). Yalnızca Türkçe sayfada.
             </p>
             <Input
               label="Başlık"

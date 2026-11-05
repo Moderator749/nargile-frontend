@@ -156,7 +156,7 @@ const EDITORS: Record<
   },
   showcase: { title: "Premium Ürün Yelpazesi", hint: "Başlık ve kategori kutuları.", doc: "showcase", sections: ["showcase"], size: "md" },
   // The homepage switch for this passage is the one still called "about".
-  seo: { title: "Alt SEO Metni", hint: "Ana sayfayı ve kategori sayfalarını kapatan tanıtım metni.", doc: "seo_intro", sections: ["about"], size: "md" },
+  seo: { title: "Alt SEO Metni", hint: "Ana sayfayı kapatan tanıtım metni.", doc: "seo_intro", sections: ["about"], size: "md" },
   footer: { title: "Footer", hint: "İletişim, kolonlar ve sosyal medya; tüm sayfalarda.", doc: "footer", sections: ["footer"], size: "lg" },
   mobile: { title: "Mobil Yönetim", hint: "Telefonda (768px altı) gizlenecek bölümler.", doc: "mobile", size: "md" },
   catalog: { title: "Katalog Kategorileri", hint: "Her değişiklik kendi kaydedilir.", size: "lg" },

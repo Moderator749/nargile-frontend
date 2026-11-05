@@ -2,7 +2,6 @@ import { CatalogHeading, CatalogIntro } from "@/components/catalog/CatalogHeadin
 import { CategoryBanner } from "@/components/catalog/CategoryBanner";
 import { CategoryClosing } from "@/components/catalog/CategoryClosing";
 import { CategoryFamilyNav } from "@/components/catalog/CategoryFamilyNav";
-import { SeoIntro } from "@/components/home/SeoIntro";
 import { CatalogView } from "@/components/catalog/CatalogView";
 import { CategorySidebar } from "@/components/layout/CategorySidebar";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -30,7 +29,7 @@ interface CatalogScreenProps {
   groups?: { slug: string; name: string; ids: number[] }[];
   /** The page's introduction, plain muted text under its title; clamped, the full text in the page. */
   intro?: string | null;
-  /** A category's own passage at the page's foot, in place of the shop's "Alt SEO Metni". */
+  /** A category's own passage at the page's foot; none = the page ends at the grid. */
   closing?: { title: string; html: string | null } | null;
   /** The whole catalog, where the header's search lands (see CatalogHeading). */
   searchable?: boolean;
@@ -42,8 +41,8 @@ interface CatalogScreenProps {
 
 /**
  * Server-rendered catalog shell: heading and JSON-LD, around the interactive
- * grid. The category column and the closing paragraphs are the ones edited in
- * "Ana Sayfa Düzenleme"; the homepage's on/off switches do not apply here.
+ * grid. The category column is the one edited in "Ana Sayfa Düzenleme"; the
+ * homepage's on/off switches do not apply here.
  */
 export async function CatalogScreen({
   title,
@@ -91,11 +90,13 @@ export async function CatalogScreen({
         sidebar={<CategorySidebar key="sidebar" items={resolveNav(home.navigation.sidebar, categories, brands)} fit />}
       />
 
-      {/* The shop in a few plain paragraphs, straight under the grid (its own
-          top padding is the gap), so every listing page ends the same way
-          above the footer. A category's own description is not repeated
-          here: it is under the page's title. */}
-      {closing ? <CategoryClosing title={closing.title} html={closing.html} /> : <SeoIntro copy={home.seo_intro} />}
+      {/* A category's own passage, straight under the grid (its own top
+          padding is the gap). A page without one ends at the grid: the
+          homepage's "Alt SEO Metni" is the homepage's, and the same guide
+          repeated on every listing would be one text on fifty addresses. A
+          category's own description is not repeated here either: it is under
+          the page's title. */}
+      {closing && <CategoryClosing title={closing.title} html={closing.html} />}
     </main>
   );
 }

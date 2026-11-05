@@ -621,8 +621,8 @@ export function ShowcaseTab({
 const SEO_INTRO_CONTENT_MAX = 12_000;
 
 /**
- * "Alt SEO Tanıtım Metni": the passage that closes the homepage and every
- * catalog page above the footer. An empty field shows the shop's own copy for
+ * "Alt SEO Tanıtım Metni": the passage that closes the homepage above the
+ * footer (a category page shows only its own). An empty field shows the shop's own copy for
  * it, so clearing one is how it goes back to the default. "Devamı" is a rich
  * text — a buying guide with its own headings and links to the categories.
  */
@@ -631,7 +631,7 @@ export function SeoIntroTab({ value, set }: { value: Homepage["seo_intro"]; set:
     <div className="space-y-6">
       <Panel
         title="Alt SEO Tanıtım Metni (Footer SEO)"
-        hint="Ana sayfanın ve tüm kategori sayfalarının en altında, footer'ın hemen üstünde. Boş bırakılan alan varsayılan metni gösterir."
+        hint="Ana sayfanın en altında, footer'ın hemen üstünde. Kategori sayfaları yalnızca kendi “Sayfa sonu metni”ni gösterir. Boş bırakılan alan varsayılan metni gösterir."
       >
         <div className="space-y-4">
           <TextField

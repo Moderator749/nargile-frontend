@@ -41,7 +41,7 @@ export const SECTION_LABELS: Record<keyof HomeSections, { title: string; hint: s
   games: { title: "Oyun & Eğlence", hint: "Tavla, okey ve iskambil ürün satırı (kaydırmalı)." },
   showcase: { title: "Premium Ürün Yelpazesi", hint: "Başlık ve altındaki kategori kutuları (bento)." },
   advantages: { title: "Ayrıcalıklar & Avantajlar", hint: "“Hacim büyür. Maliyet küçülür.” kartları." },
-  about: { title: "Alt SEO Tanıtım Metni", hint: "Ana sayfanın ve kategori sayfalarının sonundaki tanıtım metni." },
+  about: { title: "Alt SEO Tanıtım Metni", hint: "Ana sayfanın sonundaki tanıtım metni." },
   footer: { title: "Footer (Alt Bilgi)", hint: "İletişim kartları, dört kolon ve yasal uyarı. Tüm sayfalarda." },
 };
 
