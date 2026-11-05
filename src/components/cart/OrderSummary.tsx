@@ -1,13 +1,14 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Building2, Check, Crown, Lock, Send, Ship, TrendingUp, Truck } from "lucide-react";
+import { Building2, Check, Lock, Send, Ship, TrendingUp, Truck } from "lucide-react";
 
 import { LegalConsent, MarketingConsent, type Agreements } from "@/components/cart/LegalConsent";
 import { useLocale, useMessages } from "@/components/i18n/LocaleProvider";
 import { LoyaltyPointsInput } from "@/components/cart/LoyaltyPointsInput";
 import { PaymentMethodPicker } from "@/components/cart/PaymentMethodPicker";
 import { ShippingConsent } from "@/components/cart/ShippingConsent";
+import { SultanPuanMark } from "@/components/icons/LoyaltyIcons";
 import { TransferDetails } from "@/components/payment/TransferDetails";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
@@ -195,12 +196,7 @@ function LoyaltyEarnCard({ points, rate }: { points: number | null | undefined; 
   return (
     <div className="rounded-xl border border-amber-300/80 bg-gradient-to-br from-amber-50 via-amber-50 to-orange-50 px-3.5 py-3 text-amber-950 dark:border-amber-400/30 dark:from-amber-400/15 dark:via-amber-500/10 dark:to-orange-500/5 dark:text-amber-50">
       <div className="flex items-center gap-3">
-        <span
-          aria-hidden
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-amber-300 to-amber-500 text-amber-950 shadow-[inset_0_1px_0_rgb(255_255_255/0.55),0_1px_2px_rgb(180_83_9/0.35)] ring-1 ring-amber-600/25"
-        >
-          <Crown className="h-5 w-5" strokeWidth={2.25} />
-        </span>
+        <SultanPuanMark className="h-10 w-10 shrink-0 drop-shadow-[0_1px_2px_rgb(180_83_9/0.35)]" />
         <div className="min-w-0 flex-1">
           <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-amber-700 dark:text-amber-300">{t.pointsTitle}</p>
           {/* The amount and its worth on one line where there is room; the worth wraps under it where not. */}

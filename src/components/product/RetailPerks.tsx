@@ -1,8 +1,10 @@
 "use client";
 
-import { BadgePercent, Crown, PiggyBank, type LucideIcon } from "lucide-react";
+import type { ComponentType } from "react";
+import { BadgePercent } from "lucide-react";
 
 import Link from "@/components/i18n/Link";
+import { KumbaraIcon, SultanPuanMark, type MarkProps } from "@/components/icons/LoyaltyIcons";
 import { useMessages } from "@/components/i18n/LocaleProvider";
 import { PERKS_PAGE } from "@/lib/bilgi";
 import { homeMessages } from "@/lib/i18n/messages/home";
@@ -38,7 +40,7 @@ const isProductPagePerk = (key: AdvantageKey): key is PerkKey => (PRODUCT_PAGE_P
 /**
  * The shop's basket and loyalty advantages as one row under "Sepete Ekle",
  * each a figure over its name: "%5 – %8 30.000 TL+ / Sepette İndirim",
- * "%10 / SultanPuan Kazanımı", "20.000 TL+ / Kumbara Bonusu", with the live
+ * "%10 / SultanPuan Kazanımı", "%5 20.000 TL+ / Kumbara Puanı", with the live
  * figures of "Parametreler", and only while the homepage shows it. Each leads
  * to its section on "Ayrıcalıklar ve Avantajlar"; its fuller sentence is the
  * link's title.
@@ -57,24 +59,25 @@ export function RetailPerks({ params, sources }: { params: StoreParameters; sour
 }
 
 /**
- * Each perk's mark and colours: the saving green, the crown gold, the piggy
- * bank the shop's red. The badges are solid, each text at 4.5:1 or better on
- * its fill, in both themes.
+ * Each perk's mark and colours: the saving green, SultanPuan's gold coin
+ * (its own colours, and drawn a size up so its "SP" reads), the money box the
+ * shop's red. The badges are solid, each text at 4.5:1 or better on its fill,
+ * in both themes.
  */
-const PERK_STYLE: Record<PerkKey, { Icon: LucideIcon; icon: string; badge: string }> = {
+const PERK_STYLE: Record<PerkKey, { Icon: ComponentType<MarkProps>; icon: string; badge: string }> = {
   volume: {
     Icon: BadgePercent,
-    icon: "text-emerald-600 dark:text-emerald-400",
+    icon: "h-5 w-5 text-emerald-600 dark:text-emerald-400",
     badge: "bg-emerald-700 text-white dark:bg-emerald-400 dark:text-emerald-950",
   },
   sultanpuan: {
-    Icon: Crown,
-    icon: "text-amber-500 dark:text-amber-400",
+    Icon: SultanPuanMark,
+    icon: "-my-0.5 h-6 w-6 drop-shadow-sm",
     badge: "bg-amber-400 text-amber-950 dark:bg-amber-400 dark:text-amber-950",
   },
   kumbara: {
-    Icon: PiggyBank,
-    icon: "text-red-600 dark:text-red-400",
+    Icon: KumbaraIcon,
+    icon: "h-5 w-5 text-red-600 dark:text-red-400",
     badge: "bg-red-600 text-white",
   },
 };
@@ -100,23 +103,24 @@ function AdvantageList({ advantages }: { advantages: StoreAdvantage[] }) {
     >
       {shown.map(({ key, anchor, value, threshold, note }) => {
         const { Icon, icon, badge } = PERK_STYLE[key];
-        // Kumbara's figure is where the bonus starts: "20.000 TL+".
-        const figure = key === "kumbara" ? `${value}+` : value;
-        const from = key === "volume" ? bare(threshold) : null;
+        // Beside the figure, the amount it holds from: the cart discount's
+        // first rung, Kumbara's yearly target ("%5 20.000 TL+"). Kumbara's
+        // sentence says its target already, so its title is that alone.
+        const from = bare(threshold);
         return (
           <li key={key} className="min-w-0 px-2 @xl:px-3">
             <Link
               href={`${PERKS_PAGE.href}#${anchor}`}
-              title={[threshold, note].filter(Boolean).join(" ")}
+              title={[key === "kumbara" ? null : threshold, note].filter(Boolean).join(" ")}
               className="group flex h-full flex-col items-center gap-1.5 rounded-lg text-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent @xl:flex-row @xl:items-start @xl:gap-2.5 @xl:text-start"
             >
-              <Icon className={`h-5 w-5 shrink-0 @xl:mt-0.5 ${icon}`} strokeWidth={2.25} aria-hidden />
+              <Icon className={`shrink-0 @xl:mt-0.5 ${icon}`} strokeWidth={2.25} />
               <span className="flex min-w-0 flex-col items-center gap-0.5 @xl:items-start">
                 {/* The badge next to the icon in either direction; a figure itself
                     reads left to right in every language: "20.000 TL+", not "+TL 20.000". */}
                 <span className="flex flex-wrap items-baseline justify-center gap-x-1.5 gap-y-0.5 @xl:justify-start">
                   <span dir="ltr" className={`whitespace-nowrap rounded-md px-2 py-0.5 text-sm font-bold tabular-nums shadow-sm ring-1 ring-inset ring-black/10 ${badge}`}>
-                    {figure}
+                    {value}
                   </span>
                   {from && <span dir="ltr" className="whitespace-nowrap text-xs font-medium tabular-nums text-stone-500 dark:text-zinc-400">{from}</span>}
                 </span>

@@ -1,5 +1,7 @@
-import { Bike, Crown, PiggyBank, Truck, type LucideIcon } from "lucide-react";
+import type { ComponentType } from "react";
+import { Bike, Truck } from "lucide-react";
 
+import { KumbaraIcon, SultanPuanMark, type MarkProps } from "@/components/icons/LoyaltyIcons";
 import { homeIcon } from "@/lib/homeIcons";
 import { fillIn } from "@/lib/homeSectionCopy";
 import type { Homepage, ParameterTier, StoreParameters } from "@/types";
@@ -24,7 +26,8 @@ export interface StoreAdvantage {
   key: AdvantageKey;
   /** Its section on "Ayrıcalıklar ve Avantajlar". */
   anchor: string;
-  Icon: LucideIcon;
+  /** A lucide icon, or one of the loyalty programmes' own marks. */
+  Icon: ComponentType<MarkProps>;
   label: string;
   /** The figure ("%5 – %8", "3.000 TL"), where it has one. */
   value: string | null;
@@ -143,7 +146,7 @@ export function storeAdvantages(home: AdvantageSources, params: StoreParameters,
     out.push({
       key: "sultanpuan",
       anchor: "sultanpuan",
-      Icon: Crown,
+      Icon: SultanPuanMark,
       label: "SultanPuan",
       value: percent(Number(loyalty.base_rate) * 100),
       threshold: null,
@@ -151,7 +154,8 @@ export function storeAdvantages(home: AdvantageSources, params: StoreParameters,
     });
   }
 
-  // The Kumbara band: the annual target and what reaching it is worth.
+  // The Kumbara band: what reaching the annual target is worth, and the target.
+  // A bonus once the year's orders add up to it, not a rate on every order.
   const target = Number(loyalty.annual_spend_threshold);
   if (sections.kumbara && loyalty.enabled && loyalty.annual_bonus_points > 0 && target > 0) {
     const amount = `${whole.format(target)} TL`;
@@ -159,10 +163,10 @@ export function storeAdvantages(home: AdvantageSources, params: StoreParameters,
     out.push({
       key: "kumbara",
       anchor: "kumbarapuan",
-      Icon: PiggyBank,
+      Icon: KumbaraIcon,
       label: "Kumbara",
-      value: amount,
-      threshold: null,
+      value: bonus,
+      threshold: `(${amount}+)`,
       note: fillIn(home.kumbara.note, { tutar: amount, oran: bonus }),
     });
   }

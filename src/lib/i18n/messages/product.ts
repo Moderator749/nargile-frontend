@@ -80,7 +80,7 @@ export const productMessages = defineMessages({
       // Each benefit's name, under its figure, which is drawn as a badge.
       volume: "Sepette İndirim",
       sultanpuan: "SultanPuan Kazanımı",
-      kumbara: "Kumbara Bonusu",
+      kumbara: "Kumbara Puanı",
     },
   },
   en: {
@@ -142,7 +142,7 @@ export const productMessages = defineMessages({
       label: "Shopping perks for individual customers",
       volume: "Cart discount",
       sultanpuan: "SultanPuan earned",
-      kumbara: "Kumbara bonus",
+      kumbara: "Kumbara points",
     },
   },
   ar: {
@@ -204,7 +204,7 @@ export const productMessages = defineMessages({
       label: "مزايا التسوق للأفراد",
       volume: "خصم السلة",
       sultanpuan: "نقاط SultanPuan",
-      kumbara: "مكافأة Kumbara",
+      kumbara: "نقاط Kumbara",
     },
   },
 });
