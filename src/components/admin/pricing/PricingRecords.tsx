@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, History, ImageOff, RotateCcw, Trash2 } from "lucide-react";
+import { CheckCircle2, FolderInput, History, ImageOff, RotateCcw, Trash2 } from "lucide-react";
 
 import { formatDate, formatDateParts } from "@/lib/format";
 import type { PricingCurrency, PricingRecord, StoredColumn } from "@/lib/pricing";
@@ -45,6 +45,7 @@ export function PricingRecords({
   empty,
   onLoad,
   onDelete,
+  onMove,
   selected,
   onToggle,
 }: {
@@ -52,6 +53,8 @@ export function PricingRecords({
   empty: string;
   onLoad: (record: PricingRecord) => void;
   onDelete: (record: PricingRecord) => void;
+  /** "Dosyaya taşı", on a draft. */
+  onMove?: (record: PricingRecord) => void;
   selected?: ReadonlySet<string>;
   onToggle?: (record: PricingRecord) => void;
 }) {
@@ -84,7 +87,7 @@ export function PricingRecords({
                     type="checkbox"
                     checked={selected.has(r.id)}
                     onChange={() => onToggle(r)}
-                    aria-label={`${r.product_code || r.product_name || "Satır"} kataloğa ekle`}
+                    aria-label={`${r.product_code || r.product_name || "Satır"} seç`}
                     className="h-4 w-4 shrink-0 accent-red-600"
                   />
                 )}
@@ -132,6 +135,15 @@ export function PricingRecords({
                 >
                   <RotateCcw className="h-3.5 w-3.5" aria-hidden /> Cetvele yükle
                 </button>
+                {onMove && (
+                  <button
+                    type="button"
+                    onClick={() => onMove(r)}
+                    className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-slate-700 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 dark:text-zinc-300 dark:ring-white/15 dark:hover:bg-white/5"
+                  >
+                    <FolderInput className="h-3.5 w-3.5" aria-hidden /> Dosyaya taşı
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => onDelete(r)}

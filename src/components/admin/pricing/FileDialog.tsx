@@ -16,8 +16,8 @@ const field =
   "block h-11 w-full rounded-xl border border-slate-300 bg-white px-3.5 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-4 focus:ring-red-500/15 dark:border-white/15 dark:bg-zinc-950 dark:text-zinc-100";
 
 /**
- * "Dosyaya kaydet": pick a file the row goes into, or name a new one. Used by
- * both file buttons; the apply one says what else will happen.
+ * Pick a file rows go into, or name a new one: "Dosyaya Taşı" on the drafts,
+ * "Taşı" on a file's rows.
  */
 export function FileDialog({
   files,

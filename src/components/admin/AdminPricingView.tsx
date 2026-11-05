@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { ArrowLeft, Copy, FileText, Folder, FolderInput, Pencil, Trash2 } from "lucide-react";
 
 import { AdminPageHeader } from "@/components/admin/AdminShell";
@@ -39,6 +39,58 @@ const fileAction =
   "inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50 dark:text-zinc-300 dark:hover:bg-white/10";
 const cardAction =
   "inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-500 ring-1 ring-slate-200 hover:bg-slate-100 hover:text-slate-800 disabled:opacity-50 dark:text-zinc-400 dark:ring-white/10 dark:hover:bg-white/10 dark:hover:text-zinc-100";
+
+const deleteButton =
+  "inline-flex h-9 items-center gap-2 rounded-lg bg-white px-3.5 text-sm font-semibold text-red-600 ring-1 ring-red-300 transition-colors hover:bg-red-50 disabled:opacity-50 dark:bg-zinc-900 dark:ring-red-500/40 dark:hover:bg-red-500/10";
+
+/** A list's "Tümünü seç" bar: picks what the search leaves on screen; its actions on the right. */
+function PickBar({
+  ids,
+  picked,
+  setPicked,
+  total,
+  filtered,
+  children,
+}: {
+  ids: string[];
+  picked: ReadonlySet<string>;
+  setPicked: (update: (current: ReadonlySet<string>) => ReadonlySet<string>) => void;
+  total: number;
+  filtered: boolean;
+  children: ReactNode;
+}) {
+  const all = ids.length > 0 && ids.every((id) => picked.has(id));
+  return (
+    <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 dark:border-white/10 dark:bg-white/[0.03]">
+      <label className="flex cursor-pointer items-center gap-2 text-sm font-medium">
+        <input
+          type="checkbox"
+          className="h-4 w-4 accent-red-600"
+          checked={all}
+          disabled={ids.length === 0}
+          ref={(el) => {
+            if (el) el.indeterminate = !all && ids.some((id) => picked.has(id));
+          }}
+          onChange={() =>
+            setPicked((current) => {
+              const next = new Set(current);
+              for (const id of ids) {
+                if (all) next.delete(id);
+                else next.add(id);
+              }
+              return next;
+            })
+          }
+        />
+        {filtered ? "Görünenlerin tümünü seç" : "Tümünü seç"}
+        <span className="text-xs font-normal text-slate-500 dark:text-zinc-400">
+          ({picked.size} / {total} seçili)
+        </span>
+      </label>
+      <div className="flex flex-wrap items-center gap-2">{children}</div>
+    </div>
+  );
+}
 
 /** "13.10.2026 17:05": when a file was saved, at a glance. */
 const stamp = (iso: string) => {
@@ -107,6 +159,9 @@ export function AdminPricingView() {
   const [fileRows, setFileRows] = useState<PricingRecord[] | null>(null);
   // Rows of the open file picked for a price catalogue.
   const [picked, setPicked] = useState<ReadonlySet<string>>(new Set());
+  // Drafts picked for "Dosyaya Taşı" (or to delete), and the drafts the file dialog is moving.
+  const [draftsPicked, setDraftsPicked] = useState<ReadonlySet<string>>(new Set());
+  const [draftsMoving, setDraftsMoving] = useState<string[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   // What the last file action did ("2 kayıt taşındı").
   const [notice, setNotice] = useState<string | null>(null);
@@ -215,6 +270,27 @@ export function AdminPricingView() {
       return `${count} kayıt “${file.name}” dosyasına taşındı.`;
     }, "Kayıtlar taşınamadı.");
 
+  /** "Dosyaya Taşı": drafts into an existing file (or a new one by that name); they leave Taslaklar. */
+  const moveDrafts = (target: FileTarget) =>
+    void act(async () => {
+      const ids = draftsMoving ?? [];
+      const { count, file } = await movePricingRecords(ids, target);
+      setDraftsPicked((current) => new Set([...current].filter((id) => !ids.includes(id))));
+      setDraftsMoving(null);
+      return `${count} kayıt “${file.name}” dosyasına taşındı.`;
+    }, "Kayıtlar taşınamadı.");
+
+  const removeDraftsPicked = () => {
+    const ids = [...draftsPicked];
+    if (!ids.length) return;
+    if (!window.confirm(`Seçilen ${ids.length} taslak silinsin mi? Siteye uygulanmış fiyatlar değişmez.`)) return;
+    void act(async () => {
+      const n = await deletePricingRecords(ids);
+      setDraftsPicked(new Set());
+      return `${n} taslak silindi.`;
+    }, "Taslaklar silinemedi.");
+  };
+
   const renameFile = (f: PricingFile) => {
     const name = window.prompt("Dosyanın yeni adı:", f.name)?.trim();
     if (!name || name === f.name) return;
@@ -248,6 +324,7 @@ export function AdminPricingView() {
   const shownRows = fileRows?.filter(byProduct(rowQuery)) ?? null;
   // "Tümünü seç" picks what the filter leaves on screen.
   const visibleIds = (shownRows ?? []).map((r) => r.id);
+  const visibleDraftIds = (shownDrafts ?? []).map((r) => r.id);
   const allVisiblePicked = visibleIds.length > 0 && visibleIds.every((id) => picked.has(id));
 
   const tabs: { value: Tab; label: string; count?: number }[] = [
@@ -272,6 +349,7 @@ export function AdminPricingView() {
             aria-selected={tab === t.value}
             onClick={() => {
               setTab(t.value);
+              setNotice(null);
               if (t.value !== "files") setOpenFile(null);
             }}
             className={`-mb-px border-b-2 px-4 py-2.5 text-sm font-semibold transition-colors ${
@@ -291,7 +369,7 @@ export function AdminPricingView() {
           <Alert variant="error">{error}</Alert>
         </div>
       )}
-      {notice && tab === "files" && (
+      {notice && (tab === "files" || tab === "drafts") && (
         <div className="mb-4">
           <Alert variant="success">{notice}</Alert>
         </div>
@@ -330,11 +408,58 @@ export function AdminPricingView() {
               total={drafts.length}
             />
           )}
+          {shownDrafts && shownDrafts.length > 0 && (
+            <PickBar
+              ids={visibleDraftIds}
+              picked={draftsPicked}
+              setPicked={setDraftsPicked}
+              total={drafts?.length ?? 0}
+              filtered={draftQuery.trim() !== ""}
+            >
+              {draftsPicked.size > 0 && (
+                <>
+                  <button type="button" onClick={removeDraftsPicked} disabled={busy} className={deleteButton}>
+                    <Trash2 className="h-4 w-4" aria-hidden /> Seçilenleri Sil
+                    <span className="rounded bg-red-50 px-1.5 text-xs dark:bg-red-500/15">{draftsPicked.size}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDraftsMoving([...draftsPicked])}
+                    disabled={busy}
+                    className="inline-flex h-9 items-center gap-2 rounded-lg bg-slate-900 px-3.5 text-sm font-semibold text-white transition-colors hover:bg-slate-700 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+                  >
+                    <FolderInput className="h-4 w-4" aria-hidden /> Dosyaya Taşı
+                    <span className="rounded bg-white/20 px-1.5 text-xs dark:bg-black/10">{draftsPicked.size}</span>
+                  </button>
+                </>
+              )}
+            </PickBar>
+          )}
+          {draftsMoving && (
+            <FileDialog
+              files={files}
+              title={draftsMoving.length === 1 ? "Taslağı dosyaya taşı" : `${draftsMoving.length} taslağı dosyaya taşı`}
+              note="Taslaklar’dan çıkar, seçtiğiniz dosyaya geçer. Tarihleri ve siteye uygulanmış fiyatları değişmez."
+              confirmLabel="Dosyaya Taşı"
+              busy={busy}
+              onConfirm={moveDrafts}
+              onClose={() => setDraftsMoving(null)}
+            />
+          )}
           <PricingRecords
             records={shownDrafts}
             empty={draftQuery.trim() ? `“${draftQuery.trim()}” ile eşleşen taslak yok.` : "Henüz taslak yok. Cetvelde “Kaydet” ile eklenir."}
             onLoad={load}
             onDelete={(r) => void remove(r)}
+            onMove={(r) => setDraftsMoving([r.id])}
+            selected={draftsPicked}
+            onToggle={(r) =>
+              setDraftsPicked((s) => {
+                const next = new Set(s);
+                if (!next.delete(r.id)) next.add(r.id);
+                return next;
+              })
+            }
           />
         </>
       )}
