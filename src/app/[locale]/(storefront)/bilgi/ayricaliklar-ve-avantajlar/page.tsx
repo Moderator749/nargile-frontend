@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
-import type { ReactNode } from "react";
-import { Bike, Crown, CreditCard, Landmark, Layers, PiggyBank, Truck, type LucideIcon } from "lucide-react";
+import type { ComponentType, ReactNode } from "react";
+import { Bike, CreditCard, Landmark, Layers, Truck } from "lucide-react";
 
 import { BilgiLayout } from "@/components/bilgi/BilgiLayout";
+import { KumbaraIcon, SultanPuanMark, type MarkProps } from "@/components/icons/LoyaltyIcons";
 import { BILGI_HREF, perksPage } from "@/lib/bilgi";
 import type { Locale } from "@/lib/i18n/config";
 import { bilgiMessages, perksMessages } from "@/lib/i18n/messages/info";
@@ -57,7 +58,8 @@ function ladder(
 
 interface Perk {
   id: string;
-  Icon: LucideIcon;
+  /** A lucide icon, or a loyalty programme's own mark. */
+  Icon: ComponentType<MarkProps>;
   title: string;
   points: ReactNode[];
   /** Fine print under the points, in its own quiet box. */
@@ -136,7 +138,7 @@ function perks(params: StoreParameters, m: PerksWords, locale: Locale): Perk[] {
       ? [
           {
             id: "sultanpuan",
-            Icon: Crown,
+            Icon: SultanPuanMark,
             title: m.sultanTitle(rate(loyalty.base_rate)),
             points: [
               rich(m.sultanEarn(tl(loyalty.band_min), tl(loyalty.band_max), rate(loyalty.base_rate))),
@@ -151,7 +153,7 @@ function perks(params: StoreParameters, m: PerksWords, locale: Locale): Perk[] {
       ? [
           {
             id: "kumbarapuan",
-            Icon: PiggyBank,
+            Icon: KumbaraIcon,
             title: m.kumbaraTitle(bonusRate),
             points: [
               rich(
@@ -241,7 +243,8 @@ export default async function PerksPage() {
                 aria-hidden
                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600 ring-1 ring-inset ring-red-100 dark:bg-red-500/10 dark:text-red-400 dark:ring-red-500/20"
               >
-                <Icon className="h-5 w-5" strokeWidth={1.75} />
+                {/* SultanPuan's coin a size up: its "SP" has to read. */}
+                <Icon className={Icon === SultanPuanMark ? "h-7 w-7" : "h-5 w-5"} strokeWidth={1.75} />
               </span>
               <div className="min-w-0 flex-1">
                 <p className="font-mono text-[11px] font-medium tracking-[0.2em] text-neutral-400 tabular-nums">

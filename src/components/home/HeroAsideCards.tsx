@@ -1,7 +1,8 @@
 import type { ComponentType } from "react";
-import { ArrowRight, ArrowUpRight, Crown } from "lucide-react";
+import { ArrowRight, ArrowUpRight } from "lucide-react";
 
 import { AdvantageFeatures } from "@/components/home/AdvantageFeatures";
+import { SultanPuanMark } from "@/components/icons/LoyaltyIcons";
 import { InstagramIcon, YouTubeIcon } from "@/components/icons/SocialIcons";
 import { SmoothAnchor } from "@/components/home/SmoothAnchor";
 import { PERKS_PAGE } from "@/lib/bilgi";
@@ -127,12 +128,7 @@ export function AdvantagesCard({ box, t }: { box?: PromoBox; t: HeroAsideWords }
       className={`group ${CARD} ${GLOW.advantages} transition-shadow duration-300 hover:shadow-[0_22px_48px_-18px_rgb(0_0_0/0.65)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent`}
     >
       <p className={`${OVERLINE} flex items-center gap-2 text-amber-300`}>
-        <span
-          aria-hidden
-          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-amber-200 to-amber-500 text-amber-950 shadow-md shadow-amber-900/40"
-        >
-          <Crown className="h-3.5 w-3.5" strokeWidth={2.25} />
-        </span>
+        <SultanPuanMark className="h-6 w-6 shrink-0 drop-shadow-[0_2px_4px_rgb(120_53_15/0.45)]" />
         <span className="min-w-0 truncate">{eyebrow}</span>
       </p>
       <h2 className={`${TITLE} mt-2.5`}>{box?.title || t.aside.advantagesTitle}</h2>

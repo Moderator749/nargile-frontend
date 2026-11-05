@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Crown, Truck } from "lucide-react";
+import { ArrowRight, Bike, Truck } from "lucide-react";
 
 import Link from "@/components/i18n/Link";
 import { useMessages } from "@/components/i18n/LocaleProvider";
@@ -68,7 +68,7 @@ export function CampaignSpotlightCard({ href }: { href: string }) {
             </span>
           </li>
           <li className="flex items-start gap-2.5">
-            <Crown className="mt-px h-4 w-4 shrink-0 text-amber-300" strokeWidth={1.75} aria-hidden />
+            <Bike className="mt-px h-4 w-4 shrink-0 text-amber-300" strokeWidth={1.75} aria-hidden />
             <span>
               {t.courier.before}
               <span className="font-semibold text-white">{t.courier.strong}</span>

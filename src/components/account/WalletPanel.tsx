@@ -1,8 +1,7 @@
 "use client";
 
-import { Coins, Crown } from "lucide-react";
-
 import { useLocale, useMessages } from "@/components/i18n/LocaleProvider";
+import { KumbaraIcon, SultanPuanMark } from "@/components/icons/LoyaltyIcons";
 import { formatDate, formatDateParts, formatMoney, formatMoneyCompact } from "@/lib/format";
 import type { Locale } from "@/lib/i18n/config";
 import { INTL_LOCALE } from "@/lib/i18n/messages";
@@ -52,7 +51,7 @@ function MilestoneCard({ m }: { m: LoyaltyMilestone }) {
   return (
     <div className="flex flex-col rounded-2xl border border-slate-200 bg-white p-6 dark:border-white/10 dark:bg-zinc-900">
       <p className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-zinc-400">
-        <Crown className="h-4 w-4 text-amber-500 dark:text-amber-400" aria-hidden /> {t.kumbaraEyebrow}
+        <KumbaraIcon className="h-4 w-4 text-amber-500 dark:text-amber-400" /> {t.kumbaraEyebrow}
       </p>
       <h3 className="mt-3 text-lg font-semibold leading-snug tracking-tight text-slate-900 dark:text-zinc-50">
         {t.kumbaraTitle}
@@ -99,7 +98,7 @@ export function WalletPanel({ wallet }: { wallet: Wallet }) {
       <div className={`grid gap-4 ${showMilestone ? "sm:grid-cols-2" : ""}`}>
         <div className="flex flex-col rounded-2xl bg-[#1d1d1f] p-6 text-white">
           <p className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-zinc-400">
-            <Coins className="h-4 w-4" aria-hidden /> {t.available}
+            <SultanPuanMark className="h-5 w-5" /> {t.available}
           </p>
           <p className="mt-3 font-mono text-4xl font-medium tracking-tighter tabular-nums">{fmt.points(wallet.balance)}</p>
           <p className="mt-1 text-sm text-zinc-400">

@@ -4,6 +4,8 @@ import { useId } from "react";
 export interface MarkProps {
   className?: string;
   strokeWidth?: number | string;
+  /** Accepted for a lucide icon's sake; a mark is always hidden from assistive tech. */
+  "aria-hidden"?: boolean | "true" | "false";
 }
 
 /** S and P, 12 units tall, side by side on the coin's face. */
@@ -14,8 +16,9 @@ const LETTERS =
 /**
  * SultanPuan's own mark: "SP" struck on a gold coin, its letters embossed —
  * a light edge under them, the rim ringed. One mark for every place the
- * programme is named (the product page's perks, the cart's reward card), so
- * it reads as the same thing on both. Its colours are its own; it does not
+ * programme is named (the product page's perks, the cart's reward card, the
+ * wallet, "Ayrıcalıklar ve Avantajlar", the homepage's advantages card, the
+ * admin's loyalty settings), so it reads as the same thing everywhere. Its colours are its own; it does not
  * follow currentColor. Each copy names its gradient with useId, as a page
  * draws it more than once.
  */

@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useId, useState, type ReactNode } from "react";
-import { CreditCard, Crown, Info, Plus, Save, TrendingUp, Trash2, Truck, type LucideIcon } from "lucide-react";
+import { useEffect, useId, useState, type ComponentType, type ReactNode } from "react";
+import { CreditCard, Info, Plus, Save, TrendingUp, Trash2, Truck } from "lucide-react";
 
 import { AdminPageHeader, panelClass } from "@/components/admin/AdminShell";
+import { KumbaraIcon, SultanPuanMark, type MarkProps } from "@/components/icons/LoyaltyIcons";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { adminGetStoreParameters, adminUpdateStoreParameters } from "@/lib/adminApi";
@@ -233,7 +234,7 @@ function InfoTip({ label, text }: { label: string; text: string }) {
 }
 
 function Card({ Icon, title, description, info, children }: {
-  Icon: LucideIcon;
+  Icon: ComponentType<MarkProps>;
   title: string;
   /** A line under the title; leave it out for a card that explains itself, with `info` if anything is worth saying. */
   description?: string;
@@ -675,7 +676,7 @@ export function AdminStoreParametersView() {
           </Card>
 
           <Card
-            Icon={Crown}
+            Icon={SultanPuanMark}
             title="Sultan Puan & Sadakat Sistemi"
             info="Puanlar sipariş ödendi olarak onaylandığında tanımlanır, 1 yıl geçerlidir ve sepette kargo hariç tutara uygulanır. Kayıtlı bakiyeler sistem kapatıldığında silinmez; yeniden açıldığında kullanılabilir."
           >
@@ -729,6 +730,8 @@ export function AdminStoreParametersView() {
 
               <div className="border-t border-slate-200 pt-4 dark:border-white/10">
                 <h3 className="flex items-center gap-1 text-sm font-semibold text-slate-900 dark:text-zinc-100">
+                  {/* The storefront calls this Kumbara: its tin, as there. */}
+                  <KumbaraIcon className="me-0.5 h-4 w-4 text-slate-400 dark:text-zinc-500" />
                   Yıllık sadakat eşiği
                   <InfoTip
                     label="Yıllık sadakat eşiği"
