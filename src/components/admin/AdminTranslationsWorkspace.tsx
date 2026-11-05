@@ -11,11 +11,10 @@ import { Alert } from "@/components/ui/Alert";
 import { adminGetHomepage, adminTranslationDrafts } from "@/lib/adminApi";
 import { getApiErrorMessage } from "@/lib/errors";
 import { resolveHomepage } from "@/lib/homepage";
+import { requestedTab, SAVED_PARAM, TAB_ALIAS, TAB_PARAM, type TranslationsTab as Tab } from "@/lib/translationReturn";
 import type { Homepage } from "@/types";
 
 const PATH = "/admin/translations";
-const TAB_PARAM = "sekme";
-type Tab = "texts" | "approvals";
 const PARAM_OF: Record<Tab, string> = { texts: "ceviriler", approvals: "onaylar" };
 
 const TABS: { value: Tab; label: string; Icon: typeof Languages; description: string }[] = [
@@ -57,22 +56,29 @@ function HomepageTexts() {
  * wrote waiting for approval, as two tabs under one heading (the sidebar's
  * one entry for both). The tab is in the address — `?sekme=ceviriler` or
  * `?sekme=onaylar` — so a refresh or a link opens it again; the bare address,
- * the old "Çeviri Onayları" page's, opens the approvals. Each tab, once
+ * the old "Çeviri Onayları" page's, opens the approvals, and so does
+ * `?tab=approvals`. A product sheet opened from the approvals comes back here
+ * after a save with `&kaydedildi=<name>`, said once above the list. Each tab, once
  * opened, stays mounted behind the other, so a half-typed translation
  * survives a look at the approvals. The approvals tab counts what waits.
  */
 export function AdminTranslationsWorkspace() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const requested = searchParams.get(TAB_PARAM);
-  const [tab, setTab] = useState<Tab>(requested === PARAM_OF.texts ? "texts" : "approvals");
+  const [tab, setTab] = useState<Tab>(() => requestedTab(searchParams.toString()));
+  // Read once: the address drops it straight away, so a refresh does not repeat it.
+  const [savedName] = useState(() => searchParams.get(SAVED_PARAM));
   const [mounted, setMounted] = useState<Record<Tab, boolean>>({ texts: tab === "texts", approvals: tab === "approvals" });
   const [pending, setPending] = useState<number | null>(null);
 
-  // The bare address (an old bookmark of "Çeviri Onayları") says so in the address.
+  // The address names the open tab, and only that: the bare address (an old
+  // bookmark of "Çeviri Onayları"), `?tab=…` and a saved product's name are
+  // rewritten to `?sekme=…`.
+  const canonical =
+    searchParams.get(TAB_PARAM) === PARAM_OF[tab] && !searchParams.has(TAB_ALIAS) && !searchParams.has(SAVED_PARAM);
   useEffect(() => {
-    if (!requested) router.replace(`${PATH}?${TAB_PARAM}=${PARAM_OF.approvals}`, { scroll: false });
-  }, [requested, router]);
+    if (!canonical) router.replace(`${PATH}?${TAB_PARAM}=${PARAM_OF[tab]}`, { scroll: false });
+  }, [canonical, tab, router]);
 
   // How many wait, for the tab's badge.
   useEffect(() => {
@@ -127,6 +133,12 @@ export function AdminTranslationsWorkspace() {
           );
         })}
       </div>
+
+      {savedName && tab === "approvals" && (
+        <div className="mb-4">
+          <Alert variant="success">“{savedName}” kaydedildi. Onayladıysanız listeden düştü; sıradakine geçebilirsiniz.</Alert>
+        </div>
+      )}
 
       {mounted.texts && (
         <div id="translations-panel-texts" role="tabpanel" aria-labelledby="translations-tab-texts" hidden={tab !== "texts"}>

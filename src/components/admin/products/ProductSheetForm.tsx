@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import axios from "axios";
@@ -40,10 +40,11 @@ import {
   adminListCategories,
   adminUpdateProductSheet,
 } from "@/lib/adminApi";
-import { useProductListHref } from "@/components/admin/products/listReturn";
+import { useFromApprovals, useProductListHref } from "@/components/admin/products/listReturn";
 import { refreshStorefront } from "@/lib/revalidate";
 import { getApiErrorMessage } from "@/lib/errors";
 import { nameWithCode, productSlug } from "@/lib/slug";
+import { approvalsHref, TRANSLATIONS_ANCHOR } from "@/lib/translationReturn";
 import type { AdminCategory, Brand, CurrencyType, SavedProductSheet, SheetSegment } from "@/types";
 import { stepOnArrowKey } from "@/lib/numberStep";
 
@@ -98,8 +99,12 @@ const VOLUME_DISCOUNT_HINT =
  */
 export function ProductSheetForm({ productId }: { productId?: string }) {
   const router = useRouter();
-  // "Geri Dön": the list as it was left (category, search, sort, page).
-  const listHref = useProductListHref();
+  // "Geri Dön": the list as it was left (category, search, sort, page) — or,
+  // for a sheet opened from "Çeviri Onayları", that tab, where a save returns too.
+  const productListHref = useProductListHref();
+  const fromApprovals = useFromApprovals();
+  const listHref = fromApprovals ? approvalsHref() : productListHref;
+  const backLabel = fromApprovals ? "Çeviri Onaylarına Dön" : "Geri Dön";
   const editing = !!productId;
   // An address that cannot name a product is not looked up at all.
   const validId = !!productId && PRODUCT_ID.test(productId);
@@ -200,12 +205,46 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
       void refreshStorefront();
       setDraft(draftFromSheet(sheet));
       if (!productId) router.replace(`/admin/products/${sheet.id}`);
+      // Opened from the approvals: back to them, which say it was saved.
+      else if (fromApprovals) router.push(approvalsHref(sheet.name));
     } catch (err) {
       setError(getApiErrorMessage(err, "Ürün kaydedilemedi."));
     } finally {
       setSaving(false);
     }
   }
+
+  // Opened at "Çeviriler" (the approvals link a product there): once the form
+  // is on the page, scroll to that section and give it the focus. The
+  // browser's own jump to the anchor comes too early, while it still loads;
+  // and the rich-text editors above it mount a moment later and push it
+  // down, so it is kept in place while the form settles — until the admin
+  // scrolls or types, or for two seconds at most.
+  const jumped = useRef(false);
+  useEffect(() => {
+    if (loading || unavailable || jumped.current) return;
+    if (!fromApprovals && window.location.hash !== `#${TRANSLATIONS_ANCHOR}`) return;
+    const section = document.getElementById(TRANSLATIONS_ANCHOR);
+    const form = section?.parentElement;
+    if (!section || !form) return;
+    jumped.current = true;
+    const behavior: ScrollBehavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+    const align = () => section.scrollIntoView({ behavior, block: "start" });
+    align();
+    section.focus({ preventScroll: true });
+
+    const settle = new ResizeObserver(align);
+    settle.observe(form);
+    const interrupts = ["wheel", "touchstart", "keydown", "mousedown"] as const;
+    const stop = () => {
+      settle.disconnect();
+      window.clearTimeout(timer);
+      for (const type of interrupts) window.removeEventListener(type, stop);
+    };
+    const timer = window.setTimeout(stop, 2000);
+    for (const type of interrupts) window.addEventListener(type, stop, { passive: true });
+    return stop;
+  }, [loading, unavailable, fromApprovals]);
 
   if (loading) {
     return (
@@ -229,7 +268,7 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
           </Alert>
           <div className="flex flex-wrap gap-2">
             <Link href={listHref} className={linkButtonClass}>
-              <ArrowLeft className="h-4 w-4" aria-hidden /> Ürün listesine dön
+              <ArrowLeft className="h-4 w-4" aria-hidden /> {fromApprovals ? "Çeviri Onaylarına dön" : "Ürün listesine dön"}
             </Link>
             {unavailable.missing ? (
               <Link href="/admin/products/new" className={linkButtonClass}>
@@ -408,6 +447,7 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
         </SheetSection>
 
         <SheetSection
+          id={TRANSLATIONS_ANCHOR}
           title="Çeviriler"
           hint="İngilizce (/en) ve Arapça (/ar) sayfalar için. Marka adları ve ürün kodları aynen kalır."
         >
@@ -681,7 +721,7 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
           <div className="flex items-center gap-2">
             <Package className="h-4 w-4 shrink-0 text-slate-400 dark:text-zinc-500" aria-hidden />
             <Link href={listHref} className={linkButtonClass}>
-              <ArrowLeft className="h-4 w-4" aria-hidden /> Geri Dön
+              <ArrowLeft className="h-4 w-4" aria-hidden /> {backLabel}
             </Link>
             <Button type="button" onClick={save} loading={saving} disabled={!!problem} className="h-10! w-auto!">
               <Save className="h-4 w-4" aria-hidden /> {editing ? "Değişiklikleri Kaydet" : "Ürünü Kaydet"}

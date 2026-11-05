@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+import { cameFromApprovals } from "@/lib/translationReturn";
+
 /**
  * The way back to the product list as it was left: its category, search, sort
  * and page. The list writes them into its own URL (so the browser's Back
@@ -32,4 +34,18 @@ export function useProductListHref(): string {
     }
   }, []);
   return href;
+}
+
+/**
+ * Whether the sheet was opened from "Çeviri Onayları" (`?from=approvals`):
+ * then its way back is that tab, not the list. Read after mount, as the list's
+ * address is: the query is not known while the page renders on the server.
+ */
+export function useFromApprovals(): boolean {
+  const [from, setFrom] = useState(false);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- location exists only after mount
+    setFrom(cameFromApprovals(window.location.search));
+  }, []);
+  return from;
 }

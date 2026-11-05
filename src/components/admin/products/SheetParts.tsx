@@ -6,14 +6,22 @@ export function SheetSection({
   hint,
   children,
   className = "",
+  id,
 }: {
   title: string;
   hint?: string;
   children: ReactNode;
   className?: string;
+  /** For a section a link opens the sheet at: it can then also take the focus. */
+  id?: string;
 }) {
   return (
-    <section className={`overflow-hidden rounded-2xl border border-slate-300 bg-white dark:border-white/15 dark:bg-zinc-900 ${className}`}>
+    <section
+      id={id}
+      tabIndex={id ? -1 : undefined}
+      aria-label={id ? title : undefined}
+      className={`overflow-hidden rounded-2xl border border-slate-300 bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40 dark:border-white/15 dark:bg-zinc-900 ${id ? "scroll-mt-[calc(var(--header-height,4rem)+1rem)]" : ""} ${className}`}
+    >
       <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-slate-300 bg-slate-100 px-4 py-2.5 dark:border-white/15 dark:bg-white/[0.06]">
         <h2 className="text-xs font-bold uppercase tracking-[0.12em] text-slate-700 dark:text-zinc-200">{title}</h2>
         {hint && <p className="text-[11px] text-slate-500 dark:text-zinc-400">{hint}</p>}
