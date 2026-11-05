@@ -226,7 +226,7 @@ export async function fetchPricingRecords(fileId: number | null, signal?: AbortS
   return data;
 }
 
-// ── API: "Kaydet" / "Kaydet ve Siteye Uygula" ───────────────────────────────
+// ── API: the calculator's save ──────────────────────────────────────────────
 
 export interface SaveResult {
   record: PricingRecord;
@@ -242,13 +242,15 @@ export interface SaveOptions {
   /** "auto": the button; "overwrite": over `overwriteId`; "new": a new row. */
   mode?: "auto" | "overwrite" | "new";
   overwriteId?: UUID;
+  /** Where the row goes: Taslaklar, or a file (an existing one, or a new one by name). Omitted: a new row in Taslaklar, a row written over where it is. */
+  place?: { kind: "draft" } | { kind: "file"; target: FileTarget };
   apply?: boolean;
 }
 
 /**
- * The calculator's one save. "auto" saves over the loaded row while its code
- * is unchanged, and adds a row for a code saved nowhere; a code saved
- * anywhere else answers 409 — read its rows with `sameCodeRows`.
+ * The calculator's save, whichever button. "auto" saves over the loaded row
+ * while its code is unchanged, and adds a row for a code saved nowhere; a code
+ * saved anywhere else answers 409 — read its rows with `sameCodeRows`.
  */
 export async function savePricing(sheet: PricingSheetInput, options: SaveOptions = {}): Promise<SaveResult> {
   const { data } = await api.post<SaveResult>("/admin/pricing/save", {
@@ -256,6 +258,8 @@ export async function savePricing(sheet: PricingSheetInput, options: SaveOptions
     record_id: options.recordId ?? null,
     mode: options.mode ?? "auto",
     overwrite_id: options.overwriteId ?? null,
+    place: options.place?.kind ?? "keep",
+    ...(options.place?.kind === "file" ? options.place.target : {}),
     apply: options.apply ?? false,
   });
   return data;
@@ -265,12 +269,6 @@ export async function savePricing(sheet: PricingSheetInput, options: SaveOptions
 export function sameCodeRows(err: unknown): PricingRecord[] | null {
   const response = (err as { response?: { status?: number; data?: { detail?: { matches?: PricingRecord[] } } } })?.response;
   return response?.status === 409 && Array.isArray(response.data?.detail?.matches) ? response.data.detail.matches : null;
-}
-
-/** Every row of `code`, in any folder or none, newest first. */
-export async function rowsWithCode(code: string): Promise<PricingRecord[]> {
-  const { data } = await api.get<PricingRecord[]>("/admin/pricing/records/matching", { params: { code, everywhere: true } });
-  return data;
 }
 
 /** Every saved row, draft or in a file, newest first (the price catalogue finds its rows here by id). */

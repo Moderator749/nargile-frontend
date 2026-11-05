@@ -1,8 +1,9 @@
 "use client";
 
 import { Fragment, useEffect, useId, useState, type ReactNode } from "react";
-import { CheckCircle2, Link2, Plus, Rocket, Save, X } from "lucide-react";
+import { CheckCircle2, FilePlus2, Link2, Plus, Rocket, Save, X } from "lucide-react";
 
+import { FileDialog } from "@/components/admin/pricing/FileDialog";
 import { SaveDialog, type PriceLine } from "@/components/admin/pricing/SaveDialog";
 import { ProductLookup } from "@/components/admin/pricing/ProductLookup";
 import { Alert } from "@/components/ui/Alert";
@@ -12,10 +13,11 @@ import { loadExchangeRates } from "@/lib/money";
 import {
   SEGMENT_LABELS,
   computeSheet,
-  rowsWithCode,
   sameCodeRows,
   savePricing,
+  type FileTarget,
   type PricingCurrency,
+  type PricingFile,
   type PricingRecord,
   type PricingSegment,
   type PricingSheetInput,
@@ -189,8 +191,8 @@ function StepPlus({ rowSpan, onAdd, disabled }: { rowSpan?: number; onAdd?: () =
 
 // ── The calculator ───────────────────────────────────────────────────────────
 
-const DARK_BUTTON =
-  "inline-flex h-9 items-center gap-1.5 border border-slate-900 bg-slate-900 px-3 text-xs font-bold uppercase tracking-wide text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300";
+const OUTLINE_BUTTON =
+  "inline-flex h-9 items-center gap-1.5 border border-slate-400 bg-white px-3 text-xs font-bold uppercase tracking-wide text-slate-800 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-500 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800";
 const RED_BUTTON =
   "inline-flex h-9 items-center gap-1.5 border border-red-700 bg-red-600 px-3 text-xs font-bold uppercase tracking-wide text-white hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50";
 
@@ -202,15 +204,21 @@ const RED_BUTTON =
  * (green), typed when the calculated one is not the one wanted. Typing in green
  * never moves the orange row; it only decides what goes to the site.
  *
- * Two buttons, the same in every state: "Kaydet" and "Kaydet ve Siteye
- * Uygula". A sheet loaded from a row is saved over it while its code is
- * unchanged; anything else is a new row, unless its code is saved already —
- * then SaveDialog asks "Üstüne Yaz" or "Yeni Kayıt".
+ * Three buttons, each saying where the row goes: "Taslak olarak kaydet",
+ * "Dosyaya kaydet" (a file picked, or a new one), "Dosya ve sitede ürüne
+ * kaydet" (and onto the product). A sheet loaded from a row is saved over it
+ * while its code is unchanged — moved where the button says; anything else is
+ * a new row, unless its code is saved already, in a file or the drafts: then
+ * SaveDialog asks "Üstüne Yaz" or "Yeni Kayıt".
  */
+/** Where a save goes: Taslaklar, or a file (picked, or a new one by name). */
+type Dest = { kind: "draft" } | { kind: "file"; target: FileTarget };
+
 export function PricingCalculator({
   title,
   initial,
   origin: loadedFrom = null,
+  files,
   onSaved,
 }: {
   /** "Cetvel 1 · KDV hariç maliyet". The sheet's VAT basis is `initial.vatMode`. */
@@ -218,6 +226,8 @@ export function PricingCalculator({
   initial: SheetDraft;
   /** The saved row `initial` was loaded from ("Cetvele yükle"); null for a new sheet. */
   origin?: PricingOrigin | null;
+  /** The files "Dosyaya kaydet" offers. */
+  files: PricingFile[];
   /** A row was saved (and perhaps applied): the lists should refresh. */
   onSaved: () => void;
 }) {
@@ -226,10 +236,11 @@ export function PricingCalculator({
   // The row "Kaydet" writes over: the one loaded, or the one this sheet last
   // saved, so saving again never leaves a second copy behind.
   const [origin, setOrigin] = useState<PricingOrigin | null>(loadedFrom);
-  // The question a save waits on (SaveDialog): the code is saved already, or
-  // the prices "Kaydet ve Siteye Uygula" is about to send.
-  const [ask, setAsk] = useState<{ apply: boolean; matches: PricingRecord[] } | null>(null);
-  const [busy, setBusy] = useState<"save" | "apply" | null>(null);
+  // The file dialog of "Dosyaya kaydet" / "Dosya ve sitede ürüne kaydet".
+  const [fileDialog, setFileDialog] = useState<{ apply: boolean } | null>(null);
+  // "Bu ürün koduyla bir kayıt zaten var" (SaveDialog): the save it holds back.
+  const [ask, setAsk] = useState<{ dest: Dest; apply: boolean; matches: PricingRecord[] } | null>(null);
+  const [busy, setBusy] = useState<"draft" | "file" | "apply" | null>(null);
   // "Kaydedildi", for a few seconds in the corner.
   const [toast, setToast] = useState<string | null>(null);
   const [result, setResult] = useState<{ kind: "success" | "error"; text: ReactNode } | null>(null);
@@ -345,19 +356,29 @@ export function PricingCalculator({
   const tied = savesOver(origin, code);
 
   /**
-   * "Kaydet", and "Kaydet ve Siteye Uygula" once confirmed: the server saves
-   * over the tied row, or adds one — or, the code being saved already
-   * somewhere, answers with those rows, and SaveDialog asks. The sheet is then
-   * tied to the row it wrote.
+   * Every button's save: the server saves over the tied row, or adds one — or,
+   * the code being saved already somewhere, answers with those rows, and
+   * SaveDialog asks. The row goes where the button said (`dest`); the sheet is
+   * then tied to it.
    */
-  async function save(apply: boolean, mode: "auto" | "overwrite" | "new" = "auto", overwriteId?: string) {
+  async function save(dest: Dest, apply: boolean, mode: "auto" | "overwrite" | "new" = "auto", overwriteId?: string) {
     if (problem) return;
-    setBusy(apply ? "apply" : "save");
+    setBusy(apply ? "apply" : dest.kind);
     setResult(null);
     try {
-      const r = await savePricing(payload(), { recordId: origin?.id, mode, overwriteId, apply });
+      const r = await savePricing(payload(), {
+        recordId: origin?.id,
+        mode,
+        overwriteId,
+        place: dest.kind === "draft" ? { kind: "draft" } : { kind: "file", target: dest.target },
+        apply,
+      });
       setOrigin(originOf(r.record));
+      setFileDialog(null);
       setAsk(null);
+      // "“Ekim” dosyasına kaydedildi", "Taslaklardaki kayıt güncellendi".
+      const into = r.record.file_name ? `“${r.record.file_name}” dosyasına` : "Taslaklara";
+      const inside = r.record.file_name ? `“${r.record.file_name}” dosyasındaki` : "Taslaklardaki";
       if (r.applied) {
         await refreshStorefront();
         setToast("Kaydedildi ve siteye uygulandı.");
@@ -365,6 +386,7 @@ export function PricingCalculator({
           kind: "success",
           text: (
             <>
+              {r.overwritten ? `${inside} kayıt güncellendi` : `${into} kaydedildi`} ve{" "}
               <strong>{r.applied.product_name}</strong> ürününün{" "}
               {r.applied.variants_updated > 1 ? `${r.applied.variants_updated} rengine` : "fiyatlarına"} uygulandı:{" "}
               {r.applied.prices.map((p) => `${p.label} ${fmt(Number(p.price_incl_tax), p.currency)} (KDV dahil)`).join(" · ")}
@@ -373,35 +395,18 @@ export function PricingCalculator({
           ),
         });
       } else {
-        setToast(r.overwritten ? "Kaydedildi." : "Kaydedildi; Taslaklar’a eklendi.");
+        setToast(r.overwritten ? `${inside} kayıt güncellendi.` : `${into} kaydedildi.`);
       }
       onSaved();
     } catch (err) {
       const matches = sameCodeRows(err);
       if (matches) {
-        setAsk({ apply, matches });
+        setFileDialog(null);
+        setAsk({ dest, apply, matches });
         return;
       }
       setAsk(null);
       setResult({ kind: "error", text: getApiErrorMessage(err, "Kaydedilemedi.") });
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  /** "Kaydet ve Siteye Uygula": the prices first — and the question, when the code is saved elsewhere — in one dialog. */
-  async function startApply() {
-    if (problem || !code) return;
-    if (tied) {
-      setAsk({ apply: true, matches: [] });
-      return;
-    }
-    setBusy("apply");
-    setResult(null);
-    try {
-      setAsk({ apply: true, matches: await rowsWithCode(code) });
-    } catch (err) {
-      setResult({ kind: "error", text: getApiErrorMessage(err, "Kayıtlar okunamadı.") });
     } finally {
       setBusy(null);
     }
@@ -727,15 +732,15 @@ export function PricingCalculator({
             )}
             .{" "}
             {tied
-              ? "Kaydet bu kaydın üstüne yazar."
-              : "Ürün kodunu değiştirdiniz: Kaydet yeni bir kayıt ekler (bu kod kayıtlıysa önce sorar); düzenlenen kayıt olduğu gibi kalır."}
+              ? "Kaydettiğinizde bu kaydın üstüne yazılır; kayıt bastığınız butonun yerine (Taslaklar ya da seçtiğiniz dosya) geçer."
+              : "Ürün kodunu değiştirdiniz: kaydettiğinizde yeni bir kayıt eklenir (bu kod kayıtlıysa önce sorulur); düzenlenen kayıt olduğu gibi kalır."}
           </span>
           <button
             type="button"
             onClick={() => setOrigin(null)}
             disabled={!!busy}
             className="ml-auto inline-flex items-center gap-1 font-semibold underline-offset-2 hover:underline disabled:opacity-50"
-            title="Bu cetvel kayıttan ayrılır: sonraki Kaydet yeni bir kayıt ekler (kod kayıtlıysa sorar)."
+            title="Bu cetvel kayıttan ayrılır: sonraki kayıt yeni bir satır olur (kod kayıtlıysa sorulur)."
           >
             <X className="h-3.5 w-3.5" aria-hidden /> Kayıttan ayır
           </button>
@@ -766,17 +771,20 @@ export function PricingCalculator({
           {problem && <span className="text-[11px] text-slate-500 dark:text-zinc-400">{problem}</span>}
         </div>
         <div className="ml-auto flex flex-wrap justify-end gap-2">
-          <button type="button" disabled={!!problem || !!busy} onClick={() => void save(false)} className={DARK_BUTTON}>
-            <Save className="h-3.5 w-3.5" aria-hidden /> {busy === "save" ? "Kaydediliyor…" : "Kaydet"}
+          <button type="button" disabled={!!problem || !!busy} onClick={() => void save({ kind: "draft" }, false)} className={OUTLINE_BUTTON}>
+            <Save className="h-3.5 w-3.5" aria-hidden /> {busy === "draft" ? "Kaydediliyor…" : "Taslak olarak kaydet"}
+          </button>
+          <button type="button" disabled={!!problem || !!busy} onClick={() => setFileDialog({ apply: false })} className={OUTLINE_BUTTON}>
+            <FilePlus2 className="h-3.5 w-3.5" aria-hidden /> Dosyaya kaydet
           </button>
           <button
             type="button"
             disabled={!!problem || !!busy || !code}
-            onClick={() => void startApply()}
-            title={!code ? "Siteye uygulamak için ürün kodu gerekli" : undefined}
+            onClick={() => setFileDialog({ apply: true })}
+            title={!code ? "Siteye kaydetmek için ürün kodu gerekli" : undefined}
             className={RED_BUTTON}
           >
-            <Rocket className="h-3.5 w-3.5" aria-hidden /> {busy === "apply" ? "Uygulanıyor…" : "Kaydet ve Siteye Uygula"}
+            <Rocket className="h-3.5 w-3.5" aria-hidden /> {busy === "apply" ? "Uygulanıyor…" : "Dosya ve sitede ürüne kaydet"}
           </button>
         </div>
       </div>
@@ -801,6 +809,25 @@ export function PricingCalculator({
         </div>
       )}
 
+      {fileDialog && (
+        <FileDialog
+          files={files}
+          initialFileId={origin?.fileId ?? null}
+          title={fileDialog.apply ? "Dosyaya kaydet ve siteye uygula" : "Dosyaya kaydet"}
+          note={
+            fileDialog.apply
+              ? `“${code}” kodlu ürünün fiyatları bu satırla değiştirilecek, satıştaki tüm renklerinde (yeşil satır): ${applyLines
+                  .map((l) => `${l.label} ${l.value}`)
+                  .join(" · ")}. Müşteri grubu seçilmemiş sütunlar ve mağaza fiyatı siteye gönderilmez.`
+              : undefined
+          }
+          confirmLabel={fileDialog.apply ? "Kaydet ve uygula" : "Kaydet"}
+          busy={busy !== null}
+          onConfirm={(target) => void save({ kind: "file", target }, fileDialog.apply)}
+          onClose={() => setFileDialog(null)}
+        />
+      )}
+
       {ask && (
         <SaveDialog
           code={code}
@@ -809,16 +836,13 @@ export function PricingCalculator({
             ask.apply
               ? {
                   prices: applyLines,
-                  note: `“${code}” kodlu ürünün satıştaki tüm renklerine yazılır (yeşil satır). Müşteri grubu seçilmemiş sütunlar ve mağaza fiyatı siteye gönderilmez.${
-                    ask.matches.length === 0 && tied ? " Düzenlenen kaydın üstüne kaydedilir." : ""
-                  }`,
+                  note: `“${code}” kodlu ürünün satıştaki tüm renklerine yazılır (yeşil satır). Müşteri grubu seçilmemiş sütunlar ve mağaza fiyatı siteye gönderilmez.`,
                 }
               : null
           }
           busy={busy !== null}
-          onOverwrite={(record) => void save(ask.apply, "overwrite", record.id)}
-          onSaveNew={() => void save(ask.apply, "new")}
-          onConfirm={() => void save(true)}
+          onOverwrite={(record) => void save(ask.dest, ask.apply, "overwrite", record.id)}
+          onSaveNew={() => void save(ask.dest, ask.apply, "new")}
           onClose={() => setAsk(null)}
         />
       )}

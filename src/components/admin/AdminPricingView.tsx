@@ -138,11 +138,10 @@ function draftFrom(r: PricingRecord): SheetDraft {
 
 /**
  * "Fiyat Hesaplama Cetveli": the calculator, the rows in no file
- * ("Taslaklar") and the named files ("Dosyalar"). The calculator saves with
- * "Kaydet" or "Kaydet ve Siteye Uygula" (PricingCalculator): a new row joins
- * the drafts; a row loaded from either list and saved again stays where it
- * is. Rows reach a file by "Taşı". Each list goes by the last save, newest
- * first.
+ * ("Taslaklar") and the named files ("Dosyalar"). The calculator's buttons
+ * say where a row goes (PricingCalculator); a code already saved is asked
+ * about first. Drafts can also be filed later ("Dosyaya Taşı"). Each list
+ * goes by the last save, newest first.
  */
 export function AdminPricingView() {
   const [tab, setTab] = useState<Tab>("calculator");
@@ -337,7 +336,7 @@ export function AdminPricingView() {
     <>
       <AdminPageHeader
         title="Fiyat Hesaplama Cetveli"
-        description="Maliyetten başlayıp her fiyat sınıfını bir öncekinin üzerine yüzde ekleyerek hesaplayın. “Kaydet” yeni satırı Taslaklar’a ekler (dosyadan açılan satır dosyasında güncellenir); “Kaydet ve Siteye Uygula” ayrıca ürünün sitedeki fiyatlarını değiştirir."
+        description="Maliyetten başlayıp her fiyat sınıfını bir öncekinin üzerine yüzde ekleyerek hesaplayın; satırı taslak ya da dosya olarak saklayın, isterseniz ürünün sitedeki fiyatlarına tek tıkla uygulayın. Aynı ürün koduyla kayıt varsa önce sorulur."
       />
 
       <div role="tablist" aria-label="Cetvel görünümü" className="mb-5 flex gap-1 border-b border-slate-200 dark:border-white/10">
@@ -383,6 +382,7 @@ export function AdminPricingView() {
             title="Cetvel 1 · KDV hariç maliyet"
             initial={sheets.EXCL.draft}
             origin={sheets.EXCL.origin}
+            files={files}
             onSaved={reload}
           />
         </div>
@@ -392,6 +392,7 @@ export function AdminPricingView() {
             title="Cetvel 2 · KDV dahil maliyet"
             initial={sheets.INCL.draft}
             origin={sheets.INCL.origin}
+            files={files}
             onSaved={reload}
           />
         </div>
@@ -448,7 +449,7 @@ export function AdminPricingView() {
           )}
           <PricingRecords
             records={shownDrafts}
-            empty={draftQuery.trim() ? `“${draftQuery.trim()}” ile eşleşen taslak yok.` : "Henüz taslak yok. Cetvelde “Kaydet” ile eklenir."}
+            empty={draftQuery.trim() ? `“${draftQuery.trim()}” ile eşleşen taslak yok.` : "Henüz taslak yok. Cetvelde “Taslak olarak kaydet” ile eklenir."}
             onLoad={load}
             onDelete={(r) => void remove(r)}
             onMove={(r) => setDraftsMoving([r.id])}
@@ -606,7 +607,7 @@ export function AdminPricingView() {
           </div>
         ) : files.length === 0 ? (
           <p className="rounded-2xl border border-dashed border-slate-300 px-4 py-10 text-center text-sm text-slate-500 dark:border-white/15 dark:text-zinc-400">
-            Henüz dosya yok.
+            Henüz dosya yok. Cetvelde “Dosyaya kaydet” ile ilk dosyanızı oluşturun.
           </p>
         ) : (
           <>

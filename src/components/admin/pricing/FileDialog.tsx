@@ -16,11 +16,13 @@ const field =
   "block h-11 w-full rounded-xl border border-slate-300 bg-white px-3.5 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-4 focus:ring-red-500/15 dark:border-white/15 dark:bg-zinc-950 dark:text-zinc-100";
 
 /**
- * Pick a file rows go into, or name a new one: "Dosyaya Taşı" on the drafts,
+ * Pick a file rows go into, or name a new one: the calculator's "Dosyaya
+ * kaydet" and "Dosya ve sitede ürüne kaydet", "Dosyaya Taşı" on the drafts,
  * "Taşı" on a file's rows.
  */
 export function FileDialog({
   files,
+  initialFileId = null,
   title,
   note,
   confirmLabel,
@@ -29,6 +31,8 @@ export function FileDialog({
   onClose,
 }: {
   files: PricingFile[];
+  /** The file chosen at first (the row's own, when it has one); else the newest. */
+  initialFileId?: number | null;
   title: string;
   note?: string;
   confirmLabel: string;
@@ -36,7 +40,9 @@ export function FileDialog({
   onConfirm: (target: FileTarget) => void;
   onClose: () => void;
 }) {
-  const [choice, setChoice] = useState<string>(files[0] ? String(files[0].id) : "new");
+  const [choice, setChoice] = useState<string>(
+    initialFileId !== null && files.some((f) => f.id === initialFileId) ? String(initialFileId) : files[0] ? String(files[0].id) : "new",
+  );
   const [name, setName] = useState("");
   const panel = useRef<HTMLDivElement>(null);
 
