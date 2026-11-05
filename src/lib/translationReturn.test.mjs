@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { approvalsHref, cameFromApprovals, productApprovalHref, requestedTab } from "./translationReturn.ts";
+import { approvalsHref, cameFromApprovals, categoryApprovalHref, productApprovalHref, requestedTab } from "./translationReturn.ts";
 
 test("the approvals link a product at its translations, marked as coming from them", () => {
   const href = productApprovalHref("2f0c7e1a-1111-4222-8333-444455556666");
@@ -30,4 +30,12 @@ test("the tab an address asks for; the approvals unless it names the texts", () 
   assert.equal(requestedTab("?sekme=ceviriler"), "texts");
   assert.equal(requestedTab("?tab=texts"), "texts");
   assert.equal(requestedTab("?sekme=onaylar&kaydedildi=X"), "approvals");
+});
+
+test("the approvals link a category to its editor in the homepage settings, at its translations", () => {
+  const href = categoryApprovalHref(42);
+  assert.equal(href, "/admin/homepage?tab=katalog-kategorileri&kategori=42&from=approvals#translations");
+  const url = new URL(href, "http://x");
+  assert.equal(url.searchParams.get("kategori"), "42");
+  assert.equal(cameFromApprovals(url.search), true);
 });

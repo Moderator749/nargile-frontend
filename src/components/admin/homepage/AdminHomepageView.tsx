@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ExternalLink, FolderTree, Loader2, RotateCcw, Save, Smartphone } from "lucide-react";
+import { ArrowLeft, ExternalLink, FolderTree, Loader2, RotateCcw, Save, Smartphone } from "lucide-react";
 
 import { AdminCategoriesView } from "@/components/admin/AdminCategoriesView";
 import { AdminPageHeader } from "@/components/admin/AdminShell";
@@ -38,6 +38,7 @@ import { brokenCategoryLink } from "@/lib/catalogLinks";
 import { DEFAULT_HOMEPAGE, SECTION_LABELS, resolveHomepage } from "@/lib/homepage";
 import { refreshStorefront } from "@/lib/revalidate";
 import { showcaseProblem } from "@/lib/showcase";
+import { approvalsHref, cameFromApprovals, CATEGORY_PARAM } from "@/lib/translationReturn";
 import type { Brand, Category, HomeBlock, Homepage, HomeSections } from "@/types";
 
 type EditorKey =
@@ -304,7 +305,11 @@ export function AdminHomepageView() {
   const [doc, setDoc] = useState<Homepage | null>(null);
   // Open on the editor a link asked for, else on the list.
   const router = useRouter();
-  const tabParam = useSearchParams().get("tab");
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  // Opened from "Çeviri Onayları" on a category: its way back is there.
+  const fromApprovals = cameFromApprovals(searchParams.toString());
+  const linkedCategory = Number(searchParams.get(CATEGORY_PARAM)) || null;
   const requested = TAB_PARAM[tabParam ?? ""];
   const [editing, setEditing] = useState<EditorKey | null>(requested ?? null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -430,7 +435,8 @@ export function AdminHomepageView() {
   /** Closing keeps the edits: they stay marked on the row and in the save bar until saved. */
   function close() {
     setEditing(null);
-    if (requested) router.replace("/admin/homepage", { scroll: false });
+    if (fromApprovals) router.push(approvalsHref());
+    else if (requested) router.replace("/admin/homepage", { scroll: false });
   }
 
   function editor(key: EditorKey, doc: Homepage) {
@@ -455,7 +461,13 @@ export function AdminHomepageView() {
       case "mobile":
         return <MobileTab value={doc.mobile} set={set("mobile")} />;
       case "catalog":
-        return <AdminCategoriesView onChange={reloadCategories} />;
+        return (
+          <AdminCategoriesView
+            onChange={reloadCategories}
+            openId={linkedCategory}
+            onSaved={fromApprovals ? (name) => router.push(approvalsHref(name)) : undefined}
+          />
+        );
       case "perks":
         return <PerksForm value={doc.perks} set={set("perks")} />;
       case "picks":
@@ -590,9 +602,15 @@ export function AdminHomepageView() {
                   <button
                     type="button"
                     onClick={close}
-                    className="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-zinc-300 dark:hover:bg-white/5"
+                    className="inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-zinc-300 dark:hover:bg-white/5"
                   >
-                    Kapat
+                    {fromApprovals ? (
+                      <>
+                        <ArrowLeft className="h-4 w-4" aria-hidden /> Çeviri Onaylarına Dön
+                      </>
+                    ) : (
+                      "Kapat"
+                    )}
                   </button>
                 </div>
               )

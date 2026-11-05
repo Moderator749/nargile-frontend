@@ -42,6 +42,7 @@ import {
 } from "@/lib/adminApi";
 import { useFromApprovals, useProductListHref } from "@/components/admin/products/listReturn";
 import { refreshStorefront } from "@/lib/revalidate";
+import { scrollIntoPlace } from "@/lib/scrollIntoPlace";
 import { getApiErrorMessage } from "@/lib/errors";
 import { nameWithCode, productSlug } from "@/lib/slug";
 import { approvalsHref, TRANSLATIONS_ANCHOR } from "@/lib/translationReturn";
@@ -215,35 +216,17 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
   }
 
   // Opened at "Çeviriler" (the approvals link a product there): once the form
-  // is on the page, scroll to that section and give it the focus. The
-  // browser's own jump to the anchor comes too early, while it still loads;
-  // and the rich-text editors above it mount a moment later and push it
-  // down, so it is kept in place while the form settles — until the admin
-  // scrolls or types, or for two seconds at most.
+  // is on the page, scroll to that section and focus it, held in place while
+  // the editors above it mount. The browser's own jump to the anchor comes
+  // too early, while the form still loads.
   const jumped = useRef(false);
   useEffect(() => {
     if (loading || unavailable || jumped.current) return;
     if (!fromApprovals && window.location.hash !== `#${TRANSLATIONS_ANCHOR}`) return;
     const section = document.getElementById(TRANSLATIONS_ANCHOR);
-    const form = section?.parentElement;
-    if (!section || !form) return;
+    if (!section?.parentElement) return;
     jumped.current = true;
-    const behavior: ScrollBehavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
-    const align = () => section.scrollIntoView({ behavior, block: "start" });
-    align();
-    section.focus({ preventScroll: true });
-
-    const settle = new ResizeObserver(align);
-    settle.observe(form);
-    const interrupts = ["wheel", "touchstart", "keydown", "mousedown"] as const;
-    const stop = () => {
-      settle.disconnect();
-      window.clearTimeout(timer);
-      for (const type of interrupts) window.removeEventListener(type, stop);
-    };
-    const timer = window.setTimeout(stop, 2000);
-    for (const type of interrupts) window.addEventListener(type, stop, { passive: true });
-    return stop;
+    return scrollIntoPlace(section, section.parentElement);
   }, [loading, unavailable, fromApprovals]);
 
   if (loading) {

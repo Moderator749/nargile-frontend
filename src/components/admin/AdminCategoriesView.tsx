@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type SubmitEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type SubmitEvent } from "react";
 import { FolderTree, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 
 import { panelClass } from "@/components/admin/AdminShell";
@@ -22,6 +22,8 @@ import {
 import { canPlaceUnder, categoryTree, flattenTree, MAX_CATEGORY_DEPTH } from "@/lib/categories";
 import { getApiErrorMessage } from "@/lib/errors";
 import { refreshStorefront } from "@/lib/revalidate";
+import { scrollIntoPlace } from "@/lib/scrollIntoPlace";
+import { TRANSLATIONS_ANCHOR } from "@/lib/translationReturn";
 import type { AdminCategory, AdminProduct, TranslatedLocale } from "@/types";
 
 const selectClass =
@@ -79,13 +81,29 @@ const ROW_INDENT = ["", "pl-8", "pl-16"];
  * editor around it when the tree changed, so its pickers and link checks
  * see the new categories at once.
  */
-export function AdminCategoriesView({ onChange }: { onChange?: () => void } = {}) {
+export function AdminCategoriesView({
+  onChange,
+  openId,
+  onSaved,
+}: {
+  onChange?: () => void;
+  /** Open this category in the form, at its "Çeviriler" (a link from "Çeviri Onayları"). */
+  openId?: number | null;
+  /** Told a save went through, with the name: the approvals take the admin back. */
+  onSaved?: (name: string) => void;
+} = {}) {
   const [categories, setCategories] = useState<AdminCategory[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY);
   const [editing, setEditing] = useState<AdminCategory | null>(null);
   const [saving, setSaving] = useState(false);
   const [result, setResult] = useState<{ kind: "success" | "error"; text: string } | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+  const translationsRef = useRef<HTMLDetailsElement>(null);
+  // `openId`'s category, once the list is in: opened in the form, its
+  // translations unfolded, then scrolled to and focused (once).
+  const opened = useRef(false);
+  const focusPending = useRef(false);
 
   const reload = () =>
     adminListCategories()
@@ -104,6 +122,27 @@ export function AdminCategoriesView({ onChange }: { onChange?: () => void } = {}
       });
     return () => controller.abort();
   }, []);
+
+  useEffect(() => {
+    if (!openId || !categories || opened.current) return;
+    const category = categories.find((c) => c.id === openId);
+    if (!category) return;
+    opened.current = true;
+    focusPending.current = true;
+    startEdit(category);
+  }, [openId, categories]);
+
+  // The linked category is in the form: to its translations, held in place
+  // while the editors above them mount (lib/scrollIntoPlace).
+  useEffect(() => {
+    if (!focusPending.current || !editing || editing.id !== openId) return;
+    const section = translationsRef.current;
+    const form = formRef.current;
+    if (!section || !form) return;
+    focusPending.current = false;
+    section.open = true;
+    return scrollIntoPlace(section, form);
+  }, [editing, openId]);
 
   const tree = useMemo(() => categoryTree(categories ?? []), [categories]);
   const byId = useMemo(() => new Map((categories ?? []).map((c) => [c.id, c])), [categories]);
@@ -187,6 +226,7 @@ export function AdminCategoriesView({ onChange }: { onChange?: () => void } = {}
       setEditing(null);
       setForm(EMPTY);
       setResult({ kind: "success", text: `Kaydedildi: ${saved.name}. Menü ve katalog güncellendi.` });
+      onSaved?.(saved.name);
     } catch (err) {
       setResult({ kind: "error", text: getApiErrorMessage(err, "Kategori kaydedilemedi.") });
     } finally {
@@ -279,7 +319,7 @@ export function AdminCategoriesView({ onChange }: { onChange?: () => void } = {}
           )}
         </section>
 
-        <form onSubmit={handleSubmit} className={`${panelClass} h-fit space-y-4 p-5 sm:p-6`}>
+        <form ref={formRef} onSubmit={handleSubmit} className={`${panelClass} h-fit space-y-4 p-5 sm:p-6`}>
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold">{editing ? `Düzenle: ${editing.name}` : "Yeni kategori"}</h2>
             {editing && (
@@ -343,7 +383,13 @@ export function AdminCategoriesView({ onChange }: { onChange?: () => void } = {}
           </fieldset>
           {/* The category in English and Arabic: its /en and /ar pages and
               the menu there. No name = the Turkish is shown (not indexed). */}
-          <details className="rounded-lg border border-slate-200 p-3 dark:border-white/10" open={!!(form.translations.en.name || form.translations.ar.name)}>
+          <details
+            ref={translationsRef}
+            id={TRANSLATIONS_ANCHOR}
+            tabIndex={-1}
+            className="scroll-mt-4 rounded-lg border border-slate-200 p-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40 dark:border-white/10"
+            open={!!(form.translations.en.name || form.translations.ar.name)}
+          >
             <summary className="cursor-pointer text-sm font-medium text-slate-700 dark:text-zinc-300">
               Çeviriler (EN / AR)
               {(["en", "ar"] as const).map((l) =>

@@ -1,9 +1,9 @@
 /**
- * The round trip from "Çeviriler › Çeviri Onayları" to a product's sheet and
- * back. The approvals list links a product with `?from=approvals#translations`:
- * the sheet opens at its "Çeviriler" section, and its "Geri Dön" and a save
- * return to the approvals tab — not the product list — with the saved
- * product's name for a line saying so.
+ * The round trip from "Çeviriler › Çeviri Onayları" to a product's sheet or a
+ * category's editor and back. The approvals list links them with
+ * `from=approvals#translations`: each opens at its "Çeviriler", and its way
+ * back and a save return to the approvals tab — not the product list or the
+ * homepage editor — with the saved name for a line saying so.
  */
 
 export const FROM_PARAM = "from";
@@ -23,6 +23,13 @@ export const APPROVALS_HREF = `${TRANSLATIONS_PATH}?${TAB_PARAM}=onaylar`;
 /** The approvals list's link to a product: its sheet, at "Çeviriler", knowing where it came from. */
 export function productApprovalHref(productId: string): string {
   return `/admin/products/${encodeURIComponent(productId)}?${FROM_PARAM}=${FROM_APPROVALS}#${TRANSLATIONS_ANCHOR}`;
+}
+
+/** The category editor ("Ana Sayfa Düzenleme › Katalog Kategorileri") opened on this category, at "Çeviriler". */
+export const CATEGORY_PARAM = "kategori";
+export function categoryApprovalHref(categoryId: number | string): string {
+  const query = `tab=katalog-kategorileri&${CATEGORY_PARAM}=${encodeURIComponent(String(categoryId))}&${FROM_PARAM}=${FROM_APPROVALS}`;
+  return `/admin/homepage?${query}#${TRANSLATIONS_ANCHOR}`;
 }
 
 /** Whether the sheet was opened from the approvals (`search` as in location.search). */

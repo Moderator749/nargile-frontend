@@ -8,7 +8,7 @@ import { AdminPageHeader, panelClass } from "@/components/admin/AdminShell";
 import { Alert } from "@/components/ui/Alert";
 import { adminTranslationDrafts, type TranslationDraftRow } from "@/lib/adminApi";
 import { getApiErrorMessage } from "@/lib/errors";
-import { productApprovalHref } from "@/lib/translationReturn";
+import { categoryApprovalHref, productApprovalHref } from "@/lib/translationReturn";
 
 const LANGUAGE = { en: "İngilizce", ar: "Arapça" } as const;
 
@@ -17,7 +17,8 @@ const LANGUAGE = { en: "İngilizce", ar: "Arapça" } as const;
  * Claude wrote and nobody has approved. Their /en and /ar pages already show
  * the translation, but stay out of search results until approved — in the
  * product sheet's "Çeviriler" (or the category editor), with "Onayla". A
- * product opens at its "Çeviriler", and comes back here (lib/translationReturn).
+ * product or a category opens at its "Çeviriler", and comes back here
+ * (lib/translationReturn).
  */
 export function AdminTranslationDraftsView({
   embedded = false,
@@ -65,7 +66,7 @@ export function AdminTranslationDraftsView({
           {rows.map((row) => (
             <li key={`${row.kind}:${row.id}`}>
               <Link
-                href={row.kind === "product" ? productApprovalHref(row.id) : "/admin/homepage?tab=katalog-kategorileri"}
+                href={row.kind === "product" ? productApprovalHref(row.id) : categoryApprovalHref(row.id)}
                 className="flex items-center gap-3 px-4 py-3 text-sm transition-colors hover:bg-slate-50 dark:hover:bg-white/5"
               >
                 <Sparkles className="h-4 w-4 shrink-0 text-amber-500" aria-hidden />
