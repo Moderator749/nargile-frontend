@@ -13,6 +13,7 @@ import { HeroAside } from "@/components/home/HeroAside";
 import { HeroSlider } from "@/components/home/HeroSlider";
 import { KumbaraShowcase } from "@/components/home/KumbaraShowcase";
 import { LuleShowcase } from "@/components/home/LuleShowcase";
+import { HomeBlogFaq } from "@/components/home/HomeBlogFaq";
 import { SeoIntro } from "@/components/home/SeoIntro";
 import { StorePerks } from "@/components/home/StorePerks";
 import { advantageSources } from "@/lib/storeAdvantages";
@@ -431,8 +432,14 @@ export default async function HomePage() {
     // "Premium Ürün Yelpazesi": the catalog as a gallery (the category bento).
     showcase: () =>
       phones("showcase", <CatalogShowcase title={home.showcase.title} subtitle={home.showcase.subtitle} tiles={showcase} />),
-    // The shop in a few plain paragraphs ("Alt SEO Metni").
-    about: () => <SeoIntro copy={home.seo_intro} />,
+    // "Blog / SSS", then the shop in a few paragraphs ("Alt SEO Metni"): the
+    // guides sit right over it, behind the same switch and in its place.
+    about: () => (
+      <>
+        <HomeBlogFaq locale={locale} />
+        <SeoIntro copy={home.seo_intro} />
+      </>
+    ),
   };
 
   return (
