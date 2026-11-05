@@ -1,11 +1,9 @@
 "use client";
 
 import { Fragment, useEffect, useId, useState, type ReactNode } from "react";
-import { Copy, FilePlus2, Link2, Plus, Rocket, Save, X } from "lucide-react";
-import { isAxiosError } from "axios";
+import { CheckCircle2, Link2, Plus, Rocket, Save, X } from "lucide-react";
 
-import { DuplicateDialog } from "@/components/admin/pricing/DuplicateDialog";
-import { FileDialog } from "@/components/admin/pricing/FileDialog";
+import { SaveDialog, type PriceLine } from "@/components/admin/pricing/SaveDialog";
 import { ProductLookup } from "@/components/admin/pricing/ProductLookup";
 import { Alert } from "@/components/ui/Alert";
 
@@ -14,20 +12,16 @@ import { loadExchangeRates } from "@/lib/money";
 import {
   SEGMENT_LABELS,
   computeSheet,
-  matchingRecords,
-  saveAndApply,
-  saveDraft,
-  saveToFile,
-  type ApplyResult,
-  type FileTarget,
+  rowsWithCode,
+  sameCodeRows,
+  savePricing,
   type PricingCurrency,
-  type PricingFile,
   type PricingRecord,
   type PricingSegment,
   type PricingSheetInput,
   type VatMode,
 } from "@/lib/pricing";
-import { type PricingOrigin, originOf, placeOf } from "@/lib/pricingOrigin";
+import { type PricingOrigin, originOf, savesOver } from "@/lib/pricingOrigin";
 import { refreshStorefront } from "@/lib/revalidate";
 import { stepOnArrowKey } from "@/lib/numberStep";
 
@@ -195,6 +189,11 @@ function StepPlus({ rowSpan, onAdd, disabled }: { rowSpan?: number; onAdd?: () =
 
 // ── The calculator ───────────────────────────────────────────────────────────
 
+const DARK_BUTTON =
+  "inline-flex h-9 items-center gap-1.5 border border-slate-900 bg-slate-900 px-3 text-xs font-bold uppercase tracking-wide text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300";
+const RED_BUTTON =
+  "inline-flex h-9 items-center gap-1.5 border border-red-700 bg-red-600 px-3 text-xs font-bold uppercase tracking-wide text-white hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50";
+
 /**
  * The worksheet, laid out like "Cetvel 1": one spreadsheet grid. The product
  * across the top; under it each step's header with its percent; then the
@@ -202,21 +201,16 @@ function StepPlus({ rowSpan, onAdd, disabled }: { rowSpan?: number; onAdd?: () =
  * value plus its percent, retail after VAT — and the row of prices to apply
  * (green), typed when the calculated one is not the one wanted. Typing in green
  * never moves the orange row; it only decides what goes to the site.
+ *
+ * Two buttons, the same in every state: "Kaydet" and "Kaydet ve Siteye
+ * Uygula". A sheet loaded from a row is saved over it while its code is
+ * unchanged; anything else is a new row, unless its code is saved already —
+ * then SaveDialog asks "Üstüne Yaz" or "Yeni Kayıt".
  */
-type SaveKind = "draft" | "file" | "apply";
-
-const OUTLINE_BUTTON =
-  "inline-flex h-9 items-center gap-1.5 border border-slate-400 bg-white px-3 text-xs font-bold uppercase tracking-wide text-slate-800 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-500 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800";
-const DARK_BUTTON =
-  "inline-flex h-9 items-center gap-1.5 border border-slate-900 bg-slate-900 px-3 text-xs font-bold uppercase tracking-wide text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300";
-const RED_BUTTON =
-  "inline-flex h-9 items-center gap-1.5 border border-red-700 bg-red-600 px-3 text-xs font-bold uppercase tracking-wide text-white hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50";
-
 export function PricingCalculator({
   title,
   initial,
   origin: loadedFrom = null,
-  files,
   onSaved,
 }: {
   /** "Cetvel 1 · KDV hariç maliyet". The sheet's VAT basis is `initial.vatMode`. */
@@ -224,7 +218,6 @@ export function PricingCalculator({
   initial: SheetDraft;
   /** The saved row `initial` was loaded from ("Cetvele yükle"); null for a new sheet. */
   origin?: PricingOrigin | null;
-  files: PricingFile[];
   /** A row was saved (and perhaps applied): the lists should refresh. */
   onSaved: () => void;
 }) {
@@ -233,14 +226,19 @@ export function PricingCalculator({
   // The row "Kaydet" writes over: the one loaded, or the one this sheet last
   // saved, so saving again never leaves a second copy behind.
   const [origin, setOrigin] = useState<PricingOrigin | null>(loadedFrom);
-  // "Farklı Kaydet": the three saves offered again, each adding a new row.
-  const [saveAs, setSaveAs] = useState(false);
-  // The file dialog, and the row its save writes over, if any.
-  const [dialog, setDialog] = useState<{ kind: "file" | "apply"; replaceId?: string } | null>(null);
-  // "Mevcut Dosya Bulundu": a new save whose code its destination already holds.
-  const [duplicate, setDuplicate] = useState<{ kind: SaveKind; target: FileTarget | null; matches: PricingRecord[] } | null>(null);
-  const [busy, setBusy] = useState<SaveKind | null>(null);
+  // The question a save waits on (SaveDialog): the code is saved already, or
+  // the prices "Kaydet ve Siteye Uygula" is about to send.
+  const [ask, setAsk] = useState<{ apply: boolean; matches: PricingRecord[] } | null>(null);
+  const [busy, setBusy] = useState<"save" | "apply" | null>(null);
+  // "Kaydedildi", for a few seconds in the corner.
+  const [toast, setToast] = useState<string | null>(null);
   const [result, setResult] = useState<{ kind: "success" | "error"; text: ReactNode } | null>(null);
+
+  useEffect(() => {
+    if (!toast) return;
+    const timer = window.setTimeout(() => setToast(null), 3500);
+    return () => window.clearTimeout(timer);
+  }, [toast]);
 
   const set = (patch: Partial<SheetDraft>) => {
     setD((s) => ({ ...s, ...patch }));
@@ -340,94 +338,87 @@ export function PricingCalculator({
     final_try: foreign ? dec(d.finalTry, 2) : null,
   });
 
-  /** Saves: a new row, or over `replaceId`; the sheet is then tied to the row it wrote. */
-  async function run(kind: SaveKind, target?: FileTarget, replaceId?: string) {
+  const code = d.code.trim();
+  // Saved over without a question, as a document is: the row the sheet was
+  // loaded from (or last saved as), its code unchanged. The server decides the
+  // same way; this only says so on the screen.
+  const tied = savesOver(origin, code);
+
+  /**
+   * "Kaydet", and "Kaydet ve Siteye Uygula" once confirmed: the server saves
+   * over the tied row, or adds one — or, the code being saved already
+   * somewhere, answers with those rows, and SaveDialog asks. The sheet is then
+   * tied to the row it wrote.
+   */
+  async function save(apply: boolean, mode: "auto" | "overwrite" | "new" = "auto", overwriteId?: string) {
     if (problem) return;
-    setBusy(kind);
+    setBusy(apply ? "apply" : "save");
     setResult(null);
-    const over = replaceId !== undefined;
     try {
-      if (kind === "draft") {
-        const r = await saveDraft(payload(), replaceId);
-        setOrigin(originOf(r));
-        setResult({ kind: "success", text: over ? "Taslaktaki kayıt güncellendi." : "Taslaklara kaydedildi." });
-      } else if (kind === "file") {
-        const r = await saveToFile(target!, payload(), replaceId);
-        setOrigin(originOf(r));
-        setResult({ kind: "success", text: over ? `“${r.file_name}” dosyasındaki kayıt güncellendi.` : `“${r.file_name}” dosyasına kaydedildi.` });
-      } else {
-        const r: ApplyResult = await saveAndApply(target!, payload(), replaceId);
-        setOrigin(originOf(r.record));
+      const r = await savePricing(payload(), { recordId: origin?.id, mode, overwriteId, apply });
+      setOrigin(originOf(r.record));
+      setAsk(null);
+      if (r.applied) {
         await refreshStorefront();
+        setToast("Kaydedildi ve siteye uygulandı.");
         setResult({
           kind: "success",
           text: (
             <>
-              “{r.record.file_name}” dosyasında{over ? "ki kayıt güncellendi" : "na kaydedildi"} ve <strong>{r.product_name}</strong> ürününün{" "}
-              {r.variants_updated > 1 ? `${r.variants_updated} rengine` : "fiyatlarına"} uygulandı:{" "}
-              {r.prices
-                .map((p) => `${p.label} ${fmt(Number(p.price_incl_tax), p.currency)} (KDV dahil)`)
-                .join(" · ")}
-              {r.skipped.length > 0 && ` · Siteye yazılmayan: ${r.skipped.join(", ")}`}
+              <strong>{r.applied.product_name}</strong> ürününün{" "}
+              {r.applied.variants_updated > 1 ? `${r.applied.variants_updated} rengine` : "fiyatlarına"} uygulandı:{" "}
+              {r.applied.prices.map((p) => `${p.label} ${fmt(Number(p.price_incl_tax), p.currency)} (KDV dahil)`).join(" · ")}
+              {r.applied.skipped.length > 0 && ` · Siteye yazılmayan: ${r.applied.skipped.join(", ")}`}
             </>
           ),
         });
+      } else {
+        setToast(r.overwritten ? "Kaydedildi." : "Kaydedildi; Kayıtlar’a eklendi.");
       }
-      setDialog(null);
-      setDuplicate(null);
-      setSaveAs(false);
       onSaved();
     } catch (err) {
-      // The row written over is gone (deleted meanwhile): the sheet is a new one again.
-      if (over && isAxiosError(err) && err.response?.status === 404) setOrigin(null);
-      setDuplicate(null);
+      const matches = sameCodeRows(err);
+      if (matches) {
+        setAsk({ apply, matches });
+        return;
+      }
+      setAsk(null);
       setResult({ kind: "error", text: getApiErrorMessage(err, "Kaydedilemedi.") });
     } finally {
       setBusy(null);
     }
   }
 
-  /**
-   * A new row's save ("Taslak olarak kaydet", "Dosyaya kaydet", "Dosya ve
-   * sitede ürüne kaydet"): where it goes may already hold its code — then
-   * "Mevcut Dosya Bulundu" asks first. "Farklı Kaydet" means a copy: no question.
-   */
-  async function attempt(kind: SaveKind, target?: FileTarget) {
-    if (problem) return;
-    const code = d.code.trim();
-    if (!saveAs && code) {
-      setBusy(kind);
-      setResult(null);
-      try {
-        const matches = await matchingRecords(code, kind === "draft" ? null : target!);
-        if (matches.length > 0) {
-          setDialog(null);
-          setDuplicate({ kind, target: target ?? null, matches });
-          setBusy(null);
-          return;
-        }
-      } catch (err) {
-        setResult({ kind: "error", text: getApiErrorMessage(err, "Kaydedilemedi.") });
-        setBusy(null);
-        return;
-      }
+  /** "Kaydet ve Siteye Uygula": the prices first — and the question, when the code is saved elsewhere — in one dialog. */
+  async function startApply() {
+    if (problem || !code) return;
+    if (tied) {
+      setAsk({ apply: true, matches: [] });
+      return;
     }
-    await run(kind, target);
+    setBusy("apply");
+    setResult(null);
+    try {
+      setAsk({ apply: true, matches: await rowsWithCode(code) });
+    } catch (err) {
+      setResult({ kind: "error", text: getApiErrorMessage(err, "Kayıtlar okunamadı.") });
+    } finally {
+      setBusy(null);
+    }
   }
 
-  /** "Kaydet": over the tied row, where it is. */
-  function saveOver() {
-    if (!origin) return;
-    if (origin.fileId === null) void run("draft", undefined, origin.id);
-    else void run("file", { file_id: origin.fileId }, origin.id);
-  }
-
-  /** "Kaydet ve siteye uygula": over the tied row and onto the product; a draft asks for its file first. */
-  function saveOverAndApply() {
-    if (!origin) return;
-    if (origin.fileId === null) setDialog({ kind: "apply", replaceId: origin.id });
-    else void run("apply", { file_id: origin.fileId }, origin.id);
-  }
+  // What the product will get: each class tied to a customer group, and retail.
+  const basis = d.vatMode === "EXCL" ? "KDV hariç" : "KDV dahil";
+  const applyLines: PriceLine[] = [
+    ...d.columns.flatMap((c, i) =>
+      c.segment && calc.columns[i]?.price != null
+        ? [{ label: c.label.trim() || SEGMENT_LABELS[c.segment], value: `${fmt(calc.columns[i].price, d.currency)} ${basis}` }]
+        : [],
+    ),
+    foreign && num(d.finalTry) !== null
+      ? { label: "Perakende (son karar)", value: `${fmt(num(d.finalTry), "TRY")} KDV dahil` }
+      : { label: "Perakende", value: `${fmt(calc.retail.price, d.currency)} KDV dahil` },
+  ];
 
   // On a before-VAT sheet, the orange retail cell says how it got there.
   const vatShown = d.vatMode === "EXCL" && calc.retailBeforeVat !== null && calc.retail.computed !== null;
@@ -729,20 +720,22 @@ export function PricingCalculator({
         <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-900 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-200">
           <Link2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
           <span>
-            Düzenlenen kayıt:{" "}
-            <strong className="font-mono">{origin.code || "kodsuz"}</strong>
-            {origin.name && ` ${origin.name}`} · {placeOf(origin)}.{" "}
-            {saveAs ? "Farklı Kaydet yeni bir kopya oluşturur; bu kayıt olduğu gibi kalır." : "Kaydet bu kaydın üzerine yazar."}
+            Düzenlenen kayıt: <strong className="font-mono">{origin.code || "kodsuz"}</strong>
+            {origin.name && ` ${origin.name}`}
+            {origin.fileName && (
+              <span className="ml-1.5 rounded bg-sky-100 px-1.5 py-0.5 font-medium dark:bg-sky-500/20">{origin.fileName}</span>
+            )}
+            .{" "}
+            {tied
+              ? "Kaydet bu kaydın üstüne yazar."
+              : "Ürün kodunu değiştirdiniz: Kaydet yeni bir kayıt ekler (bu kod kayıtlıysa önce sorar); düzenlenen kayıt olduğu gibi kalır."}
           </span>
           <button
             type="button"
-            onClick={() => {
-              setOrigin(null);
-              setSaveAs(false);
-            }}
+            onClick={() => setOrigin(null)}
             disabled={!!busy}
             className="ml-auto inline-flex items-center gap-1 font-semibold underline-offset-2 hover:underline disabled:opacity-50"
-            title="Bu cetvel kayıttan ayrılır: sonraki kayıt yeni bir satır olur."
+            title="Bu cetvel kayıttan ayrılır: sonraki Kaydet yeni bir kayıt ekler (kod kayıtlıysa sorar)."
           >
             <X className="h-3.5 w-3.5" aria-hidden /> Kayıttan ayır
           </button>
@@ -773,48 +766,18 @@ export function PricingCalculator({
           {problem && <span className="text-[11px] text-slate-500 dark:text-zinc-400">{problem}</span>}
         </div>
         <div className="ml-auto flex flex-wrap justify-end gap-2">
-          {origin && !saveAs ? (
-            <>
-              <button type="button" disabled={!!problem || !!busy} onClick={() => setSaveAs(true)} className={OUTLINE_BUTTON}>
-                <Copy className="h-3.5 w-3.5" aria-hidden /> Farklı Kaydet
-              </button>
-              <button type="button" disabled={!!problem || !!busy} onClick={saveOver} className={DARK_BUTTON}>
-                <Save className="h-3.5 w-3.5" aria-hidden /> {busy === "draft" || busy === "file" ? "Kaydediliyor…" : "Kaydet"}
-              </button>
-              <button
-                type="button"
-                disabled={!!problem || !!busy || !d.code.trim()}
-                onClick={saveOverAndApply}
-                title={!d.code.trim() ? "Siteye kaydetmek için ürün kodu gerekli" : undefined}
-                className={RED_BUTTON}
-              >
-                <Rocket className="h-3.5 w-3.5" aria-hidden /> {busy === "apply" ? "Uygulanıyor…" : "Kaydet ve siteye uygula"}
-              </button>
-            </>
-          ) : (
-            <>
-              {saveAs && (
-                <button type="button" onClick={() => setSaveAs(false)} disabled={!!busy} className="h-9 px-2 text-xs font-semibold text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-100">
-                  Vazgeç
-                </button>
-              )}
-              <button type="button" disabled={!!problem || !!busy} onClick={() => void attempt("draft")} className={OUTLINE_BUTTON}>
-                <Save className="h-3.5 w-3.5" aria-hidden /> {busy === "draft" ? "Kaydediliyor…" : "Taslak olarak kaydet"}
-              </button>
-              <button type="button" disabled={!!problem || !!busy} onClick={() => setDialog({ kind: "file" })} className={OUTLINE_BUTTON}>
-                <FilePlus2 className="h-3.5 w-3.5" aria-hidden /> Dosyaya kaydet
-              </button>
-              <button
-                type="button"
-                disabled={!!problem || !!busy || !d.code.trim()}
-                onClick={() => setDialog({ kind: "apply" })}
-                title={!d.code.trim() ? "Siteye kaydetmek için ürün kodu gerekli" : undefined}
-                className={RED_BUTTON}
-              >
-                <Rocket className="h-3.5 w-3.5" aria-hidden /> Dosya ve sitede ürüne kaydet
-              </button>
-            </>
-          )}
+          <button type="button" disabled={!!problem || !!busy} onClick={() => void save(false)} className={DARK_BUTTON}>
+            <Save className="h-3.5 w-3.5" aria-hidden /> {busy === "save" ? "Kaydediliyor…" : "Kaydet"}
+          </button>
+          <button
+            type="button"
+            disabled={!!problem || !!busy || !code}
+            onClick={() => void startApply()}
+            title={!code ? "Siteye uygulamak için ürün kodu gerekli" : undefined}
+            className={RED_BUTTON}
+          >
+            <Rocket className="h-3.5 w-3.5" aria-hidden /> {busy === "apply" ? "Uygulanıyor…" : "Kaydet ve Siteye Uygula"}
+          </button>
         </div>
       </div>
       <p className="mt-2 text-[11px] leading-4 text-slate-500 dark:text-zinc-400">
@@ -828,7 +791,7 @@ export function PricingCalculator({
           ? "maliyet KDV hariç olduğundan KDV perakende adımında eklenir."
           : "maliyet zaten KDV dahil olduğundan perakendeye ayrıca KDV eklenmez; KDV oranı fiyatların KDV hariç karşılığı için kullanılır."}{" "}
         Perakende, mağaza fiyatının KDV’siz adımının üzerine hesaplanır (KDV bir kez eklenir). Mağaza fiyatı isteğe bağlıdır
-        (kâr oranı boşsa kaydedilmez ve perakende kafe fiyatının üzerine hesaplanır), dosyaya kaydedilir ama siteye
+        (kâr oranı boşsa kaydedilmez ve perakende kafe fiyatının üzerine hesaplanır), kayda girer ama siteye
         yazılmaz.
       </p>
 
@@ -838,33 +801,36 @@ export function PricingCalculator({
         </div>
       )}
 
-      {dialog && (
-        <FileDialog
-          files={files}
-          title={dialog.kind === "apply" ? "Dosyaya kaydet ve siteye uygula" : "Dosyaya kaydet"}
-          note={
-            dialog.kind === "apply"
-              ? `“${d.code.trim()}” kodlu ürünün fiyatları bu satırla değiştirilecek: müşteri grubu seçilmiş her sütun ve perakende, ürünün tüm renklerinde (yeşil satırdaki uygulanacak fiyat). ${
-                  dialog.replaceId ? "Taslaktaki kayıt seçtiğiniz dosyaya taşınarak güncellenir." : "Satır seçtiğiniz dosyaya da kaydedilir."
-                }`
-              : undefined
+      {ask && (
+        <SaveDialog
+          code={code}
+          matches={ask.matches}
+          apply={
+            ask.apply
+              ? {
+                  prices: applyLines,
+                  note: `“${code}” kodlu ürünün satıştaki tüm renklerine yazılır (yeşil satır). Müşteri grubu seçilmemiş sütunlar ve mağaza fiyatı siteye gönderilmez.${
+                    ask.matches.length === 0 && tied ? " Düzenlenen kaydın üstüne kaydedilir." : ""
+                  }`,
+                }
+              : null
           }
-          confirmLabel={dialog.kind === "apply" ? "Kaydet ve uygula" : "Kaydet"}
-          busy={busy === dialog.kind}
-          onConfirm={(target) => void (dialog.replaceId ? run(dialog.kind, target, dialog.replaceId) : attempt(dialog.kind, target))}
-          onClose={() => setDialog(null)}
+          busy={busy !== null}
+          onOverwrite={(record) => void save(ask.apply, "overwrite", record.id)}
+          onSaveNew={() => void save(ask.apply, "new")}
+          onConfirm={() => void save(true)}
+          onClose={() => setAsk(null)}
         />
       )}
 
-      {duplicate && (
-        <DuplicateDialog
-          code={d.code.trim()}
-          matches={duplicate.matches}
-          busy={busy !== null}
-          onOverwrite={(record) => void run(duplicate.kind, duplicate.target ?? undefined, record.id)}
-          onSaveNew={() => void run(duplicate.kind, duplicate.target ?? undefined)}
-          onClose={() => setDuplicate(null)}
-        />
+      {toast && (
+        <div
+          role="status"
+          className="fixed bottom-6 right-6 z-[70] flex max-w-sm items-start gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-medium text-white shadow-lg shadow-emerald-900/20"
+        >
+          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+          {toast}
+        </div>
       )}
     </section>
   );

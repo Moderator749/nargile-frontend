@@ -8,7 +8,7 @@ import { LookbookDownload, LookbookPreview, splitVat, type LookbookItem } from "
 import { Alert } from "@/components/ui/Alert";
 import { getApiErrorMessage } from "@/lib/errors";
 import { formatDateParts } from "@/lib/format";
-import { fetchPricingFiles, fetchPricingRecords, SEGMENT_LABELS, type PricingRecord } from "@/lib/pricing";
+import { fetchAllPricingRecords, SEGMENT_LABELS, type PricingRecord } from "@/lib/pricing";
 
 /** A price row of the catalogue: a customer group (by its code), retail, or the TL decision. */
 interface CatalogColumn {
@@ -55,11 +55,11 @@ function plateOf(record: PricingRecord, columns: CatalogColumn[]): LookbookItem 
 }
 
 /**
- * The price catalogue ("Fiyat Listesi") for rows picked in a pricing file: a
+ * The price catalogue ("Fiyat Listesi") for rows picked in "Kayıtlar": a
  * column picker, a preview, and "PDF İndir", which downloads the A4 file
  * itself (no print dialog).
  */
-export function PricingCatalogView({ fileId, ids }: { fileId: number | null; ids: string[] }) {
+export function PricingCatalogView({ ids }: { ids: string[] }) {
   const [records, setRecords] = useState<PricingRecord[] | null>(null);
   const [fileName, setFileName] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -68,19 +68,22 @@ export function PricingCatalogView({ fileId, ids }: { fileId: number | null; ids
   const idKey = ids.join(",");
 
   useEffect(() => {
-    if (fileId === null) return;
+    if (!idKey) return;
     const controller = new AbortController();
     const wanted = new Set(idKey.split(","));
-    Promise.all([fetchPricingRecords(fileId, controller.signal), fetchPricingFiles(controller.signal)])
-      .then(([rows, files]) => {
-        setRecords(rows.filter((r) => wanted.has(r.id)).reverse()); // oldest first: the order they were priced
-        setFileName(files.find((f) => f.id === fileId)?.name ?? "");
+    fetchAllPricingRecords(controller.signal)
+      .then((rows) => {
+        const mine = rows.filter((r) => wanted.has(r.id)).reverse(); // oldest first: the order they were priced
+        setRecords(mine);
+        // Rows of one old folder carry its name as the catalogue's; a mix, none.
+        const names = new Set(mine.map((r) => r.file_name));
+        setFileName(names.size === 1 ? ([...names][0] ?? "") : "");
       })
       .catch((err) => {
         if (!controller.signal.aborted) setError(getApiErrorMessage(err, "Katalog yüklenemedi."));
       });
     return () => controller.abort();
-  }, [fileId, idKey]);
+  }, [idKey]);
 
   // The customer groups the picked rows price — Bayi, Toptan, Kafe, in that
   // order — then retail and the TL decision. A column that writes to no group
@@ -97,8 +100,8 @@ export function PricingCatalogView({ fileId, ids }: { fileId: number | null; ids
   }, [records]);
   const columns = allColumns.filter((c) => !hidden.has(c.key));
 
-  if (fileId === null || ids.length === 0) {
-    return <Alert variant="error">Katalog için bir dosyadan en az bir satır seçin.</Alert>;
+  if (ids.length === 0) {
+    return <Alert variant="error">Katalog için Kayıtlar’dan en az bir kayıt seçin.</Alert>;
   }
   if (error) return <Alert variant="error">{error}</Alert>;
   if (!records) return <div className="h-96 rounded-2xl bg-slate-100 motion-safe:animate-pulse dark:bg-white/5" aria-busy />;
@@ -118,7 +121,7 @@ export function PricingCatalogView({ fileId, ids }: { fileId: number | null; ids
           collection={fileName}
           date={date}
           items={plates}
-          fileTitle={`Sultan Nargile Fiyat Kataloğu - ${fileName} - ${date}`}
+          fileTitle={["Sultan Nargile Fiyat Kataloğu", fileName, date].filter(Boolean).join(" - ")}
           labels={{
             download: "PDF İndir",
             preparing: (done, total) => `PDF hazırlanıyor… ${done}/${total}`,

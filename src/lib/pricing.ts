@@ -95,15 +95,6 @@ export interface PricingRecord {
   updated_at: ISODateTime;
 }
 
-export interface PricingFile {
-  id: number;
-  name: string;
-  created_at: ISODateTime;
-  /** The last time a row was saved into it; the list is newest first by this. */
-  updated_at: ISODateTime;
-  record_count: number;
-}
-
 export interface ApplyResult {
   record: PricingRecord;
   product_name: string;
@@ -111,9 +102,6 @@ export interface ApplyResult {
   prices: { label: string; segment: string; currency: PricingCurrency; price_excl_tax: DecimalString; price_incl_tax: DecimalString }[];
   skipped: string[];
 }
-
-/** An existing file, or the name of a new one. */
-export type FileTarget = { file_id: number } | { file_name: string };
 
 // ── Arithmetic ───────────────────────────────────────────────────────────────
 
@@ -210,47 +198,56 @@ export function computeSheet(input: {
   };
 }
 
-// ── API ──────────────────────────────────────────────────────────────────────
+// ── API: "Kaydet" / "Kaydet ve Siteye Uygula", and "Kayıtlar" ───────────────
 
-export async function fetchPricingFiles(signal?: AbortSignal): Promise<PricingFile[]> {
-  const { data } = await api.get<PricingFile[]>("/admin/pricing/files", { signal });
-  return data;
+export interface SaveResult {
+  record: PricingRecord;
+  /** Written over an existing row (silently, or as chosen), not added. */
+  overwritten: boolean;
+  /** What "Kaydet ve Siteye Uygula" wrote to the product. */
+  applied: Omit<ApplyResult, "record"> | null;
 }
 
-/** A file's rows, or the drafts when `fileId` is null. */
-export async function fetchPricingRecords(fileId: number | null, signal?: AbortSignal): Promise<PricingRecord[]> {
-  const { data } = await api.get<PricingRecord[]>("/admin/pricing/records", {
-    params: fileId === null ? {} : { file_id: fileId },
-    signal,
+export interface SaveOptions {
+  /** The row the sheet was loaded from (or last saved): saved over while its code is that row's. */
+  recordId?: UUID | null;
+  /** "auto": the button; "overwrite": over `overwriteId`; "new": a new row. */
+  mode?: "auto" | "overwrite" | "new";
+  overwriteId?: UUID;
+  apply?: boolean;
+}
+
+/**
+ * The calculator's one save. "auto" saves over the loaded row while its code
+ * is unchanged, and adds a row for a code saved nowhere; a code saved
+ * anywhere else answers 409 — read its rows with `sameCodeRows`.
+ */
+export async function savePricing(sheet: PricingSheetInput, options: SaveOptions = {}): Promise<SaveResult> {
+  const { data } = await api.post<SaveResult>("/admin/pricing/save", {
+    sheet,
+    record_id: options.recordId ?? null,
+    mode: options.mode ?? "auto",
+    overwrite_id: options.overwriteId ?? null,
+    apply: options.apply ?? false,
   });
   return data;
 }
 
-// Each save adds a row, or — given `replaceId` — overwrites that one, which
-// ends up where the save goes ("Kaydet" on a loaded row, "Üzerine Yaz").
+/** The rows a refused save's code is already saved as (its 409), newest first; null for any other error. */
+export function sameCodeRows(err: unknown): PricingRecord[] | null {
+  const response = (err as { response?: { status?: number; data?: { detail?: { matches?: PricingRecord[] } } } })?.response;
+  return response?.status === 409 && Array.isArray(response.data?.detail?.matches) ? response.data.detail.matches : null;
+}
 
-export async function saveDraft(sheet: PricingSheetInput, replaceId?: UUID): Promise<PricingRecord> {
-  const { data } = await api.post<PricingRecord>("/admin/pricing/draft", { sheet, replace_id: replaceId ?? null });
+/** Every row of `code`, in any folder or none, newest first. */
+export async function rowsWithCode(code: string): Promise<PricingRecord[]> {
+  const { data } = await api.get<PricingRecord[]>("/admin/pricing/records/matching", { params: { code, everywhere: true } });
   return data;
 }
 
-export async function saveToFile(target: FileTarget, sheet: PricingSheetInput, replaceId?: UUID): Promise<PricingRecord> {
-  const { data } = await api.post<PricingRecord>("/admin/pricing/file", { ...target, sheet, replace_id: replaceId ?? null });
-  return data;
-}
-
-/** Saves the row in the file, then writes its prices to the product its code names. */
-export async function saveAndApply(target: FileTarget, sheet: PricingSheetInput, replaceId?: UUID): Promise<ApplyResult> {
-  const { data } = await api.post<ApplyResult>("/admin/pricing/apply-to-product", { ...target, sheet, replace_id: replaceId ?? null });
-  return data;
-}
-
-/**
- * The rows a save of `code` would sit beside where it goes — `target`'s file,
- * or the drafts for null — newest first ("Mevcut Dosya Bulundu").
- */
-export async function matchingRecords(code: string, target: FileTarget | null): Promise<PricingRecord[]> {
-  const { data } = await api.get<PricingRecord[]>("/admin/pricing/records/matching", { params: { code, ...(target ?? {}) } });
+/** "Kayıtlar": every saved row, whatever its folder, newest first. */
+export async function fetchAllPricingRecords(signal?: AbortSignal): Promise<PricingRecord[]> {
+  const { data } = await api.get<PricingRecord[]>("/admin/pricing/records", { params: { all: true }, signal });
   return data;
 }
 
@@ -258,30 +255,9 @@ export async function deletePricingRecord(id: UUID): Promise<void> {
   await api.delete(`/admin/pricing/records/${id}`);
 }
 
-export async function deletePricingFile(id: number): Promise<void> {
-  await api.delete(`/admin/pricing/files/${id}`);
-}
-
-/** "Seçilenleri Sil": those rows only, never their file. Resolves to how many went. */
+/** "Seçilenleri Sil": those rows only. Resolves to how many went. */
 export async function deletePricingRecords(ids: UUID[]): Promise<number> {
   const { data } = await api.post<{ count: number }>("/admin/pricing/records/delete", { ids });
   return data.count;
 }
 
-/** "Taşı": the rows into an existing file, or a new one by that name. */
-export async function movePricingRecords(ids: UUID[], target: FileTarget): Promise<{ count: number; file: PricingFile }> {
-  const { data } = await api.post<{ count: number; file: PricingFile }>("/admin/pricing/records/move", { ids, ...target });
-  return data;
-}
-
-/** "Yeniden Adlandır"; a name another file has is refused (409). */
-export async function renamePricingFile(id: number, name: string): Promise<PricingFile> {
-  const { data } = await api.patch<PricingFile>(`/admin/pricing/files/${id}`, { name });
-  return data;
-}
-
-/** "Çoğalt": a new file with a copy of every row; no name gives "<name> (kopya)". */
-export async function duplicatePricingFile(id: number, name?: string): Promise<PricingFile> {
-  const { data } = await api.post<PricingFile>(`/admin/pricing/files/${id}/duplicate`, name ? { name } : {});
-  return data;
-}

@@ -8,7 +8,7 @@ export interface PricingOrigin {
   id: string;
   code: string;
   name: string;
-  /** Its file; null for a draft. */
+  /** Its old folder ("Dosya"), shown as a label; null for none. */
   fileId: number | null;
   fileName: string | null;
 }
@@ -39,5 +39,10 @@ export function appliedState(r: { applied_at: string | null; updated_at: string 
   return Date.parse(r.updated_at) > Date.parse(r.applied_at) ? "earlier" : "current";
 }
 
-/** "Taslaklar" or "“Bayi Ekim 2026” dosyası": where a row is, in a sentence. */
-export const placeOf = (o: Pick<PricingOrigin, "fileName">) => (o.fileName ? `“${o.fileName}” dosyası` : "Taslaklar");
+/**
+ * Whether "Kaydet" writes over the tied row without a question: the code is
+ * still that row's (spaces and case aside), as the server decides it. A new
+ * sheet, or a changed code, is a new row — asked about when the code is saved.
+ */
+export const savesOver = (origin: Pick<PricingOrigin, "code"> | null, code: string): boolean =>
+  origin !== null && origin.code.trim().toLowerCase() === code.trim().toLowerCase();
