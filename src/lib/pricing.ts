@@ -95,6 +95,15 @@ export interface PricingRecord {
   updated_at: ISODateTime;
 }
 
+export interface PricingFile {
+  id: number;
+  name: string;
+  created_at: ISODateTime;
+  /** The last time a row was saved into it; the list is newest first by this. */
+  updated_at: ISODateTime;
+  record_count: number;
+}
+
 export interface ApplyResult {
   record: PricingRecord;
   product_name: string;
@@ -102,6 +111,9 @@ export interface ApplyResult {
   prices: { label: string; segment: string; currency: PricingCurrency; price_excl_tax: DecimalString; price_incl_tax: DecimalString }[];
   skipped: string[];
 }
+
+/** An existing file, or the name of a new one. */
+export type FileTarget = { file_id: number } | { file_name: string };
 
 // ── Arithmetic ───────────────────────────────────────────────────────────────
 
@@ -198,7 +210,23 @@ export function computeSheet(input: {
   };
 }
 
-// ── API: "Kaydet" / "Kaydet ve Siteye Uygula", and "Kayıtlar" ───────────────
+// ── API: "Taslaklar" and "Dosyalar" ─────────────────────────────────────────
+
+export async function fetchPricingFiles(signal?: AbortSignal): Promise<PricingFile[]> {
+  const { data } = await api.get<PricingFile[]>("/admin/pricing/files", { signal });
+  return data;
+}
+
+/** A file's rows, or the drafts — the rows in no file — when `fileId` is null. */
+export async function fetchPricingRecords(fileId: number | null, signal?: AbortSignal): Promise<PricingRecord[]> {
+  const { data } = await api.get<PricingRecord[]>("/admin/pricing/records", {
+    params: fileId === null ? {} : { file_id: fileId },
+    signal,
+  });
+  return data;
+}
+
+// ── API: "Kaydet" / "Kaydet ve Siteye Uygula" ───────────────────────────────
 
 export interface SaveResult {
   record: PricingRecord;
@@ -245,7 +273,7 @@ export async function rowsWithCode(code: string): Promise<PricingRecord[]> {
   return data;
 }
 
-/** "Kayıtlar": every saved row, whatever its folder, newest first. */
+/** Every saved row, draft or in a file, newest first (the price catalogue finds its rows here by id). */
 export async function fetchAllPricingRecords(signal?: AbortSignal): Promise<PricingRecord[]> {
   const { data } = await api.get<PricingRecord[]>("/admin/pricing/records", { params: { all: true }, signal });
   return data;
@@ -255,9 +283,31 @@ export async function deletePricingRecord(id: UUID): Promise<void> {
   await api.delete(`/admin/pricing/records/${id}`);
 }
 
-/** "Seçilenleri Sil": those rows only. Resolves to how many went. */
+export async function deletePricingFile(id: number): Promise<void> {
+  await api.delete(`/admin/pricing/files/${id}`);
+}
+
+/** "Seçilenleri Sil": those rows only, never their file. Resolves to how many went. */
 export async function deletePricingRecords(ids: UUID[]): Promise<number> {
   const { data } = await api.post<{ count: number }>("/admin/pricing/records/delete", { ids });
   return data.count;
+}
+
+/** "Taşı": the rows into an existing file, or a new one by that name. */
+export async function movePricingRecords(ids: UUID[], target: FileTarget): Promise<{ count: number; file: PricingFile }> {
+  const { data } = await api.post<{ count: number; file: PricingFile }>("/admin/pricing/records/move", { ids, ...target });
+  return data;
+}
+
+/** "Yeniden Adlandır"; a name another file has is refused (409). */
+export async function renamePricingFile(id: number, name: string): Promise<PricingFile> {
+  const { data } = await api.patch<PricingFile>(`/admin/pricing/files/${id}`, { name });
+  return data;
+}
+
+/** "Çoğalt": a new file with a copy of every row; no name gives "<name> (kopya)". */
+export async function duplicatePricingFile(id: number, name?: string): Promise<PricingFile> {
+  const { data } = await api.post<PricingFile>(`/admin/pricing/files/${id}/duplicate`, name ? { name } : {});
+  return data;
 }
 

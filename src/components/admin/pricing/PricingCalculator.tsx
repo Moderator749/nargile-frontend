@@ -373,7 +373,7 @@ export function PricingCalculator({
           ),
         });
       } else {
-        setToast(r.overwritten ? "Kaydedildi." : "Kaydedildi; Kayıtlar’a eklendi.");
+        setToast(r.overwritten ? "Kaydedildi." : "Kaydedildi; Taslaklar’a eklendi.");
       }
       onSaved();
     } catch (err) {

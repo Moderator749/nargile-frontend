@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { FileText, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { ArrowLeft, Copy, FileText, Folder, FolderInput, Pencil, Trash2 } from "lucide-react";
 
 import { AdminPageHeader } from "@/components/admin/AdminShell";
+import { FileDialog } from "@/components/admin/pricing/FileDialog";
 import {
   PricingCalculator,
   defaultExtras,
@@ -13,21 +14,37 @@ import {
 } from "@/components/admin/pricing/PricingCalculator";
 import { PricingRecords } from "@/components/admin/pricing/PricingRecords";
 import { RecordSearch, matchesSearch } from "@/components/admin/pricing/RecordSearch";
-import { adminSelectClass } from "@/components/admin/ContentEditor";
 import { Alert } from "@/components/ui/Alert";
 import { getApiErrorMessage } from "@/lib/errors";
+import { formatDateParts } from "@/lib/format";
 import {
+  deletePricingFile,
   deletePricingRecord,
   deletePricingRecords,
-  fetchAllPricingRecords,
+  duplicatePricingFile,
+  fetchPricingFiles,
+  fetchPricingRecords,
+  movePricingRecords,
+  renamePricingFile,
+  type FileTarget,
+  type PricingFile,
   type PricingRecord,
   type PricingSegment,
 } from "@/lib/pricing";
 import { type PricingOrigin, originOf } from "@/lib/pricingOrigin";
 
-type Tab = "calculator" | "records";
-/** "Kayıtlar"'s folder filter: every row, the rows in no folder, or one old folder's (by name). */
-type Folder = { kind: "all" } | { kind: "none" } | { kind: "named"; name: string };
+type Tab = "calculator" | "drafts" | "files";
+
+const fileAction =
+  "inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50 dark:text-zinc-300 dark:hover:bg-white/10";
+const cardAction =
+  "inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-500 ring-1 ring-slate-200 hover:bg-slate-100 hover:text-slate-800 disabled:opacity-50 dark:text-zinc-400 dark:ring-white/10 dark:hover:bg-white/10 dark:hover:text-zinc-100";
+
+/** "13.10.2026 17:05": when a file was saved, at a glance. */
+const stamp = (iso: string) => {
+  const { date, time } = formatDateParts(iso);
+  return `${date} ${time}`;
+};
 
 /** "1250.50" → "1250,5": a stored number back as the admin would type it. */
 const typed = (v: string | null) => (v === null ? "" : String(Number(v)).replace(".", ","));
@@ -68,11 +85,12 @@ function draftFrom(r: PricingRecord): SheetDraft {
 }
 
 /**
- * "Fiyat Hesaplama Cetveli": the two worksheets ("Cetvel") and every row they
- * saved ("Kayıtlar"), one list, newest first. A row is loaded back into its
- * worksheet, changed, and saved over with "Kaydet". The old files ("Dosyalar")
- * are no longer a place to save to: each row keeps its folder as a label, and
- * the list can be filtered by it.
+ * "Fiyat Hesaplama Cetveli": the calculator, the rows in no file
+ * ("Taslaklar") and the named files ("Dosyalar"). The calculator saves with
+ * "Kaydet" or "Kaydet ve Siteye Uygula" (PricingCalculator): a new row joins
+ * the drafts; a row loaded from either list and saved again stays where it
+ * is. Rows reach a file by "Taşı". Each list goes by the last save, newest
+ * first.
  */
 export function AdminPricingView() {
   const [tab, setTab] = useState<Tab>("calculator");
@@ -83,30 +101,45 @@ export function AdminPricingView() {
     EXCL: { key: 0, draft: emptySheet("EXCL"), origin: null },
     INCL: { key: 0, draft: emptySheet("INCL"), origin: null },
   });
-  const [records, setRecords] = useState<PricingRecord[] | null>(null);
-  const [query, setQuery] = useState("");
-  const [folder, setFolder] = useState<Folder>({ kind: "all" });
-  // Rows picked: to delete, or for a price catalogue.
+  const [files, setFiles] = useState<PricingFile[]>([]);
+  const [drafts, setDrafts] = useState<PricingRecord[] | null>(null);
+  const [openFile, setOpenFile] = useState<PricingFile | null>(null);
+  const [fileRows, setFileRows] = useState<PricingRecord[] | null>(null);
+  // Rows of the open file picked for a price catalogue.
   const [picked, setPicked] = useState<ReadonlySet<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
+  // What the last file action did ("2 kayıt taşındı").
   const [notice, setNotice] = useState<string | null>(null);
+  const [moving, setMoving] = useState(false);
   const [busy, setBusy] = useState(false);
+  // Each list's own filter: the drafts, the files by name, the open file's rows.
+  const [draftQuery, setDraftQuery] = useState("");
+  const [fileQuery, setFileQuery] = useState("");
+  const [rowQuery, setRowQuery] = useState("");
   const [version, setVersion] = useState(0);
   const reload = useCallback(() => setVersion((v) => v + 1), []);
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchAllPricingRecords(controller.signal)
-      .then((rows) => {
-        setRecords(rows);
-        // A deleted row is no longer picked.
-        setPicked((current) => new Set([...current].filter((id) => rows.some((r) => r.id === id))));
+    Promise.all([fetchPricingFiles(controller.signal), fetchPricingRecords(null, controller.signal)])
+      .then(([f, d]) => {
+        setFiles(f);
+        setDrafts(d);
       })
       .catch((err) => {
         if (!controller.signal.aborted) setError(getApiErrorMessage(err, "Kayıtlar yüklenemedi."));
       });
     return () => controller.abort();
   }, [version]);
+
+  useEffect(() => {
+    if (!openFile) return;
+    const controller = new AbortController();
+    fetchPricingRecords(openFile.id, controller.signal)
+      .then(setFileRows)
+      .catch(() => {});
+    return () => controller.abort();
+  }, [openFile, version]);
 
   // A saved row goes back into the sheet of its own VAT basis.
   const load = (r: PricingRecord) => {
@@ -117,62 +150,117 @@ export function AdminPricingView() {
       document.getElementById(`cetvel-${mode}`)?.scrollIntoView({ behavior: "smooth", block: "start" }),
     );
   };
-
   const remove = async (r: PricingRecord) => {
     const label = r.product_name || r.product_code || "Bu kayıt";
-    if (!window.confirm(`“${label}” kaydı silinsin mi? Siteye uygulanmış fiyatlar değişmez.`)) return;
+    if (!window.confirm(`“${label}” satırı silinsin mi? Yalnızca bu satır silinir; dosya kalır. Siteye uygulanmış fiyatlar değişmez.`)) return;
     try {
       await deletePricingRecord(r.id);
+      setPicked((current) => {
+        const next = new Set(current);
+        next.delete(r.id);
+        return next;
+      });
+      reload();
+    } catch (err) {
+      setError(getApiErrorMessage(err, "Silinemedi."));
+    }
+  };
+  const removeFile = async (f: PricingFile) => {
+    // Rows picked below are not what this deletes: say so, before anything goes.
+    const pickedNote = picked.size
+      ? `\n\nDikkat: seçtiğiniz ${picked.size} kayıt değil, DOSYANIN TAMAMI silinir. Yalnızca seçtiklerinizi silmek için “Seçilenleri Sil”i kullanın.`
+      : "";
+    if (!window.confirm(`“${f.name}” dosyası ve içindeki ${f.record_count} kayıt silinsin mi? Siteye uygulanmış fiyatlar değişmez.${pickedNote}`)) return;
+    try {
+      await deletePricingFile(f.id);
+      setOpenFile(null);
+      setPicked(new Set());
       reload();
     } catch (err) {
       setError(getApiErrorMessage(err, "Silinemedi."));
     }
   };
 
-  const removePicked = async () => {
-    const ids = [...picked];
-    if (!ids.length) return;
-    if (!window.confirm(`Seçilen ${ids.length} kayıt silinsin mi? Siteye uygulanmış fiyatlar değişmez.`)) return;
+  /** Runs a file action with the busy flag, the result line and a fresh list. */
+  const act = async (run: () => Promise<string>, failed: string) => {
     setBusy(true);
     setError(null);
     setNotice(null);
     try {
-      const n = await deletePricingRecords(ids);
-      setPicked(new Set());
-      setNotice(`${n} kayıt silindi.`);
+      setNotice(await run());
       reload();
     } catch (err) {
-      setError(getApiErrorMessage(err, "Kayıtlar silinemedi."));
+      setError(getApiErrorMessage(err, failed));
     } finally {
       setBusy(false);
     }
   };
 
-  // The old folders the rows carry, for the filter: by name, with their counts.
-  const folders = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const r of records ?? []) if (r.file_name) counts.set(r.file_name, (counts.get(r.file_name) ?? 0) + 1);
-    return [...counts].sort(([a], [b]) => a.localeCompare(b, "tr"));
-  }, [records]);
-  const inFolder = (r: PricingRecord) =>
-    folder.kind === "all" ? true : folder.kind === "none" ? r.file_name === null : r.file_name === folder.name;
-  const shown = records?.filter((r) => inFolder(r) && matchesSearch(query, r.product_code, r.product_name)) ?? null;
-  // "Tümünü seç" picks what the filters leave on screen.
-  const visibleIds = (shown ?? []).map((r) => r.id);
+  const removePicked = () => {
+    const ids = [...picked];
+    if (!ids.length) return;
+    if (!window.confirm(`Seçilen ${ids.length} kayıt silinsin mi? Dosya ve diğer kayıtları kalır. Siteye uygulanmış fiyatlar değişmez.`)) return;
+    void act(async () => {
+      const n = await deletePricingRecords(ids);
+      setPicked(new Set());
+      return `${n} kayıt silindi.`;
+    }, "Kayıtlar silinemedi.");
+  };
+
+  const movePicked = (target: FileTarget) =>
+    void act(async () => {
+      const { count, file } = await movePricingRecords([...picked], target);
+      setPicked(new Set());
+      setMoving(false);
+      return `${count} kayıt “${file.name}” dosyasına taşındı.`;
+    }, "Kayıtlar taşınamadı.");
+
+  const renameFile = (f: PricingFile) => {
+    const name = window.prompt("Dosyanın yeni adı:", f.name)?.trim();
+    if (!name || name === f.name) return;
+    void act(async () => {
+      const renamed = await renamePricingFile(f.id, name);
+      if (openFile?.id === f.id) setOpenFile(renamed);
+      return `Dosyanın adı “${renamed.name}” oldu.`;
+    }, "Dosya yeniden adlandırılamadı.");
+  };
+
+  const duplicateFile = (f: PricingFile) => {
+    const name = window.prompt(
+      `“${f.name}” dosyası, ${f.record_count} kaydıyla birlikte çoğaltılsın. Kopyanın adı (boş bırakırsanız “${f.name} (kopya)”):`,
+      "",
+    );
+    if (name === null) return;
+    void act(async () => {
+      const copy = await duplicatePricingFile(f.id, name.trim() || undefined);
+      // Straight into the copy: it is what the admin wants to change.
+      setFileRows(null);
+      setPicked(new Set());
+      setRowQuery("");
+      setOpenFile(copy);
+      return `“${copy.name}” oluşturuldu (${copy.record_count} kayıt). Değişiklikleri bu kopyada yapabilirsiniz.`;
+    }, "Dosya çoğaltılamadı.");
+  };
+
+  const byProduct = (query: string) => (r: PricingRecord) => matchesSearch(query, r.product_code, r.product_name);
+  const shownDrafts = drafts?.filter(byProduct(draftQuery)) ?? null;
+  const shownFiles = files.filter((f) => matchesSearch(fileQuery, f.name));
+  const shownRows = fileRows?.filter(byProduct(rowQuery)) ?? null;
+  // "Tümünü seç" picks what the filter leaves on screen.
+  const visibleIds = (shownRows ?? []).map((r) => r.id);
   const allVisiblePicked = visibleIds.length > 0 && visibleIds.every((id) => picked.has(id));
-  const folderValue = folder.kind === "named" ? `named:${folder.name}` : folder.kind;
-  const filtered = query.trim() !== "" || folder.kind !== "all";
 
   const tabs: { value: Tab; label: string; count?: number }[] = [
     { value: "calculator", label: "Cetvel" },
-    { value: "records", label: "Kayıtlar", count: records?.length },
+    { value: "drafts", label: "Taslaklar", count: drafts?.length },
+    { value: "files", label: "Dosyalar", count: files.length },
   ];
 
   return (
     <>
       <AdminPageHeader
         title="Fiyat Hesaplama Cetveli"
-        description="Maliyetten başlayıp her fiyat sınıfını bir öncekinin üzerine yüzde ekleyerek hesaplayın. “Kaydet” satırı Kayıtlar’a ekler; “Kaydet ve Siteye Uygula” ayrıca ürünün sitedeki fiyatlarını değiştirir."
+        description="Maliyetten başlayıp her fiyat sınıfını bir öncekinin üzerine yüzde ekleyerek hesaplayın. “Kaydet” yeni satırı Taslaklar’a ekler (dosyadan açılan satır dosyasında güncellenir); “Kaydet ve Siteye Uygula” ayrıca ürünün sitedeki fiyatlarını değiştirir."
       />
 
       <div role="tablist" aria-label="Cetvel görünümü" className="mb-5 flex gap-1 border-b border-slate-200 dark:border-white/10">
@@ -182,7 +270,10 @@ export function AdminPricingView() {
             role="tab"
             type="button"
             aria-selected={tab === t.value}
-            onClick={() => setTab(t.value)}
+            onClick={() => {
+              setTab(t.value);
+              if (t.value !== "files") setOpenFile(null);
+            }}
             className={`-mb-px border-b-2 px-4 py-2.5 text-sm font-semibold transition-colors ${
               tab === t.value
                 ? "border-red-600 text-slate-900 dark:text-zinc-50"
@@ -200,7 +291,7 @@ export function AdminPricingView() {
           <Alert variant="error">{error}</Alert>
         </div>
       )}
-      {notice && tab === "records" && (
+      {notice && tab === "files" && (
         <div className="mb-4">
           <Alert variant="success">{notice}</Alert>
         </div>
@@ -228,114 +319,223 @@ export function AdminPricingView() {
         </div>
       </div>
 
-      {tab === "records" && (
-        <div>
-          {records && records.length > 0 && (
-            <div className="flex flex-wrap items-start gap-3">
-              <div className="min-w-0 flex-1">
-                <RecordSearch
-                  value={query}
-                  onChange={setQuery}
-                  placeholder="Ürün kodu veya adı ile ara..."
-                  shown={shown?.length ?? 0}
-                  total={records.length}
-                />
-              </div>
-              {folders.length > 0 && (
-                <label className="flex items-center gap-2 text-sm">
-                  <span className="text-slate-600 dark:text-zinc-400">Klasör</span>
-                  <select
-                    value={folderValue}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      setFolder(v === "all" ? { kind: "all" } : v === "none" ? { kind: "none" } : { kind: "named", name: v.slice(6) });
-                    }}
-                    className={`${adminSelectClass} h-10 w-56`}
-                  >
-                    <option value="all">Tümü</option>
-                    <option value="none">Klasörsüz</option>
-                    {folders.map(([name, n]) => (
-                      <option key={name} value={`named:${name}`}>
-                        {name} ({n})
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              )}
-            </div>
-          )}
-          {shown && shown.length > 0 && (
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 dark:border-white/10 dark:bg-white/[0.03]">
-              <label className="flex cursor-pointer items-center gap-2 text-sm font-medium">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 accent-red-600"
-                  checked={allVisiblePicked}
-                  ref={(el) => {
-                    if (el) el.indeterminate = !allVisiblePicked && visibleIds.some((id) => picked.has(id));
-                  }}
-                  onChange={() =>
-                    setPicked((current) => {
-                      const next = new Set(current);
-                      for (const id of visibleIds) {
-                        if (allVisiblePicked) next.delete(id);
-                        else next.add(id);
-                      }
-                      return next;
-                    })
-                  }
-                />
-                {filtered ? "Görünenlerin tümünü seç" : "Tümünü seç"}
-                <span className="text-xs font-normal text-slate-500 dark:text-zinc-400">({picked.size} seçili)</span>
-              </label>
-              <div className="flex flex-wrap items-center gap-2">
-                {picked.size > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => void removePicked()}
-                    disabled={busy}
-                    className="inline-flex h-9 items-center gap-2 rounded-lg bg-white px-3.5 text-sm font-semibold text-red-600 ring-1 ring-red-300 transition-colors hover:bg-red-50 disabled:opacity-50 dark:bg-zinc-900 dark:ring-red-500/40 dark:hover:bg-red-500/10"
-                  >
-                    <Trash2 className="h-4 w-4" aria-hidden /> Seçilenleri Sil
-                    <span className="rounded bg-red-50 px-1.5 text-xs dark:bg-red-500/15">{picked.size}</span>
-                  </button>
-                )}
-                <a
-                  href={picked.size ? `/admin/pricing-calculator/katalog?ids=${[...picked].join(",")}` : undefined}
-                  target="_blank"
-                  rel="noopener"
-                  aria-disabled={picked.size === 0}
-                  onClick={(e) => picked.size === 0 && e.preventDefault()}
-                  className={`inline-flex h-9 items-center gap-2 rounded-lg px-3.5 text-sm font-semibold text-white transition-colors ${
-                    picked.size ? "bg-red-600 hover:bg-red-500" : "cursor-not-allowed bg-red-600/40"
-                  }`}
-                >
-                  <FileText className="h-4 w-4" aria-hidden /> PDF Fiyat Kataloğu Oluştur
-                  {picked.size > 0 && <span className="rounded bg-white/20 px-1.5 text-xs">{picked.size}</span>}
-                </a>
-              </div>
-            </div>
+      {tab === "drafts" && (
+        <>
+          {drafts && drafts.length > 0 && (
+            <RecordSearch
+              value={draftQuery}
+              onChange={setDraftQuery}
+              placeholder="Ürün kodu veya adı ile ara..."
+              shown={shownDrafts?.length ?? 0}
+              total={drafts.length}
+            />
           )}
           <PricingRecords
-            records={shown}
-            empty={
-              filtered
-                ? "Bu aramaya uyan kayıt yok."
-                : "Henüz kayıt yok. Cetvelde “Kaydet” ile ilk kaydınızı ekleyin."
-            }
+            records={shownDrafts}
+            empty={draftQuery.trim() ? `“${draftQuery.trim()}” ile eşleşen taslak yok.` : "Henüz taslak yok. Cetvelde “Kaydet” ile eklenir."}
             onLoad={load}
             onDelete={(r) => void remove(r)}
-            selected={picked}
-            onToggle={(r) =>
-              setPicked((s) => {
-                const next = new Set(s);
-                if (!next.delete(r.id)) next.add(r.id);
-                return next;
-              })
-            }
           />
-        </div>
+        </>
       )}
+
+      {tab === "files" &&
+        (openFile ? (
+          <div>
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => setOpenFile(null)}
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+              >
+                <ArrowLeft className="h-4 w-4" aria-hidden /> Dosyalar
+              </button>
+              <h2 className="flex items-center gap-2 text-lg font-semibold">
+                <Folder className="h-5 w-5 text-amber-500" aria-hidden /> {openFile.name}
+                <span className="font-mono text-xs font-normal text-slate-500 dark:text-zinc-400">
+                  son kayıt {stamp(openFile.updated_at)}
+                </span>
+              </h2>
+              {/* The file's own actions, named in full: none of them is about the rows picked below. */}
+              <div className="flex flex-wrap items-center gap-1" role="group" aria-label="Dosya işlemleri">
+                <button type="button" onClick={() => renameFile(openFile)} disabled={busy} className={fileAction}>
+                  <Pencil className="h-3.5 w-3.5" aria-hidden /> Yeniden Adlandır
+                </button>
+                <button type="button" onClick={() => duplicateFile(openFile)} disabled={busy} className={fileAction}>
+                  <Copy className="h-3.5 w-3.5" aria-hidden /> Çoğalt
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void removeFile(openFile)}
+                  disabled={busy}
+                  className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-50 dark:hover:bg-red-500/10"
+                >
+                  <Trash2 className="h-3.5 w-3.5" aria-hidden /> Dosyanın Tamamını Sil
+                </button>
+              </div>
+            </div>
+            {fileRows && fileRows.length > 0 && (
+              <RecordSearch
+                value={rowQuery}
+                onChange={setRowQuery}
+                placeholder="Ürün kodu veya adı ile ara..."
+                shown={shownRows?.length ?? 0}
+                total={fileRows.length}
+              />
+            )}
+            {fileRows && fileRows.length > 0 && (
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 dark:border-white/10 dark:bg-white/[0.03]">
+                <label className="flex cursor-pointer items-center gap-2 text-sm font-medium">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 accent-red-600"
+                    checked={allVisiblePicked}
+                    disabled={visibleIds.length === 0}
+                    ref={(el) => {
+                      if (el) el.indeterminate = !allVisiblePicked && visibleIds.some((id) => picked.has(id));
+                    }}
+                    onChange={() =>
+                      setPicked((current) => {
+                        const next = new Set(current);
+                        for (const id of visibleIds) {
+                          if (allVisiblePicked) next.delete(id);
+                          else next.add(id);
+                        }
+                        return next;
+                      })
+                    }
+                  />
+                  {rowQuery.trim() ? "Görünenlerin tümünü seç" : "Tümünü seç"}
+                  <span className="text-xs font-normal text-slate-500 dark:text-zinc-400">
+                    ({picked.size} / {fileRows.length} seçili)
+                  </span>
+                </label>
+                <div className="flex flex-wrap items-center gap-2">
+                  {picked.size > 0 && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setMoving(true)}
+                        disabled={busy}
+                        className="inline-flex h-9 items-center gap-2 rounded-lg bg-white px-3.5 text-sm font-semibold text-slate-800 ring-1 ring-slate-300 transition-colors hover:bg-slate-50 disabled:opacity-50 dark:bg-zinc-900 dark:text-zinc-100 dark:ring-white/15 dark:hover:bg-white/5"
+                      >
+                        <FolderInput className="h-4 w-4" aria-hidden /> Taşı
+                        <span className="rounded bg-slate-100 px-1.5 text-xs dark:bg-white/10">{picked.size}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={removePicked}
+                        disabled={busy}
+                        className="inline-flex h-9 items-center gap-2 rounded-lg bg-white px-3.5 text-sm font-semibold text-red-600 ring-1 ring-red-300 transition-colors hover:bg-red-50 disabled:opacity-50 dark:bg-zinc-900 dark:ring-red-500/40 dark:hover:bg-red-500/10"
+                      >
+                        <Trash2 className="h-4 w-4" aria-hidden /> Seçilenleri Sil
+                        <span className="rounded bg-red-50 px-1.5 text-xs dark:bg-red-500/15">{picked.size}</span>
+                      </button>
+                    </>
+                  )}
+                  <a
+                    href={
+                      picked.size
+                        ? `/admin/pricing-calculator/katalog?file=${openFile.id}&ids=${[...picked].join(",")}`
+                        : undefined
+                    }
+                    target="_blank"
+                    rel="noopener"
+                    aria-disabled={picked.size === 0}
+                    onClick={(e) => picked.size === 0 && e.preventDefault()}
+                    className={`inline-flex h-9 items-center gap-2 rounded-lg px-3.5 text-sm font-semibold text-white transition-colors ${
+                      picked.size ? "bg-red-600 hover:bg-red-500" : "cursor-not-allowed bg-red-600/40"
+                    }`}
+                  >
+                    <FileText className="h-4 w-4" aria-hidden /> PDF Fiyat Kataloğu Oluştur
+                    {picked.size > 0 && <span className="rounded bg-white/20 px-1.5 text-xs">{picked.size}</span>}
+                  </a>
+                </div>
+              </div>
+            )}
+            {moving && (
+              <FileDialog
+                files={files.filter((f) => f.id !== openFile.id)}
+                title={`${picked.size} kaydı taşı`}
+                note={`Seçilen kayıtlar “${openFile.name}” dosyasından çıkar, seçtiğiniz dosyaya geçer. Tarihleri değişmez.`}
+                confirmLabel="Buraya Taşı"
+                busy={busy}
+                onConfirm={movePicked}
+                onClose={() => setMoving(false)}
+              />
+            )}
+            <PricingRecords
+              records={shownRows}
+              empty={rowQuery.trim() ? `“${rowQuery.trim()}” ile eşleşen kayıt yok.` : "Bu dosyada kayıt yok."}
+              onLoad={load}
+              onDelete={(r) => void remove(r)}
+              selected={picked}
+              onToggle={(r) =>
+                setPicked((s) => {
+                  const next = new Set(s);
+                  if (!next.delete(r.id)) next.add(r.id);
+                  return next;
+                })
+              }
+            />
+          </div>
+        ) : files.length === 0 ? (
+          <p className="rounded-2xl border border-dashed border-slate-300 px-4 py-10 text-center text-sm text-slate-500 dark:border-white/15 dark:text-zinc-400">
+            Henüz dosya yok.
+          </p>
+        ) : (
+          <>
+            <RecordSearch value={fileQuery} onChange={setFileQuery} placeholder="Dosya adıyla ara..." shown={shownFiles.length} total={files.length} />
+            {shownFiles.length === 0 && (
+              <p className="rounded-2xl border border-dashed border-slate-300 px-4 py-10 text-center text-sm text-slate-500 dark:border-white/15 dark:text-zinc-400">
+                “{fileQuery.trim()}” ile eşleşen dosya yok.
+              </p>
+            )}
+            <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {shownFiles.map((f) => (
+                <li key={f.id} className="relative">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFileRows(null);
+                      setPicked(new Set());
+                      setRowQuery("");
+                      setOpenFile(f);
+                    }}
+                    className="flex w-full items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-left transition-colors hover:border-red-300 dark:border-white/10 dark:bg-zinc-900 dark:hover:border-red-500/40"
+                  >
+                    <Folder className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" aria-hidden />
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-baseline justify-between gap-2">
+                        <span className="truncate text-sm font-semibold">{f.name}</span>
+                        <time
+                          dateTime={f.updated_at}
+                          className="shrink-0 rounded-md bg-slate-100 px-1.5 py-0.5 font-mono text-[11px] font-semibold tabular-nums text-slate-700 dark:bg-white/10 dark:text-zinc-200"
+                          title="Son kayıt"
+                        >
+                          {stamp(f.updated_at)}
+                        </time>
+                      </span>
+                      <span className="mt-1 block text-xs text-slate-500 dark:text-zinc-400">
+                        {f.record_count} kayıt · oluşturuldu {stamp(f.created_at)}
+                      </span>
+                      {/* Room for the two actions laid over the card's corner. */}
+                      <span aria-hidden className="mt-2 block h-6" />
+                    </span>
+                  </button>
+                  <div className="absolute bottom-3 right-3 flex gap-1">
+                    <button type="button" onClick={() => renameFile(f)} disabled={busy} title="Yeniden Adlandır" aria-label={`${f.name}: yeniden adlandır`} className={cardAction}>
+                      <Pencil className="h-3.5 w-3.5" aria-hidden />
+                    </button>
+                    <button type="button" onClick={() => duplicateFile(f)} disabled={busy} title="Çoğalt" aria-label={`${f.name}: çoğalt`} className={cardAction}>
+                      <Copy className="h-3.5 w-3.5" aria-hidden />
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </>
+        ))}
     </>
   );
 }

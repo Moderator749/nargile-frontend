@@ -4,7 +4,7 @@ import { PricingCatalogView } from "@/components/admin/pricing/PricingCatalogVie
 
 export const metadata: Metadata = { title: "Fiyat Kataloğu" };
 
-/** /admin/pricing-calculator/katalog?ids=<row>,<row>… (an older link's `file=` is ignored: the rows are found by id) */
+/** /admin/pricing-calculator/katalog?file=<id>&ids=<row>,<row>… — the rows are found by id; `file` only says where they were picked. */
 export default async function Page(props: PageProps<"/[locale]/admin/pricing-calculator/katalog">) {
   const params = await props.searchParams;
   const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";

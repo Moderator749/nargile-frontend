@@ -55,7 +55,7 @@ function plateOf(record: PricingRecord, columns: CatalogColumn[]): LookbookItem 
 }
 
 /**
- * The price catalogue ("Fiyat Listesi") for rows picked in "Kayıtlar": a
+ * The price catalogue ("Fiyat Listesi") for rows picked in a pricing file: a
  * column picker, a preview, and "PDF İndir", which downloads the A4 file
  * itself (no print dialog).
  */
@@ -75,7 +75,7 @@ export function PricingCatalogView({ ids }: { ids: string[] }) {
       .then((rows) => {
         const mine = rows.filter((r) => wanted.has(r.id)).reverse(); // oldest first: the order they were priced
         setRecords(mine);
-        // Rows of one old folder carry its name as the catalogue's; a mix, none.
+        // The rows' file names the catalogue (rows of several, or none: no name).
         const names = new Set(mine.map((r) => r.file_name));
         setFileName(names.size === 1 ? ([...names][0] ?? "") : "");
       })
@@ -101,7 +101,7 @@ export function PricingCatalogView({ ids }: { ids: string[] }) {
   const columns = allColumns.filter((c) => !hidden.has(c.key));
 
   if (ids.length === 0) {
-    return <Alert variant="error">Katalog için Kayıtlar’dan en az bir kayıt seçin.</Alert>;
+    return <Alert variant="error">Katalog için bir dosyadan en az bir satır seçin.</Alert>;
   }
   if (error) return <Alert variant="error">{error}</Alert>;
   if (!records) return <div className="h-96 rounded-2xl bg-slate-100 motion-safe:animate-pulse dark:bg-white/5" aria-busy />;

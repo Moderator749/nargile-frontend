@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, Folder, History, ImageOff, RotateCcw, Trash2 } from "lucide-react";
+import { CheckCircle2, History, ImageOff, RotateCcw, Trash2 } from "lucide-react";
 
 import { formatDate, formatDateParts } from "@/lib/format";
 import type { PricingCurrency, PricingRecord, StoredColumn } from "@/lib/pricing";
@@ -37,8 +37,8 @@ export function Thumb({ src, alt, size = "h-14 w-14" }: { src: string | null; al
 
 /**
  * Saved worksheet rows, newest first: each class's price, and whether it
- * reached the site, and its old folder as a label. With `selected`, each row
- * has a checkbox (picked to delete, or for a price catalogue).
+ * reached the site. With `selected`, each row has a checkbox (a file's rows,
+ * picked for a price catalogue).
  */
 export function PricingRecords({
   records,
@@ -84,7 +84,7 @@ export function PricingRecords({
                     type="checkbox"
                     checked={selected.has(r.id)}
                     onChange={() => onToggle(r)}
-                    aria-label={`${r.product_code || r.product_name || "Kayıt"} seç`}
+                    aria-label={`${r.product_code || r.product_name || "Satır"} kataloğa ekle`}
                     className="h-4 w-4 shrink-0 accent-red-600"
                   />
                 )}
@@ -103,12 +103,7 @@ export function PricingRecords({
                     // The basis every figure on the card is in: missed, a price is read 20% off.
                     <span className="font-bold text-red-600 dark:text-red-400">KDV dahil · {c}</span>
                   )}
-                  {/* An old folder ("Dosya"), kept as a label: the list's filter goes by it. */}
-                  {r.file_name && (
-                    <span className="ml-1.5 inline-flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 font-medium text-amber-800 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/30">
-                      <Folder className="h-3 w-3" aria-hidden /> {r.file_name}
-                    </span>
-                  )}
+                  {r.file_name && ` · ${r.file_name}`}
                 </p>
               </div>
               </div>
