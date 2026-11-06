@@ -77,7 +77,7 @@ const ROW_INDENT = ["", "pl-8", "pl-16"];
  * The catalog's categories: the tree (groups → subcategories → theirs, three
  * levels at most) with
  * add, rename, delete, on/off and cover image, and product → category moves.
- * Lives in "Ana Sayfa Düzenleme" › Katalog Kategorileri; `onChange` tells the
+ * Lives in "Ana Sayfa Düzenleme" › Kategoriler; `onChange` tells the
  * editor around it when the tree changed, so its pickers and link checks
  * see the new categories at once.
  */

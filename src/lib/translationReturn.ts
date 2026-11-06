@@ -25,7 +25,7 @@ export function productApprovalHref(productId: string): string {
   return `/admin/products/${encodeURIComponent(productId)}?${FROM_PARAM}=${FROM_APPROVALS}#${TRANSLATIONS_ANCHOR}`;
 }
 
-/** The category editor ("Ana Sayfa Düzenleme › Katalog Kategorileri") opened on this category, at "Çeviriler". */
+/** The category editor ("Ana Sayfa Düzenleme › Kategoriler") opened on this category, at "Çeviriler". */
 export const CATEGORY_PARAM = "kategori";
 export function categoryApprovalHref(categoryId: number | string): string {
   const query = `tab=katalog-kategorileri&${CATEGORY_PARAM}=${encodeURIComponent(String(categoryId))}&${FROM_PARAM}=${FROM_APPROVALS}`;

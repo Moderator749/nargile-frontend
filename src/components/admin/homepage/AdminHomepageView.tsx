@@ -159,7 +159,7 @@ const EDITORS: Record<
   seo: { title: "Alt SEO Metni", hint: "Ana sayfayı kapatan tanıtım metni.", doc: "seo_intro", sections: ["about"], size: "md" },
   footer: { title: "Footer", hint: "İletişim, kolonlar ve sosyal medya; tüm sayfalarda.", doc: "footer", sections: ["footer"], size: "lg" },
   mobile: { title: "Mobil Yönetim", hint: "Telefonda (768px altı) gizlenecek bölümler.", doc: "mobile", size: "md" },
-  catalog: { title: "Katalog Kategorileri", hint: "Her değişiklik kendi kaydedilir.", size: "lg" },
+  catalog: { title: "Kategoriler", hint: "Her değişiklik kendi kaydedilir.", size: "lg" },
 };
 
 /** The pencil on a section's row opens these; a section missing here has nothing to set. */
@@ -319,7 +319,7 @@ export function AdminHomepageView() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
 
-  /** The category tree changed (Katalog Kategorileri): the pickers and link checks follow it. */
+  /** The category tree changed (Kategoriler): the pickers and link checks follow it. */
   const reloadCategories = () => {
     fetchCategories()
       .then(setCategories)
