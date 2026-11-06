@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Check, FileDown, Loader2, RotateCw, X } from "lucide-react";
 
@@ -51,14 +52,19 @@ export function PriceCatalogExport({ listing, collection }: { listing: CatalogLi
         {/* The icon alone in a phone's filter strip; its name stays for screen readers. */}
         <span className="max-md:sr-only">{t.download}</span>
       </button>
-      {open && (
-        <ExportDialog
-          choice={CATALOG_CHOICES[segment]}
-          listing={listing}
-          collection={collection}
-          onClose={() => setOpen(false)}
-        />
-      )}
+      {/* On <body>: on a phone the button sits in the filter strip, whose
+          backdrop blur would hold a `fixed` child to the strip itself — the
+          dialog squeezed into a 56px band instead of over the screen. */}
+      {open &&
+        createPortal(
+          <ExportDialog
+            choice={CATALOG_CHOICES[segment]}
+            listing={listing}
+            collection={collection}
+            onClose={() => setOpen(false)}
+          />,
+          document.body,
+        )}
     </>
   );
 }
@@ -113,24 +119,36 @@ function ExportDialog({
     router.push(to(`/fiyat-katalogu?k=${key}${parts.length > 1 ? `&bolum=${n}` : ""}`));
   }
 
+  // 44px: a comfortable tap on a phone.
   const createButton =
-    "inline-flex h-10 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-red-600 px-5 text-sm font-semibold text-white hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50";
+    "inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full bg-red-600 px-5 py-2 text-center text-sm font-semibold text-white hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50";
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4" onMouseDown={onClose}>
+    // The overlay scrolls too: the fallback where `dvh` is not known.
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto overscroll-contain bg-black/40 p-4"
+      onMouseDown={onClose}
+    >
       <div
         ref={panel}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
         onMouseDown={(e) => e.stopPropagation()}
-        className="w-full max-w-md rounded-2xl bg-background p-6 text-foreground shadow-2xl ring-1 ring-border"
+        // Never taller than the screen as the phone's address bar leaves it (dvh); the rest scrolls inside.
+        className="max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto overscroll-contain rounded-2xl bg-background p-5 text-foreground shadow-2xl ring-1 ring-border sm:p-6"
       >
         <div className="flex items-start justify-between gap-4">
           <h2 id={titleId} className="text-lg font-semibold tracking-tight">
             {t.title}
           </h2>
-          <button type="button" onClick={onClose} aria-label={t.close} className="rounded-lg p-1 text-muted-foreground hover:bg-foreground/[0.06]">
+          {/* A 44px tap around the small cross, pulled back into the corner. */}
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={t.close}
+            className="-me-2.5 -mt-2.5 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-foreground/[0.06]"
+          >
             <X className="h-4 w-4" aria-hidden />
           </button>
         </div>
@@ -139,13 +157,13 @@ function ExportDialog({
           <fieldset className="mt-4">
             <legend className="text-sm text-muted-foreground">{t.whichGroup}</legend>
             <p className="mt-0.5 text-xs text-muted-foreground">{t.severalGroups}</p>
-            <div className="mt-3 space-y-2">
+            <div className="mt-3 flex w-full flex-col gap-2">
               {choice.pick.map((g) => {
                 const on = picked.has(g);
                 return (
                   <label
                     key={g}
-                    className={`flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-sm font-medium transition-colors has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-red-600 ${
+                    className={`flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-xl border px-4 py-2.5 text-sm font-medium transition-colors has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-red-600 ${
                       on ? "border-red-500 bg-red-50/60 dark:bg-red-500/10" : "border-border hover:bg-foreground/[0.03]"
                     }`}
                   >
@@ -156,7 +174,7 @@ function ExportDialog({
                     >
                       {on && <Check className="h-3 w-3" strokeWidth={3} />}
                     </span>
-                    {t.groupPrices(g)}
+                    <span className="min-w-0 break-words">{t.groupPrices(g)}</span>
                   </label>
                 );
               })}
@@ -204,7 +222,7 @@ function ExportDialog({
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-10 items-center justify-center rounded-full px-4 text-sm font-medium ring-1 ring-inset ring-border hover:bg-foreground/[0.04]"
+            className="inline-flex min-h-11 items-center justify-center rounded-full px-4 text-sm font-medium ring-1 ring-inset ring-border hover:bg-foreground/[0.04]"
           >
             {t.cancel}
           </button>
