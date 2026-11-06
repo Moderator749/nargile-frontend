@@ -126,11 +126,13 @@ export function categoryCopy(slug: string | null | undefined, locale: Locale = "
 // The hierarchy (three levels) lives in a module of its own, free of icons, for its tests.
 export {
   ancestorsOf,
+  branchIds,
   canPlaceUnder,
   categoryFamily,
   categoryTree,
   flattenTree,
   MAX_CATEGORY_DEPTH,
+  openedTo,
   pathOf,
   rootOf,
   subtreeIds,

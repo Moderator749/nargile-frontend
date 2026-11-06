@@ -4,10 +4,12 @@ import { test } from "node:test";
 
 import {
   ancestorsOf,
+  branchIds,
   canPlaceUnder,
   categoryFamily,
   categoryTree,
   flattenTree,
+  openedTo,
   pathOf,
   rootOf,
   subtreeIds,
@@ -83,4 +85,18 @@ test("chips: a category's own stocked children, else its neighbours", () => {
   assert.deepEqual(bowls.members.map((c) => c.id), [4, 3]);
   // Children with nothing listed count as none: Kömür's only child is empty.
   assert.equal(categoryFamily(byId(6), CATS), null);
+});
+
+test("the branches a tree view opens: every category with children, in menu order", () => {
+  // Kömür (6) counts: it has a child, an empty one. It comes first: same order, by name.
+  assert.deepEqual(branchIds(categoryTree(CATS)), [6, 1, 2]);
+  assert.deepEqual(branchIds(categoryTree([cat(9, "Tek")])), []);
+});
+
+test("opened to a category: everything above it, the rest kept, the input untouched", () => {
+  const open = new Set([6]);
+  assert.deepEqual([...openedTo(open, 3, CATS)].sort(), [1, 2, 6]); // Oduman Lüleler: its group and brand
+  assert.deepEqual([...openedTo(open, 1, CATS)], [6]); // a group has nothing above it
+  assert.deepEqual([...openedTo(new Set(), 99, CATS)], []); // gone: nothing to open
+  assert.deepEqual([...open], [6]);
 });

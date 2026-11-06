@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type SubmitEvent } from "react";
-import { FolderTree, Pencil, Plus, Search, Trash2, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type ReactNode, type SubmitEvent } from "react";
+import { ChevronRight, ChevronsDownUp, ChevronsUpDown, FolderTree, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 
 import { panelClass } from "@/components/admin/AdminShell";
 import { RichTextEditor } from "@/components/admin/RichTextEditor";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { Collapse } from "@/components/ui/Collapse";
 import { Switch } from "@/components/ui/Switch";
 import { BannerField } from "@/components/admin/BannerField";
 import { ImageField } from "@/components/admin/homepage/fields";
@@ -19,7 +20,8 @@ import {
   adminListProducts,
   adminUpdateCategory,
 } from "@/lib/adminApi";
-import { canPlaceUnder, categoryTree, flattenTree, MAX_CATEGORY_DEPTH } from "@/lib/categories";
+import { branchIds, canPlaceUnder, categoryTree, flattenTree, MAX_CATEGORY_DEPTH, openedTo } from "@/lib/categories";
+import type { TreeNode } from "@/lib/categoryTree";
 import { getApiErrorMessage } from "@/lib/errors";
 import { refreshStorefront } from "@/lib/revalidate";
 import { scrollIntoPlace } from "@/lib/scrollIntoPlace";
@@ -71,11 +73,11 @@ const EMPTY: FormState = {
 };
 
 /** A tree row's indent by its level: group, subcategory, sub-subcategory. */
-const ROW_INDENT = ["", "pl-8", "pl-16"];
+const ROW_INDENT = ["", "ms-8", "ms-16"];
 
 /**
  * The catalog's categories: the tree (groups → subcategories → theirs, three
- * levels at most) with
+ * levels at most; a branch opens and closes, the groups open at first) with
  * add, rename, delete, on/off and cover image, and product → category moves.
  * Lives in "Ana Sayfa Düzenleme" › Kategoriler; `onChange` tells the
  * editor around it when the tree changed, so its pickers and link checks
@@ -110,6 +112,7 @@ export function AdminCategoriesView({
       .then((rows) => {
         setCategories(rows);
         onChange?.();
+        return rows;
       })
       .catch((err: unknown) => setLoadError(getApiErrorMessage(err, "Kategoriler yüklenemedi.")));
 
@@ -145,7 +148,22 @@ export function AdminCategoriesView({
   }, [editing, openId]);
 
   const tree = useMemo(() => categoryTree(categories ?? []), [categories]);
-  const byId = useMemo(() => new Map((categories ?? []).map((c) => [c.id, c])), [categories]);
+  // The open branches; null until the admin opens or closes one: the groups
+  // open (their subcategories in sight), what is below those closed.
+  const [expanded, setExpanded] = useState<Set<number> | null>(null);
+  const groupsOpen = useMemo(() => new Set(tree.filter((g) => g.children.length).map((g) => g.id)), [tree]);
+  const branches = useMemo(() => branchIds(tree), [tree]);
+  const open = expanded ?? groupsOpen;
+  const allOpen = branches.length > 0 && branches.every((id) => open.has(id));
+  const toggle = (id: number) =>
+    setExpanded((prev) => {
+      const next = new Set(prev ?? groupsOpen);
+      if (!next.delete(id)) next.add(id);
+      return next;
+    });
+  /** The branches above this category opened, so its row is in sight. */
+  const reveal = (id: number, rows: readonly AdminCategory[] = categories ?? []) =>
+    setExpanded((prev) => openedTo(prev ?? groupsOpen, id, rows));
   // A parent is a group or a subcategory; the ones this category can't go
   // under (its own branch, or a fourth level with what it brings) are shown
   // greyed out, so the form offers only what the server takes.
@@ -164,6 +182,7 @@ export function AdminCategoriesView({
 
   function startEdit(c: AdminCategory) {
     setEditing(c);
+    reveal(c.id);
     setForm({
       name: c.name,
       slug: c.slug,
@@ -221,7 +240,9 @@ export function AdminCategoriesView({
     };
     try {
       const saved = editing ? await adminUpdateCategory(editing.id, body) : await adminCreateCategory(body);
-      await reload();
+      const rows = await reload();
+      // The saved one in sight, a new subcategory included.
+      if (rows) reveal(saved.id, rows);
       void refreshStorefront();
       setEditing(null);
       setForm(EMPTY);
@@ -246,8 +267,12 @@ export function AdminCategoriesView({
     }
   }
 
-  const row = (c: AdminCategory, depth: number) => (
-    <li key={c.id} className={`flex items-center gap-3 py-2.5 ${ROW_INDENT[depth] ?? ROW_INDENT[2]}`}>
+  /** A category's row and, for a branch, its subcategories, sliding open and closed under it. */
+  const node = (c: TreeNode<AdminCategory>, depth: number): ReactNode => {
+    const branch = c.children.length > 0;
+    const isOpen = branch && open.has(c.id);
+    const childrenId = `category-children-${c.id}`;
+    const title = (
       <div className="min-w-0 flex-1">
         <p className={`truncate text-sm ${depth ? "" : "font-semibold"} ${c.is_active ? "" : "text-slate-400 line-through dark:text-zinc-500"}`}>
           {c.name}
@@ -257,32 +282,77 @@ export function AdminCategoriesView({
             </span>
           )}
         </p>
-        <p className="font-mono text-xs text-slate-500 dark:text-zinc-400">/{c.slug}</p>
+        <p className="truncate font-mono text-xs text-slate-500 dark:text-zinc-400">
+          /{c.slug}
+          {/* Closed, what it holds out of sight. */}
+          {branch && !isOpen && <span className="font-sans"> · {c.children.length} alt kategori</span>}
+        </p>
       </div>
-      <span className="text-xs tabular-nums text-slate-500 dark:text-zinc-400" title="Doğrudan bu kategorideki ürünler">
-        {c.product_count} ürün
-      </span>
-      <span className="w-10 text-right font-mono text-xs text-slate-400" title="Sıra">
-        #{c.sort_order}
-      </span>
-      <div className="flex gap-1">
-        {/* A group and a subcategory take children; the third level is the last. */}
-        {depth < MAX_CATEGORY_DEPTH - 1 ? (
-          <button type="button" onClick={() => startCreate(c.id)} aria-label={`${c.name} altına kategori ekle`} className={iconBtn}>
-            <Plus className="h-4 w-4" aria-hidden />
-          </button>
-        ) : (
-          <span className="h-8 w-8" aria-hidden />
+    );
+    return (
+      <li key={c.id}>
+        <div
+          // A narrow screen: the name on a line of its own, the count and tools under it.
+          className={`flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg px-2 py-2.5 transition-colors @lg:flex-nowrap ${ROW_INDENT[depth] ?? ROW_INDENT[2]} ${
+            editing?.id === c.id ? "bg-red-50 dark:bg-red-500/10" : ""
+          }`}
+        >
+          {branch ? (
+            // The arrow and the name both open and close it.
+            <button
+              type="button"
+              onClick={() => toggle(c.id)}
+              aria-expanded={isOpen}
+              aria-controls={childrenId}
+              title={isOpen ? "Alt kategorileri gizle" : "Alt kategorileri göster"}
+              className="-my-1 flex min-w-0 flex-1 basis-full items-center gap-2 rounded-lg py-1 text-left @lg:basis-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40"
+            >
+              <ChevronRight
+                className={`h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200 motion-reduce:transition-none ${isOpen ? "rotate-90" : ""}`}
+                aria-hidden
+              />
+              {title}
+            </button>
+          ) : (
+            <div className="flex min-w-0 flex-1 basis-full items-center gap-2 @lg:basis-0">
+              {/* A leaf: the arrow's room, so the names line up. */}
+              <span className="h-4 w-4 shrink-0" aria-hidden />
+              {title}
+            </div>
+          )}
+          <div className="ms-auto flex shrink-0 items-center gap-3">
+            <span className="text-xs tabular-nums text-slate-500 dark:text-zinc-400" title="Doğrudan bu kategorideki ürünler">
+              {c.product_count} ürün
+            </span>
+            <span className="w-10 text-right font-mono text-xs text-slate-400" title="Sıra">
+              #{c.sort_order}
+            </span>
+            <div className="flex gap-1">
+              {/* A group and a subcategory take children; the third level is the last. */}
+              {depth < MAX_CATEGORY_DEPTH - 1 ? (
+                <button type="button" onClick={() => startCreate(c.id)} aria-label={`${c.name} altına kategori ekle`} className={iconBtn}>
+                  <Plus className="h-4 w-4" aria-hidden />
+                </button>
+              ) : (
+                <span className="h-8 w-8" aria-hidden />
+              )}
+              <button type="button" onClick={() => startEdit(c)} aria-label={`Düzenle: ${c.name}`} className={iconBtn}>
+                <Pencil className="h-4 w-4" aria-hidden />
+              </button>
+              <button type="button" onClick={() => handleDelete(c)} aria-label={`Sil: ${c.name}`} className={iconBtn}>
+                <Trash2 className="h-4 w-4" aria-hidden />
+              </button>
+            </div>
+          </div>
+        </div>
+        {branch && (
+          <Collapse open={isOpen} id={childrenId}>
+            <ul>{c.children.map((x) => node(x, depth + 1))}</ul>
+          </Collapse>
         )}
-        <button type="button" onClick={() => startEdit(c)} aria-label={`Düzenle: ${c.name}`} className={iconBtn}>
-          <Pencil className="h-4 w-4" aria-hidden />
-        </button>
-        <button type="button" onClick={() => handleDelete(c)} aria-label={`Sil: ${c.name}`} className={iconBtn}>
-          <Trash2 className="h-4 w-4" aria-hidden />
-        </button>
-      </div>
-    </li>
-  );
+      </li>
+    );
+  };
 
   return (
     <>
@@ -293,14 +363,27 @@ export function AdminCategoriesView({
       </p>
 
       <div className="grid gap-6 @4xl:grid-cols-[1fr_24rem]">
-        <section aria-labelledby="tree-heading" className={`${panelClass} p-5 sm:p-6`}>
-          <div className="flex items-center justify-between gap-3">
+        <section aria-labelledby="tree-heading" className={`${panelClass} min-w-0 p-5 sm:p-6`}>
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 id="tree-heading" className="flex items-center gap-2 text-sm font-semibold">
               <FolderTree className="h-4 w-4 text-slate-400" aria-hidden /> Menü ağacı
             </h2>
-            <button type="button" onClick={() => startCreate(null)} className="inline-flex items-center gap-1 text-sm font-medium text-red-600 hover:text-red-700 dark:text-red-400">
-              <Plus className="h-4 w-4" aria-hidden /> Ana grup
-            </button>
+            <div className="flex items-center gap-4">
+              {branches.length > 0 && (
+                // Everything open, or only the groups in sight.
+                <button
+                  type="button"
+                  onClick={() => setExpanded(allOpen ? new Set() : new Set(branches))}
+                  className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-100"
+                >
+                  {allOpen ? <ChevronsDownUp className="h-3.5 w-3.5" aria-hidden /> : <ChevronsUpDown className="h-3.5 w-3.5" aria-hidden />}
+                  {allOpen ? "Tümünü kapat" : "Tümünü aç"}
+                </button>
+              )}
+              <button type="button" onClick={() => startCreate(null)} className="inline-flex items-center gap-1 text-sm font-medium text-red-600 hover:text-red-700 dark:text-red-400">
+                <Plus className="h-4 w-4" aria-hidden /> Ana grup
+              </button>
+            </div>
           </div>
           {loadError ? (
             <div className="mt-4">
@@ -309,13 +392,7 @@ export function AdminCategoriesView({
           ) : categories === null ? (
             <div className="mt-4 h-64 motion-safe:animate-pulse" aria-busy />
           ) : (
-            <ul className="mt-4 divide-y divide-slate-200 dark:divide-white/10">
-              {tree.map((g) => (
-                <li key={g.id}>
-                  <ul>{flattenTree([g]).map(({ category, depth }) => row(byId.get(category.id)!, depth))}</ul>
-                </li>
-              ))}
-            </ul>
+            <ul className="-mx-2 mt-4 divide-y divide-slate-200 dark:divide-white/10">{tree.map((g) => node(g, 0))}</ul>
           )}
         </section>
 

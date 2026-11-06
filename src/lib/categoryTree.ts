@@ -52,6 +52,19 @@ export function flattenTree<T>(tree: readonly TreeNode<T>[], depth = 0): FlatCat
   return tree.flatMap((category) => [{ category, depth }, ...flattenTree(category.children, depth + 1)]);
 }
 
+/** The categories with subcategories under them, in menu order: the ones a tree view opens and closes. */
+export function branchIds<T extends TreeCategory>(tree: readonly TreeNode<T>[]): number[] {
+  return flattenTree(tree)
+    .filter(({ category }) => category.children.length > 0)
+    .map(({ category }) => category.id);
+}
+
+/** The open branches with every category above `id` opened too, so it is in sight; `open` itself is left as it is. */
+export function openedTo(open: ReadonlySet<number>, id: number, categories: readonly TreeCategory[]): Set<number> {
+  const self = categories.find((c) => c.id === id);
+  return new Set([...open, ...ancestorsOf(self, categories).map((c) => c.id)]);
+}
+
 /** The categories above this one, the group first: what a breadcrumb walks. */
 export function ancestorsOf<T extends TreeCategory>(category: TreeCategory | null | undefined, categories: readonly T[]): T[] {
   const byId = new Map(categories.map((c) => [c.id, c]));
