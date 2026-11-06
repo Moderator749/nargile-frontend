@@ -94,7 +94,18 @@ export function orderHistory(order: AdminOrder): HistoryRow[] {
   ];
   if (order.cancelled_at) rows.push({ at: order.cancelled_at, action: "SİPARİŞ İPTAL EDİLDİ", note: order.cancel_reason ?? "" });
   // Before the payment: recovered and approved in one step, it was recovered first.
-  if (order.recovered_at) rows.push({ at: order.recovered_at, action: "SİPARİŞ KURTARILDI", note: "İptal geri alındı" });
+  if (order.recovered_at) {
+    const recovery = Number(order.recovery_discount ?? 0);
+    rows.push(
+      recovery > 0
+        ? {
+            at: order.recovered_at,
+            action: "HAVALEYE ÇEVRİLDİ",
+            note: `WhatsApp ile kurtarıldı · stok ayrıldı, kurtarma indirimi ${formatMoney(recovery)}`,
+          }
+        : { at: order.recovered_at, action: "SİPARİŞ KURTARILDI", note: "İptal geri alındı" },
+    );
+  }
   if (order.paid_at) rows.push({ at: order.paid_at, action: "SİPARİŞ ONAYLANDI", note: "Ödeme alındı, sipariş onaylandı" });
   if (order.store_approved_at)
     rows.push({

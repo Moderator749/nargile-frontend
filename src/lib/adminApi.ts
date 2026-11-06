@@ -506,6 +506,16 @@ export async function adminRecoverOrder(orderId: string, paid: boolean): Promise
   return data;
 }
 
+/**
+ * "WhatsApp ile Kurtar": a failed card payment back as a bank transfer at 5%
+ * off, its stock taken again. A 409 when the goods have been sold since
+ * ("Stok yetersiz, bu sipariş kurtarılamaz — …"), and the order is unchanged.
+ */
+export async function adminRecoverToTransfer(orderId: string): Promise<AdminOrder> {
+  const { data } = await api.post<AdminOrder>(`/admin/orders/${orderId}/recover-to-transfer`);
+  return data;
+}
+
 /** "Mağaza Onayı": gives (`approved`) or takes back the shop's release for packing. */
 export async function adminSetStoreApproval(orderId: string, approved: boolean): Promise<AdminOrder> {
   const { data } = await api.post<AdminOrder>(`/admin/orders/${orderId}/store-approval`, { approved });

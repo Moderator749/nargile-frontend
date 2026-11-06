@@ -7,6 +7,7 @@ import {
   adminCancelOrder,
   adminDeliverInStore,
   adminRecoverOrder,
+  adminRecoverToTransfer,
   adminRefreshShipment,
   adminReturnOrder,
   adminSetInternalNote,
@@ -98,6 +99,11 @@ export interface OrderActions {
   /** The dialogs' answers; each resolves to the updated order, or rejects with the server's reason. */
   confirmReturn: (order: AdminOrder, reason: string, restock: boolean) => Promise<AdminOrder>;
   confirmRecover: (order: AdminOrder, paid: boolean) => Promise<AdminOrder>;
+  /**
+   * "WhatsApp ile Kurtar": turns a failed card order into a transfer at 5% off.
+   * The updated order, or null when the server refused (the reason is the row's notice).
+   */
+  recoverToTransfer: (order: AdminOrder) => Promise<AdminOrder | null>;
   /** "Gizli Mağaza Notu": saves it, or rejects with the server's reason. */
   saveNote: (order: AdminOrder, note: string) => Promise<AdminOrder>;
   /** "Mağaza Onayı": gives it, or (asking first) takes it back. */
@@ -290,6 +296,33 @@ export function useOrderActions(patch: OrderPatch): OrderActions {
     [decisionCall],
   );
 
+  const recoverToTransfer = useCallback(
+    async (order: AdminOrder) => {
+      if (pending.has(order.id)) return null;
+      setBusy(order.id, true);
+      setNotices((n) => {
+        const next = { ...n };
+        delete next[order.id];
+        return next;
+      });
+      try {
+        const updated = await adminRecoverToTransfer(order.id);
+        patch(order.id, updated);
+        setNotices((n) => ({
+          ...n,
+          [order.id]: { kind: "success", text: "Havaleye çevrildi · stok ayrıldı, %5 kurtarma indirimi uygulandı" },
+        }));
+        return updated;
+      } catch (err) {
+        setNotices((n) => ({ ...n, [order.id]: { kind: "error", text: getApiErrorMessage(err, "Sipariş kurtarılamadı.") } }));
+        return null;
+      } finally {
+        setBusy(order.id, false);
+      }
+    },
+    [patch, pending, setBusy],
+  );
+
   const saveNote = useCallback(
     async (order: AdminOrder, note: string) => {
       try {
@@ -333,6 +366,7 @@ export function useOrderActions(patch: OrderPatch): OrderActions {
     closeDecision,
     confirmReturn,
     confirmRecover,
+    recoverToTransfer,
     saveNote,
     storeApprove,
   };

@@ -786,6 +786,8 @@ export interface Order {
   cancel_reason: string | null;
   /** Brought back after a cancellation ("Siparişi Kurtar"); the cancellation stays on record. */
   recovered_at?: ISODateTime | null;
+  /** "WhatsApp ile Kurtar": the 5% "Kurtarma İndirimi" a failed card order took; already in `discount_amount`. */
+  recovery_discount?: DecimalString;
   delivered_at?: ISODateTime | null;
   returned_at?: ISODateTime | null;
   return_reason?: string | null;

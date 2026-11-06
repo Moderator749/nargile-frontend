@@ -14,6 +14,7 @@ import { ExpandToggle, sheetId } from "@/components/admin/orders/ExpandToggle";
 import { OrderSheet } from "@/components/admin/orders/OrderSheet";
 import { FulfillmentMark } from "@/components/admin/orders/FulfillmentMark";
 import { FAILURE_SOURCE } from "@/components/admin/orders/PaymentFailureCard";
+import { RecoveryResend, RecoveryWhatsApp, isRecoveredTransfer } from "@/components/admin/orders/RecoveryWhatsApp";
 import { canApproveOrder, canShipOrder, useOrderActions, type OrderPatch } from "@/components/admin/orders/useOrderActions";
 import { StatusBadge } from "@/components/orders/StatusBadge";
 import { Alert } from "@/components/ui/Alert";
@@ -172,6 +173,8 @@ export function AdminOrdersView() {
   // The tabs' counts: on opening, on "Yenile", on every tab or filter change,
   // and every minute while the page is in view.
   const [counts, setCounts] = useState<Partial<Record<OrderStatus, number>>>({});
+  // Bumped when a row changes here, so a tab's count follows at once.
+  const [changes, setChanges] = useState(0);
   useEffect(() => {
     const controller = new AbortController();
     const load = () => {
@@ -184,12 +187,15 @@ export function AdminOrdersView() {
       controller.abort();
       clearInterval(timer);
     };
-  }, [key, shippingMethod]);
+  }, [key, shippingMethod, changes]);
 
-  const patch = useCallback<OrderPatch>((id, changes) => {
+  // The row stays where it is, as it now stands (a recovered order shows as a
+  // transfer on the "Ödeme başarısız" tab until the next refresh).
+  const patch = useCallback<OrderPatch>((id, fields) => {
     setList((prev) =>
-      prev ? { ...prev, orders: prev.orders.map((o) => (o.id === id ? { ...o, ...changes } : o)) } : prev,
+      prev ? { ...prev, orders: prev.orders.map((o) => (o.id === id ? { ...o, ...fields } : o)) } : prev,
     );
+    setChanges((n) => n + 1);
   }, []);
   const actions = useOrderActions(patch);
 
@@ -245,9 +251,18 @@ export function AdminOrdersView() {
           >
             <XCircle className="h-3.5 w-3.5 shrink-0" aria-hidden /> İptal et
           </Button>
-          {notice?.kind === "error" && (
-            <p className="whitespace-normal text-left text-[11px] leading-4 text-red-600 dark:text-red-400">{notice.text}</p>
+          {notice && (notice.kind === "error" || isRecoveredTransfer(order)) && (
+            <p
+              role={notice.kind === "error" ? "alert" : "status"}
+              className={`whitespace-normal text-left text-[11px] leading-4 ${
+                notice.kind === "error" ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"
+              }`}
+            >
+              {notice.text}
+            </p>
           )}
+          {/* Won back on WhatsApp: the offer again — or for the first time, if the browser blocked the tab. */}
+          {isRecoveredTransfer(order) && <RecoveryResend order={order} />}
         </div>
       );
     }
@@ -264,6 +279,20 @@ export function AdminOrdersView() {
                 notice.kind === "error" ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"
               }`}
             >
+              {notice.text}
+            </p>
+          )}
+        </div>
+      );
+    }
+    // The card failed: the sale is won back on WhatsApp, as a transfer at %5 off.
+    if (order.status === "PAYMENT_FAILED") {
+      return (
+        <div className="flex w-full flex-col items-stretch gap-1">
+          <RecoveryWhatsApp order={order} actions={actions} />
+          {/* The server's refusal (the goods sold since, say): WhatsApp was not opened. */}
+          {notice?.kind === "error" && (
+            <p role="alert" className="whitespace-normal rounded-md bg-red-50 px-2 py-1.5 text-left text-[11px] font-medium leading-4 text-red-700 ring-1 ring-inset ring-red-200 dark:bg-red-500/10 dark:text-red-300 dark:ring-red-500/30">
               {notice.text}
             </p>
           )}
