@@ -92,6 +92,8 @@ export const RETIRED_CATEGORIES: Record<string, string> = {
   "steamulation-nargile-takimlari": "steamulation",
   "quasar-arguile": "quasar",
   "meduse-nargile-takimlari": "meduse",
+  // Folded into "Gazlar ve Pürmüzler" (scripts/apply_malzemeler_tree.py, 2026-11-06).
+  "purmuzler": "gazlar",
 };
 
 /** The old store's pages that were not categories, and its brand pages. */
