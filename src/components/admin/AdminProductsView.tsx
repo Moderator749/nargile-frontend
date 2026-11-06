@@ -9,6 +9,7 @@ import { ArrowDownUp, Copy, ImageOff, Loader2, PackageX, Pencil, Plus, Trash2 } 
 import { AdminPageHeader, panelClass } from "@/components/admin/AdminShell";
 import { Pagination } from "@/components/admin/Pagination";
 import { withWorkspaceParams } from "@/components/admin/products/productsTabs";
+import { CategoryCombobox } from "@/components/admin/products/CategoryCombobox";
 import { PRODUCTS_PATH, rememberProductList } from "@/components/admin/products/listReturn";
 import { SortableHeader, type SortState } from "@/components/admin/SortableHeader";
 import { CatalogSearch } from "@/components/catalog/CatalogSearch";
@@ -18,17 +19,17 @@ import {
   ADMIN_PAGE_SIZE,
   adminDeleteProducts,
   adminDuplicateProducts,
+  adminListCategories,
   adminListProductsPage,
   adminListSegments,
   adminSetProductPublished,
 } from "@/lib/adminApi";
-import { fetchCategories } from "@/lib/catalogApi";
 import { getApiErrorMessage } from "@/lib/errors";
 import { refreshStorefront } from "@/lib/revalidate";
 import { formatMoney } from "@/lib/format";
 import { loadExchangeRates } from "@/lib/money";
 import { inLira, pickPriceRow } from "@/lib/retailPrice";
-import type { AdminProduct, AdminVariant, Category, ExchangeRates, ProductSort, Segment } from "@/types";
+import type { AdminCategory, AdminProduct, AdminVariant, ExchangeRates, ProductSort, Segment } from "@/types";
 
 const LOW_STOCK = 10;
 
@@ -137,7 +138,8 @@ export function AdminProductsView({
   const [initial] = useState(() => stateFromUrl(new URLSearchParams(searchParams.toString())));
   const [query, setQuery] = useState(initial.query);
   const [category, setCategory] = useState<string>(initial.category);
-  const [categories, setCategories] = useState<Category[]>([]);
+  // The panel's list: switched-off categories too (their products are still filed there).
+  const [categories, setCategories] = useState<AdminCategory[]>([]);
   const [segments, setSegments] = useState<Segment[] | null>(null);
   const [rates, setRates] = useState<ExchangeRates | null>(null);
   const [list, setList] = useState<ListState | null>(null);
@@ -156,7 +158,7 @@ export function AdminProductsView({
 
   useEffect(() => {
     const controller = new AbortController();
-    Promise.all([fetchCategories(controller.signal), adminListSegments(controller.signal)])
+    Promise.all([adminListCategories(controller.signal), adminListSegments(controller.signal)])
       .then(([cats, segs]) => {
         setCategories(cats);
         setSegments(segs);
@@ -359,7 +361,8 @@ export function AdminProductsView({
 
       {/* One control bar over the table: search and category on the left, then the
           actions on the right — new, duplicate, and delete at the far edge. */}
-      <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center">
+      {/* Wraps rather than clips when a chosen category brings "Bu Kategoriyi Sırala" along. */}
+      <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center">
         <CatalogSearch
           onSearch={setQuery}
           busy={!current && !!list}
@@ -369,19 +372,19 @@ export function AdminProductsView({
         <label className="sr-only" htmlFor="admin-category">
           Kategori
         </label>
-        <select
+        {/* The menu's tree, typed into to narrow it ("fol", "şişe"); the arrows and Enter pick. */}
+        <CategoryCombobox
           id="admin-category"
-          value={category}
-          onChange={(e) => chooseCategory(e.target.value)}
-          className="h-10 shrink-0 rounded-full border border-slate-200 bg-white px-4 text-sm text-slate-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-4 focus:ring-red-500/15 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-100"
-        >
-          <option value="">Tüm kategoriler</option>
-          {categories.map((c) => (
-            <option key={c.id} value={c.slug}>
-              {c.name}
-            </option>
-          ))}
-        </select>
+          categories={categories}
+          value={sortableCategory?.id ?? null}
+          onChange={(id) => {
+            const picked = categories.find((c) => c.id === id);
+            if (picked) chooseCategory(picked.slug);
+          }}
+          all={{ label: "Tüm kategoriler", onChoose: () => chooseCategory("") }}
+          closedName
+          className="shrink-0 lg:w-52"
+        />
         {/* "Akıllı geçiş": the chosen category's own order, a click away. */}
         {onSortCategory && sortableCategory && (
           <button
