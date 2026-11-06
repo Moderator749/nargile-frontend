@@ -307,11 +307,14 @@ export function ImageField({
   value,
   onChange,
   hint,
+  maxBytes,
 }: {
   label: string;
   value: string | null | undefined;
   onChange: (value: string | null) => void;
   hint?: string;
+  /** The largest file taken (the drop zone's default when left out). */
+  maxBytes?: number;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -331,7 +334,7 @@ export function ImageField({
 
   return (
     <div className="space-y-2">
-      <ImageDropZone label={label} preview={value || null} busy={busy} onFile={(f) => void upload(f)} onReject={setError} />
+      <ImageDropZone label={label} preview={value || null} busy={busy} maxBytes={maxBytes} onFile={(f) => void upload(f)} onReject={setError} />
       <div className="flex items-center gap-2">
         <input
           value={value ?? ""}

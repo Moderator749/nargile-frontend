@@ -140,7 +140,7 @@ export function AdminHeroView() {
       summary={(s) => ({ primary: s.title.replace(/\s+/g, " ").trim() || s.eyebrow || "Yalnızca görsel (yazısız)", secondary: [s.eyebrow, s.requires === "flash_sales" ? "yalnızca fırsat varken" : ""].filter(Boolean).join(" · ") })}
       validate={validate}
       listNote="İlk sıradaki etkin slaytın başlığı sayfanın ana başlığıdır (H1)."
-      fields={(v, set, current) => {
+      fields={(v, set, current, pendingImage) => {
         const style = (text: SlideText, label: string) => (
           <TextStyleFields
             label={label}
@@ -210,7 +210,8 @@ export function AdminHeroView() {
               describedBy="slide-overlay-hint"
             />
           </div>
-          <SlideCanvas value={v} set={set} image={current?.image ?? v.image_url} />
+          {/* A chosen photo shows at once, the way an uploaded one wins over the address. */}
+          <SlideCanvas value={v} set={set} image={pendingImage ?? current?.image ?? v.image_url} />
           <div className="space-y-1.5">
             <label htmlFor="slide-requires" className="block text-sm font-medium text-slate-700 dark:text-zinc-300">
               Gösterim koşulu

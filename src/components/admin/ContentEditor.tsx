@@ -5,7 +5,7 @@ import Image from "next/image";
 import { Pencil, Plus, Trash2, X } from "lucide-react";
 
 import { AdminPageHeader, panelClass } from "@/components/admin/AdminShell";
-import { ImageDropZone } from "@/components/admin/ImageDropZone";
+import { ImageDropZone, MAX_UPLOAD_BYTES } from "@/components/admin/ImageDropZone";
 import { SortableList } from "@/components/admin/SortableList";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
@@ -57,8 +57,12 @@ interface ContentEditorProps<Row extends BaseRow, Write extends BaseWrite> {
   toWrite: (row: Row) => Write;
   /** Row summary in the list. */
   summary: (row: Row) => { primary: string; secondary?: string };
-  /** The type-specific form fields; `current` is the row being edited, if any. */
-  fields: (value: Write, set: (patch: Partial<Write>) => void, current: Row | null) => ReactNode;
+  /**
+   * The type-specific form fields; `current` is the row being edited, if any;
+   * `pendingImage`, a new row's chosen photo (a local preview) until "Ekle"
+   * uploads it.
+   */
+  fields: (value: Write, set: (patch: Partial<Write>) => void, current: Row | null, pendingImage: string | null) => ReactNode;
   /** Client-side check; null = OK. The server validates again. */
   validate: (value: Write) => string | null;
   /** Extra note under the list (e.g. how rows are grouped). */
@@ -69,8 +73,9 @@ interface ContentEditorProps<Row extends BaseRow, Write extends BaseWrite> {
 
 /**
  * Generic admin editor for homepage CMS rows: list (ordered by sort_order) with
- * on/off switches, a create/edit form, delete, and optional image upload.
- * Every save refreshes the storefront cache.
+ * on/off switches, a create/edit form, delete, and optional image upload — a
+ * row's at once, a new row's kept in the page (previewed) and uploaded with
+ * "Ekle", the row first. Every save refreshes the storefront cache.
  */
 export function ContentEditor<Row extends BaseRow, Write extends BaseWrite>({
   title,
@@ -93,6 +98,14 @@ export function ContentEditor<Row extends BaseRow, Write extends BaseWrite>({
   const [saving, setSaving] = useState(false);
   const [busyId, setBusyId] = useState<number | null>(null);
   const [result, setResult] = useState<{ kind: "success" | "error"; text: string } | null>(null);
+  // A new row's photo, chosen before the row exists: its file and a local preview.
+  const [pending, setPending] = useState<{ file: File; url: string } | null>(null);
+
+  // A preview let go once it is replaced, sent or dropped.
+  useEffect(() => {
+    if (!pending) return;
+    return () => URL.revokeObjectURL(pending.url);
+  }, [pending]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -118,6 +131,12 @@ export function ContentEditor<Row extends BaseRow, Write extends BaseWrite>({
   const startNew = () => {
     setEditing(null);
     setForm(blank());
+    setPending(null);
+    setResult(null);
+  };
+
+  const choose = (file: File) => {
+    setPending({ file, url: URL.createObjectURL(file) });
     setResult(null);
   };
 
@@ -162,12 +181,28 @@ export function ContentEditor<Row extends BaseRow, Write extends BaseWrite>({
     setSaving(true);
     try {
       const data = body();
-      const saved = editing ? await api.update(editing.id, data) : await api.create(data);
+      let saved = editing ? await api.update(editing.id, data) : await api.create(data);
+      // A new row's chosen photo goes up now that the row exists. If that
+      // fails, the row stays (saved), open in the form to upload it again.
+      let photoError: string | null = null;
+      const file = !editing && api.uploadImage ? pending?.file : undefined;
+      if (file) {
+        try {
+          saved = await api.uploadImage!(saved.id, file);
+        } catch (err) {
+          photoError = getApiErrorMessage(err, "Görsel yüklenemedi (PNG, JPEG veya WebP).");
+        }
+      }
       upsert(saved);
       void refreshStorefront();
       setEditing(saved);
       setForm(toWrite(saved));
-      setResult({ kind: "success", text: "Kaydedildi. Ana sayfa güncellendi." });
+      setPending(null);
+      setResult(
+        photoError
+          ? { kind: "error", text: `Kaydedildi, ancak görsel yüklenemedi: ${photoError} Aşağıdan tekrar yükleyin.` }
+          : { kind: "success", text: "Kaydedildi. Ana sayfa güncellendi." },
+      );
     } catch (err) {
       setResult({ kind: "error", text: getApiErrorMessage(err, "Kaydedilemedi.") });
     } finally {
@@ -244,6 +279,7 @@ export function ContentEditor<Row extends BaseRow, Write extends BaseWrite>({
           onClick={() => {
             setEditing(row);
             setForm(toWrite(row));
+            setPending(null);
             setResult(null);
             // Stacked, the form is below the list: bring it into view.
             if (stacked) requestAnimationFrame(() => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
@@ -329,7 +365,7 @@ export function ContentEditor<Row extends BaseRow, Write extends BaseWrite>({
             )}
           </div>
 
-          {fields(form, set, editing)}
+          {fields(form, set, editing, editing ? null : (pending?.url ?? null))}
 
           {api.uploadImage && (
             <div className="space-y-2">
@@ -339,6 +375,7 @@ export function ContentEditor<Row extends BaseRow, Write extends BaseWrite>({
                     label="Görsel yükle"
                     preview={editing.image}
                     busy={busyId === editing.id}
+                    maxBytes={MAX_UPLOAD_BYTES}
                     onFile={upload}
                     onReject={(text) => setResult({ kind: "error", text })}
                   />
@@ -356,9 +393,24 @@ export function ContentEditor<Row extends BaseRow, Write extends BaseWrite>({
                   </div>
                 </>
               ) : (
-                <p className="rounded-xl border border-dashed border-slate-300 p-4 text-xs text-slate-500 dark:border-white/15 dark:text-zinc-400">
-                  Görsel yüklemek için önce kaydedin (veya yukarıya bir https URL girin).
-                </p>
+                <>
+                  <ImageDropZone
+                    label={pending ? "Görseli değiştir" : "Görsel yükle"}
+                    preview={pending?.url ?? null}
+                    busy={saving && !!pending}
+                    disabled={saving}
+                    maxBytes={MAX_UPLOAD_BYTES}
+                    onFile={choose}
+                    onReject={(text) => setResult({ kind: "error", text })}
+                    onClear={() => setPending(null)}
+                    clearLabel="Seçileni kaldır"
+                  />
+                  <p className="text-xs text-slate-500 dark:text-zinc-400">
+                    {pending
+                      ? `“${pending.file.name}” seçildi; “Ekle” ile ${noun} kaydedilirken yüklenir. Yüklenen görsel, URL alanından önceliklidir.`
+                      : "Seçtiğiniz görsel önizlemede hemen görünür ve “Ekle” ile birlikte yüklenir. Yüklenen görsel, URL alanından önceliklidir."}
+                  </p>
+                </>
               )}
             </div>
           )}

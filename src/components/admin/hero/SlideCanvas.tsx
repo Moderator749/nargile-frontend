@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { AlignCenter, AlignLeft, AlignRight, Monitor, Move, RotateCcw, Smartphone } from "lucide-react";
 
 import type { MobilePreviewState, PreviewMessage } from "@/components/admin/hero/MobileSlidePreview";
+import { MAX_UPLOAD_BYTES } from "@/components/admin/ImageDropZone";
 import { ImageField } from "@/components/admin/homepage/fields";
 import { HERO_PARTS, mobileBg, presentParts, previewSlide, useHeroCanvas, type HeroDevice } from "@/components/admin/hero/useHeroCanvas";
 import { HERO_FRAME, HeroBackdrop, HeroSlideView } from "@/components/home/HeroSlideView";
@@ -183,6 +184,7 @@ export function SlideCanvas({
           label="Mobil görsel (dikey)"
           value={v.mobile_image}
           onChange={(mobile_image) => set({ mobile_image })}
+          maxBytes={MAX_UPLOAD_BYTES}
           hint={
             image
               ? "Yalnızca telefonda, geniş fotoğrafın yerine gösterilir. 4:5 (ör. 1080×1350 px) dikey bir fotoğraf yükleyin; yukarıdaki telefonda hemen görünür."

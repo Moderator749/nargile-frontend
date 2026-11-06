@@ -6,6 +6,8 @@ import { ImageUp, Loader2, Trash2 } from "lucide-react";
 
 const ACCEPTED = ["image/png", "image/jpeg", "image/webp"];
 const MB = 1024 * 1024;
+/** The server's own limit for an uploaded photo (a slide's, or /admin/uploads): a phone's camera file fits. */
+export const MAX_UPLOAD_BYTES = 5 * MB;
 
 interface ImageDropZoneProps {
   /** Called with a validated file (PNG/JPEG/WebP, ≤ `maxBytes`). */
