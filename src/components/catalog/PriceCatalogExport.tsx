@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { FileDown, Loader2, RotateCw, X } from "lucide-react";
+import { Check, FileDown, Loader2, RotateCw, X } from "lucide-react";
 
 import { type CatalogListing, useCatalogListing } from "@/components/catalog/useCatalogListing";
 import { useLocale, useMessages } from "@/components/i18n/LocaleProvider";
@@ -29,7 +29,8 @@ import type { SegmentType } from "@/types";
  *
  * Only for Bayi, Toptan and Kafe accounts, and each is offered only the price
  * groups below its own (a dealer must not hand a café its dealer price): the
- * dialog shows those, and the server refuses anything else.
+ * dialog shows those, one or several at once (each product's plate then lists
+ * them one under another), and the server refuses anything else.
  */
 export function PriceCatalogExport({ listing, collection }: { listing: CatalogListing; collection: string }) {
   const user = useAuthStore((s) => s.user);
@@ -79,8 +80,9 @@ function ExportDialog({
   const to = useLocalePath();
   const router = useRouter();
   const t = useMessages(catalogMessages).priceCatalog;
-  const [picked, setPicked] = useState<SegmentType | null>("pick" in choice ? choice.pick[0] : null);
-  const groups = "fixed" in choice ? choice.fixed : picked ? [picked] : [];
+  const [picked, setPicked] = useState<ReadonlySet<SegmentType>>(() => new Set("pick" in choice ? choice.pick.slice(0, 1) : []));
+  // In the plate's order (Toptan, Kafe, Perakende), whatever order they were ticked in.
+  const groups = "fixed" in choice ? choice.fixed : choice.pick.filter((g) => picked.has(g));
   const state = useCatalogListing(listing);
   const products = state.status === "ready" ? state.products : [];
   const parts = catalogParts(products.length, PRICE_LIST_MAX);
@@ -92,6 +94,14 @@ function ExportDialog({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
+
+  function toggle(group: SegmentType) {
+    setPicked((now) => {
+      const next = new Set(now);
+      if (!next.delete(group)) next.add(group);
+      return next;
+    });
+  }
 
   /** Part `n` of the catalogue (the only one, up to 200 products); the preview can go on to the others. */
   function create(n: number) {
@@ -128,25 +138,28 @@ function ExportDialog({
         {"pick" in choice ? (
           <fieldset className="mt-4">
             <legend className="text-sm text-muted-foreground">{t.whichGroup}</legend>
+            <p className="mt-0.5 text-xs text-muted-foreground">{t.severalGroups}</p>
             <div className="mt-3 space-y-2">
-              {choice.pick.map((g) => (
-                <label
-                  key={g}
-                  className={`flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-sm font-medium transition-colors ${
-                    picked === g ? "border-red-500 bg-red-50/60 dark:bg-red-500/10" : "border-border hover:bg-foreground/[0.03]"
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="catalog-group"
-                    value={g}
-                    checked={picked === g}
-                    onChange={() => setPicked(g)}
-                    className="h-4 w-4 accent-red-600"
-                  />
-                  {t.groupPrices(g)}
-                </label>
-              ))}
+              {choice.pick.map((g) => {
+                const on = picked.has(g);
+                return (
+                  <label
+                    key={g}
+                    className={`flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-sm font-medium transition-colors has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-red-600 ${
+                      on ? "border-red-500 bg-red-50/60 dark:bg-red-500/10" : "border-border hover:bg-foreground/[0.03]"
+                    }`}
+                  >
+                    <input type="checkbox" value={g} checked={on} onChange={() => toggle(g)} className="sr-only" />
+                    <span
+                      aria-hidden
+                      className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${on ? "border-red-600 bg-red-600 text-white" : "border-slate-400"}`}
+                    >
+                      {on && <Check className="h-3 w-3" strokeWidth={3} />}
+                    </span>
+                    {t.groupPrices(g)}
+                  </label>
+                );
+              })}
             </div>
           </fieldset>
         ) : (
@@ -209,7 +222,7 @@ function ExportDialog({
                 </>
               ) : (
                 <>
-                  <FileDown className="h-4 w-4" aria-hidden /> {t.create}
+                  <FileDown className="h-4 w-4" aria-hidden /> {groups.length === 0 ? t.pickOne : t.create}
                 </>
               )}
             </button>

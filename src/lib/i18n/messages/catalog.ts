@@ -145,7 +145,9 @@ export const catalogMessages = defineMessages({
       download: "Fiyat Kataloğu İndir",
       title: "Fiyat kataloğu oluştur",
       close: "Kapat",
-      whichGroup: "Hangi fiyat grubuna göre katalog oluşturulsun?",
+      whichGroup: "Hangi fiyat grupları kataloğa girsin?",
+      severalGroups: "Birden fazla seçebilirsiniz: her ürünün kartında seçilen grupların fiyatları alt alta yer alır.",
+      pickOne: "En az bir grup seçin",
       groupPrices: (segment: SegmentType) => `${TR_SEGMENT[segment]} Fiyatları`,
       cafeFixed:
         "Kafe alış fiyatlarınızı ve müşterileriniz için Perakende satış fiyatlarını içeren kataloğunuz hazırlanacaktır.",
@@ -168,14 +170,14 @@ export const catalogMessages = defineMessages({
       signIn: "Fiyat kataloğu için giriş yapın.",
       missingRequest: "Katalog bilgisi bulunamadı. Ürünler sayfasından “Fiyat Kataloğu İndir” ile yeniden oluşturun.",
       loadError: "Katalog hazırlanamadı.",
-      nothingPriced: "Seçilen fiyat grubunda fiyatı olan ürün yok.",
+      nothingPriced: "Seçilen fiyat gruplarında fiyatı olan ürün yok.",
       back: "Geri dön",
       savePdf: "PDF İndir",
       preparing: (done: number, total: number) => `PDF hazırlanıyor… ${done}/${total}`,
       pdfFailed: "PDF oluşturulamadı. Lütfen tekrar deneyin.",
       summary: (count: string, groups: SegmentType[]) =>
         `${count} ürün · ${listOf("tr", groups.map((g) => TR_SEGMENT[g]))} fiyatları.`,
-      skipped: (n: number) => ` Bu fiyat grubunda fiyatı olmayan ${n} ürün kataloğa alınmadı.`,
+      skipped: (n: number) => ` Seçilen gruplarda fiyatı olmayan ${n} ürün kataloğa alınmadı.`,
       groupUnpriced: (group: SegmentType, n: number, total: number) =>
         n === total
           ? `${TR_SEGMENT[group]}: bu ürünlerin hiçbirinde ${TR_SEGMENT[group]} fiyatı tanımlı değil, kataloğa bu satır girmez.`
@@ -269,7 +271,9 @@ export const catalogMessages = defineMessages({
       download: "Download Price Catalog",
       title: "Create a price catalog",
       close: "Close",
-      whichGroup: "Which price group should the catalog show?",
+      whichGroup: "Which price groups should the catalog show?",
+      severalGroups: "You can pick more than one: each product's card lists the chosen groups' prices one under another.",
+      pickOne: "Pick at least one group",
       groupPrices: (segment: SegmentType) => `${EN_SEGMENT[segment]} Prices`,
       cafeFixed: "Your catalog will show your café purchase prices and the retail prices for your customers.",
       total: (scope: ListingScope, count: string) => `All ${count} products ${EN_SCOPE[scope]} go into the catalog in the order you see them.`,
@@ -289,7 +293,7 @@ export const catalogMessages = defineMessages({
       signIn: "Sign in to create a price catalog.",
       missingRequest: "The catalog request could not be found. Create it again from the products page with “Download Price Catalog”.",
       loadError: "The catalog could not be prepared.",
-      nothingPriced: "None of these products has a price in the selected price group.",
+      nothingPriced: "None of these products has a price in the selected price groups.",
       back: "Go back",
       savePdf: "Download PDF",
       preparing: (done: number, total: number) => `Preparing PDF… ${done}/${total}`,
@@ -297,7 +301,7 @@ export const catalogMessages = defineMessages({
       summary: (count: string, groups: SegmentType[]) =>
         `${count} products · ${listOf("en", groups.map((g) => EN_SEGMENT[g]))} prices.`,
       skipped: (n: number) =>
-        ` ${enCount(n, "product has", "products have")} no price in this group and ${n === 1 ? "was" : "were"} left out.`,
+        ` ${enCount(n, "product has", "products have")} no price in the selected groups and ${n === 1 ? "was" : "were"} left out.`,
       groupUnpriced: (group: SegmentType, n: number, total: number) =>
         n === total
           ? `${EN_SEGMENT[group]}: none of these products has a ${EN_SEGMENT[group]} price, so that row is left out.`
@@ -390,7 +394,9 @@ export const catalogMessages = defineMessages({
       download: "تحميل كتالوج الأسعار",
       title: "إنشاء كتالوج أسعار",
       close: "إغلاق",
-      whichGroup: "حسب أي فئة أسعار يُنشأ الكتالوج؟",
+      whichGroup: "ما فئات الأسعار التي يتضمنها الكتالوج؟",
+      severalGroups: "يمكنك اختيار أكثر من فئة: تظهر أسعار الفئات المختارة في بطاقة كل منتج واحدة تحت الأخرى.",
+      pickOne: "اختر فئة واحدة على الأقل",
       groupPrices: (segment: SegmentType) => `أسعار ${AR_SEGMENT_PRICES[segment]}`,
       cafeFixed: "سيتضمن الكتالوج أسعار الشراء الخاصة بمقهاكم وأسعار التجزئة لعملائكم.",
       total: (scope: ListingScope, count: string) => `تُضاف جميع ${AR_SCOPE[scope]} (${count}) إلى الكتالوج بالترتيب الذي تراه.`,
@@ -410,14 +416,14 @@ export const catalogMessages = defineMessages({
       signIn: "سجّل الدخول لإنشاء كتالوج الأسعار.",
       missingRequest: "لم يتم العثور على بيانات الكتالوج. أنشئه من جديد من صفحة المنتجات عبر «تحميل كتالوج الأسعار».",
       loadError: "تعذّر تجهيز الكتالوج.",
-      nothingPriced: "لا يوجد منتج له سعر في فئة الأسعار المختارة.",
+      nothingPriced: "لا يوجد منتج له سعر في فئات الأسعار المختارة.",
       back: "رجوع",
       savePdf: "تنزيل PDF",
       preparing: (done: number, total: number) => `جارٍ تجهيز ملف PDF… ${done}/${total}`,
       pdfFailed: "تعذّر إنشاء ملف PDF. يُرجى المحاولة مرة أخرى.",
       summary: (count: string, groups: SegmentType[]) =>
         `${count} منتج · أسعار ${listOf("ar", groups.map((g) => AR_SEGMENT_PRICES[g]))}.`,
-      skipped: (n: number) => ` لم يُضف إلى الكتالوج ${n} منتج ليس لها سعر في هذه الفئة.`,
+      skipped: (n: number) => ` لم يُضف إلى الكتالوج ${n} منتج ليس لها سعر في الفئات المختارة.`,
       groupUnpriced: (group: SegmentType, n: number, total: number) =>
         n === total
           ? `${AR_SEGMENT[group]}: لا يوجد سعر ${AR_SEGMENT[group]} لأيٍّ من هذه المنتجات، فلن يظهر هذا السطر.`

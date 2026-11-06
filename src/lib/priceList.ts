@@ -19,7 +19,7 @@ export const CATALOG_GROUP_LABELS: Record<SegmentType, string> = {
   RETAIL: "Perakende",
 };
 
-/** Bayi picks one of three, Toptan one of two; Kafe always gets its own price and retail. */
+/** Bayi picks any of three, Toptan any of two (one or several); Kafe always gets its own price and retail. */
 export const CATALOG_CHOICES: Record<B2BSegment, { pick: SegmentType[] } | { fixed: SegmentType[] }> = {
   DEALER: { pick: ["WHOLESALE", "CAFE", "RETAIL"] },
   WHOLESALE: { pick: ["CAFE", "RETAIL"] },
