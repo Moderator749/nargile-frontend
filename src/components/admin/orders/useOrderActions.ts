@@ -8,6 +8,7 @@ import {
   adminDeliverInStore,
   adminRecoverOrder,
   adminRecoverToTransfer,
+  adminRevertRecovery,
   adminRefreshShipment,
   adminReturnOrder,
   adminSetInternalNote,
@@ -104,6 +105,8 @@ export interface OrderActions {
    * The updated order, or null when the server refused (the reason is the row's notice).
    */
   recoverToTransfer: (order: AdminOrder) => Promise<AdminOrder | null>;
+  /** "Kurtarmayı Geri Al": asks, then puts a recovered order back to its failed card payment. */
+  revertRecovery: (order: AdminOrder) => Promise<void>;
   /** "Gizli Mağaza Notu": saves it, or rejects with the server's reason. */
   saveNote: (order: AdminOrder, note: string) => Promise<AdminOrder>;
   /** "Mağaza Onayı": gives it, or (asking first) takes it back. */
@@ -323,6 +326,34 @@ export function useOrderActions(patch: OrderPatch): OrderActions {
     [patch, pending, setBusy],
   );
 
+  const revertRecovery = useCallback(
+    async (order: AdminOrder) => {
+      if (pending.has(order.id)) return;
+      if (
+        !window.confirm(
+          `${order.order_number}: kurtarma geri alınsın mı?\n\nAyrılan stok serbest kalır, %5 kurtarma indirimi kaldırılır ve sipariş yeniden "Ödeme başarısız" olur. Müşteriye bir şey gönderilmez.`,
+        )
+      )
+        return;
+      setBusy(order.id, true);
+      setNotices((n) => {
+        const next = { ...n };
+        delete next[order.id];
+        return next;
+      });
+      try {
+        const updated = await adminRevertRecovery(order.id);
+        patch(order.id, updated);
+        setNotices((n) => ({ ...n, [order.id]: { kind: "success", text: "Kurtarma geri alındı · stok serbest, indirim kaldırıldı" } }));
+      } catch (err) {
+        setNotices((n) => ({ ...n, [order.id]: { kind: "error", text: getApiErrorMessage(err, "Kurtarma geri alınamadı.") } }));
+      } finally {
+        setBusy(order.id, false);
+      }
+    },
+    [patch, pending, setBusy],
+  );
+
   const saveNote = useCallback(
     async (order: AdminOrder, note: string) => {
       try {
@@ -367,6 +398,7 @@ export function useOrderActions(patch: OrderPatch): OrderActions {
     confirmReturn,
     confirmRecover,
     recoverToTransfer,
+    revertRecovery,
     saveNote,
     storeApprove,
   };

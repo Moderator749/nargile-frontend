@@ -1,4 +1,4 @@
-import { Loader2, MessageCircle } from "lucide-react";
+import { Loader2, MessageCircle, Undo2 } from "lucide-react";
 
 import { whatsappNumber } from "@/components/admin/orders/sheetData";
 import type { OrderActions } from "@/components/admin/orders/useOrderActions";
@@ -94,18 +94,37 @@ export function RecoveryWhatsApp({ order, actions }: { order: AdminOrder; action
   );
 }
 
-/** On a recovered order waiting for the transfer: the offer's chat again, with the saved figures. */
-export function RecoveryResend({ order }: { order: AdminOrder }) {
+/**
+ * On a recovered order waiting for the transfer: the offer's chat again, with
+ * the saved figures, and "Kurtarmayı Geri Al" — for a message never sent or a
+ * transfer turned down — which (asking first) puts it back to the failed card
+ * payment it was.
+ */
+export function RecoveryResend({ order, actions }: { order: AdminOrder; actions: OrderActions }) {
   const href = recoveryHref(order);
-  if (!href) return null;
+  const busy = actions.busy(order.id);
   return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="inline-flex items-center gap-1 text-[11px] font-semibold leading-4 text-emerald-700 underline-offset-2 hover:underline dark:text-emerald-400"
-    >
-      <MessageCircle className="h-3 w-3 shrink-0" aria-hidden /> WhatsApp&apos;ı tekrar aç
-    </a>
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+      {href && (
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-[11px] font-semibold leading-4 text-emerald-700 underline-offset-2 hover:underline dark:text-emerald-400"
+        >
+          <MessageCircle className="h-3 w-3 shrink-0" aria-hidden /> WhatsApp&apos;ı tekrar aç
+        </a>
+      )}
+      <button
+        type="button"
+        onClick={() => void actions.revertRecovery(order)}
+        disabled={busy}
+        title="Stoğu serbest bırakır, %5 indirimi kaldırır, siparişi yeniden 'Ödeme başarısız' yapar"
+        className="inline-flex items-center gap-1 rounded text-[11px] font-semibold leading-4 text-slate-500 underline-offset-2 transition-colors hover:text-red-600 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500 disabled:cursor-wait disabled:opacity-60 dark:text-zinc-400 dark:hover:text-red-400"
+      >
+        {busy ? <Loader2 className="h-3 w-3 shrink-0 animate-spin" aria-hidden /> : <Undo2 className="h-3 w-3 shrink-0" aria-hidden />}
+        Kurtarmayı Geri Al
+      </button>
+    </div>
   );
 }

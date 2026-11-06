@@ -262,7 +262,7 @@ export function AdminOrdersView() {
             </p>
           )}
           {/* Won back on WhatsApp: the offer again — or for the first time, if the browser blocked the tab. */}
-          {isRecoveredTransfer(order) && <RecoveryResend order={order} />}
+          {isRecoveredTransfer(order) && <RecoveryResend order={order} actions={actions} />}
         </div>
       );
     }
@@ -290,6 +290,12 @@ export function AdminOrdersView() {
       return (
         <div className="flex w-full flex-col items-stretch gap-1">
           <RecoveryWhatsApp order={order} actions={actions} />
+          {/* Back here from "Kurtarmayı Geri Al": said so. */}
+          {notice?.kind === "success" && (
+            <p role="status" className="whitespace-normal text-left text-[11px] leading-4 text-emerald-600 dark:text-emerald-400">
+              {notice.text}
+            </p>
+          )}
           {/* The server's refusal (the goods sold since, say): WhatsApp was not opened. */}
           {notice?.kind === "error" && (
             <p role="alert" className="whitespace-normal rounded-md bg-red-50 px-2 py-1.5 text-left text-[11px] font-medium leading-4 text-red-700 ring-1 ring-inset ring-red-200 dark:bg-red-500/10 dark:text-red-300 dark:ring-red-500/30">

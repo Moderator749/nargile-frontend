@@ -516,6 +516,16 @@ export async function adminRecoverToTransfer(orderId: string): Promise<AdminOrde
   return data;
 }
 
+/**
+ * "Kurtarmayı Geri Al": a "WhatsApp ile Kurtar" order back to the failed card
+ * payment it was — stock released, the 5% off the total. A 409 once it is
+ * paid or has the store's approval.
+ */
+export async function adminRevertRecovery(orderId: string): Promise<AdminOrder> {
+  const { data } = await api.post<AdminOrder>(`/admin/orders/${orderId}/revert-recovery`);
+  return data;
+}
+
 /** "Mağaza Onayı": gives (`approved`) or takes back the shop's release for packing. */
 export async function adminSetStoreApproval(orderId: string, approved: boolean): Promise<AdminOrder> {
   const { data } = await api.post<AdminOrder>(`/admin/orders/${orderId}/store-approval`, { approved });
