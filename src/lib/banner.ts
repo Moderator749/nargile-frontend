@@ -106,8 +106,18 @@ export function fromLocalInputValue(value: string): string | null {
 
 export type BannerTone = "light" | "dark" | "gold";
 
-/** Text/ornament tone; a background image always gets a dark scrim and light text. */
-export function bannerTone(style: BannerBackgroundStyle, bgImageUrl: string | null): BannerTone {
+/** The admin's text colour, when it is a usable one. */
+export const resolveTextColour = (colour: string | null | undefined): string | null =>
+  colour && isHexColour(colour) ? colour.toLowerCase() : null;
+
+/**
+ * Text/ornament tone: the admin's text colour when there is one (a light text
+ * reads as "light"); else a background image always gets a dark scrim and
+ * light text, and a colour the tone that reads on it.
+ */
+export function bannerTone(style: BannerBackgroundStyle, bgImageUrl: string | null, textColour?: string | null): BannerTone {
+  const text = resolveTextColour(textColour);
+  if (text) return toneFor(text) === "dark" ? "light" : "dark";
   if (bgImageUrl && isSafeImageUrl(bgImageUrl)) return "light";
   const resolved = resolveBannerStyle(style);
   if (resolved === "dark_luxury") return "gold";

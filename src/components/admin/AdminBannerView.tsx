@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState, type ReactNode, type SubmitEvent } from "react";
-import { Check, Eye, Info, Save, X } from "lucide-react";
+import { Eye, Info, Save, X } from "lucide-react";
 
 import { AdminPageHeader, panelClass } from "@/components/admin/AdminShell";
+import { BannerLookPicker } from "@/components/admin/BannerLookPicker";
 import { BannerPresetsManager, livePreset } from "@/components/admin/BannerPresetsManager";
 import { BannerMoodIcon } from "@/components/banner/BannerMoodIcon";
 import { LiveAnnouncementBar } from "@/components/banner/LiveAnnouncementBar";
@@ -14,13 +15,9 @@ import { useNow } from "@/hooks/useNow";
 import { adminGetAnnouncement, adminUpdateAnnouncement } from "@/lib/adminApi";
 import {
   BANNER_ICONS,
-  BANNER_PRESETS,
   DEFAULT_BANNER_ICON,
   DEFAULT_BANNER_STYLE,
-  DEFAULT_CUSTOM_COLOUR,
   fromLocalInputValue,
-  isHexColour,
-  isPreset,
   isSafeImageUrl,
   normaliseImageUrl,
   resolveBannerIcon,
@@ -102,7 +99,7 @@ export function AdminBannerView() {
   const [expiresLocal, setExpiresLocal] = useState("");
   const [showCountdown, setShowCountdown] = useState(false);
   const [backgroundStyle, setBackgroundStyle] = useState<string>(DEFAULT_BANNER_STYLE);
-  const [customColour, setCustomColour] = useState(DEFAULT_CUSTOM_COLOUR);
+  const [textColour, setTextColour] = useState<string | null>(null);
   const [bgImageUrl, setBgImageUrl] = useState("");
   const [iconType, setIconType] = useState<BannerIcon>(DEFAULT_BANNER_ICON);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
@@ -124,7 +121,7 @@ export function AdminBannerView() {
     setExpiresLocal(toLocalInputValue(a.expires_at));
     setShowCountdown(a.show_countdown);
     setBackgroundStyle(a.background_style);
-    if (isHexColour(a.background_style)) setCustomColour(a.background_style);
+    setTextColour(a.text_color);
     setBgImageUrl(a.bg_image_url ?? "");
     setIconType(resolveBannerIcon(a.icon_type));
     setUpdatedAt(a.updated_at);
@@ -158,7 +155,6 @@ export function AdminBannerView() {
   const expiresAt = fromLocalInputValue(expiresLocal);
   const expired = expiresAt !== null && now !== null && Date.parse(expiresAt) <= now;
   const imageInvalid = imageUrl !== "" && !isSafeImageUrl(imageUrl);
-  const customSelected = !isPreset(backgroundStyle);
 
   const problem =
     active && !trimmed
@@ -175,6 +171,7 @@ export function AdminBannerView() {
     show_countdown: showCountdown && expiresAt !== null,
     background_style: backgroundStyle,
     bg_image_url: imageUrl && !imageInvalid ? imageUrl : null,
+    text_color: textColour,
     icon_type: iconType,
   };
 
@@ -285,9 +282,9 @@ export function AdminBannerView() {
                 </span>
               </div>
               {trimmed ? (
-                <div
-                  className={`transition-[filter,opacity] duration-300 ${active && !expired ? "" : "opacity-50 grayscale"}`}
-                >
+                // Dimmed while off or expired, but in its true colours: grey here
+                // read as "the colour did not take".
+                <div className={`transition-opacity duration-300 ${active && !expired ? "" : "opacity-60"}`}>
                   <LiveAnnouncementBar announcement={draft} hideOnExpire={false} />
                 </div>
               ) : (
@@ -330,78 +327,14 @@ export function AdminBannerView() {
               </div>
 
               <Fieldset legend="Görünüm">
-                <div
-                  role="radiogroup"
-                  aria-label="Arka plan stili"
-                  className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4"
-                >
-                  {[
-                    ...BANNER_PRESETS.map((p) => ({
-                      id: p.id,
-                      label: p.label,
-                      swatch: p.swatchClass,
-                      colour: undefined,
-                    })),
-                    {
-                      id: customColour,
-                      label: "Özel renk",
-                      swatch: "",
-                      colour: customColour,
-                    },
-                  ].map((option) => {
-                    const selected = option.colour ? customSelected : backgroundStyle === option.id;
-                    return (
-                      <div
-                        key={option.label}
-                        className={`flex min-w-0 flex-col rounded-xl border transition-[border-color,box-shadow] duration-200 ${
-                          selected
-                            ? "border-red-500 ring-4 ring-red-500/15"
-                            : "border-slate-200 hover:border-slate-300 dark:border-white/10 dark:hover:border-white/20"
-                        }`}
-                      >
-                        <button
-                          type="button"
-                          role="radio"
-                          aria-checked={selected}
-                          onClick={() => edit(setBackgroundStyle)(option.id)}
-                          className="block w-full rounded-xl p-2 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
-                        >
-                          <span
-                            aria-hidden
-                            className={`relative block h-10 rounded-lg ${option.swatch}`}
-                            style={option.colour ? { backgroundColor: option.colour } : undefined}
-                          >
-                            {selected && (
-                              <Check className="absolute right-1.5 top-1.5 h-4 w-4 rounded-full bg-white p-0.5 text-red-600 shadow-sm" />
-                            )}
-                          </span>
-                          <span className="mt-2 block truncate text-xs font-medium">{option.label}</span>
-                        </button>
-
-                        {option.colour && customSelected && (
-                          <div className="flex items-center gap-2 border-t border-slate-200 px-2 py-2 dark:border-white/10">
-                            <label htmlFor="banner-colour" className="sr-only">
-                              Özel renk seçin
-                            </label>
-                            <input
-                              id="banner-colour"
-                              type="color"
-                              value={customColour}
-                              onChange={(e) => {
-                                setCustomColour(e.target.value);
-                                edit(setBackgroundStyle)(e.target.value);
-                              }}
-                              className="h-8 w-12 shrink-0 cursor-pointer rounded-lg border border-slate-300 bg-white p-1 dark:border-white/15 dark:bg-zinc-950"
-                            />
-                            <code className="truncate text-xs uppercase tabular-nums text-slate-500 dark:text-zinc-400">
-                              {customColour}
-                            </code>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+                {/* The picker is mounted only once the saved banner is in, so its own colour starts from it. */}
+                <BannerLookPicker
+                  id="banner-look"
+                  background={backgroundStyle}
+                  onBackground={(style) => edit(setBackgroundStyle)(style ?? DEFAULT_BANNER_STYLE)}
+                  textColour={textColour}
+                  onTextColour={edit(setTextColour)}
+                />
 
                 <div>
                   <p id="banner-icon-label" className="text-sm font-medium">
@@ -553,6 +486,7 @@ export function AdminBannerView() {
 
           <div className="mt-6">
             <BannerPresetsManager
+              bannerLook={draft}
               onApply={(text, icon) => {
                 edit(setMessage)(text);
                 setIconType(icon);

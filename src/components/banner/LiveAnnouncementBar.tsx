@@ -12,7 +12,8 @@ import type { Announcement } from "@/types";
 const UNMOUNT_AFTER_MS = -1000;
 
 interface LiveAnnouncementBarProps {
-  announcement: Pick<Announcement, "message" | "expires_at" | "show_countdown" | "background_style" | "bg_image_url" | "icon_type">;
+  announcement: Pick<Announcement, "message" | "expires_at" | "show_countdown" | "background_style" | "bg_image_url" | "icon_type"> &
+    Partial<Pick<Announcement, "text_color">>;
   /** Fade out and unmount at expiry (storefront). The admin preview keeps it visible. */
   hideOnExpire?: boolean;
   onDismiss?: () => void;
@@ -46,13 +47,14 @@ export function LiveAnnouncementBar({ announcement, hideOnExpire = true, onDismi
         message={announcement.message}
         backgroundStyle={announcement.background_style}
         bgImageUrl={announcement.bg_image_url}
+        textColour={announcement.text_color}
         icon={announcement.icon_type}
         onDismiss={onDismiss}
         aside={
           announcement.show_countdown && expiresAt !== null ? (
             <CountdownBadge
               parts={remaining === null ? null : countdownParts(remaining)}
-              tone={bannerTone(announcement.background_style, announcement.bg_image_url)}
+              tone={bannerTone(announcement.background_style, announcement.bg_image_url, announcement.text_color)}
             />
           ) : null
         }

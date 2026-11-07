@@ -5,7 +5,14 @@ import { X } from "lucide-react";
 
 import { BannerMoodIcon } from "@/components/banner/BannerMoodIcon";
 import { useMessages } from "@/components/i18n/LocaleProvider";
-import { bannerTone, isHexColour, isSafeImageUrl, resolveBannerIcon, resolveBannerStyle } from "@/lib/banner";
+import {
+  bannerTone,
+  isHexColour,
+  isSafeImageUrl,
+  resolveBannerIcon,
+  resolveBannerStyle,
+  resolveTextColour,
+} from "@/lib/banner";
 import { bannerMessages } from "@/lib/i18n/messages/home";
 import type { BannerBackgroundStyle, BannerIcon } from "@/types";
 
@@ -13,6 +20,8 @@ interface AnnouncementBarProps {
   message: string;
   backgroundStyle: BannerBackgroundStyle;
   bgImageUrl: string | null;
+  /** The admin's "#rrggbb" for the text; null/absent = the tone that reads on the background. */
+  textColour?: string | null;
   icon: BannerIcon;
   /** Optional slot next to the text, e.g. a countdown badge. */
   aside?: ReactNode;
@@ -37,20 +46,21 @@ const CLOSE = {
  * Special-day banner as a slim ticker tape. Presentational only — rendered by the homepage and by the
  * admin live preview (both via LiveAnnouncementBar), so both look identical.
  */
-export function AnnouncementBar({ message, backgroundStyle, bgImageUrl, icon, aside, onDismiss }: AnnouncementBarProps) {
+export function AnnouncementBar({ message, backgroundStyle, bgImageUrl, textColour, icon, aside, onDismiss }: AnnouncementBarProps) {
   const t = useMessages(bannerMessages);
   const style = resolveBannerStyle(backgroundStyle);
   const custom = isHexColour(style);
   const image = bgImageUrl && isSafeImageUrl(bgImageUrl) ? bgImageUrl : null;
-  const tone = bannerTone(style, image);
+  const text = resolveTextColour(textColour);
+  const tone = bannerTone(style, image, text);
   const mood = resolveBannerIcon(icon);
-  const iconClass = `hidden shrink-0 sm:block ${tone === "gold" ? "text-amber-300" : ""}`;
+  const iconClass = `hidden shrink-0 sm:block ${tone === "gold" && !text ? "text-amber-300" : ""}`;
 
   return (
     <section
       aria-label={t.announcement}
       className={`relative isolate overflow-hidden border-b border-black/20 ${custom ? "" : SURFACE[style as keyof typeof SURFACE]} ${TEXT[tone]}`}
-      style={custom ? { backgroundColor: style } : undefined}
+      style={custom || text ? { ...(custom && { backgroundColor: style }), ...(text && { color: text }) } : undefined}
     >
       {image && (
         <>

@@ -819,6 +819,8 @@ export interface Announcement {
   show_countdown: boolean;
   background_style: BannerBackgroundStyle;
   bg_image_url: string | null;
+  /** The text's "#rrggbb"; null = white or near-black, whichever reads on the background. */
+  text_color: string | null;
   icon_type: BannerIcon;
   updated_at: ISODateTime | null;
 }
@@ -831,8 +833,13 @@ export type AnnouncementUpdate = Omit<Announcement, "updated_at">;
  */
 export interface BannerPreset {
   id: number;
+  /** The admin's name for it; the storefront shows only the message. */
+  title: string | null;
   message: string;
   icon_type: BannerIcon;
+  /** Its own look; null background = the default banner's look (image included). */
+  background_style: BannerBackgroundStyle | null;
+  text_color: string | null;
   starts_at: ISODateTime | null;
   ends_at: ISODateTime | null;
   is_scheduled: boolean;

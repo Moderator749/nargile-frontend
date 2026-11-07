@@ -4,8 +4,10 @@ import { useEffect, useState } from "react";
 import { CalendarClock, Pencil, Plus, Trash2, Wand2 } from "lucide-react";
 
 import { panelClass } from "@/components/admin/AdminShell";
+import { BannerLookPicker } from "@/components/admin/BannerLookPicker";
 import { DateTimeField } from "@/components/admin/DateTimeField";
 import { BannerMoodIcon } from "@/components/banner/BannerMoodIcon";
+import { LiveAnnouncementBar } from "@/components/banner/LiveAnnouncementBar";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Switch } from "@/components/ui/Switch";
@@ -18,16 +20,41 @@ import {
 } from "@/lib/adminApi";
 import {
   BANNER_ICONS,
+  BANNER_PRESETS,
   DEFAULT_BANNER_ICON,
   fromLocalInputValue,
+  isPreset,
   resolveBannerIcon,
+  resolveBannerStyle,
   toLocalInputValue,
 } from "@/lib/banner";
 import { getApiErrorMessage } from "@/lib/errors";
 import { formatDate } from "@/lib/format";
-import type { BannerIcon, BannerPreset } from "@/types";
+import type { Announcement, BannerIcon, BannerPreset } from "@/types";
 
 const MAX = 200;
+const TITLE_MAX = 80;
+
+/** The default banner's look, which a preset without its own wears. */
+export type BannerLook = Pick<Announcement, "background_style" | "bg_image_url" | "text_color">;
+
+/** A preset's look as the storefront will draw it (the server's rule: app.api.v1.announcements). */
+export function presetLook(
+  own: { background: string | null; text: string | null },
+  banner: BannerLook,
+): BannerLook {
+  return own.background
+    ? { background_style: own.background, bg_image_url: null, text_color: own.text }
+    : { ...banner, text_color: own.text ?? banner.text_color };
+}
+
+/** A swatch for a look: the preset's own classes, or its colour. */
+function swatchOf(look: BannerLook): { className: string; style?: { backgroundColor: string } } {
+  const style = resolveBannerStyle(look.background_style);
+  return isPreset(style)
+    ? { className: BANNER_PRESETS.find((p) => p.id === style)!.swatchClass }
+    : { className: "", style: { backgroundColor: style } };
+}
 const fieldClass =
   "block w-full rounded-xl border border-slate-300 bg-white px-3.5 text-sm text-slate-900 shadow-sm transition-[border-color,box-shadow] placeholder:text-slate-400 focus:border-red-500 focus:outline-none focus:ring-4 focus:ring-red-500/15 dark:border-white/15 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-600";
 const ghostClass =
@@ -75,8 +102,12 @@ const PHASE: Record<Phase, { text: string; className: string }> = {
 
 interface Draft {
   id: number | null;
+  title: string;
   message: string;
   icon: BannerIcon;
+  /** Null: the default banner's look. */
+  background: string | null;
+  text: string | null;
   starts: string;
   ends: string;
   scheduled: boolean;
@@ -84,8 +115,11 @@ interface Draft {
 
 const blank: Draft = {
   id: null,
+  title: "",
   message: "",
   icon: DEFAULT_BANNER_ICON,
+  background: null,
+  text: null,
   starts: "",
   ends: "",
   scheduled: false,
@@ -94,8 +128,11 @@ const blank: Draft = {
 function draftOf(p: BannerPreset): Draft {
   return {
     id: p.id,
+    title: p.title ?? "",
     message: p.message,
     icon: resolveBannerIcon(p.icon_type),
+    background: p.background_style,
+    text: p.text_color,
     starts: toLocalInputValue(p.starts_at),
     ends: toLocalInputValue(p.ends_at),
     scheduled: p.is_scheduled,
@@ -107,9 +144,30 @@ function rangeText(p: BannerPreset): string {
   return `${p.starts_at ? formatDate(p.starts_at) : "…"} – ${p.ends_at ? formatDate(p.ends_at) : "…"}`;
 }
 
+/** A preset's icon on its own look, as a small chip: the list shows each one's colours at a glance. */
+function PresetSwatch({ preset, bannerLook }: { preset: BannerPreset; bannerLook: BannerLook }) {
+  const look = presetLook({ background: preset.background_style, text: preset.text_color }, bannerLook);
+  const swatch = swatchOf(look);
+  const icon = resolveBannerIcon(preset.icon_type);
+  return (
+    <span
+      aria-hidden
+      className={`mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full ring-1 ring-inset ring-black/10 dark:ring-white/15 ${swatch.className}`}
+      style={{ ...swatch.style, color: look.text_color ?? undefined }}
+    >
+      {icon !== "none" ? (
+        <BannerMoodIcon icon={icon} small className={`h-4 w-4 ${look.text_color ? "" : "text-white"}`} />
+      ) : (
+        <span className={`h-1.5 w-1.5 rounded-full ${look.text_color ? "bg-current" : "bg-white"}`} />
+      )}
+    </span>
+  );
+}
+
 /** The editor for one preset: a new one or the one being edited. */
 function PresetEditor({
   draft,
+  bannerLook,
   onChange,
   onSave,
   onCancel,
@@ -117,6 +175,7 @@ function PresetEditor({
   error,
 }: {
   draft: Draft;
+  bannerLook: BannerLook;
   onChange: (patch: Partial<Draft>) => void;
   onSave: () => void;
   onCancel: () => void;
@@ -135,8 +194,52 @@ function PresetEditor({
         ? "Otomatik yayın için başlangıç ve bitiş seçin."
         : null;
 
+  const look = presetLook(draft, bannerLook);
+  const inheritSwatch = swatchOf(bannerLook);
+
   return (
     <div className="@container space-y-4 rounded-xl border border-red-200 bg-red-50/40 p-4 dark:border-red-500/30 dark:bg-red-500/5">
+      <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-white/10">
+        <p className="bg-white px-3 py-2 text-xs font-medium text-slate-500 dark:bg-zinc-950 dark:text-zinc-400">
+          Önizleme · bantta böyle görünür
+        </p>
+        {draft.message.trim() ? (
+          <LiveAnnouncementBar
+            announcement={{
+              message: draft.message.trim(),
+              expires_at: null,
+              show_countdown: false,
+              icon_type: draft.icon,
+              ...look,
+            }}
+            hideOnExpire={false}
+          />
+        ) : (
+          <p className="bg-white px-3 py-4 text-center text-xs text-slate-500 dark:bg-zinc-950 dark:text-zinc-400">
+            Önizleme için bir metin yazın.
+          </p>
+        )}
+      </div>
+
+      <div>
+        <div className="flex items-baseline justify-between">
+          <label htmlFor={`preset-${key}-title`} className="text-sm font-medium">
+            Başlık <span className="font-normal text-slate-500 dark:text-zinc-400">(yalnızca panelde görünür)</span>
+          </label>
+          <span className="text-xs tabular-nums text-slate-500 dark:text-zinc-500">
+            {draft.title.length}/{TITLE_MAX}
+          </span>
+        </div>
+        <input
+          id={`preset-${key}-title`}
+          value={draft.title}
+          maxLength={TITLE_MAX}
+          onChange={(e) => onChange({ title: e.target.value })}
+          placeholder="Örn. 10 Kasım Atatürk'ü Anma Günü"
+          className={`${fieldClass} mt-2 h-11`}
+        />
+      </div>
+
       <div>
         <div className="flex items-baseline justify-between">
           <label htmlFor={`preset-${key}-message`} className="text-sm font-medium">
@@ -181,6 +284,16 @@ function PresetEditor({
           ))}
         </div>
       </div>
+
+      <BannerLookPicker
+        key={key}
+        id={`preset-${key}-look`}
+        background={draft.background}
+        onBackground={(background) => onChange({ background })}
+        textColour={draft.text}
+        onTextColour={(text) => onChange({ text })}
+        inherit={{ label: "Varsayılan bandınki", swatchClass: inheritSwatch.className, fill: inheritSwatch.style?.backgroundColor }}
+      />
 
       <div className="grid gap-4 @xl:grid-cols-2">
         <DateTimeField
@@ -239,9 +352,12 @@ function PresetEditor({
  * "Otomatik yayınla" on, the banner shows it by itself within its range.
  */
 export function BannerPresetsManager({
+  bannerLook,
   onApply,
   onPresetsChange,
 }: {
+  /** The default banner's look as edited above: what a preset without its own wears. */
+  bannerLook: BannerLook;
   onApply: (message: string, icon: BannerIcon) => void;
   /** The current list, so the banner editor can tell which preset is live. */
   onPresetsChange?: (presets: BannerPreset[]) => void;
@@ -279,8 +395,11 @@ export function BannerPresetsManager({
     setSaving(true);
     setError(null);
     const body = {
+      title: draft.title.trim() || null,
       message: draft.message.trim(),
       icon_type: draft.icon,
+      background_style: draft.background,
+      text_color: draft.text,
       starts_at: fromLocalInputValue(draft.starts),
       ends_at: fromLocalInputValue(draft.ends),
       is_scheduled: draft.scheduled && !!draft.starts && !!draft.ends,
@@ -339,6 +458,7 @@ export function BannerPresetsManager({
       {draft?.id === null && (
         <PresetEditor
           draft={draft}
+          bannerLook={bannerLook}
           onChange={(patch) => setDraft((d) => d && { ...d, ...patch })}
           onSave={save}
           onCancel={() => setDraft(null)}
@@ -363,6 +483,7 @@ export function BannerPresetsManager({
                 <li key={p.id} className="p-3">
                   <PresetEditor
                     draft={draft}
+                    bannerLook={bannerLook}
                     onChange={(patch) => setDraft((d) => d && { ...d, ...patch })}
                     onSave={save}
                     onCancel={() => setDraft(null)}
@@ -375,15 +496,12 @@ export function BannerPresetsManager({
             return (
               <li key={p.id} className="flex flex-col gap-3 p-4 lg:flex-row lg:items-center">
                 <div className="flex min-w-0 flex-1 items-start gap-3">
-                  <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-zinc-300">
-                    {resolveBannerIcon(p.icon_type) !== "none" ? (
-                      <BannerMoodIcon icon={resolveBannerIcon(p.icon_type)} small className="h-4 w-4" />
-                    ) : (
-                      <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden />
-                    )}
-                  </span>
+                  <PresetSwatch preset={p} bannerLook={bannerLook} />
                   <div className="min-w-0">
-                    <p className="break-words text-sm font-medium">{p.message}</p>
+                    {p.title && <p className="text-sm font-semibold">{p.title}</p>}
+                    <p className={`break-words text-sm ${p.title ? "mt-0.5 text-slate-600 dark:text-zinc-300" : "font-medium"}`}>
+                      {p.message}
+                    </p>
                     <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-zinc-400">
                       <span className="tabular-nums">{rangeText(p)}</span>
                       <span
