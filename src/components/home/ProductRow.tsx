@@ -75,6 +75,9 @@ export function ProductRow({
   more,
 }: ProductRowProps) {
   const t = useMessages(homeMessages);
+  // Tabs and something at the right (the van): from `xl` the tabs sit on the
+  // row's centre. Tabs alone follow the title, which keeps its width.
+  const centred = !!besideTitle && !!actions;
   const categoryById = new Map(categories.map((c) => [c.id, c]));
   const track = useRef<HTMLUListElement>(null);
   // Which ends the track is at, so the arrow that cannot move it is disabled
@@ -117,30 +120,34 @@ export function ProductRow({
           line up with every other row. */}
       <div className={PAGE_CONTAINER}>
         {/* Heading at the start, `actions` at the end, one line from `md`.
-            With something beside the heading (the picks' tabs), from `xl` the
-            header is three columns — 1fr, auto, 1fr — so the middle one, the
-            tabs, sits on the row's exact centre, over the middle card of the
-            five in view, and all three are centred on one line. Narrower, the
-            tabs follow the title and the van goes under them. */}
+            With something beside the heading (the tabs) and `actions` too,
+            from `xl` the header is three columns — 1fr, auto, 1fr — so the
+            tabs sit on the row's exact centre, over the middle card of the
+            five in view, and all three are centred on one line; narrower, the
+            tabs follow the title and the actions go under them. With the tabs
+            alone ("Çok Satanlar & Yeni Gelenler"), they simply follow the
+            title, which keeps its width. */}
         <div
           className={`mb-6 flex w-full flex-col gap-6 ${
-            besideTitle
+            centred
               ? "xl:grid xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] xl:items-center xl:gap-x-6"
-              : "md:flex-row md:items-end md:justify-between"
+              : besideTitle
+                ? ""
+                : "md:flex-row md:items-end md:justify-between"
           }`}
         >
           {besideTitle ? (
             // Title and subtitle as one column, the tabs beside it, centred on
             // it; on a phone the tabs go under it. From `xl` this wrapper
             // steps aside (`contents`): both are cells of the header's grid.
-            <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:gap-6 xl:contents">
+            <div className={`flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:gap-6 ${centred ? "xl:contents" : ""}`}>
               <div className="flex flex-col">
                 <h2 id={headingId} className={HEADING}>
                   {title}
                 </h2>
                 <p className={SUBTITLE}>{subtitle}</p>
               </div>
-              <div className="xl:justify-self-center">{besideTitle}</div>
+              <div className={centred ? "xl:justify-self-center" : "shrink-0"}>{besideTitle}</div>
             </div>
           ) : (
             <div>

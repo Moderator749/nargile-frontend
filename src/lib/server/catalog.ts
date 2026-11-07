@@ -133,6 +133,20 @@ export function getCategoryBySlug(slug: string): Promise<Category | null> {
   return getJsonOrNotFound<Category>(`/categories/by-slug/${encodeURIComponent(slug)}`);
 }
 
+/**
+ * These products, in the order given (the admin's): those not on the
+ * storefront — unpublished, deleted, never existed — are simply missing.
+ */
+export async function getProductsByIds(ids: readonly string[]): Promise<CatalogProduct[] | null> {
+  if (ids.length === 0) return [];
+  const params = new URLSearchParams({ limit: String(Math.min(ids.length, 100)) });
+  for (const id of ids.slice(0, 100)) params.append("ids", id);
+  const found = await getJson<CatalogProduct[]>(`/products?${params}`);
+  if (!found) return null;
+  const byId = new Map(found.map((p) => [p.id, p]));
+  return ids.flatMap((id) => byId.get(id) ?? []);
+}
+
 export function getPublicProducts(
   category?: string,
   limit: number = CATALOG_PAGE_SIZE,

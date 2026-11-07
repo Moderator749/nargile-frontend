@@ -1749,7 +1749,10 @@ export interface HomeSections {
   hero: boolean;
   perks: boolean;
   brands_top: boolean;
+  /** "Sizin İçin Seçtiklerimiz": the products the admin picked. */
   picks: boolean;
+  /** "Çok Satanlar" / "Yeni Gelenler": the two automatic lists behind tabs. */
+  tabs: boolean;
   lules: boolean;
   sultanpuan: boolean;
   kumbara: boolean;
@@ -1760,6 +1763,8 @@ export interface HomeSections {
   deals: boolean;
   /** "Görsel Vitrin 3": three more, under the deals (where the campaign boxes were). */
   bento3: boolean;
+  /** "Görsel Vitrin 4": three more, between the tabbed lists and the deals. */
+  bento4: boolean;
   /** "Sektörde Referans Noktası" (the key is older than the section). */
   promos: boolean;
   brands: boolean;
@@ -1783,6 +1788,8 @@ export type HomeBlock =
   | "bento2"
   | "kumbara"
   | "bento"
+  | "tabs"
+  | "bento4"
   | "deals"
   | "bento3"
   | "promos"
@@ -1873,6 +1880,11 @@ export interface HomePerks {
 export interface HomePicks {
   title: string;
   subtitle: string;
+  /** The products the admin picked (ids, in order, at most 20); none: the automatic picks. */
+  products: string[];
+  /** The tabbed lists' own section, further down the page. */
+  tabs_title: string;
+  tabs_subtitle: string;
   bestsellers: string;
   newest: string;
   shipping_eyebrow: string;
@@ -1980,6 +1992,8 @@ export interface Homepage {
   bento2: HomeBento;
   /** "Görsel Vitrin 3": the same, under the deals. */
   bento3: HomeBento;
+  /** "Görsel Vitrin 4": the same, between the tabbed lists and the deals. */
+  bento4: HomeBento;
   /** "Sektörde Referans Noktası" (the `promos` switch). */
   statement: HomeStatement;
   brand_showcase: HomeBrandShowcase;
@@ -1998,6 +2012,8 @@ export type HomeMobileSection =
   | "bento"
   | "bento2"
   | "bento3"
+  | "tabs"
+  | "bento4"
   | "brand_statement"
   | "brand_showcase"
   | "kozlukler"

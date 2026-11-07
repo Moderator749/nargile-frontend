@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 
-import { FreeShippingPerk } from "@/components/home/FreeShippingPerk";
 import { ProductRow } from "@/components/home/ProductRow";
 import { useMessages } from "@/components/i18n/LocaleProvider";
 import { useOwnPrices } from "@/hooks/useOwnPrices";
@@ -25,10 +24,11 @@ const TAB_ACTIVE = "bg-gray-900 text-white shadow-sm dark:bg-white dark:text-gra
 const TAB_IDLE = "text-gray-600 hover:text-gray-900 dark:text-neutral-400 dark:hover:text-white";
 
 /**
- * "Sizin İçin Seçtiklerimiz": two lists behind a pair of tabs, each one row of
- * the catalog's own cards that slides sideways (`ProductRow`), "Lüle Alırken
- * Kararsız Kalacaksınız" (`LuleShowcase`) the same row under it. The tabs
- * follow the title; the free-shipping van (`FreeShippingPerk`) is at the right.
+ * "Çok Satanlar & Yeni Gelenler": two automatic lists behind a pair of tabs,
+ * each one row of the catalog's own cards that slides sideways (`ProductRow`),
+ * straight over the deals. Once "Sizin İçin Seçtiklerimiz" itself, which is
+ * now the admin's own picks (`CuratedPicksShowcase`) and keeps the
+ * free-shipping van. The tabs follow the title.
  *
  * The lists arrive server-rendered at the public (retail) price; a signed-in
  * visitor gets both re-priced for their own segment in one request
@@ -57,21 +57,18 @@ export function FeaturedProductsShowcase({
 
   return (
     // On a white band in the light theme, the same white the supplier photos are
-    // shot on, so each product stands on the page with no tile around it. The
-    // lüle row continues the white below, so this one keeps less at its foot.
+    // shot on, so each product stands on the page with no tile around it.
     <ProductRow
-      headingId="sectiklerimiz-baslik"
-      title={copy.title}
-      subtitle={copy.subtitle}
+      headingId="cok-satanlar-baslik"
+      // Cleared in the panel: the tabs' own names say what the section is.
+      title={copy.tabs_title || `${copy.bestsellers} & ${copy.newest}`}
+      subtitle={copy.tabs_subtitle}
       className="bg-white pt-8 pb-8 sm:pt-10 sm:pb-10 dark:bg-transparent"
       products={lists[active]}
       mine={mine}
       loggedIn={loggedIn}
       categories={categories}
-      // Title at the left, the tabs dead centre, the van at the right.
-      actions={
-        <FreeShippingPerk eyebrow={copy.shipping_eyebrow} text={copy.shipping_text} className="self-start xl:justify-self-end" />
-      }
+      // Title at the left, the tabs beside it.
       besideTitle={
         visible.length > 1 && (
           <div className={TABS_TRACK} role="group" aria-label={t.picks.tabs}>

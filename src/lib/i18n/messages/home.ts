@@ -78,7 +78,10 @@ export const homeMessages = defineMessages({
     },
     picks: {
       title: "Sizin İçin Seçtiklerimiz",
-      subtitle: "En çok tercih edilen ve yeni gelen ürünler",
+      subtitle: "Ekibimizin sizin için tek tek seçtiği ürünler",
+      // The tabbed lists' own section, further down the page.
+      tabsTitle: "Çok Satanlar & Yeni Gelenler",
+      tabsSubtitle: "En çok tercih edilen ve yeni gelen ürünler",
       tabs: "Ürün listesi",
       bestsellers: "Çok Satanlar",
       newest: "Yeni Gelenler",
@@ -132,6 +135,14 @@ export const homeMessages = defineMessages({
         { alt: "Kırmızı ışıkta kristal gövdeli nargile takımı", eyebrow: "Sınırlı Stok", title: "Fırsat\nÜrünleri", subtitle: "Kaçırılmayacak fiyatlar" },
         { alt: "Közlük, lüle ve maşa", eyebrow: "Isı Kontrolü", title: "Közlükler", subtitle: "Eşit ısı, uzun seans" },
         { alt: "Altın detaylı nargile takımı", eyebrow: "Yeni Sezon", title: "Aksesuarlar", subtitle: "Seansınızı zenginleştiren detaylar" },
+      ],
+    },
+    bento4: {
+      label: "Nargile Takımları, Çelik Takımlar ve Lüleler",
+      boxes: [
+        { alt: "Kristal gövdeli altın ve siyah klasik nargile takımları", eyebrow: "Klasikten Moderne", title: "Nargile\nTakımları", subtitle: "Her keyfe uygun takım" },
+        { alt: "Karanlık zeminde çelik nargile takımı", eyebrow: "Premium Seri", title: "Çelik\nTakımlar", subtitle: "Dayanıklı, şık, uzun ömürlü" },
+        { alt: "Renkli lüleler, marpuçlar ve maşa", eyebrow: "Her Damağa", title: "Lüleler", subtitle: "Toprak, silikon ve phunnel" },
       ],
     },
     spotlight: {
@@ -214,7 +225,9 @@ export const homeMessages = defineMessages({
     },
     picks: {
       title: "Handpicked for You",
-      subtitle: "Our most popular products and latest arrivals",
+      subtitle: "Products our team has chosen for you, one by one",
+      tabsTitle: "Best Sellers & New Arrivals",
+      tabsSubtitle: "Our most popular products and latest arrivals",
       tabs: "Product list",
       bestsellers: "Best Sellers",
       newest: "New Arrivals",
@@ -267,6 +280,14 @@ export const homeMessages = defineMessages({
         { alt: "Hookah set with a crystal base in red light", eyebrow: "Limited Stock", title: "Deals", subtitle: "Prices not to be missed" },
         { alt: "Heat manager, bowl and tongs", eyebrow: "Heat Control", title: "Heat\nManagers", subtitle: "Even heat, longer sessions" },
         { alt: "Hookah set with gold details", eyebrow: "New Season", title: "Accessories", subtitle: "Details that enrich your session" },
+      ],
+    },
+    bento4: {
+      label: "Hookah sets, steel sets and bowls",
+      boxes: [
+        { alt: "Gold and black classic hookah sets with crystal bases", eyebrow: "Classic to Modern", title: "Hookah\nSets", subtitle: "A set for every taste" },
+        { alt: "Steel hookah set on a dark background", eyebrow: "Premium Series", title: "Steel\nSets", subtitle: "Durable, elegant, built to last" },
+        { alt: "Colourful bowls, hoses and tongs", eyebrow: "For Every Taste", title: "Bowls", subtitle: "Clay, silicone and phunnel" },
       ],
     },
     spotlight: {
@@ -349,7 +370,9 @@ export const homeMessages = defineMessages({
     },
     picks: {
       title: "اخترناها لك",
-      subtitle: "المنتجات الأكثر طلبًا وأحدث الوافدين",
+      subtitle: "منتجات اختارها فريقنا لك واحدًا تلو الآخر",
+      tabsTitle: "الأكثر مبيعًا ووصل حديثًا",
+      tabsSubtitle: "المنتجات الأكثر طلبًا وأحدث الوافدين",
       tabs: "قائمة المنتجات",
       bestsellers: "الأكثر مبيعًا",
       newest: "وصل حديثًا",
@@ -402,6 +425,14 @@ export const homeMessages = defineMessages({
         { alt: "طقم أرجيلة بقاعدة كريستال تحت ضوء أحمر", eyebrow: "كمية محدودة", title: "العروض", subtitle: "أسعار لا تفوت" },
         { alt: "منظم حرارة ورأس وملقط", eyebrow: "التحكم بالحرارة", title: "منظمات\nالحرارة", subtitle: "حرارة متساوية وجلسة أطول" },
         { alt: "طقم أرجيلة بتفاصيل ذهبية", eyebrow: "موسم جديد", title: "الإكسسوارات", subtitle: "تفاصيل تثري جلستك" },
+      ],
+    },
+    bento4: {
+      label: "أطقم الأرجيلة والأطقم الفولاذية والرؤوس",
+      boxes: [
+        { alt: "أطقم أرجيلة كلاسيكية ذهبية وسوداء بقواعد كريستال", eyebrow: "من الكلاسيكي إلى الحديث", title: "أطقم\nالأرجيلة", subtitle: "طقم لكل ذوق" },
+        { alt: "طقم أرجيلة فولاذي على خلفية داكنة", eyebrow: "سلسلة مميزة", title: "أطقم\nفولاذية", subtitle: "متينة وأنيقة وتدوم طويلًا" },
+        { alt: "رؤوس ملونة وخراطيم وملقط", eyebrow: "لكل ذوق", title: "الرؤوس", subtitle: "فخار وسيليكون وفانل" },
       ],
     },
     spotlight: {

@@ -52,6 +52,7 @@ type EditorKey =
   | "bento2"
   | "deals"
   | "bento3"
+  | "bento4"
   | "statement"
   | "brands"
   | "brand_showcase"
@@ -95,10 +96,10 @@ const EDITORS: Record<
   },
   picks: {
     title: "Sizin İçin Seçtiklerimiz",
-    hint: "Başlık, sekmeler ve ücretsiz kargo notu.",
+    hint: "Seçili ürünler (15–20), başlık ve ücretsiz kargo notu; altta Çok Satanlar & Yeni Gelenler bölümünün yazıları.",
     doc: "picks",
-    sections: ["picks"],
-    size: "md",
+    sections: ["picks", "tabs"],
+    size: "lg",
   },
   lules: {
     title: "Lüle Alırken Kararsız Kalacaksınız",
@@ -129,6 +130,13 @@ const EDITORS: Record<
     hint: "Fırsatların altındaki üç kutu, ilki gibi: görsel, üzerindeki yazılar, koyu katman ve bağlantı.",
     doc: "bento3",
     sections: ["bento3"],
+    size: "lg",
+  },
+  bento4: {
+    title: "Görsel Vitrin 4",
+    hint: "Çok Satanlar ile Fırsatlar arasındaki üç kutu, ilki gibi: görsel, üzerindeki yazılar, koyu katman ve bağlantı.",
+    doc: "bento4",
+    sections: ["bento4"],
     size: "lg",
   },
   statement: {
@@ -167,6 +175,8 @@ const SECTION_EDITOR: Partial<Record<keyof HomeSections, EditorKey>> = {
   hero: "hero",
   perks: "perks",
   picks: "picks",
+  // Its words are kept with "Sizin İçin Seçtiklerimiz", the section it was part of.
+  tabs: "picks",
   lules: "lules",
   sultanpuan: "sultanpuan",
   kumbara: "kumbara",
@@ -174,6 +184,7 @@ const SECTION_EDITOR: Partial<Record<keyof HomeSections, EditorKey>> = {
   bento2: "bento2",
   deals: "deals",
   bento3: "bento3",
+  bento4: "bento4",
   promos: "statement",
   brand_showcase: "brand_showcase",
   kozlukler: "kozlukler",
@@ -227,6 +238,7 @@ const SECTION_NAMES: Record<string, string> = {
   sultanpuan: "SultanPuan Bandı",
   kumbara: "Kumbara Bandı",
   bento3: "Görsel Vitrin 3",
+  bento4: "Görsel Vitrin 4",
   bento: "Görsel Vitrin",
   bento2: "Görsel Vitrin 2",
   statement: "Sektörde Referans Noktası",
@@ -280,6 +292,7 @@ function checkLinks(doc: Homepage, categories: Category[]): string | null {
     ["Görsel Vitrin", doc.bento.boxes],
     ["Görsel Vitrin 2", doc.bento2.boxes],
     ["Görsel Vitrin 3", doc.bento3.boxes],
+    ["Görsel Vitrin 4", doc.bento4.boxes],
   ] as const) {
     for (const [i, box] of boxes.entries()) {
       if (!box.image?.trim()) return `${name}, kutu ${i + 1}: görsel gerekli.`;
@@ -501,6 +514,8 @@ export function AdminHomepageView() {
         return <BentoForm value={doc.bento2} set={set("bento2")} categories={categories} />;
       case "bento3":
         return <BentoForm value={doc.bento3} set={set("bento3")} categories={categories} />;
+      case "bento4":
+        return <BentoForm value={doc.bento4} set={set("bento4")} categories={categories} />;
       case "statement":
         return <StatementForm value={doc.statement} set={set("statement")} />;
       case "brand_showcase":

@@ -30,6 +30,7 @@ export type SectionCopy = Pick<
   | "bento"
   | "bento2"
   | "bento3"
+  | "bento4"
   | "statement"
   | "brand_showcase"
   | "kozlukler"
@@ -66,6 +67,13 @@ const BENTO3_BOXES: [string, string, number][] = [
   ["/images/avantaj-hero-1.jpg", "/malzemeler", 22],
 ];
 
+/** "Görsel Vitrin 4"'s, between the tabbed lists and the deals: the messages' `bento4.boxes`. */
+const BENTO4_BOXES: [string, string, number][] = [
+  ["/images/hero-1.jpg", "/nargile-takimlari", 50],
+  ["/images/hero-2.jpg", "/celik-takimlar", 68],
+  ["/images/avantaj-cat-aksesuar.jpg", "/luleler", 50],
+];
+
 /** A photo box with its words stacked at the bottom, on a 55% wash: where a box starts. */
 const bentoBoxes = (boxes: [string, string, number][], words: Words["bento"]["boxes"]) =>
   boxes.map(([image, href, focus_x], i) => ({
@@ -100,6 +108,10 @@ function copyIn(w: Words): SectionCopy {
     picks: {
       title: w.picks.title,
       subtitle: w.picks.subtitle,
+      // None picked: the storefront shows its automatic picks until the admin chooses.
+      products: [],
+      tabs_title: w.picks.tabsTitle,
+      tabs_subtitle: w.picks.tabsSubtitle,
       bestsellers: w.picks.bestsellers,
       newest: w.picks.newest,
       shipping_eyebrow: w.perks.shippingEyebrow,
@@ -127,6 +139,7 @@ function copyIn(w: Words): SectionCopy {
     bento: { boxes: bentoBoxes(BENTO_BOXES, w.bento.boxes) },
     bento2: { boxes: bentoBoxes(BENTO2_BOXES, w.bento2.boxes) },
     bento3: { boxes: bentoBoxes(BENTO3_BOXES, w.bento3.boxes) },
+    bento4: { boxes: bentoBoxes(BENTO4_BOXES, w.bento4.boxes) },
     statement: { heading: w.statement.heading, lead: w.statement.lead, rest: w.statement.rest },
     brand_showcase: {
       heading: w.brands.heading,

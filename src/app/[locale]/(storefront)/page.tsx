@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { BrandStatement } from "@/components/home/BrandStatement";
 import { CatalogShowcase } from "@/components/home/CatalogShowcase";
 import { CategoryRow } from "@/components/home/CategoryRow";
+import { CuratedPicksShowcase } from "@/components/home/CuratedPicksShowcase";
 import { BrandShowcase } from "@/components/home/BrandShowcase";
 import { BentoShowcase } from "@/components/home/BentoShowcase";
 import { BrandTicker, tickerBrands } from "@/components/home/BrandTicker";
@@ -29,6 +30,7 @@ import {
   getHomeContent,
   getBestsellers,
   getNewestProducts,
+  getProductsByIds,
   getPublicProducts,
   getSultanPuanShowcase,
   getTileArtwork,
@@ -51,16 +53,19 @@ export const revalidate = 0;
 const FEATURED_CATEGORY_SLUG = "celik-takimlar";
 
 /**
- * "Sizin İçin Seçtiklerimiz": "Çok Satanlar" is the products sold most
- * (approved and shipped orders), "Yeni Gelenler" the latest added; each is one
- * sliding row, five in view on a desktop. A tab short of its count is topped
- * up — see `fillPicks`.
+ * "Çok Satanlar & Yeni Gelenler" (the `tabs` section, over the deals):
+ * "Çok Satanlar" is the products sold most (approved and shipped orders),
+ * "Yeni Gelenler" the latest added; each is one sliding row, five in view on
+ * a desktop. A tab short of its count is topped up — see `fillPicks`.
  */
 const PICK_KEYS = ["bestsellers", "newest"] as const;
 const PICKS_COUNT = 10;
 
 /** "Lüle Alırken Kararsız Kalacaksınız": this category's products, as the row under the picks. */
 const LULE_CATEGORY_SLUG = "luleler";
+
+/** "Sizin İçin Seçtiklerimiz": the admin's picks (at most this many); without any, as many of the house's own. */
+const CURATED_MAX = 20;
 const LULE_COUNT = 10;
 
 /** "Kumbara 20.000 TL": this category's products, in the band above the deals. */
@@ -221,7 +226,7 @@ export default async function HomePage() {
   const { sections } = home;
   const [
     categories, featured, flashSales, brands, content, artwork, fullBestsellers, fullNewest, fullBrandRows, fullSultanPuan,
-    fullLules, fullMarpuclar, fullKozlukProducts, fullGameProducts,
+    fullLules, fullMarpuclar, fullKozlukProducts, fullGameProducts, fullCurated,
   ] = await Promise.all([
       getCategories(),
       getPublicProducts(FEATURED_CATEGORY_SLUG, FEATURED_PRODUCTS_COUNT),
@@ -252,6 +257,8 @@ export default async function HomePage() {
       // price; not asked for while switched off.
       sections.kozlukler ? getPublicProducts(KOZLUK_CATEGORY_SLUG, CATEGORY_ROW_COUNT * 4) : null,
       sections.games ? getPublicProducts(GAMES_CATEGORY_SLUG, CATEGORY_ROW_COUNT * 4) : null,
+      // "Sizin İçin Seçtiklerimiz": the admin's picks, in their order.
+      sections.picks ? getProductsByIds(home.picks.products.slice(0, CURATED_MAX)) : null,
     ]);
   // Every list below is cards only; `featured` keeps its descriptions for the page's ItemList.
   const [bestsellers, newest, lules, marpuclar, kozlukProducts, gameProducts] = [
@@ -312,6 +319,19 @@ export default async function HomePage() {
       : showable(await getPublicProducts(undefined, PICKS_COUNT * 4), PICKS_COUNT * 4);
   const picks = fillPicks(lists, spare);
 
+  // "Sizin İçin Seçtiklerimiz": the admin's picks that can be shown (a photo and
+  // a price). Until there are any, the house's own — the featured category, then
+  // the brand rows — and failing those the automatic lists, so the section is
+  // never empty on a fresh shop.
+  const chosen = showable(forCards(fullCurated), CURATED_MAX);
+  const house = showable(ready, CURATED_MAX);
+  const curated =
+    chosen.length > 0
+      ? chosen
+      : house.length > 0
+        ? house
+        : [...new Map([...picks.bestsellers, ...picks.newest].map((p) => [p.id, p])).values()].slice(0, CURATED_MAX);
+
   // The homepage's sections between the hero and the footer, by id. The page
   // shows them in `home.order` (the admin's, else lib/homeBlocks' default), so
   // each is whole on its own: no section counts on its neighbour.
@@ -322,9 +342,10 @@ export default async function HomePage() {
     // once, in the other ticker ("brands").
     brands_top: () =>
       phones("brand_ticker", <BrandTicker brands={ticker} decorative className="pb-2 pt-4 sm:pt-5" />),
-    // "Sizin İçin Seçtiklerimiz": two tabbed product lists in one row that
-    // slides sideways.
-    picks: () => <FeaturedProductsShowcase lists={picks} categories={allCategories} copy={home.picks} />,
+    // "Sizin İçin Seçtiklerimiz": the admin's picks, one row that slides sideways.
+    picks: () => <CuratedPicksShowcase products={curated} categories={allCategories} copy={home.picks} />,
+    // "Çok Satanlar & Yeni Gelenler": the two automatic lists behind tabs, over the deals.
+    tabs: () => phones("tabs", <FeaturedProductsShowcase lists={picks} categories={allCategories} copy={home.picks} />),
     // "Lüle Alırken Kararsız Kalacaksınız", with the courier perk.
     lules: () =>
       phones(
@@ -344,8 +365,10 @@ export default async function HomePage() {
         "kumbara",
         <KumbaraShowcase products={showable(marpuclar, KUMBARA_COUNT)} categories={allCategories} copy={home.kumbara} />,
       ),
-    // "Görsel Vitrin": three photo boxes, over the deals.
+    // "Görsel Vitrin": three photo boxes, under Kumbara.
     bento: () => phones("bento", <BentoShowcase copy={home.bento} />),
+    // "Görsel Vitrin 4": three more, between the tabbed lists and the deals.
+    bento4: () => phones("bento4", <BentoShowcase copy={home.bento4} slot="bento4" />),
     // "Görsel Vitrin 2": three more, with their own words, between SultanPuan and Kumbara.
     bento2: () => phones("bento2", <BentoShowcase copy={home.bento2} slot="bento2" />),
     // "Fırsatları Kaçırma": the page's only deals section, a dark band. It

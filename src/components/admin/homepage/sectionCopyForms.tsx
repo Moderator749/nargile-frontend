@@ -5,6 +5,7 @@ import Link from "next/link";
 import { RotateCcw, SlidersHorizontal } from "lucide-react";
 
 import { TextStyleFields } from "@/components/admin/hero/TextStyleFields";
+import { CuratedProductsPicker } from "@/components/admin/homepage/CuratedProductsPicker";
 import { useBoxCanvas } from "@/components/admin/homepage/useBoxCanvas";
 import { BentoBoxView } from "@/components/home/BentoBoxView";
 import { Switch } from "@/components/ui/Switch";
@@ -116,18 +117,15 @@ export function PerksForm({ value, set }: { value: Homepage["perks"]; set: Set<"
 export function PicksForm({ value, set }: { value: Homepage["picks"]; set: Set<"picks"> }) {
   return (
     <div className="space-y-6">
-      <Panel title="Başlık ve sekmeler" hint="Ürünler kendiliğinden gelir: çok satanlar ve en yeni ürünler.">
+      <Panel
+        title="Seçili ürünler"
+        hint="Satırda gösterilecek 15–20 ürün; tutamaçtan sürükleyerek sıralayın. Yayında olmayan ya da silinen ürün satırda gösterilmez."
+      >
+        <CuratedProductsPicker ids={value.products} onChange={(products) => set({ ...value, products })} />
+      </Panel>
+      <Panel title="Başlık">
         <TextField label="Başlık" value={value.title} max={80} onChange={(title) => set({ ...value, title })} />
         <TextArea label="Alt başlık" value={value.subtitle} max={200} rows={2} onChange={(subtitle) => set({ ...value, subtitle })} />
-        <div className="grid gap-3 sm:grid-cols-2">
-          <TextField
-            label="1. sekme (çok satanlar)"
-            value={value.bestsellers}
-            max={30}
-            onChange={(bestsellers) => set({ ...value, bestsellers })}
-          />
-          <TextField label="2. sekme (yeni gelenler)" value={value.newest} max={30} onChange={(newest) => set({ ...value, newest })} />
-        </div>
       </Panel>
       <Panel title="Ücretsiz kargo notu" hint="Başlığın sağındaki kamyonetli not; kurumsal (B2B) hesaplara gösterilmez.">
         <TextField
@@ -144,6 +142,28 @@ export function PicksForm({ value, set }: { value: Homepage["picks"]; set: Set<"
           onChange={(shipping_text) => set({ ...value, shipping_text })}
         />
         <LiveFigures placeholders={[{ name: "tutar", means: "ücretsiz kargo sınırı, kalın yazılır" }]} />
+      </Panel>
+      <Panel
+        title="Çok Satanlar & Yeni Gelenler bölümü"
+        hint="Fırsatların üstündeki sekmeli satır; ürünleri kendiliğinden gelir (çok satanlar ve en yeni ürünler)."
+      >
+        <TextField label="Başlık" value={value.tabs_title} max={80} onChange={(tabs_title) => set({ ...value, tabs_title })} />
+        <TextArea
+          label="Alt başlık"
+          value={value.tabs_subtitle}
+          max={200}
+          rows={2}
+          onChange={(tabs_subtitle) => set({ ...value, tabs_subtitle })}
+        />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <TextField
+            label="1. sekme (çok satanlar)"
+            value={value.bestsellers}
+            max={30}
+            onChange={(bestsellers) => set({ ...value, bestsellers })}
+          />
+          <TextField label="2. sekme (yeni gelenler)" value={value.newest} max={30} onChange={(newest) => set({ ...value, newest })} />
+        </div>
       </Panel>
     </div>
   );
@@ -307,7 +327,15 @@ function BentoBoxEditor({
 }
 
 /** "Görsel Vitrin" and "Görsel Vitrin 2": the same three boxes, each section its own. */
-export function BentoForm({ value, set, categories }: { value: Homepage["bento"]; set: Set<"bento" | "bento2" | "bento3">; categories: Category[] }) {
+export function BentoForm({
+  value,
+  set,
+  categories,
+}: {
+  value: Homepage["bento"];
+  set: Set<"bento" | "bento2" | "bento3" | "bento4">;
+  categories: Category[];
+}) {
   return (
     <div className="space-y-6">
       {value.boxes.map((box, i) => (

@@ -19,6 +19,11 @@ export const HOME_BLOCKS: readonly HomeBlock[] = [
   "bento2",
   "kumbara",
   "bento",
+  // "Çok Satanlar" / "Yeni Gelenler", then a row of photo boxes, straight over
+  // the deals. A saved order from before them gets both there too: each new
+  // section goes before the one it precedes here (resolveBlockOrder).
+  "tabs",
+  "bento4",
   "deals",
   "bento3",
   "promos",
