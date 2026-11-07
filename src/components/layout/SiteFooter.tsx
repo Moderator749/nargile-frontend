@@ -155,24 +155,55 @@ export async function SiteFooter({ footer }: { footer: HomeFooter }) {
 
             <address className="mt-6 space-y-4 not-italic">
               {footer.branches.map((branch, i) => {
-                // A branch whose store page is published leads to it (lib/stores).
+                // A branch with a store (lib/stores) opens its place on Google Maps,
+                // name and address as one wide target; its page, once published,
+                // is the small link under it (a link can't hold another).
                 const store = storeForBranch(branch.name);
+                const lines = (
+                  <>
+                    <strong className="text-xs font-bold uppercase tracking-wider text-white transition-colors duration-200 group-hover:text-red-400">
+                      {branch.name}
+                    </strong>
+                    <span className="transition-colors duration-200 group-hover:text-neutral-200">{branch.address}</span>
+                  </>
+                );
                 return (
-                  <p key={`${branch.name}-${i}`} className="flex gap-2.5 text-sm leading-5 text-neutral-400">
-                    <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-red-600" aria-hidden />
-                    <span>
-                      <strong className="block text-xs font-bold uppercase tracking-wider text-white">
-                        {store?.verified ? (
-                          <Link href={storeHref(store)} className="underline-offset-4 hover:underline">
-                            {branch.name}
-                          </Link>
-                        ) : (
-                          branch.name
-                        )}
-                      </strong>
-                      {branch.address}
-                    </span>
-                  </p>
+                  <div key={`${branch.name}-${i}`} className="text-sm leading-5 text-neutral-400">
+                    {store?.mapsUrl ? (
+                      <a
+                        href={store.mapsUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="group -m-2 flex gap-2.5 rounded-lg p-2 transition-colors duration-200 hover:bg-white/5 focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-accent"
+                      >
+                        <MapPin
+                          className="mt-0.5 h-4 w-4 shrink-0 text-red-600 transition-[color,transform] duration-200 group-hover:text-red-400 motion-safe:group-hover:-translate-y-0.5"
+                          aria-hidden
+                        />
+                        <span className="flex flex-col">
+                          {lines}
+                          <span className="sr-only">{m.opensMap}</span>
+                        </span>
+                      </a>
+                    ) : (
+                      <p className="flex gap-2.5">
+                        <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-red-600" aria-hidden />
+                        <span className="flex flex-col">{lines}</span>
+                      </p>
+                    )}
+                    {store?.verified && (
+                      <Link
+                        href={storeHref(store)}
+                        className="group ms-[26px] mt-2 inline-flex items-center gap-1 py-1 text-xs font-semibold text-neutral-500 transition-colors duration-200 hover:text-white md:py-0"
+                      >
+                        {m.storePage}
+                        <ArrowRight
+                          className="h-3 w-3 rtl:-scale-x-100 motion-safe:group-hover:translate-x-0.5 rtl:motion-safe:group-hover:-translate-x-0.5"
+                          aria-hidden
+                        />
+                      </Link>
+                    )}
+                  </div>
                 );
               })}
               {footer.hours && (

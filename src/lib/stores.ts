@@ -85,7 +85,7 @@ export const STORES: Store[] = [
     hours: FOOTER_HOURS,
     // Its pin on Google Maps (Plus Code 2V55+J9), as the shop gave it.
     geo: { latitude: 41.009062, longitude: 28.858438 },
-    mapsUrl: null,
+    mapsUrl: "https://www.google.com/maps/place/?q=place_id:ChIJxw_wosqkyhQR58hAtXSD50I",
     sameAs: ["https://www.instagram.com/sultannargile_bahcelievler"],
     // Cropped to the hookahs: the shop's tobacco brands' signs and anyone who
     // could be recognised are left out (4207 sayılı Kanun, KVKK).
@@ -158,7 +158,7 @@ export const STORES: Store[] = [
     hours: FOOTER_HOURS,
     // Its pin on Google Maps (Plus Code 2J9W+89), as the shop gave it.
     geo: { latitude: 41.018312, longitude: 28.645938 },
-    mapsUrl: null,
+    mapsUrl: "https://www.google.com/maps/place/?q=place_id:ChIJqw0EmjZftRQRUVjpAWXedKQ",
     sameAs: ["https://www.instagram.com/sultannargile_esenyurt"],
     photos: [
       {

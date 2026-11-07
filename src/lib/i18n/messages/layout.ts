@@ -74,6 +74,8 @@ export const footerMessages = defineMessages({
     distanceSales: "Mesafeli Satış Sözleşmesi",
     cookies: "Çerez Politikası",
     payments: "Ödeme yöntemleri",
+    opensMap: "(Google Haritalar'da yeni sekmede açılır)",
+    storePage: "Mağaza sayfası",
   },
   en: {
     homeAria: (brand: string) => `${brand} home`,
@@ -86,6 +88,8 @@ export const footerMessages = defineMessages({
     distanceSales: "Distance Sales Agreement",
     cookies: "Cookie Policy",
     payments: "Payment methods",
+    opensMap: "(opens in Google Maps in a new tab)",
+    storePage: "Store page",
   },
   ar: {
     homeAria: (brand: string) => `الصفحة الرئيسية لـ ${brand}`,
@@ -98,6 +102,8 @@ export const footerMessages = defineMessages({
     distanceSales: "عقد البيع عن بُعد",
     cookies: "سياسة ملفات تعريف الارتباط",
     payments: "طرق الدفع",
+    opensMap: "(يُفتح في خرائط Google في علامة تبويب جديدة)",
+    storePage: "صفحة المتجر",
   },
 });
 
