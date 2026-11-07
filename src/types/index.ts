@@ -946,13 +946,26 @@ export interface SmsTestResult {
   error: string | null;
 }
 
-/** A note in the admin's "Not Defteri"; only its author sees it. */
+/** A note in the admin's "Not Defteri"; only its author sees it (and the Moderator, read-only). */
 export interface AdminNote {
   id: number;
   title: string;
   body: string;
   created_at: ISODateTime;
   updated_at: ISODateTime;
+  /** The reader's own; false only in the Moderator's list. */
+  own: boolean;
+  /** Another admin's note: its author's name (the Moderator's list only). */
+  author: string | null;
+  /** The lock, told only to who may turn it (the admin who locked it, the Moderator); null = not yours to know. */
+  locked: boolean | null;
+  can_manage_lock: boolean;
+}
+
+/** What a bulk delete of notes managed; a locked note is kept, with the reason. */
+export interface NoteDeleteResult {
+  deleted: number[];
+  refused: Record<string, string>;
 }
 
 export type AdminNoteWrite = Pick<AdminNote, "title" | "body">;

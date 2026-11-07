@@ -99,8 +99,11 @@ export function RichTextEditor({
 
   // Whether it holds anything, followed as it is typed in or filled from
   // outside: the editor does not re-render this component on its own, so a
-  // value read at render went stale and left the hint over the text.
-  const empty = useEditorState({ editor, selector: ({ editor: e }) => e?.isEmpty ?? true });
+  // value read at render went stale and left the hint over the text. A value
+  // set from outside (another note opened) can still leave this behind, so the
+  // value itself must be empty too.
+  const editorEmpty = useEditorState({ editor, selector: ({ editor: e }) => e?.isEmpty ?? true });
+  const empty = editorEmpty && !toHtml(value);
 
   return (
     <div className="overflow-hidden rounded-lg border border-slate-300 bg-white shadow-sm focus-within:border-red-500 focus-within:ring-2 focus-within:ring-red-500/20 dark:border-white/15 dark:bg-zinc-900">

@@ -1,6 +1,7 @@
 import { CatalogHeading, CatalogIntro } from "@/components/catalog/CatalogHeading";
 import { CategoryBanner } from "@/components/catalog/CategoryBanner";
 import { CategoryClosing } from "@/components/catalog/CategoryClosing";
+import { CategoryDescription } from "@/components/catalog/CategoryDescription";
 import { CategoryFamilyNav } from "@/components/catalog/CategoryFamilyNav";
 import { CatalogView } from "@/components/catalog/CatalogView";
 import { CategorySidebar } from "@/components/layout/CategorySidebar";
@@ -29,6 +30,8 @@ interface CatalogScreenProps {
   groups?: { slug: string; name: string; ids: number[] }[];
   /** The page's introduction, plain muted text under its title; clamped, the full text in the page. */
   intro?: string | null;
+  /** A category's description, under the grid with "Devamını Oku"; none = nothing there. */
+  description?: string | null;
   /** A category's own passage at the page's foot; none = the page ends at the grid. */
   closing?: { title: string; html: string | null } | null;
   /** The whole catalog, where the header's search lands (see CatalogHeading). */
@@ -55,6 +58,7 @@ export async function CatalogScreen({
   brandByRelation = false,
   groups,
   intro,
+  description,
   closing,
   searchable,
   family,
@@ -90,12 +94,12 @@ export async function CatalogScreen({
         sidebar={<CategorySidebar key="sidebar" items={resolveNav(home.navigation.sidebar, categories, brands)} fit />}
       />
 
-      {/* A category's own passage, straight under the grid (its own top
-          padding is the gap). A page without one ends at the grid: the
-          homepage's "Alt SEO Metni" is the homepage's, and the same guide
-          repeated on every listing would be one text on fifty addresses. A
-          category's own description is not repeated here either: it is under
-          the page's title. */}
+      {/* Under the grid (each block's own top padding is the gap): the
+          category's description, then its own passage. A page with neither
+          ends at the grid: the homepage's "Alt SEO Metni" is the homepage's,
+          and the same guide repeated on every listing would be one text on
+          fifty addresses. */}
+      {description && <CategoryDescription title={title} html={description} />}
       {closing && <CategoryClosing title={closing.title} html={closing.html} />}
     </main>
   );

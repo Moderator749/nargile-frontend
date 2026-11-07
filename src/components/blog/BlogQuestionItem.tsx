@@ -58,14 +58,14 @@ export function BlogQuestionItem({
   const href = articleHref(item.id);
   return (
     <details id={`sss-${item.id}`} name={group} className="group scroll-mt-24">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-4 transition-colors duration-200 hover:text-red-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 dark:hover:text-red-400 [&::-webkit-details-marker]:hidden">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-4 text-gray-900 transition-colors duration-200 hover:text-red-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 dark:text-white dark:hover:text-red-400 [&::-webkit-details-marker]:hidden">
         <Heading className="text-[15px] font-semibold leading-snug text-inherit md:text-base">{item.question}</Heading>
         <ChevronDown
-          className="h-5 w-5 shrink-0 text-gray-400 transition-transform duration-200 group-open:-rotate-180 group-open:text-red-600 motion-reduce:transition-none"
+          className="h-5 w-5 shrink-0 text-gray-400 dark:text-neutral-400 transition-transform duration-200 group-open:-rotate-180 group-open:text-red-600 motion-reduce:transition-none"
           aria-hidden
         />
       </summary>
-      <div className="rich-text pb-6 text-sm leading-relaxed text-gray-600 md:text-[15px] dark:text-zinc-400">
+      <div className="rich-text pb-6 text-sm leading-relaxed text-gray-600 md:text-[15px] dark:text-neutral-200">
         <Answer blocks={item.answer} />
         {href && (
           <p>

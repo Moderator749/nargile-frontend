@@ -67,10 +67,11 @@ export async function CategoryPage({
       activeCategory={category}
       products={products}
       brands={brands ?? []}
-      // The admin's introduction, else the shop's written copy where it has
+      // The admin's description, else the shop's written copy where it has
       // one (the meta description's generated fallback is for search
-      // results, not the page). Long text is clamped, all of it in the HTML.
-      intro={category.description || (hasCategoryCopy(slug) ? categoryCopy(slug, locale).description : null)}
+      // results, not the page), under the products. Long text is clamped,
+      // all of it in the HTML.
+      description={category.description || (hasCategoryCopy(slug) ? categoryCopy(slug, locale).description : null)}
       // Its own passage at the foot, in place of the shop's: written in
       // Turkish, so the Turkish page's only.
       closing={

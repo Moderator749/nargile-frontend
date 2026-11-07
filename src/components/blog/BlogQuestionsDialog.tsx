@@ -62,7 +62,7 @@ export function BlogQuestionsButton({ href, label, className }: { href: string; 
         <ArrowRight className="h-3.5 w-3.5 rtl:-scale-x-100" aria-hidden />
       </Link>
       <Dialog open={open} onClose={close} title={m.questionsTitle}>
-        <p className="text-sm text-slate-500 dark:text-zinc-400">{m.questionsIntro}</p>
+        <p className="text-sm text-slate-500 dark:text-neutral-200">{m.questionsIntro}</p>
         {ready ? (
           <div className={`mt-2 ${BLOG_QUESTION_LIST}`}>
             {items.map((item) => (

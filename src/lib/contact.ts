@@ -11,7 +11,7 @@
  */
 
 export const PHONE = "0212 553 05 92";
-export const EMAIL = "turhan@sultannargile.com";
+export const EMAIL = "destek@sultannargile.com";
 
 /** `tel:` wants no spaces; Turkey's code for a number written the Turkish way. */
 export function telHref(phone: string): string {

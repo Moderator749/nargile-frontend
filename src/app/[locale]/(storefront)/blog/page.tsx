@@ -29,7 +29,7 @@ export default async function BlogPage() {
   return (
     <InfoPage title={m.title} href={BLOG_HREF}>
       <JsonLd data={faqJsonLd(asFaqItems(items), locale)} />
-      <p className="text-sm leading-6 text-slate-600 dark:text-zinc-400">{m.questionsIntro}</p>
+      <p className="text-sm leading-6 text-slate-600 dark:text-neutral-200">{m.questionsIntro}</p>
       <div className={`mt-4 ${BLOG_QUESTION_LIST}`}>
         {items.map((item) => (
           <BlogQuestionItem key={item.id} item={item} more={m.readArticle} heading="h2" />

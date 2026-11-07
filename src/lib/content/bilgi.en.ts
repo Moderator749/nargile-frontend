@@ -106,7 +106,7 @@ export const BILGI_DOCUMENTS_EN: BilgiDocument[] = [
       { type: "p", text: "Trade name: Sultan Nargile / Pınar Kuş" },
       { type: "p", text: "Address: Soğanlı mah. site sok.no:5/A Bahçelievler / İstanbul" },
       { type: "p", text: "Phone: 0212 553 05 92 0532 787 30 43" },
-      { type: "p", text: "Email: turhan@nargilemalzemesi.com" },
+      { type: "p", text: "Email: destek@sultannargile.com" },
       { type: "p", text: "MERSİS / Tax Number: Tax No: 5980781207" },
       { type: "h3", text: "1.2. BUYER INFORMATION:" },
       {

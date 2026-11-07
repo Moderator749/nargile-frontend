@@ -23,6 +23,7 @@ import type {
   NotificationLogEntry,
   AdminNote,
   AdminNoteWrite,
+  NoteDeleteResult,
   BannerPreset,
   BannerPresetWrite,
   PopupAnnouncement,
@@ -145,6 +146,15 @@ export async function adminDeleteProducts(productIds: string[]): Promise<Product
 /** Deep-copies the ticked products as unpublished drafts, in the order given. */
 export async function adminDuplicateProducts(productIds: string[]): Promise<AdminProduct[]> {
   const { data } = await api.post<AdminProduct[]>("/admin/products/duplicate", { product_ids: productIds });
+  return data;
+}
+
+/** The stock column's quick edit: each given colour's stock; returns the row as it now is. */
+export async function adminSetProductStock(
+  productId: string,
+  variants: { id: string; quantity: number }[],
+): Promise<AdminProduct> {
+  const { data } = await api.patch<AdminProduct>(`/admin/products/${productId}/stock`, { variants });
   return data;
 }
 
@@ -290,6 +300,18 @@ export async function adminUpdateNote(id: number, body: AdminNoteWrite): Promise
 
 export async function adminDeleteNote(id: number): Promise<void> {
   await api.delete(`/admin/notes/${id}`);
+}
+
+/** Deletes the ticked notes; a locked one is kept and reported back. */
+export async function adminDeleteNotes(ids: number[]): Promise<NoteDeleteResult> {
+  const { data } = await api.post<NoteDeleteResult>("/admin/notes/delete", { note_ids: ids });
+  return data;
+}
+
+/** Locks a note against deletion, or unlocks it (its locker or the Moderator only). */
+export async function adminSetNoteLock(id: number, locked: boolean): Promise<AdminNote> {
+  const { data } = await api.put<AdminNote>(`/admin/notes/${id}/lock`, { locked });
+  return data;
 }
 
 export async function adminGetPopup(signal?: AbortSignal): Promise<PopupAnnouncement> {

@@ -10,6 +10,7 @@ import { AdminPageHeader, panelClass } from "@/components/admin/AdminShell";
 import { Pagination } from "@/components/admin/Pagination";
 import { withWorkspaceParams } from "@/components/admin/products/productsTabs";
 import { CategoryCombobox } from "@/components/admin/products/CategoryCombobox";
+import { StockCell } from "@/components/admin/products/StockCell";
 import { PRODUCTS_PATH, rememberProductList } from "@/components/admin/products/listReturn";
 import { SortableHeader, type SortState } from "@/components/admin/SortableHeader";
 import { CatalogSearch } from "@/components/catalog/CatalogSearch";
@@ -31,8 +32,6 @@ import { loadExchangeRates } from "@/lib/money";
 import { inLira, pickPriceRow } from "@/lib/retailPrice";
 import type { AdminCategory, AdminProduct, AdminVariant, ExchangeRates, ProductSort, Segment } from "@/types";
 
-const LOW_STOCK = 10;
-
 const checkboxClass =
   "h-4 w-4 cursor-pointer rounded border-slate-300 accent-red-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/20";
 
@@ -47,30 +46,10 @@ interface ListState {
 /**
  * The colour the row speaks for: the first the server sent, which is the admin's
  * own order. A product's price is the same in every colour, so this is where the
- * row's price comes from; its stock is the sum of all of them (`retailStock`).
+ * row's price comes from; its stock is the sum of all of them (`productStock`, StockCell).
  */
 function sheetVariant(product: AdminProduct): AdminVariant | null {
   return product.variants[0] ?? null;
-}
-
-/** The retail stock of every colour together, and how many colours that was. */
-function StockPill({ quantity, colors }: { quantity: number; colors: number }) {
-  const tone =
-    quantity === 0
-      ? "bg-red-600 text-white ring-red-600"
-      : quantity < LOW_STOCK
-        ? "bg-red-50 text-red-700 ring-red-200 dark:bg-red-500/10 dark:text-red-300 dark:ring-red-500/30"
-        : "bg-slate-100 text-slate-700 ring-slate-200 dark:bg-white/5 dark:text-zinc-300 dark:ring-white/10";
-  return (
-    <span className="inline-flex flex-col items-center gap-0.5">
-      <span className={`inline-flex min-w-12 justify-center rounded-md px-2 py-0.5 text-xs font-semibold tabular-nums ring-1 ring-inset ${tone}`}>
-        {quantity === 0 ? "Yok" : quantity.toLocaleString("tr-TR")}
-      </span>
-      {colors > 1 && (
-        <span className="text-[10px] leading-none text-slate-500 dark:text-zinc-500">{colors} renk</span>
-      )}
-    </span>
-  );
 }
 
 function Thumbnail({ product }: { product: AdminProduct }) {
@@ -240,12 +219,13 @@ export function AdminProductsView({
     );
   }
 
-  /** The stock of every colour together — the one stock every buyer draws from. */
-  function stockOf(product: AdminProduct): number {
-    return product.variants.reduce(
-      (sum, v) => sum + (v.inventory.find((i) => i.warehouse_type === "RETAIL_STOCK")?.quantity ?? 0),
-      0,
+  /** The stock column's quick edit came back: the row as the server has it now. */
+  function stockSaved(row: AdminProduct) {
+    setList((prev) =>
+      prev ? { ...prev, products: prev.products.map((p) => (p.id === row.id ? { ...p, variants: row.variants } : p)) } : prev,
     );
+    // In stock or sold out: the storefront's cached lists must show it now.
+    void refreshStorefront();
   }
 
   /** Optimistic: the row flips at once and goes back if the server refuses. */
@@ -550,7 +530,7 @@ export function AdminProductsView({
                         </div>
                       </td>
                       <td className="px-3 py-2.5 text-center">
-                        {variant ? <StockPill quantity={stockOf(product)} colors={product.variants.length} /> : "—"}
+                        {variant ? <StockCell product={product} onSaved={stockSaved} /> : "—"}
                       </td>
                       <td className="px-3 py-2.5 text-right tabular-nums">{retailPrice(variant)}</td>
                       <td className="px-3 py-2.5">

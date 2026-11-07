@@ -176,7 +176,7 @@ export const BILGI_DOCUMENTS: BilgiDocument[] = [
       },
       {
         type: "p",
-        text: "E-posta: turhan@nargilemalzemesi.com",
+        text: "E-posta: destek@sultannargile.com",
       },
       {
         type: "p",
