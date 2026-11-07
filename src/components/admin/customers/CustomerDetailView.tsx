@@ -16,6 +16,7 @@ import {
   SegmentChip,
 } from "@/components/admin/customers/CustomerLabels";
 import { SegmentAssign } from "@/components/admin/customers/SegmentAssign";
+import { SystemAdminBadge } from "@/components/admin/SystemAdminBadge";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -183,6 +184,10 @@ export function CustomerDetailView({ userId }: { userId: string }) {
   const Icon = ICONS[customer.account_type];
   const title = profile?.company_title || customer.full_name || customer.email;
   const corporate = profile?.billing_entity_type != null;
+  // An account the viewer may not change (a Sistem Yöneticisi's, to anyone
+  // but itself and its peers) simply has no price list or points controls:
+  // nothing says why, and nothing hints there would be any.
+  const manageable = customer.can_manage ?? true;
 
   return (
     <>
@@ -192,6 +197,7 @@ export function CustomerDetailView({ userId }: { userId: string }) {
         description={`${ACCOUNT_TYPE_LABELS[customer.account_type]} · ${customer.order_count} sipariş · ${dateTime.format(new Date(customer.created_at))} tarihinde kaydoldu`}
         actions={
           <span className="flex items-center gap-2">
+            {customer.is_superadmin && <SystemAdminBadge />}
             <Icon className="h-5 w-5 text-slate-400 dark:text-zinc-500" aria-hidden />
             <SegmentChip segment={customer.segment} />
           </span>
@@ -253,19 +259,21 @@ export function CustomerDetailView({ userId }: { userId: string }) {
           )}
         </Panel>
 
-        <Panel title="Fiyat Grubu">
-          <SegmentAssign customer={customer} onAssigned={setCustomer} />
-          {customer.application_status && (
-            <p className="mt-4 rounded-lg border border-slate-200 px-3 py-2.5 text-xs text-slate-600 dark:border-white/10 dark:text-zinc-400">
-              Müşterinin başvurusu:{" "}
-              <strong className="font-semibold">
-                {customer.requested_segment ? SEGMENT_LABELS[customer.requested_segment] : "—"}
-              </strong>{" "}
-              · {APPLICATION_STATUS_LABELS[customer.application_status] ?? customer.application_status}. Başvurular
-              Müşteriler sayfasındaki kuyruktan onaylanır.
-            </p>
-          )}
-        </Panel>
+        {manageable && (
+          <Panel title="Fiyat Grubu">
+            <SegmentAssign customer={customer} onAssigned={setCustomer} />
+            {customer.application_status && (
+              <p className="mt-4 rounded-lg border border-slate-200 px-3 py-2.5 text-xs text-slate-600 dark:border-white/10 dark:text-zinc-400">
+                Müşterinin başvurusu:{" "}
+                <strong className="font-semibold">
+                  {customer.requested_segment ? SEGMENT_LABELS[customer.requested_segment] : "—"}
+                </strong>{" "}
+                · {APPLICATION_STATUS_LABELS[customer.application_status] ?? customer.application_status}. Başvurular
+                Müşteriler sayfasındaki kuyruktan onaylanır.
+              </p>
+            )}
+          </Panel>
+        )}
       </div>
 
       <section aria-labelledby="points-heading" className={`${panelClass} mt-6 p-5 sm:p-6`}>
@@ -275,29 +283,31 @@ export function CustomerDetailView({ userId }: { userId: string }) {
         >
           Sultan Puan
         </h2>
-        <form
-          onSubmit={adjust}
-          className="mt-4 grid gap-3 rounded-xl border border-slate-200 p-4 dark:border-white/10 sm:grid-cols-[9rem_1fr_auto] sm:items-end"
-        >
-          <Input
-            label="Puan (+/−)"
-            inputMode="numeric"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value.replace(/[^\d-]/g, ""))}
-            onKeyDown={(e) => stepOnArrowKey(e, (v) => setAmount(v.replace(/[^\d-]/g, "")), { integer: true, negative: true })}
-            placeholder="ör. 500 / -200"
-          />
-          <Input
-            label="Gerekçe"
-            value={note}
-            maxLength={300}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="ör. Telafi, hatalı tanım düzeltmesi"
-          />
-          <Button type="submit" loading={saving} disabled={!!pointsProblem} className="sm:w-28!">
-            Kaydet
-          </Button>
-        </form>
+        {manageable && (
+          <form
+            onSubmit={adjust}
+            className="mt-4 grid gap-3 rounded-xl border border-slate-200 p-4 dark:border-white/10 sm:grid-cols-[9rem_1fr_auto] sm:items-end"
+          >
+            <Input
+              label="Puan (+/−)"
+              inputMode="numeric"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value.replace(/[^\d-]/g, ""))}
+              onKeyDown={(e) => stepOnArrowKey(e, (v) => setAmount(v.replace(/[^\d-]/g, "")), { integer: true, negative: true })}
+              placeholder="ör. 500 / -200"
+            />
+            <Input
+              label="Gerekçe"
+              value={note}
+              maxLength={300}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="ör. Telafi, hatalı tanım düzeltmesi"
+            />
+            <Button type="submit" loading={saving} disabled={!!pointsProblem} className="sm:w-28!">
+              Kaydet
+            </Button>
+          </form>
+        )}
         {pointsResult && (
           <div className="mt-3">
             <Alert variant={pointsResult.kind}>{pointsResult.text}</Alert>

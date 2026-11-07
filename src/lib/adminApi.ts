@@ -22,6 +22,9 @@ import type {
   MessageChannel,
   NotificationLogEntry,
   AdminNote,
+  TeamMember,
+  TeamMemberCreate,
+  TeamMemberUpdate,
   AdminNoteWrite,
   NoteDeleteResult,
   BannerPreset,
@@ -312,6 +315,33 @@ export async function adminDeleteNotes(ids: number[]): Promise<NoteDeleteResult>
 export async function adminSetNoteLock(id: number, locked: boolean): Promise<AdminNote> {
   const { data } = await api.put<AdminNote>(`/admin/notes/${id}/lock`, { locked });
   return data;
+}
+
+// ── Yöneticiler: the Sistem Yöneticisi's alone (require_superadmin) ─────────
+
+export async function adminListTeam(signal?: AbortSignal): Promise<TeamMember[]> {
+  const { data } = await api.get<TeamMember[]>("/admin/users", { signal });
+  return data;
+}
+
+export async function adminCreateTeamMember(body: TeamMemberCreate): Promise<TeamMember> {
+  const { data } = await api.post<TeamMember>("/admin/users", body);
+  return data;
+}
+
+export async function adminUpdateTeamMember(id: string, body: TeamMemberUpdate): Promise<TeamMember> {
+  const { data } = await api.patch<TeamMember>(`/admin/users/${id}`, body);
+  return data;
+}
+
+/** A new password for a member; their sessions end. */
+export async function adminSetTeamPassword(id: string, password: string): Promise<void> {
+  await api.post(`/admin/users/${id}/password`, { password });
+}
+
+/** Off the panel: the account stays, deactivated, its sessions ended. */
+export async function adminRemoveTeamMember(id: string): Promise<void> {
+  await api.delete(`/admin/users/${id}`);
 }
 
 export async function adminGetPopup(signal?: AbortSignal): Promise<PopupAnnouncement> {

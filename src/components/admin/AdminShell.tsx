@@ -17,6 +17,7 @@ import {
   MessagesSquare,
   NotebookPen,
   ShieldAlert,
+  ShieldCheck,
   SlidersHorizontal,
   Users,
   Landmark,
@@ -42,6 +43,8 @@ interface NavItem {
   /** Other pages that light this entry up. */
   also?: readonly string[];
   children?: NavItem[];
+  /** Offered to the Sistem Yöneticisi only (the server holds the same line). */
+  superadmin?: true;
 }
 
 const NAV: NavItem[] = [
@@ -80,6 +83,8 @@ const NAV: NavItem[] = [
   // Personal: each admin sees only their own notes.
   { href: "/admin/notes", label: "Not Defteri", icon: NotebookPen },
   { href: "/admin/pricing", label: "Excel Dosya Aktarımı", icon: FileSpreadsheet },
+  // Last, so an account it is hidden from keeps the default order (reorder keeps hidden entries at the end).
+  { href: "/admin/users", label: "Yöneticiler", icon: ShieldCheck, superadmin: true },
 ];
 
 /** The menu's order as this admin arranged it, in their browser (no account setting: it is a convenience). */
@@ -119,14 +124,22 @@ const NAV_LINK =
  * puts the default back. On a phone the menu is a row swiped sideways, in the
  * same order, without handles.
  */
-function AdminNav({ isActive }: { isActive: (href: string, exact?: boolean, also?: readonly string[]) => boolean }) {
+function AdminNav({
+  isActive,
+  superadmin,
+}: {
+  isActive: (href: string, exact?: boolean, also?: readonly string[]) => boolean;
+  superadmin: boolean;
+}) {
   // Rendered only once the page is live in the browser (AdminShell waits for
   // the session), so the saved order is read from the first render.
   const [order, setOrder] = useState<string[]>(() => (typeof window === "undefined" ? DEFAULT_NAV_ORDER : readNavOrder()));
-  const items = order.flatMap((href) => NAV_BY_HREF.get(href) ?? []);
+  const items = order.flatMap((href) => NAV_BY_HREF.get(href) ?? []).filter((item) => superadmin || !item.superadmin);
 
   function reorder(next: NavItem[]) {
-    const hrefs = next.map((item) => item.href);
+    // An entry this account is not offered keeps its place in the saved order.
+    const hidden = order.filter((href) => !next.some((item) => item.href === href));
+    const hrefs = [...next.map((item) => item.href), ...hidden];
     setOrder(hrefs);
     writeNavOrder(isDefaultOrder(DEFAULT_NAV_ORDER, hrefs) ? null : hrefs);
   }
@@ -289,7 +302,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
         <p className="hidden px-3 pt-2 pb-2 text-xs font-bold uppercase tracking-wider text-red-600 lg:block dark:text-red-500">
           Kontrol Merkezi
         </p>
-        {admin ? <AdminNav isActive={isActive} /> : <StaffNav />}
+        {admin ? <AdminNav isActive={isActive} superadmin={!!user.is_superadmin} /> : <StaffNav />}
       </aside>
       <main className="min-w-0 flex-1">{admin ? children : <StaffHome />}</main>
       <TeamChannel user={user} />

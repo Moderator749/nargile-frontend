@@ -156,6 +156,8 @@ export interface User {
   role: UserRole;
   is_active: boolean;
   is_verified: boolean;
+  /** Sistem Yöneticisi: above the roles; the only account that manages the panel team. */
+  is_superadmin?: boolean;
   /** A guest checkout's buyer ("Üye olmadan devam et"), not an account. */
   is_guest?: boolean;
   created_at: ISODateTime;
@@ -1510,6 +1512,8 @@ export interface AdminCustomer {
   email: string;
   /** A guest checkout's buyer ("Misafir"), not an account. */
   is_guest?: boolean;
+  /** The Sistem Yöneticisi's account; the API says so to a Sistem Yöneticisi only. */
+  is_superadmin?: boolean;
   full_name: string | null;
   /** Ünvan, when the account is a firm's or is invoiced as one. */
   company_title: string | null;
@@ -1570,6 +1574,10 @@ export interface AdminCustomerDetail {
   account_type: AccountType;
   is_active: boolean;
   is_verified: boolean;
+  /** The Sistem Yöneticisi's account; the API says so to a Sistem Yöneticisi only. */
+  is_superadmin?: boolean;
+  /** Whether the viewer may change its price list and points; when not, those controls are left out. */
+  can_manage?: boolean;
   created_at: ISODateTime;
   segment: SegmentType | null;
   order_count: number;
@@ -1580,6 +1588,33 @@ export interface AdminCustomerDetail {
   application_status: string | null;
   requested_segment: SegmentType | null;
 }
+
+// ── Yöneticiler (the panel team, managed by the Sistem Yöneticisi) ────────────
+
+export type TeamRole = "SUPER_ADMIN" | "ADMIN" | "STAFF";
+
+export interface TeamMember {
+  id: UUID;
+  email: string;
+  username: string | null;
+  full_name: string | null;
+  role: TeamRole;
+  is_active: boolean;
+  is_superadmin: boolean;
+  created_at: ISODateTime;
+  /** The caller's own row. */
+  is_me: boolean;
+}
+
+export interface TeamMemberCreate {
+  email: string;
+  username: string | null;
+  full_name: string | null;
+  role: TeamRole;
+  password: string;
+}
+
+export type TeamMemberUpdate = Partial<Pick<TeamMember, "full_name" | "role" | "is_active">>;
 
 // ── B2B applications & admin dashboard ───────────────────────────────────────
 
