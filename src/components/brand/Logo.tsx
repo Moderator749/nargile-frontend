@@ -16,10 +16,13 @@ interface AssetProps {
 
 export function LogoEmblem({ className, preload = false }: AssetProps) {
   return (
+    // Declared as the square box every caller draws it in (h-N w-N, object-contain),
+    // not the file's ~11:10: with 44×40, a 40×40 or 44×44 box changed one side only
+    // and Next warned the aspect ratio was off. Square, both sides change or neither.
     <Image
       src="/logo.png"
       alt="Sultan Nargile"
-      width={44}
+      width={40}
       height={40}
       preload={preload}
       className={`shrink-0 object-contain dark:invert ${className}`}

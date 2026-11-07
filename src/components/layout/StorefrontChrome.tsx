@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { B2BWelcome } from "@/components/auth/B2BWelcome";
 import { ExportNotice } from "@/components/auth/ExportNotice";
 import { CartToast } from "@/components/cart/CartToast";
 import { AnnouncementPopup } from "@/components/banner/AnnouncementPopup";
@@ -36,6 +37,9 @@ export async function StorefrontChrome({ children }: { children: ReactNode }) {
       <TopBanner />
       {/* "Açılış duyurusu": once per visitor while the admin has it on. */}
       <AnnouncementPopup />
+      {/* A kafe, toptan or bayi account's welcome: once per browser session.
+          Renders nothing for guests and retail customers. */}
+      <B2BWelcome />
       <Navbar categories={sidebar} links={menu} shelves={shelvesOf(categories ?? [], brands ?? [])} />
       {children}
       {home.sections.footer && <SiteFooter footer={home.footer} />}

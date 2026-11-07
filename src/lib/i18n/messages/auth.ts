@@ -907,6 +907,60 @@ export const exportNoticeMessages = defineMessages<{
   },
 });
 
+/* ------------------------------------------------------------------ B2B welcome (B2BWelcome) */
+
+/** The welcome a kafe, toptan or bayi account gets once per browser session. */
+export const b2bWelcomeMessages = defineMessages<{
+  title: string;
+  items: readonly { title: string; text: string }[];
+  note: string;
+  continue: string;
+  close: string;
+}>({
+  tr: {
+    title: "Sultan Nargile'ye Hoş Geldiniz",
+    items: [
+      { title: "Peşin Fiyatına 3 Taksit", text: "Tüm kurumsal alımlarınızda vade farksız taksit imkanı." },
+      { title: "Havale / EFT İskontosu", text: "Seçili ürün gruplarında sepette anında ek indirim." },
+      {
+        title: "Özel Tedarik",
+        text: "Sitede göremediğiniz veya tükenen modeller için doğrudan mağazamızla iletişime geçebilirsiniz.",
+      },
+    ],
+    note: "Güncel iskonto ve bayi fiyatlarınızı ürün sayfalarından inceleyebilirsiniz.",
+    continue: "Alışverişe Devam Et",
+    close: "Kapat",
+  },
+  en: {
+    title: "Welcome to Sultan Nargile",
+    items: [
+      { title: "3 Instalments at the Cash Price", text: "Interest-free instalments on all your business purchases." },
+      { title: "Bank Transfer Discount", text: "An extra discount in the cart, at once, on selected product groups." },
+      {
+        title: "Special Sourcing",
+        text: "For models you cannot find on the site or that are sold out, contact our store directly.",
+      },
+    ],
+    note: "You can see your current discounts and dealer prices on the product pages.",
+    continue: "Continue Shopping",
+    close: "Close",
+  },
+  ar: {
+    title: "مرحباً بكم في سلطان نارجيلة",
+    items: [
+      { title: "3 أقساط بسعر النقد", text: "إمكانية التقسيط دون فوائد على جميع مشترياتكم التجارية." },
+      { title: "خصم التحويل البنكي", text: "خصم إضافي فوري في السلة على مجموعات منتجات مختارة." },
+      {
+        title: "توريد خاص",
+        text: "للموديلات غير المعروضة على الموقع أو النافدة، يمكنكم التواصل مع متجرنا مباشرة.",
+      },
+    ],
+    note: "يمكنكم الاطلاع على خصوماتكم وأسعار الوكلاء الحالية في صفحات المنتجات.",
+    continue: "متابعة التسوق",
+    close: "إغلاق",
+  },
+});
+
 /* ------------------------------------------------------------------ API errors (lib/errors) */
 
 /**
