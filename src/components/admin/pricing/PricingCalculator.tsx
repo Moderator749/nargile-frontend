@@ -13,9 +13,12 @@ import { loadExchangeRates } from "@/lib/money";
 import {
   ERP_DISPLAY_FIELDS,
   SEGMENT_LABELS,
+  catalogPrice,
   computeSheet,
+  erpPriceFor,
   sameCodeRows,
   savePricing,
+  type CatalogGroupPrice,
   type CatalogSegment,
   type FileTarget,
   type PricingCurrency,
@@ -306,6 +309,29 @@ export function PricingCalculator({
     usdRate: num(d.usdRate),
     eurRate: num(d.eurRate),
   });
+
+  // "ERP ve Katalog Fiyatları": each group's price as the PDF catalogue will
+  // print it (`catalogPrice`, as PricingCatalogView does for a saved row).
+  const erp = erpPriceFor({ erp_price_usd: dec(d.erpUsd, 2), erp_price_eur: dec(d.erpEur, 2), erp_price_tl: dec(d.erpTl, 2) }, d.currency);
+  const catalogVatRate = num(d.vatRate);
+  const catalog = Object.fromEntries(
+    (Object.keys(ERP_DISPLAY_FIELDS) as CatalogSegment[]).map((segment) => {
+      const i = d.columns.findIndex((c) => c.segment === segment);
+      const sheetPrice = segment === "RETAIL" ? calc.retail.price : i >= 0 ? calc.columns[i].price : null;
+      const price =
+        catalogVatRate === null
+          ? null
+          : catalogPrice({
+              sheetPrice,
+              sheetPriceBeforeVat: segment !== "RETAIL" && d.vatMode === "EXCL",
+              currency: d.currency,
+              vatRate: catalogVatRate,
+              erp,
+              display: d.erpDisplay[segment],
+            });
+      return [segment, price];
+    }),
+  ) as Record<CatalogSegment, CatalogGroupPrice | null>;
 
   // What the server takes; null with the reason when the sheet is not complete.
   const used = d.columns.map((c) => c.segment).filter(Boolean);
@@ -742,7 +768,7 @@ export function PricingCalculator({
         </table>
       </div>
 
-      <ErpCatalogPrices draft={d} onChange={set} />
+      <ErpCatalogPrices draft={d} onChange={set} catalog={catalog} />
 
       {/* Under the grid: the rates on the left (USD/EUR), the buttons on the right. */}
       {/* The row "Kaydet" writes over: the one loaded, or the one this sheet last saved. */}
@@ -892,17 +918,29 @@ const ERP_CURRENCIES = [
 ] as const;
 
 /**
- * "ERP ve Katalog Fiyatları", under the worksheet: the product's ERP price in
- * each currency (before VAT), and per customer group whether the price
- * catalogue shows its price before or after VAT. Saved with the row; never
- * sent to the site. In the catalogue an ERP price stands in for every group's
- * price — the one in the sheet's currency, else the first typed of TL, USD,
- * EUR — and a group left unchosen shows the full split, as before.
+ * "ERP ve Katalog Fiyatları", a second table under the worksheet: the
+ * product's ERP price in each currency (before VAT), then one column per
+ * customer group — the base its catalogue price comes from (the ERP price,
+ * else the sheet's green row), whether the PDF shows it before or after VAT,
+ * and the price the PDF will print. Saved with the row; never sent to the
+ * site. A group left unchosen shows the full split, as before.
  */
-function ErpCatalogPrices({ draft: d, onChange }: { draft: SheetDraft; onChange: (patch: Partial<SheetDraft>) => void }) {
+function ErpCatalogPrices({
+  draft: d,
+  onChange,
+  catalog,
+}: {
+  draft: SheetDraft;
+  onChange: (patch: Partial<SheetDraft>) => void;
+  /** Each group's price as the catalogue prints it; null when the group has none (left off the PDF). */
+  catalog: Record<CatalogSegment, CatalogGroupPrice | null>;
+}) {
   const name = useId();
-  const chosen = Object.values(d.erpDisplay).some((v) => v !== null);
+  const segments = Object.keys(ERP_DISPLAY_FIELDS) as CatalogSegment[];
+  const chosen = segments.some((segment) => d.erpDisplay[segment] !== null);
   const choose = (segment: CatalogSegment, incl: boolean) => onChange({ erpDisplay: { ...d.erpDisplay, [segment]: incl } });
+  const rowHead = `${td} ${headFill} ${headText} w-40 px-3 py-2 text-left align-middle`;
+  const note = "mt-0.5 block text-[10px] font-medium normal-case tracking-normal text-slate-500 dark:text-zinc-400";
   return (
     <div className="mt-4 border border-slate-300 dark:border-zinc-600">
       <div className={`${headFill} ${headText} flex items-center justify-between gap-2 border-b border-slate-300 px-3 py-2 dark:border-zinc-600`}>
@@ -936,36 +974,118 @@ function ErpCatalogPrices({ draft: d, onChange }: { draft: SheetDraft; onChange:
         ))}
       </div>
       <div className="overflow-x-auto px-3 pb-3">
-        <table className="w-full min-w-[26rem] border-collapse text-xs">
-          <tbody>
-            {(Object.keys(ERP_DISPLAY_FIELDS) as CatalogSegment[]).map((segment) => (
-              <tr key={segment}>
-                <th scope="row" className={`${td} ${headFill} ${headText} w-32 px-3 py-2 text-left`}>
+        <table className="w-full min-w-[44rem] table-fixed border-collapse text-xs">
+          <thead>
+            <tr>
+              <th className={`${td} ${headFill} w-40`} aria-hidden />
+              {segments.map((segment) => (
+                <th
+                  key={segment}
+                  scope="col"
+                  className={`${td} ${headFill} ${headText} px-3 py-2 text-center`}
+                >
                   {SEGMENT_LABELS[segment].toLocaleUpperCase("tr-TR")}
                 </th>
-                {([false, true] as const).map((incl) => (
-                  <td key={String(incl)} className={`${td} px-3 py-2`}>
-                    <label className="flex cursor-pointer items-center gap-2 font-semibold uppercase tracking-wide text-slate-700 dark:text-zinc-200">
-                      <input
-                        type="radio"
-                        name={`${name}-${segment}`}
-                        checked={d.erpDisplay[segment] === incl}
-                        onChange={() => choose(segment, incl)}
-                        className="h-4 w-4 accent-red-600"
-                      />
-                      {incl ? "KDV dahil göster" : "KDV hariç göster"}
-                    </label>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row" className={rowHead}>
+                Taban fiyat
+                <span className={note}>ERP, yoksa yeşil satır</span>
+              </th>
+              {segments.map((segment) => {
+                const p = catalog[segment];
+                // The green row's own basis: a class on a before-VAT sheet is before VAT, retail after it.
+                const greenInclVat = segment === "RETAIL" || d.vatMode === "INCL";
+                return (
+                  <td key={segment} className={`${td} px-3 py-2 text-right tabular-nums ${p?.fromErp ? blueFill : ""}`}>
+                    {p === null ? (
+                      <span className="text-slate-400">—</span>
+                    ) : (
+                      <>
+                        <span className="font-mono font-semibold">
+                          {fmt(!p.fromErp && greenInclVat ? p.total : p.excl, p.currency)}
+                        </span>
+                        <span className={note}>
+                          {p.fromErp ? "ERP" : "Yeşil satır"} · {!p.fromErp && greenInclVat ? "KDV dahil" : "KDV hariç"}
+                        </span>
+                      </>
+                    )}
                   </td>
-                ))}
-              </tr>
-            ))}
+                );
+              })}
+            </tr>
+            <tr>
+              <th scope="row" className={rowHead}>
+                KDV gösterimi
+                <span className={note}>Yalnızca PDF katalog</span>
+              </th>
+              {segments.map((segment) => (
+                <td key={segment} className={`${td} px-3 py-1.5`}>
+                  <div role="radiogroup" aria-label={`${SEGMENT_LABELS[segment]} KDV gösterimi`} className="flex flex-col gap-1">
+                    {([false, true] as const).map((incl) => (
+                      <label
+                        key={String(incl)}
+                        className="flex cursor-pointer items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-slate-700 dark:text-zinc-200"
+                      >
+                        <input
+                          type="radio"
+                          name={`${name}-${segment}`}
+                          checked={d.erpDisplay[segment] === incl}
+                          onChange={() => choose(segment, incl)}
+                          className="h-3.5 w-3.5 accent-red-600"
+                        />
+                        {incl ? "KDV dahil göster" : "KDV hariç göster"}
+                      </label>
+                    ))}
+                  </div>
+                </td>
+              ))}
+            </tr>
+            <tr>
+              <th scope="row" className={rowHead}>
+                PDF’te görünecek fiyat
+                <span className={note}>Önizleme</span>
+              </th>
+              {segments.map((segment) => {
+                const p = catalog[segment];
+                return (
+                  <td
+                    key={segment}
+                    data-catalog-preview={segment}
+                    className={`${td} ${greenFill} px-3 py-2 text-right tabular-nums`}
+                  >
+                    {p === null ? (
+                      <>
+                        <span className="text-slate-400">—</span>
+                        <span className={note}>Katalogda yer almaz</span>
+                      </>
+                    ) : p.display === null ? (
+                      <>
+                        <span className="font-mono text-sm font-bold">{fmt(p.total, p.currency)}</span>
+                        <span className={note}>
+                          {fmt(p.excl, p.currency)} + {fmt(p.vat, p.currency)} KDV
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="font-mono text-sm font-bold">{fmt(p.display ? p.total : p.excl, p.currency)}</span>
+                        <span className={note}>{p.display ? "KDV dahil" : "KDV hariç"}</span>
+                      </>
+                    )}
+                  </td>
+                );
+              })}
+            </tr>
           </tbody>
         </table>
         <p className="mt-2 text-[11px] leading-4 text-slate-500 dark:text-zinc-400">
-          ERP fiyatlarını KDV hariç girin. Fiyat kataloğunda (PDF) bir ERP fiyatı her grubun yukarıdaki fiyatının yerine
+          ERP fiyatlarını KDV hariç girin. Fiyat kataloğunda (PDF) bir ERP fiyatı her grubun yeşil satırdaki fiyatının yerine
           geçer: cetvelin para birimindeki, yoksa sırasıyla TL, USD, EUR’dan girilen ilki. KDV dahil seçilen grupta fiyat
           cetvelin KDV oranıyla hesaplanır. Seçim yapılmayan grup katalogda KDV hariç, KDV ve toplam olarak birlikte
-          gösterilir. Bu bölüm siteye gönderilmez.
+          gösterilir. Bu tablo yalnızca PDF kataloğu etkiler; siteye gönderilmez.
         </p>
       </div>
     </div>

@@ -64,6 +64,54 @@ export function erpPriceFor(
   return pick ? { amount: Number(typed[pick]), currency: pick } : null;
 }
 
+/** A price split for an invoice, the VAT the difference so the three add up to the kuruş. */
+export function splitVat(amount: number, vatRate: number, amountIsBeforeVat: boolean) {
+  const round = (n: number) => Math.round(n * 100) / 100;
+  const excl = amountIsBeforeVat ? amount : round(amount / (1 + vatRate / 100));
+  const total = amountIsBeforeVat ? round(amount * (1 + vatRate / 100)) : amount;
+  return { excl, vat: round(total - excl), total };
+}
+
+/** One group's price as the price catalogue (PDF) shows it. */
+export interface CatalogGroupPrice {
+  currency: PricingCurrency;
+  excl: number;
+  vat: number;
+  total: number;
+  /** As chosen: true only after VAT, false only before it, null the full split. */
+  display: boolean | null;
+  /** The ERP price, not the sheet's. */
+  fromErp: boolean;
+}
+
+/**
+ * What the price catalogue shows for one group: the ERP price (before VAT)
+ * when one is typed, else the sheet's price for the group in its own basis —
+ * a class on a before-VAT sheet before VAT, retail after it — split at the
+ * sheet's VAT rate, shown as the group's choice says. Null with no price: the
+ * group is left off the plate. The catalogue and the calculator's preview
+ * both go by it, so the preview is what the PDF prints.
+ */
+export function catalogPrice({
+  sheetPrice,
+  sheetPriceBeforeVat,
+  currency,
+  vatRate,
+  erp,
+  display,
+}: {
+  sheetPrice: number | null;
+  sheetPriceBeforeVat: boolean;
+  currency: PricingCurrency;
+  vatRate: number;
+  erp: { amount: number; currency: PricingCurrency } | null;
+  display: boolean | null;
+}): CatalogGroupPrice | null {
+  if (erp) return { currency: erp.currency, display, fromErp: true, ...splitVat(erp.amount, vatRate, true) };
+  if (sheetPrice === null) return null;
+  return { currency, display, fromErp: false, ...splitVat(sheetPrice, vatRate, sheetPriceBeforeVat) };
+}
+
 /** What the server takes: the numbers as typed, as decimal strings. */
 export interface PricingSheetInput extends ErpCatalogFields {
   product_code: string;

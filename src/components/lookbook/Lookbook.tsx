@@ -63,14 +63,6 @@ const money = (n: number, c: LookbookCurrency) => {
 const rate = (v: string | null) =>
   v === null ? null : Number(v).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 4 });
 
-/** A price split for an invoice, the VAT the difference so the three add up to the kuruş. */
-export function splitVat(amount: number, vatRate: number, amountIsBeforeVat: boolean) {
-  const round = (n: number) => Math.round(n * 100) / 100;
-  const excl = amountIsBeforeVat ? amount : round(amount / (1 + vatRate / 100));
-  const total = amountIsBeforeVat ? round(amount * (1 + vatRate / 100)) : amount;
-  return { excl, vat: round(total - excl), total };
-}
-
 const CARMINE = "#991b1b";
 /**
  * The price table: label, before VAT, VAT, total. One grid for the whole

@@ -4,15 +4,17 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
-import { LookbookDownload, LookbookPreview, splitVat, type LookbookItem } from "@/components/lookbook/Lookbook";
+import { LookbookDownload, LookbookPreview, type LookbookItem, type LookbookLine } from "@/components/lookbook/Lookbook";
 import { Alert } from "@/components/ui/Alert";
 import { getApiErrorMessage } from "@/lib/errors";
 import { formatDateParts } from "@/lib/format";
 import {
+  catalogPrice,
   ERP_DISPLAY_FIELDS,
   erpPriceFor,
   fetchAllPricingRecords,
   SEGMENT_LABELS,
+  splitVat,
   type CatalogSegment,
   type PricingRecord,
 } from "@/lib/pricing";
@@ -40,39 +42,33 @@ function plateOf(record: PricingRecord, columns: CatalogColumn[]): LookbookItem 
   const s = record.sheet;
   const vatRate = Number(s.retail.vat_rate);
   const erp = erpPriceFor(record, s.currency);
-  const lines = columns.flatMap((column) => {
-    let amount: number | null;
-    let currency = s.currency;
-    let beforeVat = false;
-    let display: boolean | null = null;
+  const lines = columns.flatMap((column): LookbookLine[] => {
     if (column.key === FINAL) {
-      amount = s.final_try === null ? null : Number(s.final_try);
-      currency = "TRY";
-    } else {
-      const segment: CatalogSegment = column.key === RETAIL ? "RETAIL" : (column.key as CatalogSegment);
-      display = record[ERP_DISPLAY_FIELDS[segment]] ?? null;
-      if (erp) {
-        ({ amount, currency } = erp);
-        beforeVat = true;
-      } else if (column.key === RETAIL) {
-        amount = Number(s.retail.price);
-      } else {
-        const price = s.columns.find((c) => c.segment === column.key)?.price;
-        amount = price == null ? null : Number(price);
-        beforeVat = s.vat_mode === "EXCL";
-      }
+      if (s.final_try === null) return [];
+      return [{ key: column.key, label: column.label, currency: "TRY", tone: "final", ...splitVat(Number(s.final_try), vatRate, false) }];
     }
-    if (amount === null) return [];
-    const tone = column.key === RETAIL ? ("retail" as const) : column.key === FINAL ? ("final" as const) : undefined;
+    const segment: CatalogSegment = column.key === RETAIL ? "RETAIL" : (column.key as CatalogSegment);
+    const sheetPrice = segment === "RETAIL" ? s.retail.price : s.columns.find((c) => c.segment === segment)?.price;
+    const price = catalogPrice({
+      sheetPrice: sheetPrice == null ? null : Number(sheetPrice),
+      sheetPriceBeforeVat: segment !== "RETAIL" && s.vat_mode === "EXCL",
+      currency: s.currency,
+      vatRate,
+      erp,
+      display: record[ERP_DISPLAY_FIELDS[segment]] ?? null,
+    });
+    if (price === null) return [];
     return [
       {
         key: column.key,
         label: column.label,
-        currency,
-        tone,
-        totalOnly: display === true,
-        exclOnly: display === false,
-        ...splitVat(amount, vatRate, beforeVat),
+        tone: segment === "RETAIL" ? "retail" : undefined,
+        totalOnly: price.display === true,
+        exclOnly: price.display === false,
+        currency: price.currency,
+        excl: price.excl,
+        vat: price.vat,
+        total: price.total,
       },
     ];
   });
