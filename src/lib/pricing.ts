@@ -19,8 +19,53 @@ export const SEGMENT_LABELS: Record<PricingSegment | "RETAIL", string> = {
   RETAIL: "Perakende",
 };
 
+/**
+ * "ERP ve Katalog Fiyatları", under the worksheet: the product's ERP price in
+ * each currency, before VAT, which the price catalogue shows for every group
+ * in place of the sheet's price; and per group, how the catalogue shows its
+ * price — true "KDV dahil", false "KDV hariç", null the full split (before
+ * VAT, VAT, total). Kept on the row beside its sheet; never sent to the site.
+ */
+export interface ErpCatalogFields {
+  erp_price_usd: DecimalString | null;
+  erp_price_eur: DecimalString | null;
+  erp_price_tl: DecimalString | null;
+  erp_display_bayi: boolean | null;
+  erp_display_toptan: boolean | null;
+  erp_display_kafe: boolean | null;
+  erp_display_perakende: boolean | null;
+}
+
+export type CatalogSegment = PricingSegment | "RETAIL";
+export type ErpDisplayField = "erp_display_bayi" | "erp_display_toptan" | "erp_display_kafe" | "erp_display_perakende";
+
+/** Each group's display choice, in the catalogue's order. */
+export const ERP_DISPLAY_FIELDS: Record<CatalogSegment, ErpDisplayField> = {
+  DEALER: "erp_display_bayi",
+  WHOLESALE: "erp_display_toptan",
+  CAFE: "erp_display_kafe",
+  RETAIL: "erp_display_perakende",
+};
+
+/**
+ * The ERP price the catalogue shows for a line priced in `currency`: the one
+ * in that currency, else the first typed of TL, USD, EUR. Null with none.
+ */
+export function erpPriceFor(
+  fields: Partial<ErpCatalogFields>,
+  currency: PricingCurrency,
+): { amount: number; currency: PricingCurrency } | null {
+  const typed: Record<PricingCurrency, DecimalString | null | undefined> = {
+    TRY: fields.erp_price_tl,
+    USD: fields.erp_price_usd,
+    EUR: fields.erp_price_eur,
+  };
+  const pick = [currency, "TRY", "USD", "EUR"].find((c) => typed[c as PricingCurrency] != null) as PricingCurrency | undefined;
+  return pick ? { amount: Number(typed[pick]), currency: pick } : null;
+}
+
 /** What the server takes: the numbers as typed, as decimal strings. */
-export interface PricingSheetInput {
+export interface PricingSheetInput extends ErpCatalogFields {
   product_code: string;
   product_name: string;
   vat_mode: VatMode;
@@ -74,7 +119,7 @@ export interface StoredSheet {
   applied_percent?: DecimalString | null;
 }
 
-export interface PricingRecord {
+export interface PricingRecord extends ErpCatalogFields {
   id: UUID;
   file_id: number | null;
   file_name: string | null;

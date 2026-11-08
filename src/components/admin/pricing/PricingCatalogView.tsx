@@ -8,7 +8,14 @@ import { LookbookDownload, LookbookPreview, splitVat, type LookbookItem } from "
 import { Alert } from "@/components/ui/Alert";
 import { getApiErrorMessage } from "@/lib/errors";
 import { formatDateParts } from "@/lib/format";
-import { fetchAllPricingRecords, SEGMENT_LABELS, type PricingRecord } from "@/lib/pricing";
+import {
+  ERP_DISPLAY_FIELDS,
+  erpPriceFor,
+  fetchAllPricingRecords,
+  SEGMENT_LABELS,
+  type CatalogSegment,
+  type PricingRecord,
+} from "@/lib/pricing";
 
 /** A price row of the catalogue: a customer group (by its code), retail, or the TL decision. */
 interface CatalogColumn {
@@ -23,26 +30,51 @@ const FINAL = "__final";
  * after VAT whatever the sheet's basis: a class on a before-VAT sheet
  * (Cetvel 1) is before VAT; retail, the TL decision and every class on an
  * after-VAT sheet (Cetvel 2) are after it.
+ *
+ * "ERP ve Katalog Fiyatları": a row's ERP price (before VAT) stands in for
+ * every group's price — Bayi, Toptan, Kafe and retail, not the TL decision —
+ * and each group shows its price as the row chose: only before VAT, only
+ * after it (worked out at the sheet's VAT rate), or, unchosen, the full split.
  */
 function plateOf(record: PricingRecord, columns: CatalogColumn[]): LookbookItem {
   const s = record.sheet;
   const vatRate = Number(s.retail.vat_rate);
+  const erp = erpPriceFor(record, s.currency);
   const lines = columns.flatMap((column) => {
-    let amount: string | null;
+    let amount: number | null;
     let currency = s.currency;
     let beforeVat = false;
+    let display: boolean | null = null;
     if (column.key === FINAL) {
-      amount = s.final_try;
+      amount = s.final_try === null ? null : Number(s.final_try);
       currency = "TRY";
-    } else if (column.key === RETAIL) {
-      amount = s.retail.price;
     } else {
-      amount = s.columns.find((c) => c.segment === column.key)?.price ?? null;
-      beforeVat = s.vat_mode === "EXCL";
+      const segment: CatalogSegment = column.key === RETAIL ? "RETAIL" : (column.key as CatalogSegment);
+      display = record[ERP_DISPLAY_FIELDS[segment]] ?? null;
+      if (erp) {
+        ({ amount, currency } = erp);
+        beforeVat = true;
+      } else if (column.key === RETAIL) {
+        amount = Number(s.retail.price);
+      } else {
+        const price = s.columns.find((c) => c.segment === column.key)?.price;
+        amount = price == null ? null : Number(price);
+        beforeVat = s.vat_mode === "EXCL";
+      }
     }
     if (amount === null) return [];
     const tone = column.key === RETAIL ? ("retail" as const) : column.key === FINAL ? ("final" as const) : undefined;
-    return [{ key: column.key, label: column.label, currency, tone, ...splitVat(Number(amount), vatRate, beforeVat) }];
+    return [
+      {
+        key: column.key,
+        label: column.label,
+        currency,
+        tone,
+        totalOnly: display === true,
+        exclOnly: display === false,
+        ...splitVat(amount, vatRate, beforeVat),
+      },
+    ];
   });
   return {
     id: record.id,
@@ -90,7 +122,12 @@ export function PricingCatalogView({ ids }: { ids: string[] }) {
   // (an intermediate step such as "Mağaza") is the shop's arithmetic, not a
   // price a customer is quoted, so it is never in the catalogue.
   const allColumns = useMemo<CatalogColumn[]>(() => {
-    const groups = new Set((records ?? []).flatMap((r) => r.sheet.columns.map((c) => c.segment).filter(Boolean)));
+    // A row with an ERP price has a price for every group.
+    const groups = new Set(
+      (records ?? []).flatMap((r) =>
+        erpPriceFor(r, r.sheet.currency) ? ["DEALER", "WHOLESALE", "CAFE"] : r.sheet.columns.map((c) => c.segment).filter(Boolean),
+      ),
+    );
     const cols: CatalogColumn[] = (["DEALER", "WHOLESALE", "CAFE"] as const)
       .filter((g) => groups.has(g))
       .map((g) => ({ key: g, label: SEGMENT_LABELS[g].toLocaleUpperCase("tr-TR") }));

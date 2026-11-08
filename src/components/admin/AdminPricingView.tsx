@@ -133,6 +133,15 @@ function draftFrom(r: PricingRecord): SheetDraft {
     usdRate: typed(s.usd_rate),
     eurRate: typed(s.eur_rate),
     finalTry: typed(s.final_try),
+    erpUsd: typed(r.erp_price_usd ?? null),
+    erpEur: typed(r.erp_price_eur ?? null),
+    erpTl: typed(r.erp_price_tl ?? null),
+    erpDisplay: {
+      DEALER: r.erp_display_bayi ?? null,
+      WHOLESALE: r.erp_display_toptan ?? null,
+      CAFE: r.erp_display_kafe ?? null,
+      RETAIL: r.erp_display_perakende ?? null,
+    },
   };
 }
 

@@ -39,6 +39,8 @@ export interface LookbookLine {
   tone?: "retail" | "final";
   /** Show only the total, without the VAT split (a shelf price, as a shopper reads it). */
   totalOnly?: boolean;
+  /** Show only the price before VAT, in its column ("KDV hariç göster" in the admin's catalogue). */
+  exclOnly?: boolean;
 }
 
 /** One product plate. */
@@ -245,6 +247,13 @@ function Plate({ item, shape }: { item: LookbookItem; shape: PlateShape }) {
                         <span aria-hidden className="@max-[19rem]:hidden" />
                         <span aria-hidden className="@max-[19rem]:hidden" />
                       </>
+                    ) : l.exclOnly ? (
+                      <>
+                        <span className={`whitespace-nowrap text-end font-mono font-bold text-zinc-900 ${s.excl} @max-[19rem]:hidden`}>
+                          {money(l.excl, l.currency)}
+                        </span>
+                        <span aria-hidden className="@max-[19rem]:hidden" />
+                      </>
                     ) : (
                       <>
                         <span className={`whitespace-nowrap text-end font-mono text-zinc-500 ${s.excl} @max-[19rem]:hidden`}>
@@ -259,10 +268,18 @@ function Plate({ item, shape }: { item: LookbookItem; shape: PlateShape }) {
                       className={`whitespace-nowrap text-end font-mono font-bold ${retail ? s.retailTotal : `${s.total} text-zinc-900`}`}
                       style={retail ? { color: CARMINE } : undefined}
                     >
-                      {money(l.total, l.currency)}
+                      {l.exclOnly ? (
+                        // Before VAT only: in its own column, and in the last on a narrow plate.
+                        <span className="hidden @max-[19rem]:inline">
+                          {money(l.excl, l.currency)}{" "}
+                          <span className="font-sans text-[0.7em] font-semibold uppercase tracking-wider">{t.exclVat}</span>
+                        </span>
+                      ) : (
+                        money(l.total, l.currency)
+                      )}
                     </span>
                     {/* A narrow plate's VAT split, under the label and the total. */}
-                    {!l.totalOnly && (
+                    {!l.totalOnly && !l.exclOnly && (
                       <span className={`col-span-full hidden font-mono text-zinc-500 @max-[19rem]:block ${s.vat}`}>
                         {money(l.excl, l.currency)} <span className="font-sans uppercase tracking-wider">{t.exclVat}</span>
                         <span className="mx-1 text-zinc-300">·</span>+{money(l.vat, l.currency)}{" "}
