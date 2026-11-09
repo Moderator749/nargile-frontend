@@ -10,6 +10,7 @@ import {
   type CatalogSegment,
   type ErpCatalogFields,
   type ErpDisplayField,
+  type PriceMatrix,
 } from "@/lib/erpCatalog";
 import { convertVat, kurusToInput, parseDecimalInput } from "@/lib/format";
 import { PRODUCT_SLUG } from "@/lib/slug";
@@ -157,26 +158,22 @@ export function translationStarted(t: TranslationDraft): boolean {
 }
 
 /**
- * "ERP ve Katalog Fiyatları" as typed: the ERP price per currency (KDV hariç)
- * and per group the catalogue's display — true "KDV dahil", false "KDV
- * hariç", null not chosen (the full split).
+ * "ERP ve Katalog Fiyatları" as typed: the ERP price per currency and group
+ * (KDV hariç) — what applying a pricing worksheet writes from its "ERP
+ * fiyatı" row — and per group the catalogue's display: true "KDV dahil",
+ * false "KDV hariç", null not chosen (the full split).
  */
 export interface ErpDraft {
-  usd: string;
-  eur: string;
-  tl: string;
+  prices: Record<CurrencyType, Record<SheetSegment, string>>;
   display: Record<CatalogSegment, boolean | null>;
 }
 
 export const noErpDisplay = (): ErpDraft["display"] => ({ DEALER: null, WHOLESALE: null, CAFE: null, RETAIL: null });
-const emptyErp = (): ErpDraft => ({ usd: "", eur: "", tl: "", display: noErpDisplay() });
-
-/** The ERP boxes, in the section's order: the field each one fills and the currency it is in. */
-export const ERP_CURRENCIES = [
-  { key: "usd", currency: "USD" },
-  { key: "eur", currency: "EUR" },
-  { key: "tl", currency: "TRY" },
-] as const satisfies readonly { key: keyof ErpDraft; currency: CurrencyType }[];
+const emptyErpPrices = (): ErpDraft["prices"] =>
+  Object.fromEntries(
+    SHEET_CURRENCIES.map((c) => [c, Object.fromEntries(SHEET_COLUMNS.map(({ segment }) => [segment, ""]))]),
+  ) as ErpDraft["prices"];
+const emptyErp = (): ErpDraft => ({ prices: emptyErpPrices(), display: noErpDisplay() });
 
 /** Typed, but not an ERP price: not a number, or not above zero. */
 export const erpPriceInvalid = (raw: string) => !!raw.trim() && !(Number(parseDecimalInput(raw)) > 0);
@@ -361,9 +358,12 @@ export function draftFromSheet(sheet: SavedProductSheet): SheetDraft {
     },
     erp: sheet.erp
       ? {
-          usd: money(sheet.erp.erp_price_usd),
-          eur: money(sheet.erp.erp_price_eur),
-          tl: money(sheet.erp.erp_price_tl),
+          prices: Object.fromEntries(
+            SHEET_CURRENCIES.map((c) => [
+              c,
+              Object.fromEntries(SHEET_COLUMNS.map(({ segment }) => [segment, money(sheet.erp?.erp_prices?.[c]?.[segment])])),
+            ]),
+          ) as ErpDraft["prices"],
           display: Object.fromEntries(
             CATALOG_SEGMENTS.map((segment) => [segment, sheet.erp?.[ERP_DISPLAY_FIELDS[segment]] ?? null]),
           ) as ErpDraft["display"],
@@ -427,9 +427,10 @@ export function draftProblem(draft: SheetDraft): string | null {
       if ([cell.excl, cell.incl].some((v) => v.trim() && parseDecimalInput(v) === null))
         return `Fiyat tablosu: ${label} ${CURRENCY_LABEL[currency]} fiyatı geçerli değil (en fazla 2 ondalık, ör. 183,33).`;
     }
-  for (const { key, currency } of ERP_CURRENCIES)
-    if (erpPriceInvalid(draft.erp[key]))
-      return `ERP ve Katalog Fiyatları: ERP ${CURRENCY_LABEL[currency]} fiyatı geçerli değil (sıfırdan büyük, en fazla 2 ondalık; ya da boş bırakın).`;
+  for (const currency of SHEET_CURRENCIES)
+    for (const { segment, label } of SHEET_COLUMNS)
+      if (erpPriceInvalid(draft.erp.prices[currency][segment]))
+        return `ERP ve Katalog Fiyatları: ${label} ${CURRENCY_LABEL[currency]} ERP fiyatı geçerli değil (sıfırdan büyük, en fazla 2 ondalık; ya da boş bırakın).`;
   if (draft.opportunity.is_opportunity) {
     if (!parseDecimalInput(draft.opportunity.price)) return "Fırsat fiyatı girin.";
     // No deadline is fine: the offer then runs until its stock runs out.
@@ -440,6 +441,17 @@ export function draftProblem(draft: SheetDraft): string | null {
 }
 
 export const cellFilled = (cell: CellDraft) => !!parseDecimalInput(cell.excl) || !!parseDecimalInput(cell.incl);
+
+/** The ERP prices as the server takes them: only the cells typed, as decimal strings. */
+export function erpMatrix(prices: ErpDraft["prices"]): PriceMatrix {
+  const matrix: PriceMatrix = {};
+  for (const currency of SHEET_CURRENCIES)
+    for (const { segment } of SHEET_COLUMNS) {
+      const value = parseDecimalInput(prices[currency][segment]);
+      if (value !== null) (matrix[currency] ??= {})[segment] = value;
+    }
+  return matrix;
+}
 
 /** The payload: only the cells that were filled in, prices as decimal strings. */
 export function toPayload(draft: SheetDraft): ProductSheet {
@@ -502,9 +514,7 @@ export function toPayload(draft: SheetDraft): ProductSheet {
     prices,
     rules: { ...draft.rules },
     erp: {
-      erp_price_usd: parseDecimalInput(draft.erp.usd),
-      erp_price_eur: parseDecimalInput(draft.erp.eur),
-      erp_price_tl: parseDecimalInput(draft.erp.tl),
+      erp_prices: erpMatrix(draft.erp.prices),
       ...(Object.fromEntries(CATALOG_SEGMENTS.map((segment) => [ERP_DISPLAY_FIELDS[segment], draft.erp.display[segment]])) as Pick<
         ErpCatalogFields,
         ErpDisplayField

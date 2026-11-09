@@ -1,7 +1,7 @@
 /**
  * "ERP ve Katalog Fiyatları", on the product sheet under "Fiyat Tablosu": the
- * product's ERP price in USD, EUR and TL (before VAT) and, per customer group,
- * how the price catalogue (PDF) shows that group's price. How the catalogue
+ * product's ERP price per currency and customer group (before VAT) and, per
+ * group, how the price catalogue (PDF) shows that group's price. How the catalogue
  * prices a group from it lives here too, so the sheet's preview and the PDF
  * cannot disagree. Pure, so `npm test` reads it.
  */
@@ -11,15 +11,17 @@ export type CatalogCurrency = "TRY" | "USD" | "EUR";
 export type CatalogSegment = "DEALER" | "WHOLESALE" | "CAFE" | "RETAIL";
 export const CATALOG_SEGMENTS: readonly CatalogSegment[] = ["DEALER", "WHOLESALE", "CAFE", "RETAIL"];
 
+/** Prices per currency and group, as decimal strings; an empty cell is absent. */
+export type PriceMatrix = Partial<Record<CatalogCurrency, Partial<Record<CatalogSegment, string>>>>;
+
 /**
- * The section as the server keeps it on the product. A display choice is
- * true "KDV dahil göster", false "KDV hariç göster", null not chosen (the
- * full split: before VAT, VAT, total).
+ * The section as the server keeps it on the product: `erp_prices` before VAT
+ * (a pricing worksheet's "ERP fiyatı" row is written there when it is
+ * applied). A display choice is true "KDV dahil göster", false "KDV hariç
+ * göster", null not chosen (the full split: before VAT, VAT, total).
  */
 export interface ErpCatalogFields {
-  erp_price_usd: string | null;
-  erp_price_eur: string | null;
-  erp_price_tl: string | null;
+  erp_prices: PriceMatrix;
   erp_display_bayi: boolean | null;
   erp_display_toptan: boolean | null;
   erp_display_kafe: boolean | null;
@@ -37,20 +39,16 @@ export const ERP_DISPLAY_FIELDS: Record<CatalogSegment, ErpDisplayField> = {
 };
 
 /**
- * The ERP price the catalogue shows for a line priced in `currency`: the one
- * in that currency, else the first typed of TL, USD, EUR. Null with none.
+ * A group's ERP price for a catalogue priced in `currency`: the group's in
+ * that currency, else its first of TL, USD, EUR. Null with none.
  */
 export function erpPriceFor(
-  fields: Partial<Pick<ErpCatalogFields, "erp_price_usd" | "erp_price_eur" | "erp_price_tl">>,
+  prices: PriceMatrix | null | undefined,
   currency: CatalogCurrency,
+  segment: CatalogSegment,
 ): { amount: number; currency: CatalogCurrency } | null {
-  const typed: Record<CatalogCurrency, string | null | undefined> = {
-    TRY: fields.erp_price_tl,
-    USD: fields.erp_price_usd,
-    EUR: fields.erp_price_eur,
-  };
-  const pick = ([currency, "TRY", "USD", "EUR"] as const).find((c) => typed[c] != null);
-  return pick ? { amount: Number(typed[pick]), currency: pick } : null;
+  const pick = ([currency, "TRY", "USD", "EUR"] as const).find((c) => prices?.[c]?.[segment] != null);
+  return pick ? { amount: Number(prices![pick]![segment]), currency: pick } : null;
 }
 
 /** A price split for an invoice, the VAT the difference so the three add up to the kuruş. */
@@ -105,21 +103,27 @@ export interface ProductErpCatalog extends ErpCatalogFields {
   /** The rate of its price table; null when it has no price. */
   vat_rate: string | null;
   /** "Fiyat Tablosu", KDV hariç: [currency][group]; a cell left empty is absent. */
-  prices_excl: Partial<Record<CatalogCurrency, Partial<Record<CatalogSegment, string>>>>;
+  prices_excl: PriceMatrix;
 }
 
 /**
- * A worksheet row's group in the price catalogue (PDF): the product's ERP
- * price, else its KDV hariç price in the row's currency from "Fiyat Tablosu"
- * — both at the product's VAT rate, as the product sheet's preview shows them
- * — else, for a code that names no product or a group the product has no
- * price for, the row's own price in its own basis at the row's rate. Shown as
- * the product chose for the group.
+ * A worksheet row's group in the price catalogue (PDF). The base, before VAT,
+ * is the first there is of:
+ *   1. the product's ERP price for the group (`erp_prices`);
+ *   2. the row's own "ERP fiyatı" for it (the blue row; a row not applied yet);
+ *   3. the product's KDV hariç price in "Fiyat Tablosu", in the row's currency;
+ *   4. the row's own "uygulanacak" price (the green row), for a code that
+ *      names no product or a group the product has no price for.
+ * The green row is the site's price, marked up from the ERP base: it is never
+ * the base while an ERP price exists. VAT is at the product's rate (the row's
+ * without a product), added as the product chose for the group.
  */
 export function rowCatalogPrice({
   product,
   segment,
   currency,
+  rowErp,
+  rowErpBeforeVat,
   rowPrice,
   rowPriceBeforeVat,
   rowVatRate,
@@ -127,20 +131,25 @@ export function rowCatalogPrice({
   product: ProductErpCatalog | null;
   segment: CatalogSegment;
   currency: CatalogCurrency;
+  /** The row's "ERP fiyatı" for the group, in its own basis; null when not typed. */
+  rowErp: number | null;
+  rowErpBeforeVat: boolean;
   rowPrice: number | null;
   rowPriceBeforeVat: boolean;
   rowVatRate: number;
 }): CatalogGroupPrice | null {
   const display = product?.[ERP_DISPLAY_FIELDS[segment]] ?? null;
-  const erp = product ? erpPriceFor(product, currency) : null;
+  const vatRate = product?.vat_rate != null ? Number(product.vat_rate) : rowVatRate;
+  const erp =
+    erpPriceFor(product?.erp_prices, currency, segment) ??
+    (rowErp === null ? null : { amount: splitVat(rowErp, rowVatRate, rowErpBeforeVat).excl, currency });
   const tableExcl = product?.prices_excl?.[currency]?.[segment];
-  if (product && (erp || tableExcl != null)) {
-    const productRate = product.vat_rate != null ? Number(product.vat_rate) : rowVatRate;
+  if (erp || tableExcl != null) {
     return catalogPrice({
       ownPrice: tableExcl == null ? null : Number(tableExcl),
       ownPriceBeforeVat: true,
       currency,
-      vatRate: productRate,
+      vatRate,
       erp,
       display,
     });
@@ -150,25 +159,24 @@ export function rowCatalogPrice({
 
 /**
  * The product sheet's preview, a catalogue in `currency`: each group's base is
- * the ERP price as typed (before VAT), else the group's KDV hariç price in the
- * sheet's "Fiyat Tablosu" — never an after-VAT figure — and VAT is added at the
- * product's rate only where the group shows "KDV dahil".
+ * its ERP price as typed (before VAT), else its KDV hariç price in the sheet's
+ * "Fiyat Tablosu" — never an after-VAT or marked-up figure — and VAT is added
+ * at the product's rate only where the group shows "KDV dahil".
  */
 export function productCatalogPreview({
-  erp,
+  erpPrices,
   display,
   currency,
   vatRate,
   priceExcl,
 }: {
-  erp: Partial<Pick<ErpCatalogFields, "erp_price_usd" | "erp_price_eur" | "erp_price_tl">>;
+  erpPrices: PriceMatrix;
   display: Record<CatalogSegment, boolean | null>;
   currency: CatalogCurrency;
   vatRate: number;
   /** "Fiyat Tablosu", KDV hariç, in `currency`; null for an empty cell. */
   priceExcl: Record<CatalogSegment, number | null>;
 }): Record<CatalogSegment, CatalogGroupPrice | null> {
-  const typed = erpPriceFor(erp, currency);
   return Object.fromEntries(
     CATALOG_SEGMENTS.map((segment) => [
       segment,
@@ -177,7 +185,7 @@ export function productCatalogPreview({
         ownPriceBeforeVat: true,
         currency,
         vatRate,
-        erp: typed,
+        erp: erpPriceFor(erpPrices, currency, segment),
         display: display[segment],
       }),
     ]),
