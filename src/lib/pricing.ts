@@ -152,7 +152,7 @@ type Typed = { percent: number | null; desired: number | null; erpPrice: number 
  * A calculated value's own figures: the base (the ERP fiyatı typed, else the
  * calculated value) plus the uygulanacak oran (none or 0: as it is), a typed
  * price winning. `erpVat` brings the ERP fiyatı, before VAT, to the column's
- * own basis: 1 + VAT on an after-VAT sheet (Cetvel 2), else 1.
+ * own basis: 1 + VAT where the column is after VAT, else 1.
  */
 function priced(computed: number | null, { desired, erpPrice }: Typed, applied: number | null, erpVat: number | null): ComputedPrice {
   const base = erpPrice !== null ? (erpVat === null ? null : erpPrice * erpVat) : computed;
@@ -172,9 +172,10 @@ function priced(computed: number | null, { desired, erpPrice }: Typed, applied: 
  * not sent, and is passed over here too: retail then builds on the step
  * before it. Each column's "uygulanacak fiyat", when none is typed, is its
  * ERP fiyatı (else its calculated value) plus — for the classes only — the
- * sheet's "uygulanacak oran"; the extras and retail never take the rate. On
- * an after-VAT sheet (Cetvel 2) the ERP fiyatı, before VAT on every sheet,
- * takes VAT first: 595 at 20% is 714.
+ * sheet's "uygulanacak oran"; the extras and retail never take the rate. The
+ * ERP fiyatı is before VAT on every sheet: where the column is after VAT —
+ * retail and the extras always, the classes on Cetvel 2 — it takes VAT
+ * first: 595 at 20% is 714.
  */
 export function computeSheet(input: {
   cost: number | null;
@@ -192,26 +193,27 @@ export function computeSheet(input: {
   const factor = r.vatRate !== null ? 1 + r.vatRate / 100 : null;
   const withVat = (v: number | null) =>
     v === null ? null : input.vatMode === "INCL" ? v : factor === null ? null : v * factor;
-  // The ERP fiyatı is before VAT; on Cetvel 2 every price around it is after.
-  const erpVat = input.vatMode === "INCL" ? factor : 1;
+  // The ERP fiyatı is before VAT. Retail and the extras are after VAT on both
+  // sheets; on Cetvel 2 the classes are too.
+  const classErpVat = input.vatMode === "INCL" ? factor : 1;
 
   let previous = input.cost;
   const columns = input.columns.map((typed) => {
     const computed = previous !== null && typed.percent !== null ? previous * (1 + typed.percent / 100) : null;
     previous = computed;
-    return priced(computed, typed, applied, erpVat);
+    return priced(computed, typed, applied, classErpVat);
   });
   const extras = (input.extras ?? []).map((typed) => {
     if (typed.percent === null) return { computed: null, auto: null, price: null, beforeVat: null };
     const step = previous === null ? null : previous * (1 + typed.percent / 100);
     previous = step;
     // The rate is the classes' only: an extra's price is its base.
-    return { ...priced(withVat(step), typed, null, erpVat), beforeVat: step === null ? null : round2(step) };
+    return { ...priced(withVat(step), typed, null, factor), beforeVat: step === null ? null : round2(step) };
   });
   // Retail is the shelf price, after VAT: VAT is added here when the sheet's
   // cost (and so its chain) is before VAT.
   const beforeVat = previous !== null && r.percent !== null ? previous * (1 + r.percent / 100) : null;
-  const retail = priced(withVat(beforeVat), r, null, erpVat); // retail never takes the rate
+  const retail = priced(withVat(beforeVat), r, null, factor); // retail never takes the rate
   const rate = input.currency === "USD" ? input.usdRate : input.currency === "EUR" ? input.eurRate : null;
   return {
     columns,

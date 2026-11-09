@@ -637,7 +637,7 @@ export function PricingCalculator({
               {d.extras.map((c) => (
                 <ErpCell
                   key={c.key}
-                  label={`${c.label || "Mağaza fiyatı"} ERP fiyatı (KDV ${d.vatMode === "INCL" ? "hariç" : "dahil"})`}
+                  label={`${c.label || "Mağaza fiyatı"} ERP fiyatı (KDV hariç)`}
                   value={c.erpPrice}
                   onChange={(erpPrice) => setExtra(c.key, { erpPrice })}
                 />
@@ -792,8 +792,8 @@ export function PricingCalculator({
       <p className="mt-2 text-[11px] leading-4 text-slate-500 dark:text-zinc-400">
         Turuncu satır kendi formül zinciriyle hesaplanır: bayi → toptan → kafe → mağaza fiyatı → perakende. Mavi satıra
         (ERP fiyatı) isterseniz sütun için bir taban fiyat yazın; her cetvelde KDV hariç sayılır ve siteye uygulanınca
-        ürünün ERP fiyatlarına olduğu gibi yazılır. Cetvel 2’de yeşil satır mavi fiyata önce KDV’yi ekler (595 + %20 KDV = 714), uygulanınca ürünün dört
-        grubu da “KDV dahil göster” olur. Yeşil satır siteye gönderilen fiyattır: ERP fiyatı —
+        ürünün ERP fiyatlarına olduğu gibi yazılır. KDV dahil sütunlarda (perakende ve mağaza fiyatı, Cetvel 2’de tüm sütunlar) yeşil satır mavi fiyata önce
+        KDV’yi ekler (595 + %20 KDV = 714). Cetvel 2 uygulanınca ürünün dört grubu da “KDV dahil göster” olur. Yeşil satır siteye gönderilen fiyattır: ERP fiyatı —
         boşsa hesaplanan fiyat — bayi, toptan ve kafede maliyetin altındaki uygulanacak oran eklenerek kendiliğinden
         dolar; mağaza fiyatı ve perakendeye oran eklenmez, yeşil satırları ERP fiyatının (boşsa hesaplananın) kendisidir.
         Yeşil satıra fiyat yazarsanız (ör. 199,90) o fiyat geçerli olur. Hiçbiri zinciri değiştirmez. Mağaza fiyatı ve
