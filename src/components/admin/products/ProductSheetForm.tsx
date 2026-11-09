@@ -487,12 +487,7 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
           title="ERP ve Katalog Fiyatları"
           hint="Yalnızca PDF fiyat kataloğu için; sitede gösterilmez."
         >
-          <ErpCatalogPrices
-            erp={draft.erp}
-            prices={draft.prices}
-            vatRate={draft.vatRate}
-            onChange={(erp) => set("erp", erp)}
-          />
+          <ErpCatalogPrices erp={draft.erp} onChange={(erp) => set("erp", erp)} />
         </SheetSection>
 
         <div className="grid gap-4 lg:grid-cols-2">

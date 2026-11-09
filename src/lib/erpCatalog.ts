@@ -1,9 +1,10 @@
 /**
  * "ERP ve Katalog Fiyatları", on the product sheet under "Fiyat Tablosu": the
  * product's ERP price per currency and customer group (before VAT) and, per
- * group, how the price catalogue (PDF) shows that group's price. How the catalogue
- * prices a group from it lives here too, so the sheet's preview and the PDF
- * cannot disagree. Pure, so `npm test` reads it.
+ * group, how the price catalogue (PDF) shows that group's price. How each
+ * catalogue — the admin's from a pricing file, the storefront's /fiyat-katalogu
+ * — prices a group from it lives here too, so they cannot disagree. Pure, so
+ * `npm test` reads it.
  */
 
 export type CatalogCurrency = "TRY" | "USD" | "EUR";
@@ -192,39 +193,4 @@ export function listCatalogPrice(p: ListedGroupPrice): CatalogGroupPrice {
   const excl = Number(p.price_excl_tax);
   const total = Number(p.price_incl_tax);
   return { currency: p.currency, excl, vat: Math.round((total - excl) * 100) / 100, total, display, fromErp: false };
-}
-
-/**
- * The product sheet's preview, a catalogue in `currency`: each group's base is
- * its ERP price as typed (before VAT), else its KDV hariç price in the sheet's
- * "Fiyat Tablosu" — never an after-VAT or marked-up figure — and VAT is added
- * at the product's rate only where the group shows "KDV dahil".
- */
-export function productCatalogPreview({
-  erpPrices,
-  display,
-  currency,
-  vatRate,
-  priceExcl,
-}: {
-  erpPrices: PriceMatrix;
-  display: Record<CatalogSegment, boolean | null>;
-  currency: CatalogCurrency;
-  vatRate: number;
-  /** "Fiyat Tablosu", KDV hariç, in `currency`; null for an empty cell. */
-  priceExcl: Record<CatalogSegment, number | null>;
-}): Record<CatalogSegment, CatalogGroupPrice | null> {
-  return Object.fromEntries(
-    CATALOG_SEGMENTS.map((segment) => [
-      segment,
-      catalogPrice({
-        ownPrice: priceExcl[segment],
-        ownPriceBeforeVat: true,
-        currency,
-        vatRate,
-        erp: erpPriceFor(erpPrices, currency, segment),
-        display: display[segment],
-      }),
-    ]),
-  ) as Record<CatalogSegment, CatalogGroupPrice | null>;
 }

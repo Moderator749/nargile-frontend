@@ -2,56 +2,12 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { catalogPrice, erpPriceFor, listCatalogPrice, productCatalogPreview, rowCatalogPrice } from "./erpCatalog.ts";
+import { catalogPrice, erpPriceFor, listCatalogPrice, rowCatalogPrice } from "./erpCatalog.ts";
 
-const NONE = { DEALER: null, WHOLESALE: null, CAFE: null, RETAIL: null };
-const TABLE = { DEALER: 800, WHOLESALE: 900, CAFE: null, RETAIL: 1000 };
 
 // MLZ 154: the worksheet's blue ERP row (105, 105, 125; retail 180 on the shelf = 150 before VAT)
 // against the green row the site got (110.52, 110.52, 131.58).
 const MLZ_ERP = { TRY: { DEALER: "105.00", WHOLESALE: "105.00", CAFE: "125.00", RETAIL: "150.00" } };
-const MLZ_TABLE = { DEALER: 110.52, WHOLESALE: 110.52, CAFE: 131.58, RETAIL: 150 };
-
-test("MLZ 154: each group's base is its own ERP price, not the marked-up table", () => {
-  const preview = productCatalogPreview({
-    erpPrices: MLZ_ERP,
-    display: { DEALER: false, WHOLESALE: true, CAFE: true, RETAIL: null },
-    currency: "TRY",
-    vatRate: 20,
-    priceExcl: MLZ_TABLE,
-  });
-  assert.deepEqual(
-    Object.values(preview).map((p) => [p.excl, p.fromErp]),
-    [[105, true], [105, true], [125, true], [150, true]],
-  );
-  // VAT is added only where "KDV dahil göster" is picked: 105 → 126, 125 → 150.
-  assert.equal(preview.DEALER.display, false);
-  assert.equal(preview.WHOLESALE.total, 126);
-  assert.equal(preview.CAFE.total, 150);
-  assert.deepEqual([preview.RETAIL.excl, preview.RETAIL.vat, preview.RETAIL.total], [150, 30, 180]);
-});
-
-test("without an ERP price the base is the price table's KDV hariç price", () => {
-  const preview = productCatalogPreview({ erpPrices: {}, display: NONE, currency: "TRY", vatRate: 20, priceExcl: TABLE });
-  assert.deepEqual(
-    [preview.DEALER.excl, preview.WHOLESALE.excl, preview.RETAIL.excl],
-    [800, 900, 1000], // retail too: its before-VAT price, never the 1.200 after it
-  );
-  assert.equal(preview.RETAIL.fromErp, false);
-  assert.equal(preview.CAFE, null); // no price: off the catalogue
-});
-
-test("the product's own VAT rate is the one added", () => {
-  const preview = productCatalogPreview({
-    erpPrices: { USD: { RETAIL: "24.50" } },
-    display: { ...NONE, RETAIL: true },
-    currency: "USD",
-    vatRate: 10,
-    priceExcl: TABLE,
-  });
-  assert.equal(preview.RETAIL.total, 26.95);
-  assert.equal(preview.RETAIL.currency, "USD");
-});
 
 test("a group's ERP price in the catalogue's currency, else its first of TL, USD, EUR", () => {
   const prices = { USD: { DEALER: "24.50" }, TRY: { DEALER: "1100", CAFE: "900" }, EUR: { CAFE: "21" } };
