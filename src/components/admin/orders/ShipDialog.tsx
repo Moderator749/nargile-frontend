@@ -22,6 +22,8 @@ function defaultCarrier(order: AdminOrder): Carrier {
 }
 
 export const labelHref = (order: Pick<AdminOrder, "id">) => `/admin/orders/${order.id}/etiket`;
+/** Several orders' labels, four to an A4 sheet. */
+export const labelsHref = (ids: readonly string[]) => `/admin/orders/etiket?ids=${ids.join(",")}`;
 
 const choice =
   "flex cursor-pointer items-start gap-2.5 rounded-xl border px-3 py-2.5 text-sm transition-colors duration-200 has-[:checked]:border-red-600 has-[:checked]:bg-red-50 dark:has-[:checked]:bg-red-500/10";

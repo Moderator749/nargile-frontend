@@ -2,13 +2,14 @@
 
 import { Fragment, useCallback, useEffect, useState } from "react";
 import axios from "axios";
+import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { CircleCheck, CreditCard, Landmark, RefreshCw, Search, Van, X, XCircle } from "lucide-react";
+import { CircleCheck, CreditCard, Landmark, Printer, RefreshCw, Search, Van, X, XCircle } from "lucide-react";
 
 import { AdminPageHeader, panelClass } from "@/components/admin/AdminShell";
 import { CargoSelect } from "@/components/admin/orders/CargoSelect";
 import { OrderDecisionDialog } from "@/components/admin/orders/OrderDecisionDialog";
-import { ShipDialog } from "@/components/admin/orders/ShipDialog";
+import { ShipDialog, labelsHref } from "@/components/admin/orders/ShipDialog";
 import { StoreApproval } from "@/components/admin/orders/StoreApproval";
 import { ExpandToggle, sheetId } from "@/components/admin/orders/ExpandToggle";
 import { OrderSheet } from "@/components/admin/orders/OrderSheet";
@@ -144,6 +145,8 @@ export function AdminOrdersView() {
   const [list, setList] = useState<ListState | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [open, setOpen] = useState<ReadonlySet<string>>(new Set());
+  // Ticked for "Etiketleri Yazdır"; only the ones on the list in view count.
+  const [picked, setPicked] = useState<ReadonlySet<string>>(new Set());
 
   // Looking one order up, the tab and the İstanbul filter stand aside.
   const shippingMethod = istanbulOnly && !number ? ("ISTANBUL_FREE" as const) : null;
@@ -166,6 +169,25 @@ export function AdminOrdersView() {
   }, [key, listStatus, shippingMethod, number]);
 
   const current = list?.key === key ? list : null;
+  const pickedOrders = current ? current.orders.filter((o) => picked.has(o.id)) : [];
+  const allPicked = !!current && current.orders.length > 0 && pickedOrders.length === current.orders.length;
+
+  const togglePick = (id: string) =>
+    setPicked((prev) => {
+      const next = new Set(prev);
+      if (!next.delete(id)) next.add(id);
+      return next;
+    });
+  const pickAll = () => setPicked(allPicked || !current ? new Set() : new Set(current.orders.map((o) => o.id)));
+  const pickBox = (o: AdminOrder) => (
+    <input
+      type="checkbox"
+      checked={picked.has(o.id)}
+      onChange={() => togglePick(o.id)}
+      aria-label={`${o.order_number} etiket için seç`}
+      className="h-4 w-4 cursor-pointer accent-red-600"
+    />
+  );
 
   /** Back to every order, on this tab. */
   const clearNumber = () => router.replace(pathname, { scroll: false });
@@ -459,8 +481,18 @@ export function AdminOrdersView() {
             <table className="w-full table-fixed text-sm">
               <thead>
                 <tr className="border-b border-slate-200 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:border-white/10 dark:text-zinc-500">
-                  <th scope="col" className="w-9 px-2 py-3">
-                    <span className="sr-only">Detay</span>
+                  <th scope="col" className="w-16 px-2 py-3">
+                    <input
+                      type="checkbox"
+                      checked={allPicked}
+                      ref={(el) => {
+                        if (el) el.indeterminate = pickedOrders.length > 0 && !allPicked;
+                      }}
+                      onChange={pickAll}
+                      aria-label="Listedeki tüm siparişleri etiket için seç"
+                      className="ml-1.5 h-4 w-4 cursor-pointer align-middle accent-red-600"
+                    />
+                    <span className="sr-only">Seç ve detay</span>
                   </th>
                   <th scope="col" className="w-[18%] px-3 py-3">Sipariş</th>
                   <th scope="col" className="w-[20%] px-3 py-3">Müşteri</th>
@@ -484,12 +516,15 @@ export function AdminOrdersView() {
                         }`}
                       >
                         <td className="px-2 py-3 align-top">
-                          <ExpandToggle
-                            expanded={expanded}
-                            onToggle={() => toggle(o.id)}
-                            controls={sheetId(o.id)}
-                            orderNumber={o.order_number}
-                          />
+                          <div className="flex items-center gap-1.5 pl-1.5">
+                            {pickBox(o)}
+                            <ExpandToggle
+                              expanded={expanded}
+                              onToggle={() => toggle(o.id)}
+                              controls={sheetId(o.id)}
+                              orderNumber={o.order_number}
+                            />
+                          </div>
                         </td>
                         <td className="px-3 py-3 align-top">
                           <p className="truncate font-mono text-xs font-semibold" title={o.order_number}>{o.order_number}</p>
@@ -552,6 +587,7 @@ export function AdminOrdersView() {
                     <div className={`space-y-3 p-4 ${o.shipping_method === "ISTANBUL_FREE" ? "bg-sky-50/70 dark:bg-sky-500/5" : ""}`}>
                       {o.shipping_method === "ISTANBUL_FREE" && <IstanbulFlag />}
                       <div className="flex items-start gap-2">
+                        <span className="flex h-7 items-center">{pickBox(o)}</span>
                         <ExpandToggle
                           expanded={expanded}
                           onToggle={() => toggle(o.id)}
@@ -598,6 +634,28 @@ export function AdminOrdersView() {
           </>
         )}
       </div>
+      {pickedOrders.length > 0 && (
+        // At the window's foot while the list scrolls; nothing above it moves when the first box is ticked.
+        <div className="sticky bottom-4 z-20 mt-4 flex justify-center">
+          <div role="status" className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white/95 px-4 py-2.5 text-sm shadow-lg backdrop-blur dark:border-white/10 dark:bg-zinc-900/95">
+            <span className="font-medium tabular-nums">{pickedOrders.length} sipariş seçildi</span>
+            <Link
+              href={labelsHref(pickedOrders.map((o) => o.id))}
+              target="_blank"
+              className="inline-flex h-9 items-center gap-2 rounded-lg bg-red-600 px-3.5 text-sm font-semibold text-white shadow-sm transition-colors duration-200 hover:bg-red-500"
+            >
+              <Printer className="h-4 w-4" aria-hidden /> Etiketleri Yazdır
+            </Link>
+            <button
+              type="button"
+              onClick={() => setPicked(new Set())}
+              className="inline-flex h-9 items-center gap-1 rounded-lg px-2.5 text-xs font-semibold text-slate-600 transition-colors duration-200 hover:bg-slate-100 dark:text-zinc-400 dark:hover:bg-white/5"
+            >
+              <X className="h-3.5 w-3.5" aria-hidden /> Seçimi temizle
+            </button>
+          </div>
+        </div>
+      )}
       <ShipDialog actions={actions} />
       <OrderDecisionDialog actions={actions} />
     </>
