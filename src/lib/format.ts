@@ -112,6 +112,35 @@ export function convertVat(raw: string, rate: number, reverse = false): string {
   return kurusToInput(Math.round(reverse ? (kurus * 100) / (100 + rate) : (kurus * (100 + rate)) / 100));
 }
 
+/**
+ * A price's two boxes, KDV hariç and KDV dahil, as typed. `basis` is "incl"
+ * once the admin typed the KDV dahil price: a new rate keeps it and re-derives
+ * the net one. Otherwise the net price is the one kept.
+ */
+export interface VatCell {
+  excl: string;
+  incl: string;
+  basis?: "incl";
+}
+
+/**
+ * A cell after the admin typed `raw` into one of its boxes: the other box follows
+ * at `rate`. "12," already counts as 12; an entry that is not a price (yet) leaves
+ * the other box as it was rather than blanking it; clearing one box clears both.
+ */
+export function typedVatCell(cell: VatCell, side: "excl" | "incl", raw: string, rate: number): VatCell {
+  const other = side === "excl" ? cell.incl : cell.excl;
+  const derived = !raw.trim() ? "" : parseDecimalInput(raw) === null ? other : convertVat(raw, rate, side === "incl");
+  return side === "excl" ? { excl: raw, incl: derived } : { excl: derived, incl: raw, basis: "incl" };
+}
+
+/** A cell re-derived at a new rate, from whichever price the admin typed. */
+export function vatCellAtRate(cell: VatCell, rate: number): VatCell {
+  return cell.basis === "incl"
+    ? { ...cell, excl: convertVat(cell.incl, rate, true) }
+    : { ...cell, incl: convertVat(cell.excl, rate) };
+}
+
 /** A price as typed, tidied for showing: "183.33" / "400," → "183,33" / "400,00"; unparsable text is left alone. */
 export function tidyPriceInput(raw: string): string {
   const parsed = parseDecimalInput(raw);

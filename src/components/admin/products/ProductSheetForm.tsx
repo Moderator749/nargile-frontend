@@ -166,21 +166,20 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
   const setCell = (currency: CurrencyType, segment: SheetSegment, cell: CellDraft) =>
     setDraft((d) => ({ ...d, prices: { ...d.prices, [currency]: { ...d.prices[currency], [segment]: cell } } }));
 
-  /** A new rate re-derives every cell from the price the admin typed in it
-   * (the net one, unless they typed the KDV dahil one). */
+  /** A new rate re-derives every cell — the price table's and the ERP
+   * prices' — from the price the admin typed in it (the net one, unless they
+   * typed the KDV dahil one). */
   const setVatRate = (vatRate: VatRate) =>
-    setDraft((d) => ({
-      ...d,
-      vatRate,
-      prices: Object.fromEntries(
-        Object.entries(d.prices).map(([currency, row]) => [
-          currency,
-          Object.fromEntries(
-            Object.entries(row).map(([segment, cell]) => [segment, atRate(cell, vatRate)]),
-          ),
-        ]),
-      ) as SheetDraft["prices"],
-    }));
+    setDraft((d) => {
+      const reprice = (prices: SheetDraft["prices"]) =>
+        Object.fromEntries(
+          Object.entries(prices).map(([currency, row]) => [
+            currency,
+            Object.fromEntries(Object.entries(row).map(([segment, cell]) => [segment, atRate(cell, vatRate)])),
+          ]),
+        ) as SheetDraft["prices"];
+      return { ...d, vatRate, prices: reprice(d.prices), erp: { ...d.erp, prices: reprice(d.erp.prices) } };
+    });
 
   // A brand typed in before the list existed, or since removed from it, is
   // kept and shown (the combobox flags it), so saving does not drop it.
@@ -485,7 +484,7 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
           title="ERP ve Katalog Fiyatları"
           hint="Yalnızca PDF fiyat kataloğu için; sitede gösterilmez."
         >
-          <ErpCatalogPrices erp={draft.erp} onChange={(erp) => set("erp", erp)} />
+          <ErpCatalogPrices erp={draft.erp} vatRate={draft.vatRate} onChange={(erp) => set("erp", erp)} />
         </SheetSection>
 
         <div className="grid gap-4 lg:grid-cols-2">

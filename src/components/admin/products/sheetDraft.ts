@@ -12,7 +12,7 @@ import {
   type ErpDisplayField,
   type PriceMatrix,
 } from "@/lib/erpCatalog";
-import { convertVat, kurusToInput, parseDecimalInput } from "@/lib/format";
+import { convertVat, kurusToInput, parseDecimalInput, typedVatCell, vatCellAtRate, type VatCell } from "@/lib/format";
 import { PRODUCT_SLUG } from "@/lib/slug";
 import type {
   TranslatedLocale,
@@ -53,29 +53,11 @@ export function withoutVat(incl: string, rate: VatRate): string {
   return convertVat(incl, rate, true);
 }
 
-/**
- * A cell after the admin typed `raw` into one of its boxes: the other box follows
- * at `rate`. "12," already counts as 12; an entry that is not a price (yet) leaves
- * the other box as it was rather than blanking it; clearing one box clears both.
- */
-export function typedCell(cell: CellDraft, side: "excl" | "incl", raw: string, rate: VatRate): CellDraft {
-  const other = side === "excl" ? cell.incl : cell.excl;
-  const derived = !raw.trim()
-    ? ""
-    : parseDecimalInput(raw) === null
-      ? other
-      : side === "excl"
-        ? withVat(raw, rate)
-        : withoutVat(raw, rate);
-  return side === "excl" ? { excl: raw, incl: derived } : { excl: derived, incl: raw, basis: "incl" };
-}
+/** A cell after the admin typed `raw` into one of its boxes (lib/format's `typedVatCell`). */
+export const typedCell: (cell: CellDraft, side: "excl" | "incl", raw: string, rate: VatRate) => CellDraft = typedVatCell;
 
-/** A cell re-derived at a new rate, from whichever price the admin typed. */
-export function atRate(cell: CellDraft, rate: VatRate): CellDraft {
-  return cell.basis === "incl"
-    ? { ...cell, excl: withoutVat(cell.incl, rate) }
-    : { ...cell, incl: withVat(cell.excl, rate) };
-}
+/** A cell re-derived at a new rate, from whichever price the admin typed (lib/format's `vatCellAtRate`). */
+export const atRate: (cell: CellDraft, rate: VatRate) => CellDraft = vatCellAtRate;
 
 /** The rate a saved sheet was priced at, for the select. */
 function savedVatRate(sheet: SavedProductSheet): VatRate {
@@ -124,13 +106,8 @@ export function newColor(label: string): ColorDraft {
 /** How two colour labels are compared: trimmed, collapsed, Turkish-insensitive. */
 export const foldColor = (label: string) => label.trim().replace(/\s+/g, " ").toLocaleLowerCase("tr");
 
-export interface CellDraft {
-  excl: string;
-  incl: string;
-  /** "incl" once the admin typed the KDV dahil price: a new rate keeps it and
-   * re-derives the net one. Otherwise the net price is the one kept. */
-  basis?: "incl";
-}
+/** A price's two boxes, KDV hariç and KDV dahil; see lib/format's `VatCell`. */
+export type CellDraft = VatCell;
 
 /** "Çeviriler": one language's fields as typed; blank = Turkish shows there. */
 export interface TranslationDraft {
@@ -159,24 +136,32 @@ export function translationStarted(t: TranslationDraft): boolean {
 
 /**
  * "ERP ve Katalog Fiyatları" as typed: the ERP price per currency and group
- * (KDV hariç) — what applying a pricing worksheet writes from its "ERP
- * fiyatı" row — and per group the catalogue's display: true "KDV dahil",
- * false "KDV hariç", null not chosen (the full split).
+ * — what applying a pricing worksheet writes from its "ERP fiyatı" row — and
+ * per group the catalogue's display: true "KDV dahil", false "KDV hariç",
+ * null not chosen (the full split).
+ *
+ * Each price is a cell of both sides at the sheet's "KDV Oranı", as in the
+ * price table: a group shown "KDV dahil" is typed and shown KDV dahil, the
+ * rest KDV hariç (`erpSide`). Only the KDV hariç side is saved, so the PDF
+ * prints the KDV dahil price back from it.
  */
 export interface ErpDraft {
-  prices: Record<CurrencyType, Record<SheetSegment, string>>;
+  prices: Record<CurrencyType, Record<SheetSegment, CellDraft>>;
   display: Record<CatalogSegment, boolean | null>;
 }
 
 export const noErpDisplay = (): ErpDraft["display"] => ({ DEALER: null, WHOLESALE: null, CAFE: null, RETAIL: null });
 const emptyErpPrices = (): ErpDraft["prices"] =>
   Object.fromEntries(
-    SHEET_CURRENCIES.map((c) => [c, Object.fromEntries(SHEET_COLUMNS.map(({ segment }) => [segment, ""]))]),
+    SHEET_CURRENCIES.map((c) => [c, Object.fromEntries(SHEET_COLUMNS.map(({ segment }) => [segment, { excl: "", incl: "" }]))]),
   ) as ErpDraft["prices"];
 const emptyErp = (): ErpDraft => ({ prices: emptyErpPrices(), display: noErpDisplay() });
 
 /** Typed, but not an ERP price: not a number, or not above zero. */
 export const erpPriceInvalid = (raw: string) => !!raw.trim() && !(Number(parseDecimalInput(raw)) > 0);
+
+/** The side a group's ERP price is typed and shown in: KDV dahil when the catalogue shows it so. */
+export const erpSide = (display: boolean | null): "excl" | "incl" => (display === true ? "incl" : "excl");
 
 export interface SheetDraft {
   base_code: string;
@@ -299,6 +284,9 @@ export function toLocalInput(iso: string | null | undefined): string {
 export function draftFromSheet(sheet: SavedProductSheet): SheetDraft {
   const draft = emptyDraft();
   const money = (v: string | null | undefined) => (v == null ? "" : kurusToInput(Math.round(Number(v) * 100)));
+  const vatRate = savedVatRate(sheet);
+  // Saved KDV hariç; the KDV dahil side follows at the sheet's rate.
+  const erpCell = (v: string | null | undefined): CellDraft => ({ excl: money(v), incl: withVat(money(v), vatRate) });
   for (const row of sheet.prices) {
     for (const { segment } of SHEET_COLUMNS) {
       const cell = row.cells[segment];
@@ -343,7 +331,7 @@ export function draftFromSheet(sheet: SavedProductSheet): SheetDraft {
       }),
     ) as Record<TranslatedLocale, TranslationDraft>,
     slug: sheet.slug ?? "",
-    vatRate: savedVatRate(sheet),
+    vatRate,
     crossSells: sheet.related_products,
     isPublished: sheet.is_published,
     // On a coloured product the colours hold the stock and this is only the
@@ -361,7 +349,7 @@ export function draftFromSheet(sheet: SavedProductSheet): SheetDraft {
           prices: Object.fromEntries(
             SHEET_CURRENCIES.map((c) => [
               c,
-              Object.fromEntries(SHEET_COLUMNS.map(({ segment }) => [segment, money(sheet.erp?.erp_prices?.[c]?.[segment])])),
+              Object.fromEntries(SHEET_COLUMNS.map(({ segment }) => [segment, erpCell(sheet.erp?.erp_prices?.[c]?.[segment])])),
             ]),
           ) as ErpDraft["prices"],
           display: Object.fromEntries(
@@ -429,7 +417,8 @@ export function draftProblem(draft: SheetDraft): string | null {
     }
   for (const currency of SHEET_CURRENCIES)
     for (const { segment, label } of SHEET_COLUMNS)
-      if (erpPriceInvalid(draft.erp.prices[currency][segment]))
+      // Both sides: a box typed while the group showed the other one stays behind it.
+      if ([draft.erp.prices[currency][segment].excl, draft.erp.prices[currency][segment].incl].some(erpPriceInvalid))
         return `ERP ve Katalog Fiyatları: ${label} ${CURRENCY_LABEL[currency]} ERP fiyatı geçerli değil (sıfırdan büyük, en fazla 2 ondalık; ya da boş bırakın).`;
   if (draft.opportunity.is_opportunity) {
     if (!parseDecimalInput(draft.opportunity.price)) return "Fırsat fiyatı girin.";
@@ -442,12 +431,12 @@ export function draftProblem(draft: SheetDraft): string | null {
 
 export const cellFilled = (cell: CellDraft) => !!parseDecimalInput(cell.excl) || !!parseDecimalInput(cell.incl);
 
-/** The ERP prices as the server takes them: only the cells typed, as decimal strings. */
+/** The ERP prices as the server takes them: only the cells typed, KDV hariç, as decimal strings. */
 export function erpMatrix(prices: ErpDraft["prices"]): PriceMatrix {
   const matrix: PriceMatrix = {};
   for (const currency of SHEET_CURRENCIES)
     for (const { segment } of SHEET_COLUMNS) {
-      const value = parseDecimalInput(prices[currency][segment]);
+      const value = parseDecimalInput(prices[currency][segment].excl);
       if (value !== null) (matrix[currency] ??= {})[segment] = value;
     }
   return matrix;
