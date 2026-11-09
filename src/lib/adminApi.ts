@@ -1,5 +1,6 @@
 import { api } from "@/lib/api";
 import type { CategoryBulkSettings } from "@/lib/categoryBulk";
+import type { ErpChange } from "@/lib/erpGrid";
 import type {
   AccountType,
   Carrier,
@@ -64,6 +65,9 @@ import type {
   HomepageSettingsResponse,
   UploadedImage,
   Wallet,
+  DecimalString,
+  SheetSegment,
+  UUID,
 } from "@/types";
 import type { HomeTranslations } from "@/lib/homeTranslations";
 
@@ -421,6 +425,25 @@ export async function adminCategoryBulkUpdate(categoryId: number, body: Category
   return data.updated;
 }
 
+/**
+ * "Fiyat Giriş Modu"'s save: TL ERP prices (KDV hariç) per product and group,
+ * each also setting the site price through the product's worksheet rule. All
+ * or nothing; the products come back as table rows.
+ */
+export async function adminBulkErpPrices(changes: ErpChange[]): Promise<{
+  applied: {
+    product_id: UUID;
+    segment: SheetSegment;
+    erp_price: DecimalString | null;
+    site_price_incl: DecimalString | null;
+    from_worksheet: boolean;
+  }[];
+  products: AdminProduct[];
+}> {
+  const { data } = await api.post("/admin/products/bulk-erp-prices", { changes });
+  return data;
+}
+
 export async function adminListBrands(signal?: AbortSignal): Promise<Brand[]> {
   const { data } = await api.get<Brand[]>("/admin/brands", { signal });
   return data;
@@ -691,6 +714,8 @@ export async function adminListProductsPage(
     /** Omitted: the server's default order (by name). */
     orderBy?: ProductSort | null;
     orderDir?: SortDirection;
+    /** "Fiyat Giriş Modu": each product's worksheet rule too. */
+    pricing?: boolean;
   },
   signal?: AbortSignal,
 ): Promise<{ products: AdminProduct[]; total: number }> {
@@ -703,6 +728,7 @@ export async function adminListProductsPage(
       order_dir: params.orderBy ? (params.orderDir ?? "asc") : undefined,
       skip: params.page * pageSize,
       limit: pageSize,
+      pricing: params.pricing || undefined,
     },
     signal,
   });
