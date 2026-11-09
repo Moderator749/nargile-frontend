@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type ReactNode, type SubmitEvent } from "react";
-import { ChevronRight, ChevronsDownUp, ChevronsUpDown, FolderTree, Pencil, Plus, Search, Trash2, X } from "lucide-react";
+import { ChevronRight, ChevronsDownUp, ChevronsUpDown, FolderTree, Pencil, Plus, Search, SlidersHorizontal, Trash2, X } from "lucide-react";
 
 import { panelClass } from "@/components/admin/AdminShell";
 import { RichTextEditor } from "@/components/admin/RichTextEditor";
@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/Input";
 import { Collapse } from "@/components/ui/Collapse";
 import { Switch } from "@/components/ui/Switch";
 import { BannerField } from "@/components/admin/BannerField";
+import { CategoryBulkSettingsDialog } from "@/components/admin/CategoryBulkSettings";
 import { ImageField } from "@/components/admin/homepage/fields";
 import {
   adminAssignProductCategory,
@@ -100,6 +101,9 @@ export function AdminCategoriesView({
   const [editing, setEditing] = useState<AdminCategory | null>(null);
   const [saving, setSaving] = useState(false);
   const [result, setResult] = useState<{ kind: "success" | "error"; text: string } | null>(null);
+  // "Tüm Ürünlere Toplu Ayar Uygula": the category it is open for, and what the last one did.
+  const [bulkFor, setBulkFor] = useState<AdminCategory | null>(null);
+  const [bulkDone, setBulkDone] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const translationsRef = useRef<HTMLDetailsElement>(null);
   // `openId`'s category, once the list is in: opened in the form, its
@@ -336,6 +340,15 @@ export function AdminCategoriesView({
               ) : (
                 <span className="h-8 w-8" aria-hidden />
               )}
+              <button
+                type="button"
+                onClick={() => setBulkFor(c)}
+                aria-label={`Tüm ürünlere toplu ayar: ${c.name}`}
+                title="Tüm ürünlere toplu ayar uygula"
+                className={iconBtn}
+              >
+                <SlidersHorizontal className="h-4 w-4" aria-hidden />
+              </button>
               <button type="button" onClick={() => startEdit(c)} aria-label={`Düzenle: ${c.name}`} className={iconBtn}>
                 <Pencil className="h-4 w-4" aria-hidden />
               </button>
@@ -385,6 +398,11 @@ export function AdminCategoriesView({
               </button>
             </div>
           </div>
+          {bulkDone && (
+            <div className="mt-4">
+              <Alert variant="success">{bulkDone}</Alert>
+            </div>
+          )}
           {loadError ? (
             <div className="mt-4">
               <Alert variant="error">{loadError}</Alert>
@@ -567,8 +585,23 @@ export function AdminCategoriesView({
           <Button type="submit" loading={saving} disabled={!form.name.trim()}>
             {editing ? "Güncelle" : "Kategori ekle"}
           </Button>
+          {editing && (
+            <Button type="button" variant="secondary" onClick={() => setBulkFor(editing)}>
+              <SlidersHorizontal className="h-4 w-4" aria-hidden /> Tüm Ürünlere Toplu Ayar Uygula
+            </Button>
+          )}
         </form>
       </div>
+
+      <CategoryBulkSettingsDialog
+        category={bulkFor}
+        hasSubcategories={!!bulkFor && (categories ?? []).some((c) => c.parent_id === bulkFor.id)}
+        onClose={() => setBulkFor(null)}
+        onApplied={(message) => {
+          setBulkFor(null);
+          setBulkDone(message);
+        }}
+      />
 
       <ProductMapper categories={categories ?? []} onMoved={() => void reload()} />
     </>

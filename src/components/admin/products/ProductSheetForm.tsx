@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import axios from "axios";
@@ -17,6 +17,7 @@ import { ErpCatalogPrices } from "@/components/admin/products/ErpCatalogPrices";
 import { PricingGrid } from "@/components/admin/products/PricingGrid";
 import { QuantityCondition } from "@/components/admin/products/QuantityCondition";
 import { RuleSwitch } from "@/components/admin/products/RuleSwitch";
+import { GENERAL_RULES, VOLUME_DISCOUNT_HINT } from "@/components/admin/products/generalRules";
 import { SheetField, SheetSection, sheetInputClass } from "@/components/admin/products/SheetParts";
 import { StockGrid } from "@/components/admin/products/StockGrid";
 import { TranslationFields } from "@/components/admin/products/TranslationFields";
@@ -89,9 +90,6 @@ function matchBrand(value: string, brands: Brand[]): Brand | undefined {
   if (!v) return undefined;
   return brands.find((b) => [b.name, b.slug, b.search_term].some((x) => fold(x) === v));
 }
-
-const VOLUME_DISCOUNT_HINT =
-  "sepet indirim limitine gelindiğinde %5 ve %8 ciro indirimi otomatik olarak uygulansın";
 
 /**
  * "Ürün Ekle / Düzenle" — the admin's product sheet, one screen for everything
@@ -492,71 +490,24 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
 
         <div className="grid gap-4 lg:grid-cols-2">
           <SheetSection title="Genel Kurallar">
-            <RuleSwitch
-              id="rule-shipping"
-              label="Ücretsiz Kargo"
-              hint="Bu ürün için gönderim ücreti firmaya ait."
-              checked={draft.rules.is_free_shipping}
-              onChange={(v) => set("rules", { ...draft.rules, is_free_shipping: v })}
-            />
-            <QuantityCondition
-              id="rule-ship-qty"
-              value={draft.rules.free_shipping_min_quantity ?? null}
-              onChange={(value) => set("rules", { ...draft.rules, free_shipping_min_quantity: value })}
-            />
-            <RuleSwitch
-              id="rule-havale"
-              label="Havale / EFT İndirimi"
-              checked={draft.rules.has_havale_discount}
-              onChange={(v) => set("rules", { ...draft.rules, has_havale_discount: v })}
-            />
-            <RuleSwitch
-              id="rule-dealer-havale"
-              label="Bayide Havale / EFT İndirimi"
-              hint="Havale / EFT indirimi bayi fiyat grubundaki müşteriler için de geçerli."
-              checked={draft.rules.has_dealer_havale_discount}
-              onChange={(v) => set("rules", { ...draft.rules, has_dealer_havale_discount: v })}
-            />
-            <RuleSwitch
-              id="rule-toptan-havale"
-              label="Toptanda Havale / EFT İndirimi"
-              hint="Havale / EFT indirimi toptan fiyat grubundaki müşteriler için de geçerli."
-              checked={draft.rules.has_toptan_havale_discount}
-              onChange={(v) => set("rules", { ...draft.rules, has_toptan_havale_discount: v })}
-            />
-            <RuleSwitch
-              id="rule-cafe-havale"
-              label="Kafede Havale / EFT İndirimi"
-              hint="Havale / EFT indirimi kafe fiyat grubundaki müşteriler için de geçerli."
-              checked={draft.rules.has_cafe_havale_discount}
-              onChange={(v) => set("rules", { ...draft.rules, has_cafe_havale_discount: v })}
-            />
-            <RuleSwitch
-              id="rule-volume"
-              label="Sepet İndirimi"
-              hint={VOLUME_DISCOUNT_HINT}
-              checked={draft.rules.has_volume_discount}
-              onChange={(v) => set("rules", { ...draft.rules, has_volume_discount: v })}
-            />
-            <RuleSwitch
-              id="rule-earn"
-              label="Sultan Puan Kazandırır"
-              checked={draft.rules.gives_points}
-              onChange={(v) => set("rules", { ...draft.rules, gives_points: v })}
-            />
-            <RuleSwitch
-              id="rule-spend"
-              label="Sultan Puan ile Alınabilir"
-              checked={draft.rules.can_use_points}
-              onChange={(v) => set("rules", { ...draft.rules, can_use_points: v })}
-            />
-            <RuleSwitch
-              id="rule-cart"
-              label="Sepet Kuralı"
-              hint="Açıkken ürün %50 kuralına girer: sepetin %50'sinden fazlasıysa ücretsiz kargo belirlenen parametre kuralıyla başlar."
-              checked={draft.rules.is_cart_rule_applied}
-              onChange={(v) => set("rules", { ...draft.rules, is_cart_rule_applied: v })}
-            />
+            {GENERAL_RULES.map(({ field, id, label, hint }) => (
+              <Fragment key={field}>
+                <RuleSwitch
+                  id={id}
+                  label={label}
+                  hint={hint}
+                  checked={draft.rules[field]}
+                  onChange={(v) => set("rules", { ...draft.rules, [field]: v })}
+                />
+                {field === "is_free_shipping" && (
+                  <QuantityCondition
+                    id="rule-ship-qty"
+                    value={draft.rules.free_shipping_min_quantity ?? null}
+                    onChange={(value) => set("rules", { ...draft.rules, free_shipping_min_quantity: value })}
+                  />
+                )}
+              </Fragment>
+            ))}
           </SheetSection>
 
           <SheetSection title="Fırsat" hint="Açıkken ürün anasayfadaki Fırsat Ürünleri bölümünde yayınlanır.">

@@ -18,11 +18,14 @@ export function Dialog({
   open,
   onClose,
   title,
+  size = "md",
   children,
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
+  /** "lg" for a form with a wide table. */
+  size?: "md" | "lg";
   children: ReactNode;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -39,18 +42,22 @@ export function Dialog({
     <dialog
       ref={ref}
       // Escape closes it: tell the caller rather than letting the DOM and the
-      // open flag drift apart.
+      // open flag drift apart. React also hands these handlers the cancel and
+      // close of a dialog opened inside this one: only its own count.
       onCancel={(event) => {
+        if (event.target !== event.currentTarget) return;
         event.preventDefault();
         onClose();
       }}
-      onClose={onClose}
+      onClose={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
       // The backdrop is the dialog's own box outside the panel below.
       onClick={(event) => {
         if (event.target === ref.current) onClose();
       }}
       aria-label={title}
-      className="m-auto max-h-[85dvh] w-[calc(100vw-2rem)] max-w-2xl rounded-2xl border border-slate-200 bg-white p-0 text-slate-900 shadow-2xl backdrop:bg-slate-900/50 backdrop:backdrop-blur-sm open:flex open:flex-col dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-100"
+      className={`m-auto max-h-[85dvh] w-[calc(100vw-2rem)] ${size === "lg" ? "max-w-4xl" : "max-w-2xl"} rounded-2xl border border-slate-200 bg-white p-0 text-slate-900 shadow-2xl backdrop:bg-slate-900/50 backdrop:backdrop-blur-sm open:flex open:flex-col dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-100`}
     >
       {/* The panel only while open: a closed dialog's title would otherwise
           sit in the page as one more <h2>, out of the page's own outline. */}

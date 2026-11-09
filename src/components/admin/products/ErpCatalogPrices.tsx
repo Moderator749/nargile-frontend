@@ -20,6 +20,8 @@ const th =
 const rowHead =
   "w-44 border border-slate-300 bg-slate-50 px-3 py-2 text-left align-middle text-xs font-bold text-slate-700 dark:border-white/15 dark:bg-white/[0.03] dark:text-zinc-200";
 const note = "mt-0.5 block text-[10px] font-medium normal-case tracking-normal text-slate-500 dark:text-zinc-400";
+/** The table's look, for a category's bulk "KDV gösterimi" (CategoryBulkSettings) to match it. */
+export const erpTableClass = { th, rowHead, note } as const;
 const erpInput =
   "h-9 w-full rounded-md border border-slate-300 bg-sky-50/60 px-2 text-right text-sm font-semibold tabular-nums shadow-sm transition-colors placeholder:font-normal placeholder:text-slate-300 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20 aria-invalid:border-red-500 aria-invalid:bg-red-50 dark:border-white/15 dark:bg-sky-500/10 dark:placeholder:text-zinc-600 dark:aria-invalid:bg-red-500/10";
 

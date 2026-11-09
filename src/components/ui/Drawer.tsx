@@ -48,11 +48,16 @@ export function Drawer({
   return (
     <dialog
       ref={ref}
+      // React hands a nested dialog's cancel and close to this one's handlers
+      // too (a dialog opened inside it): only its own count.
       onCancel={(event) => {
+        if (event.target !== event.currentTarget) return;
         event.preventDefault();
         onClose();
       }}
-      onClose={onClose}
+      onClose={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
       onClick={(event) => {
         if (event.target === ref.current) onClose();
       }}

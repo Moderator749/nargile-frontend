@@ -1,4 +1,5 @@
 import { api } from "@/lib/api";
+import type { CategoryBulkSettings } from "@/lib/categoryBulk";
 import type {
   AccountType,
   Carrier,
@@ -399,6 +400,24 @@ export async function adminAssignProductCategory(productIds: string[], categoryI
     product_ids: productIds,
     category_id: categoryId,
   });
+  return data.updated;
+}
+
+/** How many products a category's bulk settings reach: its own, and with its subcategories'. */
+export async function adminCategoryBulkScope(
+  categoryId: number,
+  signal?: AbortSignal,
+): Promise<{ products: number; with_subcategories: number }> {
+  const { data } = await api.get<{ products: number; with_subcategories: number }>(
+    `/admin/categories/${categoryId}/bulk-update-settings`,
+    { signal },
+  );
+  return data;
+}
+
+/** "Tüm Ürünlere Toplu Ayar Uygula": writes the sent fields on every product of the category; the count written. */
+export async function adminCategoryBulkUpdate(categoryId: number, body: CategoryBulkSettings): Promise<number> {
+  const { data } = await api.post<{ updated: number }>(`/admin/categories/${categoryId}/bulk-update-settings`, body);
   return data.updated;
 }
 
