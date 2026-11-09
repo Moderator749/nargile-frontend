@@ -131,8 +131,8 @@ export function ErpCatalogPrices({ erp, onChange }: { erp: ErpDraft; onChange: (
 
       <p className="pt-1.5 text-[11px] leading-4 text-slate-500 dark:text-zinc-400">
         ERP fiyatlarını grup grup, KDV hariç girin. Fiyat Hesaplama Cetveli’nde siteye uygulanan cetvelin mavi “ERP fiyatı”
-        satırı buraya olduğu gibi, KDV hariç yazılır; KDV dahil maliyet cetveli (Cetvel 2) dört grubu da “KDV dahil göster”
-        yapar. Fiyat kataloğunda (PDF) bir grubun ERP
+        satırı buraya KDV hariç yazılır: Cetvel 1’inki olduğu gibi, KDV dahil girilen Cetvel 2’ninki KDV’si çıkarılarak; Cetvel
+        2 dört grubu da “KDV dahil göster” yapar. Fiyat kataloğunda (PDF) bir grubun ERP
         fiyatı o grubun fiyatının yerine geçer: kataloğun para birimindeki, yoksa sırasıyla TL, USD, EUR’dan girilen ilki. ERP
         fiyatı yoksa fiyat tablosundaki KDV hariç fiyat kullanılır; uygulanacak orandan gelen site fiyatı (yeşil satır) ERP
         fiyatının yerine geçmez. KDV yalnızca “KDV dahil göster” seçilen grupta, yukarıdaki KDV oranıyla eklenir; seçim

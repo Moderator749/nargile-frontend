@@ -26,10 +26,11 @@ const FINAL = "__final";
  * after-VAT sheet (Cetvel 2) are after it.
  *
  * A group's base is an ERP price — the product's, else the row's own blue
- * "ERP fiyatı", before VAT on every sheet — else the product's KDV hariç price in "Fiyat Tablosu", and
- * the row's green price only where none of those exists (`rowCatalogPrice`).
- * Not the TL decision, which is the row's. Each group shows its price as the
- * product chose: only before VAT, only after it, or, unchosen, the full split.
+ * "ERP fiyatı", in the sheet's own basis — else the product's KDV hariç
+ * price in "Fiyat Tablosu", and the row's green price only where none of
+ * those exists (`rowCatalogPrice`). Not the TL decision, which is the row's.
+ * Each group shows its price as the product chose: only before VAT, only
+ * after it, or, unchosen, the full split.
  */
 function plateOf(record: PricingRecord, columns: CatalogColumn[]): LookbookItem {
   const s = record.sheet;
@@ -41,14 +42,14 @@ function plateOf(record: PricingRecord, columns: CatalogColumn[]): LookbookItem 
     }
     const segment: CatalogSegment = column.key === RETAIL ? "RETAIL" : (column.key as CatalogSegment);
     const own = segment === "RETAIL" ? s.retail : s.columns.find((c) => c.segment === segment);
-    // A class's green price is in the sheet's own basis, retail's after VAT; the blue ERP fiyatı is always before it.
+    // A class's green price is in the sheet's own basis, retail's after VAT; the blue ERP fiyatı is in the sheet's basis.
     const beforeVat = segment !== "RETAIL" && s.vat_mode === "EXCL";
     const price = rowCatalogPrice({
       product: record.product_erp ?? null,
       segment,
       currency: s.currency,
       rowErp: own?.erp_price == null ? null : Number(own.erp_price),
-      rowErpBeforeVat: true,
+      rowErpBeforeVat: s.vat_mode === "EXCL",
       rowPrice: own?.price == null ? null : Number(own.price),
       rowPriceBeforeVat: beforeVat,
       rowVatRate: vatRate,

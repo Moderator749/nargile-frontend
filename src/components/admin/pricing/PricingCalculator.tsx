@@ -637,13 +637,13 @@ export function PricingCalculator({
               {d.extras.map((c) => (
                 <ErpCell
                   key={c.key}
-                  label={`${c.label || "Mağaza fiyatı"} ERP fiyatı (KDV hariç)`}
+                  label={`${c.label || "Mağaza fiyatı"} ERP fiyatı (KDV ${d.vatMode === "INCL" ? "dahil" : "hariç"})`}
                   value={c.erpPrice}
                   onChange={(erpPrice) => setExtra(c.key, { erpPrice })}
                 />
               ))}
               <ErpCell
-                label="Perakende ERP fiyatı (KDV hariç)"
+                label={`Perakende ERP fiyatı (KDV ${d.vatMode === "INCL" ? "dahil" : "hariç"})`}
                 value={d.retailErpPrice}
                 onChange={(retailErpPrice) => set({ retailErpPrice })}
               />
@@ -791,9 +791,10 @@ export function PricingCalculator({
       </div>
       <p className="mt-2 text-[11px] leading-4 text-slate-500 dark:text-zinc-400">
         Turuncu satır kendi formül zinciriyle hesaplanır: bayi → toptan → kafe → mağaza fiyatı → perakende. Mavi satıra
-        (ERP fiyatı) isterseniz sütun için bir taban fiyat yazın; her cetvelde KDV hariç sayılır ve siteye uygulanınca
-        ürünün ERP fiyatlarına olduğu gibi yazılır. KDV dahil sütunlarda (perakende ve mağaza fiyatı, Cetvel 2’de tüm sütunlar) yeşil satır mavi fiyata önce
-        KDV’yi ekler (595 + %20 KDV = 714). Cetvel 2 uygulanınca ürünün dört grubu da “KDV dahil göster” olur. Yeşil satır siteye gönderilen fiyattır: ERP fiyatı —
+        (ERP fiyatı) isterseniz sütun için bir taban fiyat yazın. Cetvel 1’de mavi satır KDV hariçtir: ürünün ERP
+        fiyatlarına olduğu gibi yazılır, perakende ve mağaza fiyatında yeşil satır ona KDV’yi ekler (595 + %20 KDV = 714).
+        Cetvel 2’de mavi satır KDV dahildir: yeşil satır ona yalnızca oranı ekler (115 + %5 = 120,75), ürünün ERP
+        fiyatlarına KDV’si çıkarılarak yazılır (115 / 1,20 = 95,83) ve dört grup da “KDV dahil göster” olur. Yeşil satır siteye gönderilen fiyattır: ERP fiyatı —
         boşsa hesaplanan fiyat — bayi, toptan ve kafede maliyetin altındaki uygulanacak oran eklenerek kendiliğinden
         dolar; mağaza fiyatı ve perakendeye oran eklenmez, yeşil satırları ERP fiyatının (boşsa hesaplananın) kendisidir.
         Yeşil satıra fiyat yazarsanız (ör. 199,90) o fiyat geçerli olur. Hiçbiri zinciri değiştirmez. Mağaza fiyatı ve
