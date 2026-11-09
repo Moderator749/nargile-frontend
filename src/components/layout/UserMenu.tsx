@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, LogOut, PackageSearch, UserRound } from "lucide-react";
+import { ChevronDown, LayoutDashboard, LogOut, PackageSearch, UserRound } from "lucide-react";
 
 import Link from "@/components/i18n/Link";
 import { useMessages, useT } from "@/components/i18n/LocaleProvider";
 import { chromeMessages } from "@/lib/i18n/messages/layout";
+import { isTeamRole } from "@/lib/roles";
 import { useAuthStore } from "@/store/useAuthStore";
 import type { User } from "@/types";
 
@@ -84,6 +85,12 @@ export function UserMenu({ user }: { user: User }) {
           <p className="truncate border-b border-border px-3 py-2.5 text-[11px] uppercase tracking-[0.1em] text-muted-foreground">
             {user.email}
           </p>
+          {isTeamRole(user.role) && (
+            <Link href="/admin" role="menuitem" onClick={() => setOpen(false)} className={`${itemClass} font-semibold text-accent hover:bg-accent/10 hover:text-accent`}>
+              <LayoutDashboard className="h-4 w-4 shrink-0" strokeWidth={1.75} aria-hidden />
+              {m.adminPanel}
+            </Link>
+          )}
           <Link href="/account" role="menuitem" onClick={() => setOpen(false)} className={itemClass}>
             <UserRound className="h-4 w-4 shrink-0 text-muted-foreground" strokeWidth={1.5} aria-hidden />
             {m.profile}

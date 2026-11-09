@@ -319,7 +319,9 @@ export function HeroSlideView({
       {...wrapperProps}
       className={`@container relative isolate flex flex-col justify-center ${
         // A phone's own positions make its slide a stage of its own, unpadded.
-        mplaced ? "max-md:block md:px-12 md:pb-28 md:pt-24" : "px-6 pb-24 pt-20 sm:px-12 sm:pb-28 sm:pt-24"
+        // Otherwise a phone keeps 48px clear at each side for the slider's
+        // arrows, and 64px at the foot for its dots, under the button.
+        mplaced ? "max-md:block md:px-12 md:pb-28 md:pt-24" : "px-12 pb-16 pt-12 sm:pb-28 sm:pt-24"
       } ${ALIGN[slide.align].block} ${placed ? "lg:block lg:aspect-video lg:p-0" : ""} ${
         // A portrait photo for phones gets a portrait slide to show it in (and,
         // in the slider's stack, so do the slides beside it); so does a phone's own layout.

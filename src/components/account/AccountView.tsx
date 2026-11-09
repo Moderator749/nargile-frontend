@@ -12,6 +12,7 @@ import { GuestClaim } from "@/components/account/GuestClaim";
 import { PasswordPanel } from "@/components/account/PasswordPanel";
 import { ProfilePanel } from "@/components/account/ProfilePanel";
 import { WalletPanel } from "@/components/account/WalletPanel";
+import { AdminPanelLink } from "@/components/layout/AdminPanelLink";
 import { Alert } from "@/components/ui/Alert";
 import { getApiErrorMessage } from "@/lib/errors";
 import { accountMessages } from "@/lib/i18n/messages/account";
@@ -80,6 +81,8 @@ export function AccountView() {
         {user.full_name ? `${user.full_name} · ` : ""}
         {user.email}
       </p>
+
+      <AdminPanelLink variant="card" className="mt-6" />
 
       <div className="mt-8 space-y-6">
         <ConsentPrompt onAnswered={() => setPromptAnswers((n) => n + 1)} />

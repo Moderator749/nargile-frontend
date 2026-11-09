@@ -11,9 +11,10 @@ import { SITE_NAME } from "@/lib/site";
 
 const AUTOPLAY_MS = 7000;
 
-// 44px to the finger, on a dark glass of their own: seen on a white marble slide as on a black one.
+// 44px to the finger (40px on a phone, on a lighter glass), on a dark glass of
+// their own: seen on a white marble slide as on a black one.
 const controlClass =
-  "pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full bg-black/45 text-white ring-1 ring-inset ring-white/15 backdrop-blur-md transition-colors duration-200 hover:bg-black/65 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+  "pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full bg-black/45 max-md:h-10 max-md:w-10 max-md:bg-black/35 text-white ring-1 ring-inset ring-white/15 backdrop-blur-md transition-colors duration-200 hover:bg-black/65 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
 /**
  * Module 5: cinematic dark slider. Every slide sits in the same grid cell, so
@@ -89,17 +90,23 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
         })}
       </div>
 
-      {/* On a phone the controls sit along the slider's top edge — above the
-          slide's words (which start 5rem down) and its button, and nowhere
-          near the tab bar, where half an arrow under it used to open the
-          cart. Centred under the slide from `md`, as before. Flipping a
-          slide leaves an open category column open (`data-sidebar-keep`). */}
+      {/* On a phone the arrows sit on the slider's sides, halfway down — in
+          the 48px the slide keeps clear of its words at each side
+          (HeroSlideView) — and the dots at its foot, under the slide's
+          button; the group is dissolved there (`contents`) so each is placed
+          on the slider itself. Centred under the slide from `md`, as before.
+          Flipping a slide leaves an open category column open (`data-sidebar-keep`). */}
       {count > 1 && (
-        <div data-sidebar-keep className="pointer-events-none absolute flex items-center gap-3 max-md:inset-x-3 max-md:top-3 max-md:justify-between md:inset-x-0 md:bottom-5 md:justify-center md:gap-4">
-          <button type="button" onClick={() => go(index - 1)} aria-label={t.hero.previous} className={controlClass}>
+        <div data-sidebar-keep className="pointer-events-none max-md:contents md:absolute md:inset-x-0 md:bottom-5 md:flex md:items-center md:justify-center md:gap-4">
+          <button
+            type="button"
+            onClick={() => go(index - 1)}
+            aria-label={t.hero.previous}
+            className={`${controlClass} max-md:absolute max-md:start-1 max-md:top-1/2 max-md:-translate-y-1/2`}
+          >
             <ChevronLeft className="h-5 w-5 rtl:rotate-180" aria-hidden />
           </button>
-          <div className="pointer-events-auto flex items-center gap-1 rounded-full px-2 md:bg-black/35 md:backdrop-blur-md">
+          <div className="pointer-events-auto flex items-center gap-1 rounded-full bg-black/35 px-2 backdrop-blur-md max-md:absolute max-md:bottom-2 max-md:left-1/2 max-md:-translate-x-1/2">
             {slides.map((slide, i) => (
               <button
                 key={slide.id}
@@ -108,8 +115,8 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
                 // Named by its eyebrow, else its title; a slide that is its photo alone, by the shop.
                 aria-label={t.hero.slide(i + 1, slide.eyebrow.trim() || slide.title.replace(/\s+/g, " ").trim() || SITE_NAME)}
                 aria-current={i === index ? "true" : undefined}
-                // A 44px row to the finger, each dot at least 24px wide.
-                className="group flex h-11 items-center px-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                // A 44px row to the finger (32px on a phone, at the slide's foot), each dot at least 24px wide.
+                className="group flex h-11 items-center px-1 max-md:h-8 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               >
                 <span
                   className={`block h-1 rounded-full shadow-[0_0_0_1px_rgb(0_0_0/0.25)] transition-[width,background-color] duration-300 ${
@@ -119,7 +126,12 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
               </button>
             ))}
           </div>
-          <button type="button" onClick={() => go(index + 1)} aria-label={t.hero.next} className={controlClass}>
+          <button
+            type="button"
+            onClick={() => go(index + 1)}
+            aria-label={t.hero.next}
+            className={`${controlClass} max-md:absolute max-md:end-1 max-md:top-1/2 max-md:-translate-y-1/2`}
+          >
             <ChevronRight className="h-5 w-5 rtl:rotate-180" aria-hidden />
           </button>
         </div>

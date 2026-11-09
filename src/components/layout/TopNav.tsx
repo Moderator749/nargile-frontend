@@ -5,6 +5,7 @@ import { ArrowLeft, ChevronDown, LayoutGrid, X } from "lucide-react";
 
 import { usePagePath } from "@/components/i18n/navigation";
 import { useLocale, useT } from "@/components/i18n/LocaleProvider";
+import { AdminPanelLink } from "@/components/layout/AdminPanelLink";
 import { LanguageSelect } from "@/components/layout/LanguageSelect";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import Link from "@/components/i18n/Link";
@@ -79,6 +80,8 @@ function CategoryDrawer({ categories, links = [] }: { categories: ResolvedNav[];
           <X className="h-4 w-4" aria-hidden />
         </button>
       </div>
+      {/* The panel team's way into /admin, above everything else. */}
+      <AdminPanelLink variant="row" onNavigate={() => setOpen(false)} className="border-b border-border" />
       {/* The top bar's links on a phone (the bar is hidden there), as rows of
           the same list as the categories under them: one height, one padding,
           one hairline between every row. */}

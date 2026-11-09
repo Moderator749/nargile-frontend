@@ -3,6 +3,7 @@
 import { useId, useSyncExternalStore, type ReactNode } from "react";
 import { Check, LayoutGrid, PanelLeftClose, PanelLeftOpen, Square } from "lucide-react";
 
+import { CatalogFilterSheet } from "@/components/catalog/CatalogFilterSheet";
 import { useMessages } from "@/components/i18n/LocaleProvider";
 import { SORT_OPTIONS, type CatalogFilters, type SortKey } from "@/lib/catalogFilters";
 import { setCatalogDensity, useCatalogDensity } from "@/lib/catalogView";
@@ -34,9 +35,10 @@ interface CatalogFilterBarProps {
  * the column beside the category sidebar has the room); a tablet wraps.
  *
  * On a phone it is a compact strip instead, held under the header as the grid
- * scrolls: one line edge to edge (the labels for screen readers only), sliding
- * sideways if an account's extra button does not fit, and ending in the
- * grid's two-or-one switch (`DensityToggle`).
+ * scrolls: the sort across the free width, then "Filtrele" (the price range
+ * and the stock pill, in a sheet: CatalogFilterSheet) and the grid's
+ * two-or-one switch (`DensityToggle`), every button 40px to the thumb. One
+ * line edge to edge, sliding sideways if an account's extra button does not fit.
  *
  * Everything here narrows what is already on screen (see `lib/catalogFilters`),
  * so the controls are plain inputs rather than links: nothing behind them to
@@ -86,7 +88,7 @@ function DensityToggle() {
       aria-pressed={density === value}
       aria-label={label}
       title={label}
-      className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent ${
+      className={`flex h-10 w-10 items-center justify-center rounded-[10px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent ${
         density === value
           ? "bg-white text-red-600 shadow-sm dark:bg-neutral-700 dark:text-red-400"
           : "text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200"
@@ -99,7 +101,7 @@ function DensityToggle() {
     <div
       role="group"
       aria-label={t.view}
-      className="flex h-10 shrink-0 items-center gap-0.5 rounded-xl border border-neutral-200 bg-neutral-100 p-0.5 md:hidden dark:border-neutral-700 dark:bg-neutral-800"
+      className="flex h-10 shrink-0 items-center rounded-[10px] bg-neutral-100 ring-1 ring-inset ring-neutral-200 md:hidden dark:bg-neutral-800 dark:ring-neutral-700"
     >
       {option("two", t.viewTwo, LayoutGrid)}
       {option("one", t.viewOne, Square)}
@@ -116,7 +118,7 @@ export function CatalogFilterBar({ value, onChange, bounds, trailing }: CatalogF
   return (
     <div
       className={[
-        "flex w-full items-center gap-1.5 md:gap-2 border-neutral-200/80 bg-white dark:border-neutral-800 dark:bg-neutral-900",
+        "flex w-full items-center justify-between gap-2 border-neutral-200/80 bg-white dark:border-neutral-800 dark:bg-neutral-900",
         // Tablet and up: the rounded box it has always been.
         "md:mb-8 md:flex-wrap md:justify-between md:rounded-2xl md:border md:p-4 md:shadow-sm",
         // Phone: a strip held under the header (--header-height, set by the
@@ -124,12 +126,9 @@ export function CatalogFilterBar({ value, onChange, bounds, trailing }: CatalogF
         "max-md:sticky max-md:top-[var(--header-height,4rem)] max-md:z-30 max-md:mb-4 max-md:-mx-4 max-md:w-auto max-md:flex-nowrap max-md:overflow-x-auto max-md:border-b max-md:bg-white/95 max-md:px-4 max-md:py-2 max-md:shadow-[0_6px_12px_-10px_rgb(0_0_0/0.35)] max-md:backdrop-blur-md max-md:[scrollbar-width:none] sm:max-md:-mx-6 sm:max-md:px-6 dark:max-md:bg-neutral-900/95",
       ].join(" ")}
     >
-      <div className="flex shrink-0 items-center gap-1 md:gap-2">
+      {/* On a phone the range is in the "Filtrele" sheet. */}
+      <div className="flex shrink-0 items-center gap-2 max-md:hidden">
         <SidebarToggle />
-        {/* A phone has room for a word, not the label: "Fiyat:" (the full one is for screen readers). */}
-        <span aria-hidden className="me-0.5 whitespace-nowrap text-[11px] font-bold uppercase tracking-wide text-neutral-500 md:hidden dark:text-neutral-400">
-          {t.priceShort}
-        </span>
         <span className={`${LABEL} whitespace-nowrap`} id={`${minId}-label`}>
           {t.priceRange}
         </span>
@@ -143,7 +142,7 @@ export function CatalogFilterBar({ value, onChange, bounds, trailing }: CatalogF
           value={value.min}
           onChange={(e) => onChange({ min: e.target.value })}
           placeholder={bounds ? String(bounds.min) : "0"}
-          className={`${FIELD} w-[3.25rem] text-center max-md:px-0.5 md:w-16`}
+          className={`${FIELD} w-16 text-center`}
         />
         <span aria-hidden className="text-xs font-bold text-neutral-400">
           –
@@ -158,7 +157,7 @@ export function CatalogFilterBar({ value, onChange, bounds, trailing }: CatalogF
           value={value.max}
           onChange={(e) => onChange({ max: e.target.value })}
           placeholder={bounds ? String(bounds.max) : "1000"}
-          className={`${FIELD} w-[3.25rem] text-center max-md:px-0.5 md:w-16`}
+          className={`${FIELD} w-16 text-center`}
         />
       </div>
 
@@ -168,17 +167,16 @@ export function CatalogFilterBar({ value, onChange, bounds, trailing }: CatalogF
         type="button"
         aria-pressed={value.inStock}
         onClick={() => onChange({ inStock: !value.inStock })}
-        // Not on a phone: the strip keeps the price, the sort and the grid's switch.
-        className={`hidden h-9 shrink-0 md:flex select-none items-center gap-1.5 whitespace-nowrap rounded-xl border px-2 text-[11px] md:gap-2 md:px-3 font-bold uppercase tracking-wider transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+        // Not on a phone: it is in the "Filtrele" sheet there.
+        className={`hidden h-9 shrink-0 select-none items-center gap-2 whitespace-nowrap rounded-xl border px-3 text-[11px] font-bold md:flex uppercase tracking-wider transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
           value.inStock
             ? "border-red-600 bg-red-600 text-white shadow-sm"
             : "border-neutral-200 bg-neutral-50 text-neutral-700 hover:border-red-400/50 hover:text-red-600 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
         }`}
       >
-        {/* On a phone the pill's own red says it is on; the box needs the room. */}
         <span
           aria-hidden
-          className={`flex h-4 w-4 items-center justify-center rounded-md border transition-colors duration-200 max-md:hidden ${
+          className={`flex h-4 w-4 items-center justify-center rounded-md border transition-colors duration-200 ${
             value.inStock ? "border-white/70 bg-white/20" : "border-neutral-300 dark:border-neutral-600"
           }`}
         >
@@ -191,7 +189,7 @@ export function CatalogFilterBar({ value, onChange, bounds, trailing }: CatalogF
           wrap under the rest; it stays in the far corner (the left in Arabic) when it does.
           Without it, the bar keeps its three-way spacing. */}
       <div
-        className={`flex items-center justify-end gap-2 max-md:min-w-[4.5rem] max-md:flex-1 md:shrink-0 md:flex-wrap xl:flex-nowrap ${trailing ? "md:ms-auto" : ""}`}
+        className={`flex items-center justify-end gap-2 max-md:min-w-[7rem] max-md:flex-1 md:shrink-0 md:flex-wrap xl:flex-nowrap ${trailing ? "md:ms-auto" : ""}`}
       >
         <label className={`${LABEL} whitespace-nowrap`} htmlFor={sortId}>
           {t.sort}
@@ -200,7 +198,7 @@ export function CatalogFilterBar({ value, onChange, bounds, trailing }: CatalogF
           id={sortId}
           value={value.sort}
           onChange={(e) => onChange({ sort: e.target.value as SortKey })}
-          className={`${FIELD} cursor-pointer pe-8 max-md:w-full max-md:min-w-0 max-md:px-2 max-md:pe-6 md:w-36`}
+          className={`${FIELD} cursor-pointer pe-8 max-md:h-10 max-md:w-full max-md:min-w-0 max-md:ps-3 md:w-36`}
         >
           {SORT_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
@@ -210,6 +208,7 @@ export function CatalogFilterBar({ value, onChange, bounds, trailing }: CatalogF
         </select>
         {trailing}
       </div>
+      <CatalogFilterSheet value={value} onChange={onChange} bounds={bounds} />
       <DensityToggle />
     </div>
   );
