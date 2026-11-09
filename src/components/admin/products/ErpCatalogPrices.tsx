@@ -221,7 +221,7 @@ export function ErpCatalogPrices({
                     {p === null ? (
                       <>
                         <span className="text-slate-400 dark:text-zinc-500">—</span>
-                        <span className={note}>Katalogda yer almaz</span>
+                        <span className={note}>Fiyat tablosunda fiyat yok</span>
                       </>
                     ) : p.display === null ? (
                       // Not chosen: the PDF prints the full split.
@@ -251,8 +251,8 @@ export function ErpCatalogPrices({
         ERP fiyatlarını KDV hariç girin. Fiyat kataloğunda (PDF) ERP fiyatı her grubun fiyatının yerine geçer: cetvel satırının
         para birimindeki, yoksa sırasıyla TL, USD, EUR’dan girilen ilki. KDV yalnızca “KDV dahil göster” seçilen grupta,
         yukarıdaki KDV oranıyla eklenir; seçim yapılmayan grup katalogda KDV hariç, KDV ve toplam olarak birlikte gösterilir.
-        ERP fiyatı girilmezse önizleme fiyat tablosundaki KDV hariç fiyatı gösterir; PDF ise cetvel satırının kendi fiyatını
-        kullanır (Siteye Uygula’dan sonra ikisi aynıdır). Bu bölüm sitede gösterilmez.
+        ERP fiyatı girilmezse hem önizleme hem PDF, fiyat tablosundaki KDV hariç fiyatı kullanır; PDF yalnızca ürünün o para
+        biriminde fiyatı olmayan grupta cetvel satırının kendi fiyatına döner. Bu bölüm sitede gösterilmez.
       </p>
     </div>
   );

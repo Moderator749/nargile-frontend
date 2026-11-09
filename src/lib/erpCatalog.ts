@@ -100,6 +100,54 @@ export function catalogPrice({
   return { currency, display, fromErp: false, ...splitVat(ownPrice, vatRate, ownPriceBeforeVat) };
 }
 
+/** A product's section and price table, as the pricing records list carries it. */
+export interface ProductErpCatalog extends ErpCatalogFields {
+  /** The rate of its price table; null when it has no price. */
+  vat_rate: string | null;
+  /** "Fiyat Tablosu", KDV hariç: [currency][group]; a cell left empty is absent. */
+  prices_excl: Partial<Record<CatalogCurrency, Partial<Record<CatalogSegment, string>>>>;
+}
+
+/**
+ * A worksheet row's group in the price catalogue (PDF): the product's ERP
+ * price, else its KDV hariç price in the row's currency from "Fiyat Tablosu"
+ * — both at the product's VAT rate, as the product sheet's preview shows them
+ * — else, for a code that names no product or a group the product has no
+ * price for, the row's own price in its own basis at the row's rate. Shown as
+ * the product chose for the group.
+ */
+export function rowCatalogPrice({
+  product,
+  segment,
+  currency,
+  rowPrice,
+  rowPriceBeforeVat,
+  rowVatRate,
+}: {
+  product: ProductErpCatalog | null;
+  segment: CatalogSegment;
+  currency: CatalogCurrency;
+  rowPrice: number | null;
+  rowPriceBeforeVat: boolean;
+  rowVatRate: number;
+}): CatalogGroupPrice | null {
+  const display = product?.[ERP_DISPLAY_FIELDS[segment]] ?? null;
+  const erp = product ? erpPriceFor(product, currency) : null;
+  const tableExcl = product?.prices_excl?.[currency]?.[segment];
+  if (product && (erp || tableExcl != null)) {
+    const productRate = product.vat_rate != null ? Number(product.vat_rate) : rowVatRate;
+    return catalogPrice({
+      ownPrice: tableExcl == null ? null : Number(tableExcl),
+      ownPriceBeforeVat: true,
+      currency,
+      vatRate: productRate,
+      erp,
+      display,
+    });
+  }
+  return catalogPrice({ ownPrice: rowPrice, ownPriceBeforeVat: rowPriceBeforeVat, currency, vatRate: rowVatRate, erp: null, display });
+}
+
 /**
  * The product sheet's preview, a catalogue in `currency`: each group's base is
  * the ERP price as typed (before VAT), else the group's KDV hariç price in the

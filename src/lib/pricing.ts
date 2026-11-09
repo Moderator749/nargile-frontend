@@ -1,5 +1,5 @@
 import { api } from "@/lib/api";
-import type { ErpCatalogFields } from "@/lib/erpCatalog";
+import type { ProductErpCatalog } from "@/lib/erpCatalog";
 import type { DecimalString, ISODateTime, UUID } from "@/types";
 
 /*
@@ -19,12 +19,6 @@ export const SEGMENT_LABELS: Record<PricingSegment | "RETAIL", string> = {
   CAFE: "Kafe",
   RETAIL: "Perakende",
 };
-
-/** A product's ERP section, as the records list carries it. */
-export interface ProductErpCatalog extends ErpCatalogFields {
-  /** The rate of its price table; null when it has no price. */
-  vat_rate: DecimalString | null;
-}
 
 /** What the server takes: the numbers as typed, as decimal strings. */
 export interface PricingSheetInput {
@@ -102,8 +96,8 @@ export interface PricingRecord {
   updated_at: ISODateTime;
   /**
    * The product's "ERP ve Katalog Fiyatları" (its sheet, under "Fiyat
-   * Tablosu"), looked up by the code, with its price table's VAT rate — for the
-   * price catalogue. Only on the lists; null when the code names no product.
+   * Tablosu") and its price table, looked up by the code — for the price
+   * catalogue. Only on the lists; null when the code names no product.
    */
   product_erp?: ProductErpCatalog | null;
 }

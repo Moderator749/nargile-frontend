@@ -8,7 +8,7 @@ import { LookbookDownload, LookbookPreview, type LookbookItem, type LookbookLine
 import { Alert } from "@/components/ui/Alert";
 import { getApiErrorMessage } from "@/lib/errors";
 import { formatDateParts } from "@/lib/format";
-import { catalogPrice, ERP_DISPLAY_FIELDS, erpPriceFor, splitVat, type CatalogSegment } from "@/lib/erpCatalog";
+import { erpPriceFor, rowCatalogPrice, splitVat, type CatalogSegment } from "@/lib/erpCatalog";
 import { fetchAllPricingRecords, SEGMENT_LABELS, type PricingRecord } from "@/lib/pricing";
 
 /** A price row of the catalogue: a customer group (by its code), retail, or the TL decision. */
@@ -25,18 +25,16 @@ const FINAL = "__final";
  * (Cetvel 1) is before VAT; retail, the TL decision and every class on an
  * after-VAT sheet (Cetvel 2) are after it.
  *
- * "ERP ve Katalog Fiyatları" is the product's (its sheet, under "Fiyat
- * Tablosu"; `product_erp`): its ERP price (before VAT) stands in for every
- * group's price — Bayi, Toptan, Kafe and retail, not the TL decision — with
- * VAT at the product's own rate, and each group shows its price as the product
- * chose: only before VAT, only after it, or, unchosen, the full split.
+ * A group's price comes from the product the code names (`product_erp`,
+ * `rowCatalogPrice`): its ERP price, else its KDV hariç price in "Fiyat
+ * Tablosu", at the product's VAT rate — the row's own price only for a group
+ * the product has no price for. Not the TL decision, which is the row's. Each
+ * group shows its price as the product chose: only before VAT, only after
+ * it, or, unchosen, the full split.
  */
 function plateOf(record: PricingRecord, columns: CatalogColumn[]): LookbookItem {
   const s = record.sheet;
   const vatRate = Number(s.retail.vat_rate);
-  const product = record.product_erp ?? null;
-  const erp = product ? erpPriceFor(product, s.currency) : null;
-  const erpVatRate = product?.vat_rate != null ? Number(product.vat_rate) : vatRate;
   const lines = columns.flatMap((column): LookbookLine[] => {
     if (column.key === FINAL) {
       if (s.final_try === null) return [];
@@ -44,13 +42,13 @@ function plateOf(record: PricingRecord, columns: CatalogColumn[]): LookbookItem 
     }
     const segment: CatalogSegment = column.key === RETAIL ? "RETAIL" : (column.key as CatalogSegment);
     const sheetPrice = segment === "RETAIL" ? s.retail.price : s.columns.find((c) => c.segment === segment)?.price;
-    const price = catalogPrice({
-      ownPrice: sheetPrice == null ? null : Number(sheetPrice),
-      ownPriceBeforeVat: segment !== "RETAIL" && s.vat_mode === "EXCL",
+    const price = rowCatalogPrice({
+      product: record.product_erp ?? null,
+      segment,
       currency: s.currency,
-      vatRate: erp ? erpVatRate : vatRate,
-      erp,
-      display: product?.[ERP_DISPLAY_FIELDS[segment]] ?? null,
+      rowPrice: sheetPrice == null ? null : Number(sheetPrice),
+      rowPriceBeforeVat: segment !== "RETAIL" && s.vat_mode === "EXCL",
+      rowVatRate: vatRate,
     });
     if (price === null) return [];
     return [
@@ -113,13 +111,16 @@ export function PricingCatalogView({ ids }: { ids: string[] }) {
   // (an intermediate step such as "Mağaza") is the shop's arithmetic, not a
   // price a customer is quoted, so it is never in the catalogue.
   const allColumns = useMemo<CatalogColumn[]>(() => {
-    // A row with an ERP price has a price for every group.
+    // A group the row prices, or its product does: by an ERP price (every
+    // group) or in its price table, in the row's currency.
     const groups = new Set(
-      (records ?? []).flatMap((r) =>
-        r.product_erp && erpPriceFor(r.product_erp, r.sheet.currency)
-          ? ["DEALER", "WHOLESALE", "CAFE"]
-          : r.sheet.columns.map((c) => c.segment).filter(Boolean),
-      ),
+      (records ?? []).flatMap((r) => {
+        const product = r.product_erp;
+        const own = r.sheet.columns.map((c) => c.segment).filter(Boolean);
+        if (!product) return own;
+        if (erpPriceFor(product, r.sheet.currency)) return ["DEALER", "WHOLESALE", "CAFE"];
+        return [...own, ...Object.keys(product.prices_excl?.[r.sheet.currency] ?? {})];
+      }),
     );
     const cols: CatalogColumn[] = (["DEALER", "WHOLESALE", "CAFE"] as const)
       .filter((g) => groups.has(g))
