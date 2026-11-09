@@ -13,6 +13,7 @@ import { CategoryPicker } from "@/components/admin/products/CategoryPicker";
 import { ColorTags } from "@/components/admin/products/ColorTags";
 import { MediaFields } from "@/components/admin/products/MediaFields";
 import { CrossSellPicker, MAX_CROSS_SELLS } from "@/components/admin/products/CrossSellPicker";
+import { ErpCatalogPrices } from "@/components/admin/products/ErpCatalogPrices";
 import { PricingGrid } from "@/components/admin/products/PricingGrid";
 import { QuantityCondition } from "@/components/admin/products/QuantityCondition";
 import { RuleSwitch } from "@/components/admin/products/RuleSwitch";
@@ -480,6 +481,18 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
             </p>
           </div>
           <PricingGrid prices={draft.prices} vatRate={draft.vatRate} onChange={setCell} />
+        </SheetSection>
+
+        <SheetSection
+          title="ERP ve Katalog Fiyatları"
+          hint="Yalnızca PDF fiyat kataloğu için; sitede gösterilmez."
+        >
+          <ErpCatalogPrices
+            erp={draft.erp}
+            prices={draft.prices}
+            vatRate={draft.vatRate}
+            onChange={(erp) => set("erp", erp)}
+          />
         </SheetSection>
 
         <div className="grid gap-4 lg:grid-cols-2">

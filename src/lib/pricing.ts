@@ -1,4 +1,5 @@
 import { api } from "@/lib/api";
+import type { ErpCatalogFields } from "@/lib/erpCatalog";
 import type { DecimalString, ISODateTime, UUID } from "@/types";
 
 /*
@@ -19,101 +20,14 @@ export const SEGMENT_LABELS: Record<PricingSegment | "RETAIL", string> = {
   RETAIL: "Perakende",
 };
 
-/**
- * "ERP ve Katalog Fiyatları", under the worksheet: the product's ERP price in
- * each currency, before VAT, which the price catalogue shows for every group
- * in place of the sheet's price; and per group, how the catalogue shows its
- * price — true "KDV dahil", false "KDV hariç", null the full split (before
- * VAT, VAT, total). Kept on the row beside its sheet; never sent to the site.
- */
-export interface ErpCatalogFields {
-  erp_price_usd: DecimalString | null;
-  erp_price_eur: DecimalString | null;
-  erp_price_tl: DecimalString | null;
-  erp_display_bayi: boolean | null;
-  erp_display_toptan: boolean | null;
-  erp_display_kafe: boolean | null;
-  erp_display_perakende: boolean | null;
-}
-
-export type CatalogSegment = PricingSegment | "RETAIL";
-export type ErpDisplayField = "erp_display_bayi" | "erp_display_toptan" | "erp_display_kafe" | "erp_display_perakende";
-
-/** Each group's display choice, in the catalogue's order. */
-export const ERP_DISPLAY_FIELDS: Record<CatalogSegment, ErpDisplayField> = {
-  DEALER: "erp_display_bayi",
-  WHOLESALE: "erp_display_toptan",
-  CAFE: "erp_display_kafe",
-  RETAIL: "erp_display_perakende",
-};
-
-/**
- * The ERP price the catalogue shows for a line priced in `currency`: the one
- * in that currency, else the first typed of TL, USD, EUR. Null with none.
- */
-export function erpPriceFor(
-  fields: Partial<ErpCatalogFields>,
-  currency: PricingCurrency,
-): { amount: number; currency: PricingCurrency } | null {
-  const typed: Record<PricingCurrency, DecimalString | null | undefined> = {
-    TRY: fields.erp_price_tl,
-    USD: fields.erp_price_usd,
-    EUR: fields.erp_price_eur,
-  };
-  const pick = [currency, "TRY", "USD", "EUR"].find((c) => typed[c as PricingCurrency] != null) as PricingCurrency | undefined;
-  return pick ? { amount: Number(typed[pick]), currency: pick } : null;
-}
-
-/** A price split for an invoice, the VAT the difference so the three add up to the kuruş. */
-export function splitVat(amount: number, vatRate: number, amountIsBeforeVat: boolean) {
-  const round = (n: number) => Math.round(n * 100) / 100;
-  const excl = amountIsBeforeVat ? amount : round(amount / (1 + vatRate / 100));
-  const total = amountIsBeforeVat ? round(amount * (1 + vatRate / 100)) : amount;
-  return { excl, vat: round(total - excl), total };
-}
-
-/** One group's price as the price catalogue (PDF) shows it. */
-export interface CatalogGroupPrice {
-  currency: PricingCurrency;
-  excl: number;
-  vat: number;
-  total: number;
-  /** As chosen: true only after VAT, false only before it, null the full split. */
-  display: boolean | null;
-  /** The ERP price, not the sheet's. */
-  fromErp: boolean;
-}
-
-/**
- * What the price catalogue shows for one group: the ERP price (before VAT)
- * when one is typed, else the sheet's price for the group in its own basis —
- * a class on a before-VAT sheet before VAT, retail after it — split at the
- * sheet's VAT rate, shown as the group's choice says. Null with no price: the
- * group is left off the plate. The catalogue and the calculator's preview
- * both go by it, so the preview is what the PDF prints.
- */
-export function catalogPrice({
-  sheetPrice,
-  sheetPriceBeforeVat,
-  currency,
-  vatRate,
-  erp,
-  display,
-}: {
-  sheetPrice: number | null;
-  sheetPriceBeforeVat: boolean;
-  currency: PricingCurrency;
-  vatRate: number;
-  erp: { amount: number; currency: PricingCurrency } | null;
-  display: boolean | null;
-}): CatalogGroupPrice | null {
-  if (erp) return { currency: erp.currency, display, fromErp: true, ...splitVat(erp.amount, vatRate, true) };
-  if (sheetPrice === null) return null;
-  return { currency, display, fromErp: false, ...splitVat(sheetPrice, vatRate, sheetPriceBeforeVat) };
+/** A product's ERP section, as the records list carries it. */
+export interface ProductErpCatalog extends ErpCatalogFields {
+  /** The rate of its price table; null when it has no price. */
+  vat_rate: DecimalString | null;
 }
 
 /** What the server takes: the numbers as typed, as decimal strings. */
-export interface PricingSheetInput extends ErpCatalogFields {
+export interface PricingSheetInput {
   product_code: string;
   product_name: string;
   vat_mode: VatMode;
@@ -167,7 +81,7 @@ export interface StoredSheet {
   applied_percent?: DecimalString | null;
 }
 
-export interface PricingRecord extends ErpCatalogFields {
+export interface PricingRecord {
   id: UUID;
   file_id: number | null;
   file_name: string | null;
@@ -186,6 +100,12 @@ export interface PricingRecord extends ErpCatalogFields {
   created_at: ISODateTime;
   /** Last saved; after `applied_at`, the site has its earlier version's prices. The lists go by it. */
   updated_at: ISODateTime;
+  /**
+   * The product's "ERP ve Katalog Fiyatları" (its sheet, under "Fiyat
+   * Tablosu"), looked up by the code, with its price table's VAT rate — for the
+   * price catalogue. Only on the lists; null when the code names no product.
+   */
+  product_erp?: ProductErpCatalog | null;
 }
 
 export interface PricingFile {

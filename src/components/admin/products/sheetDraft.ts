@@ -4,6 +4,13 @@
  * decimal when the form is submitted.
  */
 
+import {
+  CATALOG_SEGMENTS,
+  ERP_DISPLAY_FIELDS,
+  type CatalogSegment,
+  type ErpCatalogFields,
+  type ErpDisplayField,
+} from "@/lib/erpCatalog";
 import { convertVat, kurusToInput, parseDecimalInput } from "@/lib/format";
 import { PRODUCT_SLUG } from "@/lib/slug";
 import type {
@@ -149,6 +156,31 @@ export function translationStarted(t: TranslationDraft): boolean {
   return !!(t.name.trim() || !blankHtml(t.description) || t.metaTitle.trim() || t.metaDescription.trim());
 }
 
+/**
+ * "ERP ve Katalog Fiyatları" as typed: the ERP price per currency (KDV hariç)
+ * and per group the catalogue's display — true "KDV dahil", false "KDV
+ * hariç", null not chosen (the full split).
+ */
+export interface ErpDraft {
+  usd: string;
+  eur: string;
+  tl: string;
+  display: Record<CatalogSegment, boolean | null>;
+}
+
+export const noErpDisplay = (): ErpDraft["display"] => ({ DEALER: null, WHOLESALE: null, CAFE: null, RETAIL: null });
+const emptyErp = (): ErpDraft => ({ usd: "", eur: "", tl: "", display: noErpDisplay() });
+
+/** The ERP boxes, in the section's order: the field each one fills and the currency it is in. */
+export const ERP_CURRENCIES = [
+  { key: "usd", currency: "USD" },
+  { key: "eur", currency: "EUR" },
+  { key: "tl", currency: "TRY" },
+] as const satisfies readonly { key: keyof ErpDraft; currency: CurrencyType }[];
+
+/** Typed, but not an ERP price: not a number, or not above zero. */
+export const erpPriceInvalid = (raw: string) => !!raw.trim() && !(Number(parseDecimalInput(raw)) > 0);
+
 export interface SheetDraft {
   base_code: string;
   name: string;
@@ -178,6 +210,8 @@ export interface SheetDraft {
   /** [currency][segment] → the two sides of one cell. */
   prices: Record<CurrencyType, Record<SheetSegment, CellDraft>>;
   rules: ProductSheet["rules"];
+  /** "ERP ve Katalog Fiyatları", under the price table. */
+  erp: ErpDraft;
   opportunity: {
     is_opportunity: boolean;
     price: string;
@@ -236,6 +270,7 @@ export function emptyDraft(): SheetDraft {
       can_use_points: true,
       is_cart_rule_applied: false,
     },
+    erp: emptyErp(),
     opportunity: {
       is_opportunity: false,
       price: "",
@@ -324,6 +359,16 @@ export function draftFromSheet(sheet: SavedProductSheet): SheetDraft {
       has_toptan_havale_discount: sheet.rules.has_toptan_havale_discount ?? false,
       has_cafe_havale_discount: sheet.rules.has_cafe_havale_discount ?? false,
     },
+    erp: sheet.erp
+      ? {
+          usd: money(sheet.erp.erp_price_usd),
+          eur: money(sheet.erp.erp_price_eur),
+          tl: money(sheet.erp.erp_price_tl),
+          display: Object.fromEntries(
+            CATALOG_SEGMENTS.map((segment) => [segment, sheet.erp?.[ERP_DISPLAY_FIELDS[segment]] ?? null]),
+          ) as ErpDraft["display"],
+        }
+      : emptyErp(),
     opportunity: {
       is_opportunity: sheet.opportunity.is_opportunity,
       price: money(sheet.opportunity.opportunity_price),
@@ -382,6 +427,9 @@ export function draftProblem(draft: SheetDraft): string | null {
       if ([cell.excl, cell.incl].some((v) => v.trim() && parseDecimalInput(v) === null))
         return `Fiyat tablosu: ${label} ${CURRENCY_LABEL[currency]} fiyatı geçerli değil (en fazla 2 ondalık, ör. 183,33).`;
     }
+  for (const { key, currency } of ERP_CURRENCIES)
+    if (erpPriceInvalid(draft.erp[key]))
+      return `ERP ve Katalog Fiyatları: ERP ${CURRENCY_LABEL[currency]} fiyatı geçerli değil (sıfırdan büyük, en fazla 2 ondalık; ya da boş bırakın).`;
   if (draft.opportunity.is_opportunity) {
     if (!parseDecimalInput(draft.opportunity.price)) return "Fırsat fiyatı girin.";
     // No deadline is fine: the offer then runs until its stock runs out.
@@ -453,6 +501,15 @@ export function toPayload(draft: SheetDraft): ProductSheet {
     variants,
     prices,
     rules: { ...draft.rules },
+    erp: {
+      erp_price_usd: parseDecimalInput(draft.erp.usd),
+      erp_price_eur: parseDecimalInput(draft.erp.eur),
+      erp_price_tl: parseDecimalInput(draft.erp.tl),
+      ...(Object.fromEntries(CATALOG_SEGMENTS.map((segment) => [ERP_DISPLAY_FIELDS[segment], draft.erp.display[segment]])) as Pick<
+        ErpCatalogFields,
+        ErpDisplayField
+      >),
+    },
     related_product_ids: draft.crossSells.map((c) => c.id),
     is_published: draft.isPublished,
     opportunity: {

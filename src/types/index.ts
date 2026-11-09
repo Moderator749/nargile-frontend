@@ -1,6 +1,8 @@
 // Mirrors the FastAPI Pydantic schemas in saas_backend/app/schemas.
 // Over JSON, Pydantic v2 serializes UUID, datetime and Decimal as strings.
 
+import type { ErpCatalogFields } from "@/lib/erpCatalog";
+
 export type UUID = string;
 export type ISODateTime = string;
 /** Decimal serialized as a string (e.g. "149.90") to avoid float rounding. */
@@ -1154,6 +1156,11 @@ export interface ProductSheet {
   prices: SheetPriceRow[];
   rules: SheetRules;
   opportunity: SheetOpportunity;
+  /**
+   * "ERP ve Katalog Fiyatları", under "Fiyat Tablosu": for the price catalogue
+   * (PDF) only. Omitted, the stored section is kept.
+   */
+  erp?: ErpCatalogFields | null;
   /** "Birlikte satılanlar", in the admin's order; at most four. */
   related_product_ids: UUID[];
 }
