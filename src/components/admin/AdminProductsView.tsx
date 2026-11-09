@@ -1,17 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import axios from "axios";
-import { ArrowDownUp, Copy, ImageOff, Loader2, PackageX, Pencil, Plus, Table2, Trash2 } from "lucide-react";
+import { ArrowDownUp, Copy, ImageOff, Loader2, PackageX, Pencil, Plus, Trash2 } from "lucide-react";
 
 import { AdminPageHeader, panelClass } from "@/components/admin/AdminShell";
 import { Pagination } from "@/components/admin/Pagination";
 import { withWorkspaceParams } from "@/components/admin/products/productsTabs";
 import { CategoryCombobox } from "@/components/admin/products/CategoryCombobox";
 import { StockCell } from "@/components/admin/products/StockCell";
-import { ErpPriceGrid, savedErp } from "@/components/admin/products/ErpPriceGrid";
 import { PRODUCTS_PATH, rememberProductList } from "@/components/admin/products/listReturn";
 import { SortableHeader, type SortState } from "@/components/admin/SortableHeader";
 import { CatalogSearch } from "@/components/catalog/CatalogSearch";
@@ -19,7 +18,6 @@ import { Alert } from "@/components/ui/Alert";
 import { Switch } from "@/components/ui/Switch";
 import {
   ADMIN_PAGE_SIZE,
-  adminBulkErpPrices,
   adminDeleteProducts,
   adminDuplicateProducts,
   adminListCategories,
@@ -29,8 +27,7 @@ import {
 } from "@/lib/adminApi";
 import { getApiErrorMessage } from "@/lib/errors";
 import { refreshStorefront } from "@/lib/revalidate";
-import { formatMoney, parseDecimalInput } from "@/lib/format";
-import { gridChanges, normalized, type GridSegment } from "@/lib/erpGrid";
+import { formatMoney } from "@/lib/format";
 import { loadExchangeRates } from "@/lib/money";
 import { inLira, pickPriceRow } from "@/lib/retailPrice";
 import type { AdminCategory, AdminProduct, AdminVariant, ExchangeRates, ProductSort, Segment } from "@/types";
@@ -90,12 +87,11 @@ function stateFromUrl(params: URLSearchParams) {
     dir: params.get("yon") === "desc" ? "desc" : "asc",
   };
   const page = Math.max(0, (Number.parseInt(params.get("sayfa") ?? "", 10) || 1) - 1);
-  return { category: params.get("kategori") ?? "", query: params.get("q") ?? "", sort, page, pricing: params.get("fiyat") === "1" };
+  return { category: params.get("kategori") ?? "", query: params.get("q") ?? "", sort, page };
 }
 
-function urlFromState(category: string, query: string, sort: SortState<ProductSort>, page: number, pricing: boolean): string {
+function urlFromState(category: string, query: string, sort: SortState<ProductSort>, page: number): string {
   const params = new URLSearchParams();
-  if (pricing) params.set("fiyat", "1");
   if (category) params.set("kategori", category);
   if (query) params.set("q", query);
   if (sort.by) {
@@ -138,24 +134,6 @@ export function AdminProductsView({
   const [bulkBusy, setBulkBusy] = useState<"delete" | "duplicate" | null>(null);
   const [notice, setNotice] = useState<{ kind: "success" | "error"; text: string } | null>(null);
   const tableTop = useRef<HTMLDivElement>(null);
-  // "Fiyat Giriş Modu": the list as a grid of TL ERP prices. Typed cells are
-  // kept across pages until saved (or dropped), each with the price it had
-  // when first typed into, to tell a change from a price typed back.
-  const [pricing, setPricing] = useState(initial.pricing);
-  const [edits, setEdits] = useState<Record<string, { value: string; saved: string | null }>>({});
-  const [savingPrices, setSavingPrices] = useState(false);
-  const [justSaved, setJustSaved] = useState<ReadonlySet<string>>(new Set());
-  const drafts = useMemo(() => Object.fromEntries(Object.entries(edits).map(([k, e]) => [k, e.value])), [edits]);
-  const { changes, invalid } = useMemo(
-    () => gridChanges(drafts, (key) => edits[key]?.saved ?? null, parseDecimalInput),
-    [drafts, edits],
-  );
-  const changedKeys = useMemo(
-    () => new Set(changes.map((c) => `${c.product_id}:${c.segment}`)),
-    [changes],
-  );
-  const invalidKeys = useMemo(() => new Set(invalid), [invalid]);
-  const unsaved = changes.length + invalid.length;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -178,37 +156,29 @@ export function AdminProductsView({
 
   const filter = `${category}|${query}|${sort.by ?? ""}|${sort.dir}`;
   const page = paging.filter === filter ? paging.page : 0;
-  const key = `${filter}|${page}|${pricing ? "fiyat" : ""}`;
+  const key = `${filter}|${page}`;
   useEffect(() => {
     const controller = new AbortController();
-    adminListProductsPage({ q: query, category, page, orderBy: sort.by, orderDir: sort.dir, pricing }, controller.signal)
+    adminListProductsPage({ q: query, category, page, orderBy: sort.by, orderDir: sort.dir }, controller.signal)
       .then(({ products, total }) => setList({ key, products, total, error: null }))
       .catch((err: unknown) => {
         if (axios.isCancel(err)) return;
         setList({ key, products: [], total: 0, error: getApiErrorMessage(err, "Ürünler yüklenemedi.") });
       });
     return () => controller.abort();
-  }, [key, query, category, page, sort.by, sort.dir, pricing]);
-
-  // Typed prices not saved yet: leaving the page asks first.
-  useEffect(() => {
-    if (unsaved === 0) return;
-    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
-    window.addEventListener("beforeunload", warn);
-    return () => window.removeEventListener("beforeunload", warn);
-  }, [unsaved]);
+  }, [key, query, category, page, sort.by, sort.dir]);
 
   // Category, search, sort and page live in the URL: Back (or the sheet's
   // "Geri Dön") brings the list back exactly as it was left.
   useEffect(() => {
-    const qs = urlFromState(category, query, sort, page, pricing);
+    const qs = urlFromState(category, query, sort, page);
     rememberProductList(qs);
     // The tabs' own params (`?sekme=`) stay beside the list's.
     const full = withWorkspaceParams(qs);
     if (full !== window.location.search.replace(/^\?/, "")) {
       router.replace(full ? `${PRODUCTS_PATH}?${full}` : PRODUCTS_PATH, { scroll: false });
     }
-  }, [router, category, query, sort, page, pricing]);
+  }, [router, category, query, sort, page]);
 
   const sortableCategory = category ? categories.find((c) => c.slug === category) : undefined;
 
@@ -360,60 +330,6 @@ export function AdminProductsView({
     }
   }
 
-  /** A grid cell typed into (or, undefined, put back to its saved price). */
-  function draftCell(key: string, value: string | undefined, product?: AdminProduct, segment?: GridSegment) {
-    setJustSaved(new Set());
-    setEdits((prev) => {
-      const next = { ...prev };
-      const saved = prev[key]?.saved ?? (product && segment ? savedErp(product, segment) : null);
-      // Typed back to the saved price (or emptied where there was none): no longer an edit.
-      const parsed = value?.trim() ? parseDecimalInput(value) : null;
-      const same = value !== undefined && (value.trim() ? parsed !== null && normalized(parsed) === saved : saved === null);
-      if (value === undefined || same) delete next[key];
-      else next[key] = { value, saved };
-      return next;
-    });
-  }
-
-  const dropDrafts = () => setEdits({});
-
-  function togglePricing() {
-    if (pricing && unsaved > 0 && !window.confirm(`Kaydedilmemiş ${unsaved} fiyat değişikliği silinecek. Fiyat Giriş Modu kapatılsın mı?`)) return;
-    if (pricing) dropDrafts();
-    setNotice(null);
-    setJustSaved(new Set());
-    setPricing(!pricing);
-  }
-
-  async function savePrices() {
-    if (savingPrices || changes.length === 0 || invalid.length > 0) return;
-    setSavingPrices(true);
-    setNotice(null);
-    try {
-      const result = await adminBulkErpPrices(changes);
-      const fresh = new Map(result.products.map((p) => [p.id, p]));
-      setList((prev) => (prev ? { ...prev, products: prev.products.map((p) => fresh.get(p.id) ?? p) } : prev));
-      const written = changes.map((c) => `${c.product_id}:${c.segment}`);
-      setEdits((prev) => {
-        const next = { ...prev };
-        for (const k of written) delete next[k];
-        return next;
-      });
-      setJustSaved(new Set(written));
-      const sited = result.applied.filter((a) => a.site_price_incl !== null).length;
-      setNotice({
-        kind: "success",
-        text: `${changes.length} ERP fiyatı kaydedildi${sited ? `; ${sited} site fiyatı kurala göre güncellendi` : ""}.`,
-      });
-      // The shop's cached lists and pages show the new prices now.
-      void refreshStorefront();
-    } catch (err) {
-      setNotice({ kind: "error", text: getApiErrorMessage(err, "Fiyatlar kaydedilemedi; hiçbir değişiklik yazılmadı.") });
-    } finally {
-      setSavingPrices(false);
-    }
-  }
-
   return (
     <>
       {!embedded && (
@@ -464,22 +380,6 @@ export function AdminProductsView({
 
         {/* The actions sit together at the right edge, ending with the destructive one. */}
         <div className="flex items-center gap-3 lg:ml-auto">
-          <button
-            type="button"
-            onClick={togglePricing}
-            aria-pressed={pricing}
-            title="Ürünlerin TL ERP fiyatlarını tablo halinde girin; site fiyatları cetvel kuralıyla güncellenir."
-            className={`inline-flex h-10 shrink-0 items-center gap-2 rounded-lg px-3.5 text-sm font-semibold ring-1 transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500 ${
-              pricing
-                ? "bg-sky-600 text-white ring-sky-600 hover:bg-sky-500 dark:bg-sky-500 dark:ring-sky-500"
-                : "text-slate-700 ring-slate-300 hover:bg-slate-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
-            }`}
-          >
-            <Table2 className="h-4 w-4" aria-hidden />
-            Fiyat Giriş Modu
-          </button>
-          {!pricing && (
-            <>
           <Link
             href="/admin/products/new"
             className="inline-flex h-10 shrink-0 items-center gap-2 rounded-lg bg-red-600 px-4 text-sm font-semibold text-white shadow-sm transition-colors duration-200 hover:bg-red-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 dark:bg-red-500 dark:hover:bg-red-400"
@@ -512,8 +412,6 @@ export function AdminProductsView({
             )}
             Sil{selectedHere.length > 0 ? ` (${selectedHere.length})` : ""}
           </button>
-            </>
-          )}
         </div>
       </div>
 
@@ -544,22 +442,6 @@ export function AdminProductsView({
           <div className="flex flex-col items-center px-4 py-16 text-center">
             <PackageX className="h-9 w-9 text-slate-300 dark:text-zinc-700" strokeWidth={1.5} aria-hidden />
             <p className="mt-3 text-sm text-slate-500 dark:text-zinc-400">Eşleşen ürün bulunamadı.</p>
-          </div>
-        ) : pricing ? (
-          <div className={`transition-opacity ${current ? "" : "opacity-60"}`}>
-            <ErpPriceGrid
-              products={shown.products}
-              segments={segments}
-              drafts={drafts}
-              changed={changedKeys}
-              invalid={invalidKeys}
-              saved={justSaved}
-              disabled={savingPrices}
-              onDraft={(cell, value) => {
-                const [productId, segment] = [cell.slice(0, cell.lastIndexOf(":")), cell.slice(cell.lastIndexOf(":") + 1)];
-                draftCell(cell, value, shown.products.find((p) => p.id === productId), segment as GridSegment);
-              }}
-            />
           </div>
         ) : (
           <div className={`transition-opacity ${current ? "" : "opacity-60"}`}>
@@ -695,40 +577,6 @@ export function AdminProductsView({
           </div>
         )}
       </div>
-
-      {/* "Fiyat Giriş Modu"'s save, at the foot of the screen while there is something to save. */}
-      {pricing && unsaved > 0 && (
-        <div className="sticky bottom-4 z-20 mt-4 flex flex-wrap items-center gap-3 rounded-2xl border border-sky-200 bg-white/95 px-4 py-3 shadow-lg backdrop-blur dark:border-sky-500/30 dark:bg-zinc-900/95">
-          <p className="me-auto text-sm" aria-live="polite">
-            <span className="font-semibold">{changes.length} değişiklik</span>
-            {invalid.length > 0 && (
-              <span className="ms-2 text-red-600 dark:text-red-400">· {invalid.length} hücre fiyat değil</span>
-            )}
-            <span className="ms-2 hidden text-xs text-slate-500 sm:inline dark:text-zinc-400">
-              Site fiyatları ürünün cetvel kuralıyla güncellenir.
-            </span>
-          </p>
-          <button
-            type="button"
-            onClick={() => {
-              if (window.confirm(`${unsaved} değişiklik geri alınsın mı?`)) dropDrafts();
-            }}
-            disabled={savingPrices}
-            className="inline-flex h-10 items-center rounded-lg px-3.5 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 transition-colors hover:bg-slate-50 disabled:opacity-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
-          >
-            Vazgeç
-          </button>
-          <button
-            type="button"
-            onClick={savePrices}
-            disabled={savingPrices || changes.length === 0 || invalid.length > 0}
-            className="inline-flex h-10 items-center gap-2 rounded-lg bg-red-600 px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-red-500 dark:hover:bg-red-400"
-          >
-            {savingPrices && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
-            Kaydet ({changes.length} değişiklik)
-          </button>
-        </div>
-      )}
     </>
   );
 }

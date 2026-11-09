@@ -1192,23 +1192,6 @@ export interface AdminProduct {
   /** Off the storefront while false; toggled per row in the products list. */
   is_published: boolean;
   variants: AdminVariant[];
-  /** "ERP ve Katalog Fiyatları": per currency and group, before VAT. */
-  erp_prices?: Partial<Record<CurrencyType, Partial<Record<SheetSegment, DecimalString>>>> | null;
-  /** The worksheet that prices it, in "Fiyat Giriş Modu" (the list's `pricing`). */
-  price_rule?: PriceRule | null;
-}
-
-/**
- * The pricing worksheet row last applied to a product. A group it prices goes
- * on the site at its ERP price plus `applied_percent`; retail, and a group it
- * does not price, at the ERP price.
- */
-export interface PriceRule {
-  record_id: UUID;
-  applied_at: string;
-  currency: CurrencyType;
-  applied_percent: DecimalString | null;
-  segments: SheetSegment[];
 }
 
 /** An order line with the catalogue data the admin order sheet prints. */
