@@ -510,7 +510,7 @@ export const lookbookMessages = defineMessages({
     noPrice: "Fiyat yok",
     exclVat: "KDV hariç",
     vat: "+ KDV",
-    total: "Toplam",
+    total: "KDV dahil",
   },
   en: {
     title: "Price List",
@@ -518,7 +518,7 @@ export const lookbookMessages = defineMessages({
     noPrice: "No price",
     exclVat: "Excl. VAT",
     vat: "+ VAT",
-    total: "Total",
+    total: "Incl. VAT",
   },
   ar: {
     title: "قائمة الأسعار",
@@ -526,6 +526,6 @@ export const lookbookMessages = defineMessages({
     noPrice: "لا يوجد سعر",
     exclVat: "بدون الضريبة",
     vat: "+ الضريبة",
-    total: "الإجمالي",
+    total: "شامل الضريبة",
   },
 });
