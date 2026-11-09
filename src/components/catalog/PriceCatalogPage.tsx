@@ -9,6 +9,7 @@ import { useLocalePath } from "@/components/i18n/navigation";
 import { LookbookDownload, LookbookPreview, type LookbookItem, type LookbookLine } from "@/components/lookbook/Lookbook";
 import { Alert } from "@/components/ui/Alert";
 import { catalogParts, partOf } from "@/lib/catalogParts";
+import { listCatalogPrice } from "@/lib/erpCatalog";
 import { getApiErrorMessage } from "@/lib/errors";
 import { formatDateParts } from "@/lib/format";
 import type { Locale } from "@/lib/i18n/config";
@@ -20,22 +21,34 @@ import { useAuthHydrated } from "@/store/useHasHydrated";
 import type { SegmentType } from "@/types";
 
 /**
- * A product's plate. Toptan and Kafe rows carry the VAT split a business
- * buyer works with, in the currency the price was entered in (a USD price
- * stays in USD); the retail row is a shelf price, VAT-inclusive and always in
- * TL, as a shopper reads it — its total only, nothing marked "+ KDV".
+ * A product's plate. Each group is priced from the product's ERP price for it
+ * when it has one ("ERP ve Katalog Fiyatları" on the product sheet), else its
+ * list price (`listCatalogPrice`), and shown as the product chose for the
+ * group: only KDV hariç, only KDV dahil, or — no choice — as it always was:
+ * Toptan and Kafe with the VAT split a business buyer works with, in the
+ * currency the price was entered in (a USD price stays in USD); retail as a
+ * shelf price, VAT-inclusive and in TL, its total only.
  */
 function plateOf(item: PriceListItem, groups: SegmentType[], locale: Locale): LookbookItem {
   const lines = groups.flatMap<LookbookLine>((g) => {
     const p = item.prices[g];
     if (!p) return [];
-    const excl = Number(p.price_excl_tax);
-    const total = Number(p.price_incl_tax);
+    const price = listCatalogPrice(p);
     const label = catalogMessages[locale].priceCatalog.groupLabel[g].toLocaleUpperCase(INTL_LOCALE[locale]);
-    const currency = p.currency;
-    return g === "RETAIL"
-      ? [{ key: g, label, excl, vat: 0, total, currency, tone: "retail", totalOnly: true }]
-      : [{ key: g, label, excl, vat: Math.round((total - excl) * 100) / 100, total, currency }];
+    const display = price.display ?? (g === "RETAIL" ? true : null);
+    return [
+      {
+        key: g,
+        label,
+        excl: price.excl,
+        vat: price.vat,
+        total: price.total,
+        currency: price.currency,
+        tone: g === "RETAIL" ? "retail" : undefined,
+        totalOnly: display === true,
+        exclOnly: display === false,
+      },
+    ];
   });
   return { id: item.product_id, code: item.code, name: item.name, imageUrl: item.image_url, lines };
 }

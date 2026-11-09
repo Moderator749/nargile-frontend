@@ -1,4 +1,5 @@
 import { api } from "@/lib/api";
+import type { ListedGroupPrice } from "@/lib/erpCatalog";
 import type { CatalogPrice, SegmentType, UUID } from "@/types";
 
 /*
@@ -43,8 +44,11 @@ export interface PriceListItem {
   code: string;
   name: string;
   image_url: string | null;
-  /** Per requested group the product is sold to; in TRY. */
-  prices: Partial<Record<SegmentType, CatalogPrice>>;
+  /**
+   * Per requested group the product is sold to: its list price, with the
+   * product's ERP price and display choice for the group (`listCatalogPrice`).
+   */
+  prices: Partial<Record<SegmentType, CatalogPrice & Pick<ListedGroupPrice, "erp_price" | "erp_currency" | "vat_display">>>;
 }
 
 export async function fetchPriceList(productIds: UUID[], groups: SegmentType[], signal?: AbortSignal): Promise<PriceListItem[]> {

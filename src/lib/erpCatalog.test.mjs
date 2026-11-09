@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { catalogPrice, erpPriceFor, productCatalogPreview, rowCatalogPrice } from "./erpCatalog.ts";
+import { catalogPrice, erpPriceFor, listCatalogPrice, productCatalogPreview, rowCatalogPrice } from "./erpCatalog.ts";
 
 const NONE = { DEALER: null, WHOLESALE: null, CAFE: null, RETAIL: null };
 const TABLE = { DEALER: 800, WHOLESALE: 900, CAFE: null, RETAIL: 1000 };
@@ -122,4 +122,24 @@ test("a row not applied yet: its own blue ERP row comes before the product's pri
   // No product at all: the row's blue row still wins over its green one.
   const alone = rowCatalogPrice({ ...row, product: null, segment: "CAFE", rowErp: 125, rowPrice: 131.58, rowPriceBeforeVat: true });
   assert.equal(alone.excl, 125);
+});
+
+// MLZ 160 on /fiyat-katalogu: list prices marked up (Bayi 342.10, Kafe 394.73), ERP 325 / 375 / 412.50.
+const LISTED = (excl, incl, extra = {}) => ({ currency: "TRY", price_excl_tax: excl, price_incl_tax: incl, vat_rate: "20.00", ...extra });
+
+test("MLZ 160 on /fiyat-katalogu: each group from its ERP price, shown as chosen", () => {
+  const bayi = listCatalogPrice(LISTED("342.10", "410.52", { erp_price: "325.00", erp_currency: "TRY", vat_display: false }));
+  assert.deepEqual([bayi.excl, bayi.display, bayi.fromErp], [325, false, true]);
+  const kafe = listCatalogPrice(LISTED("394.73", "473.68", { erp_price: "375.00", erp_currency: "TRY", vat_display: false }));
+  assert.deepEqual([kafe.excl, kafe.display], [375, false]);
+  const retail = listCatalogPrice(LISTED("412.50", "495.00", { erp_price: "412.50", erp_currency: "TRY", vat_display: true }));
+  assert.deepEqual([retail.excl, retail.vat, retail.total, retail.display], [412.5, 82.5, 495, true]);
+  // An ERP price with no choice: the split, from the ERP base.
+  const toptan = listCatalogPrice(LISTED("342.10", "410.52", { erp_price: "325.00", erp_currency: "TRY", vat_display: null }));
+  assert.deepEqual([toptan.excl, toptan.vat, toptan.total, toptan.display], [325, 65, 390, null]);
+});
+
+test("without an ERP price the list price stays exactly as stored", () => {
+  const p = listCatalogPrice(LISTED("4237.29", "5000.00"));
+  assert.deepEqual([p.excl, p.vat, p.total, p.display, p.fromErp], [4237.29, 762.71, 5000, null, false]);
 });

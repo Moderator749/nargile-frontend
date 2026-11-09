@@ -157,6 +157,43 @@ export function rowCatalogPrice({
   return catalogPrice({ ownPrice: rowPrice, ownPriceBeforeVat: rowPriceBeforeVat, currency, vatRate: rowVatRate, erp: null, display });
 }
 
+/** A group's price as the storefront's price catalogue receives it (`/products/price-list`). */
+export interface ListedGroupPrice {
+  currency: CatalogCurrency;
+  price_excl_tax: string;
+  price_incl_tax: string;
+  vat_rate: string;
+  /** The group's ERP price, before VAT; null without one. */
+  erp_price?: string | null;
+  erp_currency?: CatalogCurrency | null;
+  /** True "KDV dahil göster", false "KDV hariç göster", null not chosen. */
+  vat_display?: boolean | null;
+}
+
+/**
+ * A group in the storefront's price catalogue (`/fiyat-katalogu` and its
+ * "PDF İndir"): the group's ERP price as the base, VAT added at the price's
+ * own rate, else the list price exactly as stored (its two sides, so a shelf
+ * price never drifts by a kuruş). `display` is the product's choice for the
+ * group, null when it made none.
+ */
+export function listCatalogPrice(p: ListedGroupPrice): CatalogGroupPrice {
+  const display = p.vat_display ?? null;
+  if (p.erp_price != null) {
+    return catalogPrice({
+      ownPrice: null,
+      ownPriceBeforeVat: true,
+      currency: p.currency,
+      vatRate: Number(p.vat_rate),
+      erp: { amount: Number(p.erp_price), currency: p.erp_currency ?? p.currency },
+      display,
+    })!;
+  }
+  const excl = Number(p.price_excl_tax);
+  const total = Number(p.price_incl_tax);
+  return { currency: p.currency, excl, vat: Math.round((total - excl) * 100) / 100, total, display, fromErp: false };
+}
+
 /**
  * The product sheet's preview, a catalogue in `currency`: each group's base is
  * its ERP price as typed (before VAT), else its KDV hariç price in the sheet's
