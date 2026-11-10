@@ -637,13 +637,13 @@ export function PricingCalculator({
               {d.extras.map((c) => (
                 <ErpCell
                   key={c.key}
-                  label={`${c.label || "Mağaza fiyatı"} ERP fiyatı (KDV ${d.vatMode === "INCL" ? "dahil" : "hariç"})`}
+                  label={`${c.label || "Mağaza fiyatı"} ERP fiyatı (KDV dahil)`}
                   value={c.erpPrice}
                   onChange={(erpPrice) => setExtra(c.key, { erpPrice })}
                 />
               ))}
               <ErpCell
-                label={`Perakende ERP fiyatı (KDV ${d.vatMode === "INCL" ? "dahil" : "hariç"})`}
+                label="Perakende ERP fiyatı (KDV dahil)"
                 value={d.retailErpPrice}
                 onChange={(retailErpPrice) => set({ retailErpPrice })}
               />
@@ -791,8 +791,10 @@ export function PricingCalculator({
       </div>
       <p className="mt-2 text-[11px] leading-4 text-slate-500 dark:text-zinc-400">
         Turuncu satır kendi formül zinciriyle hesaplanır: bayi → toptan → kafe → mağaza fiyatı → perakende. Mavi satıra
-        (ERP fiyatı) isterseniz sütun için bir taban fiyat yazın. Cetvel 1’de mavi satır KDV hariçtir: ürünün ERP
-        fiyatlarına olduğu gibi yazılır, perakende ve mağaza fiyatında yeşil satır ona KDV’yi ekler (595 + %20 KDV = 714).
+        (ERP fiyatı) isterseniz sütun için bir taban fiyat yazın. Cetvel 1’de bayi, toptan ve kafenin mavi satırı KDV
+        hariçtir ve ürünün ERP fiyatlarına olduğu gibi yazılır. Mağaza fiyatı ve perakendenin mavi satırı her iki cetvelde
+        de KDV dahildir: yeşil satıra KDV eklenmeden aynen geçer (250 yazılırsa 250,00 uygulanır); boş bırakılırsa fiyat
+        formül zincirinden KDV eklenerek hesaplanır. Perakendenin ERP fiyatı ürüne KDV’si çıkarılarak yazılır (240 / 1,20 = 200).
         Cetvel 2’de mavi satır KDV dahildir: yeşil satır ona yalnızca oranı ekler (115 + %5 = 120,75), ürünün ERP
         fiyatlarına KDV’si çıkarılarak yazılır (115 / 1,20 = 95,83) ve dört grup da “KDV dahil göster” olur. Yeşil satır siteye gönderilen fiyattır: ERP fiyatı —
         boşsa hesaplanan fiyat — bayi, toptan ve kafede maliyetin altındaki uygulanacak oran eklenerek kendiliğinden
