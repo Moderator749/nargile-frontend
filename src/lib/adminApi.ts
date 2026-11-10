@@ -290,6 +290,12 @@ export async function adminCreateCampaign(body: CampaignCreate): Promise<Campaig
   return data;
 }
 
+/** "Kalanlara gönder": an e-mail campaign sent again to whoever it has not reached yet. */
+export async function adminResumeCampaign(id: number): Promise<Campaign> {
+  const { data } = await api.post<Campaign>(`/admin/communications/campaigns/${id}/resume`);
+  return data;
+}
+
 export async function adminListCampaigns(signal?: AbortSignal): Promise<Campaign[]> {
   const { data } = await api.get<Campaign[]>("/admin/communications/campaigns", { params: { limit: 30 }, signal });
   return data;

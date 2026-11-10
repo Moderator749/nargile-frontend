@@ -13,6 +13,7 @@ import {
   adminCreateCampaign,
   adminGetSmsSettings,
   adminListCampaigns,
+  adminResumeCampaign,
   adminNotificationLogs,
   adminSaveSmsSettings,
   adminSendTestSms,
@@ -361,7 +362,7 @@ function Composer({ channel, drivers, onSent }: {
             </>
           ) : (
             <p className={hintClass}>
-              Her e-postanın sonuna, alıcının izni hesabından kaldırabileceğini söyleyen bir satır eklenir.
+              Her e-postanın sonuna alıcının kendi “Abonelikten Çık” bağlantısı eklenir; e-posta uygulamalarındaki tek tıkla abonelikten çıkma düğmesi de çalışır. Çıkan adrese bir daha kampanya gönderilmez.
             </p>
           )}
         </div>
@@ -422,6 +423,22 @@ function HistoryView({ reloadKey }: { reloadKey: number }) {
   const [logs, setLogs] = useState<NotificationLogEntry[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
+  const [resuming, setResuming] = useState<number | null>(null);
+
+  async function resume(c: Campaign) {
+    const rest = c.failed.toLocaleString("tr-TR");
+    if (!window.confirm(`Kampanya, ulaşamadığı ${rest} alıcıya yeniden gönderilsin mi? Daha önce ulaştığı adreslere tekrar gönderilmez.`)) return;
+    setResuming(c.id);
+    try {
+      await adminResumeCampaign(c.id);
+      setError(null);
+      setTick((n) => n + 1);
+    } catch (err) {
+      setError(getApiErrorMessage(err, "Kampanya yeniden başlatılamadı."));
+    } finally {
+      setResuming(null);
+    }
+  }
 
   useEffect(() => {
     const controller = new AbortController();
@@ -492,6 +509,18 @@ function HistoryView({ reloadKey }: { reloadKey: number }) {
                     <td className={`${td} whitespace-nowrap text-right tabular-nums`}>
                       {c.sent.toLocaleString("tr-TR")} / {c.total.toLocaleString("tr-TR")}
                       {c.failed > 0 && <span className="block text-xs text-red-600 dark:text-red-400">{c.failed} başarısız</span>}
+                      {/* E-mail only: an SMS campaign has no per-recipient record to pick up from. */}
+                      {c.channel === "email" && c.failed > 0 && (c.status === "done" || c.status === "failed") && (
+                        <button
+                          type="button"
+                          onClick={() => void resume(c)}
+                          disabled={resuming !== null}
+                          className="mt-1.5 inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold text-red-700 ring-1 ring-inset ring-red-200 transition-colors duration-150 hover:bg-red-50 disabled:opacity-50 dark:text-red-300 dark:ring-red-500/30 dark:hover:bg-red-500/10"
+                        >
+                          <Send className="h-3.5 w-3.5" aria-hidden />
+                          {resuming === c.id ? "Başlatılıyor…" : "Kalanlara gönder"}
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
