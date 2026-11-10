@@ -10,7 +10,7 @@
  */
 export const ROOT_ROUTES: readonly string[] = [
   "en", "ar", "tr", "api", "_next", "_",
-  "account", "admin", "bilgi", "blog", "cart", "catalog", "checkout", "firsat-urunleri", "fiyat-katalogu", "images",
+  "abonelikten-cik", "account", "admin", "bilgi", "blog", "cart", "catalog", "checkout", "firsat-urunleri", "fiyat-katalogu", "images",
   "kargo-takip", "login", "magazalar", "marka", "onizleme", "orders", "product", "register", "sifre-yenile",
   "sifremi-unuttum", "sozlesmeler", "sss", "opengraph-image",
 ];

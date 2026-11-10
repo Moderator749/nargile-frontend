@@ -32,6 +32,7 @@ const PRIVATE_PATHS = [
   "/register",
   "/sifremi-unuttum",
   "/sifre-yenile",
+  "/abonelikten-cik",
   "/fiyat-katalogu",
   "/api",
 ];
