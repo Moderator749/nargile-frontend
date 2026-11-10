@@ -25,6 +25,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { OrderAlerts } from "@/components/admin/OrderAlerts";
 import { SortableList } from "@/components/admin/SortableList";
 import { StaffHome } from "@/components/admin/team/StaffHome";
 import { TeamChannel } from "@/components/admin/team/TeamChannel";
@@ -306,6 +307,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
       </aside>
       <main className="min-w-0 flex-1">{admin ? children : <StaffHome />}</main>
       <TeamChannel user={user} />
+      {admin && <OrderAlerts />}
     </div>
   );
 }

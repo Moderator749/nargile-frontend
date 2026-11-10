@@ -1,5 +1,6 @@
 import { api } from "@/lib/api";
 import type { CategoryBulkSettings } from "@/lib/categoryBulk";
+import type { PlacedOrder } from "@/lib/orderAlerts";
 import type {
   AccountType,
   Carrier,
@@ -94,6 +95,18 @@ export async function adminListOrders(
 }
 
 /** How many orders each status tab holds, under the same İstanbul filter as the list. */
+/** The orders placed since `since` (none without it: only the server's clock), for the new-order chime. */
+export async function adminLatestOrders(
+  since: string | null,
+  signal?: AbortSignal,
+): Promise<{ now: string; orders: PlacedOrder[] }> {
+  const { data } = await api.get<{ now: string; orders: PlacedOrder[] }>("/admin/orders/latest", {
+    params: { since: since ?? undefined },
+    signal,
+  });
+  return data;
+}
+
 export async function adminOrderStatusCounts(
   params: { shippingMethod?: ShippingMethod | null },
   signal?: AbortSignal,

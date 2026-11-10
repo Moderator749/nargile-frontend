@@ -111,6 +111,18 @@ html[data-auth] .guest-only {
   display: none;
 }
 
+/* The admin's new-order toast (components/admin/OrderAlerts): in from the right. */
+@keyframes order-toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(1rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 @keyframes sheen {
   0%,
   20% {
