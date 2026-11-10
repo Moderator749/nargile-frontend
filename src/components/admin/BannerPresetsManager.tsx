@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CalendarClock, Pencil, Plus, Trash2, Wand2 } from "lucide-react";
+import { CalendarClock, Pencil, Plus, Timer, Trash2, Wand2 } from "lucide-react";
 
 import { panelClass } from "@/components/admin/AdminShell";
 import { BannerLookPicker } from "@/components/admin/BannerLookPicker";
@@ -111,6 +111,8 @@ interface Draft {
   starts: string;
   ends: string;
   scheduled: boolean;
+  /** Counts down to `ends` while live. */
+  countdown: boolean;
 }
 
 const blank: Draft = {
@@ -123,6 +125,7 @@ const blank: Draft = {
   starts: "",
   ends: "",
   scheduled: false,
+  countdown: false,
 };
 
 function draftOf(p: BannerPreset): Draft {
@@ -136,6 +139,7 @@ function draftOf(p: BannerPreset): Draft {
     starts: toLocalInputValue(p.starts_at),
     ends: toLocalInputValue(p.ends_at),
     scheduled: p.is_scheduled,
+    countdown: p.show_countdown,
   };
 }
 
@@ -192,7 +196,9 @@ function PresetEditor({
       ? "Bitiş zamanı başlangıçtan sonra olmalı."
       : draft.scheduled && !hasRange
         ? "Otomatik yayın için başlangıç ve bitiş seçin."
-        : null;
+        : draft.countdown && !endsAt
+          ? "Geri sayım için bir bitiş seçin."
+          : null;
 
   const look = presetLook(draft, bannerLook);
   const inheritSwatch = swatchOf(bannerLook);
@@ -207,8 +213,8 @@ function PresetEditor({
           <LiveAnnouncementBar
             announcement={{
               message: draft.message.trim(),
-              expires_at: null,
-              show_countdown: false,
+              expires_at: draft.countdown ? endsAt : null,
+              show_countdown: draft.countdown && !!endsAt,
               icon_type: draft.icon,
               ...look,
             }}
@@ -307,7 +313,7 @@ function PresetEditor({
           id={`preset-${key}-ends`}
           label="Bitiş"
           value={draft.ends}
-          onChange={(ends) => onChange({ ends, ...(ends ? {} : { scheduled: false }) })}
+          onChange={(ends) => onChange({ ends, ...(ends ? {} : { scheduled: false, countdown: false }) })}
           hint={`Bu zamanda kalkar. Saat dilimi: ${Intl.DateTimeFormat().resolvedOptions().timeZone}.`}
         />
       </div>
@@ -329,6 +335,26 @@ function PresetEditor({
           onChange={(scheduled) => onChange({ scheduled })}
           labelledBy={`preset-${key}-auto-label`}
           describedBy={`preset-${key}-auto-hint`}
+        />
+      </div>
+
+      <div className="flex items-center justify-between gap-4 rounded-xl border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-zinc-950">
+        <div>
+          <p id={`preset-${key}-countdown-label`} className="text-sm font-medium">
+            Geri sayım
+          </p>
+          <p id={`preset-${key}-countdown-hint`} className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">
+            {endsAt
+              ? "Açıkken metnin yanında bitişe kalan süre (gün:saat:dakika:saniye) işler. Kampanyalar için; anma günlerinde kapalı tutun."
+              : "Önce bir bitiş seçin."}
+          </p>
+        </div>
+        <Switch
+          checked={draft.countdown && !!endsAt}
+          disabled={!endsAt}
+          onChange={(countdown) => onChange({ countdown })}
+          labelledBy={`preset-${key}-countdown-label`}
+          describedBy={`preset-${key}-countdown-hint`}
         />
       </div>
 
@@ -403,6 +429,7 @@ export function BannerPresetsManager({
       starts_at: fromLocalInputValue(draft.starts),
       ends_at: fromLocalInputValue(draft.ends),
       is_scheduled: draft.scheduled && !!draft.starts && !!draft.ends,
+      show_countdown: draft.countdown && !!draft.ends,
       sort_order:
         draft.id === null ? (presets?.length ?? 0) : (presets?.find((p) => p.id === draft.id)?.sort_order ?? 0),
     };
@@ -511,6 +538,11 @@ export function BannerPresetsManager({
                       >
                         {phase === "live" && !isLive ? "Başka bir metnin arkasında" : PHASE[phase].text}
                       </span>
+                      {p.show_countdown && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600 ring-1 ring-inset ring-slate-200 dark:bg-white/5 dark:text-zinc-300 dark:ring-white/10">
+                          <Timer className="h-3 w-3" aria-hidden /> Geri sayım
+                        </span>
+                      )}
                     </p>
                   </div>
                 </div>

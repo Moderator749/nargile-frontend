@@ -847,6 +847,8 @@ export interface BannerPreset {
   starts_at: ISODateTime | null;
   ends_at: ISODateTime | null;
   is_scheduled: boolean;
+  /** "Geri sayım": while live, the banner counts down to `ends_at` (a sale; off for a memorial day). */
+  show_countdown: boolean;
   sort_order: number;
   updated_at: ISODateTime | null;
 }
