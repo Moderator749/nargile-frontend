@@ -63,6 +63,7 @@ const PURPOSE: Record<string, string> = {
   password_reset: "Şifre yenileme",
   order_placed: "Sipariş alındı",
   order_shipped: "Kargoya verildi",
+  order_alert: "Yeni sipariş bildirimi",
   sms_test: "Test SMS",
 };
 

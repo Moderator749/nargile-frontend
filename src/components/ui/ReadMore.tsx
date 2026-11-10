@@ -32,6 +32,7 @@ export function ReadMore({
   lines = 3,
   className = "",
   nested = false,
+  centered = false,
 }: {
   /** The text's element id, for the toggle's aria-controls. */
   id: string;
@@ -41,6 +42,8 @@ export function ReadMore({
   className?: string;
   /** Shown under a heading of its own: the text's headings move one level down. */
   nested?: boolean;
+  /** The toggle under the middle of the text, for a centred passage. */
+  centered?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [overflows, setOverflows] = useState(false);
@@ -83,7 +86,7 @@ export function ReadMore({
         }
         dangerouslySetInnerHTML={{ __html: nested ? shiftHeadings(markup) : markup }}
       />
-      <div className="mt-1 flex h-8 items-center">
+      <div className={`mt-1 flex h-8 items-center ${centered ? "justify-center" : ""}`}>
         {overflows && (
           <button
             type="button"
