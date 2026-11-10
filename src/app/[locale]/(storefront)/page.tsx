@@ -7,6 +7,7 @@ import { CategoryRow } from "@/components/home/CategoryRow";
 import { CuratedPicksShowcase } from "@/components/home/CuratedPicksShowcase";
 import { BrandShowcase } from "@/components/home/BrandShowcase";
 import { BentoShowcase } from "@/components/home/BentoShowcase";
+import { CampaignBanner } from "@/components/home/CampaignBanner";
 import { BrandTicker, tickerBrands } from "@/components/home/BrandTicker";
 import { DealsFunnel } from "@/components/home/DealsFunnel";
 import { FeaturedProductsShowcase } from "@/components/home/FeaturedProductsShowcase";
@@ -20,6 +21,7 @@ import { advantageSources } from "@/lib/storeAdvantages";
 import { SultanPuanShowcase } from "@/components/home/SultanPuanShowcase";
 import { CategorySidebar } from "@/components/layout/CategorySidebar";
 import { JsonLd } from "@/components/seo/JsonLd";
+import { campaignBannerLive } from "@/lib/campaign";
 import { FEATURED_PRODUCTS_COUNT } from "@/lib/config";
 import { brandHref, organizationJsonLd, pageMetadata, productListJsonLd, websiteJsonLd, categoryHref } from "@/lib/seo";
 import { FALLBACK_SLIDE, heroPromo, meets, toHeroSlide, withDefaultImage } from "@/lib/home";
@@ -374,7 +376,14 @@ export default async function HomePage() {
     // "Fırsatları Kaçırma": the page's only deals section, a dark band. It
     // renders nothing when none are running.
     deals: () => (
-      <DealsFunnel initialProducts={deals} categories={allCategories} title={home.deals.title} subtitle={home.deals.subtitle} />
+      <DealsFunnel
+        initialProducts={deals}
+        categories={allCategories}
+        title={home.deals.title}
+        subtitle={home.deals.subtitle}
+        // The 11.11 banner under the heading, through 15 November (lib/campaign).
+        banner={campaignBannerLive() && <CampaignBanner />}
+      />
     ),
     // "Görsel Vitrin 3": three more, under the deals (where the campaign boxes were).
     bento3: () => phones("bento3", <BentoShowcase copy={home.bento3} slot="bento3" />),

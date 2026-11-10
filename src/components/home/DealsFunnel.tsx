@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type MouseEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type MouseEvent, type ReactNode } from "react";
 import axios from "axios";
 import { ArrowRight, ChevronLeft, ChevronRight, Package } from "lucide-react";
 
@@ -270,6 +270,8 @@ interface DealsFunnelProps {
   /** The heading and the line under it, from "Ana Sayfa Düzenleme". */
   title: string;
   subtitle: string;
+  /** A campaign's banner (CampaignBanner) under the heading, over the deals; the page decides when. */
+  banner?: ReactNode;
 }
 
 /** How much off, from the price shown against what it was. 0 = no saving. */
@@ -280,7 +282,7 @@ function savingPercent(now: CatalogPrice | null, was: CatalogPrice | null): numb
   return Math.round((1 - Number(now.price_incl_tax) / before) * 100);
 }
 
-export function DealsFunnel({ initialProducts, categories, title, subtitle }: DealsFunnelProps) {
+export function DealsFunnel({ initialProducts, categories, title, subtitle, banner }: DealsFunnelProps) {
   const hydrated = useAuthHydrated();
   const token = useAuthStore((s) => s.token);
   const money = useDisplayMoney();
@@ -451,6 +453,8 @@ export function DealsFunnel({ initialProducts, categories, title, subtitle }: De
             )}
           </div>
         </div>
+
+        {banner}
 
         {/* The track runs the container's full width, past the heading's
             inset, so the peeking cards reach its edges; the arrows float over
