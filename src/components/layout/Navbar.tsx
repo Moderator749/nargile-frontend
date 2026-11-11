@@ -132,8 +132,11 @@ export function Navbar({
         {/* Module 2: logo · search · currency · order tracking · theme · account · cart;
             on a phone: menu · logo · currency · order tracking — the theme and
             the language are in the menu's drawer there. A phone's row keeps
-            12px clear at each edge and clips anything that would cross it. */}
-        <div className={`${PAGE_CONTAINER} flex h-16 items-center gap-1.5 max-md:overflow-x-clip max-md:px-3 sm:gap-2`}>
+            12px clear at each edge and clips anything that would cross it. A
+            tablet's (md to lg) has every desktop control in 768px with the
+            search at its narrowest, so its gaps are 4px: at 8px the row ran
+            13px past the edge at 768 and the page scrolled sideways. */}
+        <div className={`${PAGE_CONTAINER} flex h-16 items-center gap-1.5 max-md:overflow-x-clip max-md:px-3 sm:gap-2 md:max-lg:gap-1`}>
           {/* A phone's way to the categories: the drawer the menu bar's
               "KATEGORİLER" opens on a tablet. */}
           {showMenu && (
