@@ -7,6 +7,7 @@ import { LogoEmblem, LogoWordmark } from "@/components/brand/Logo";
 import { InstagramIcon, YouTubeIcon } from "@/components/icons/SocialIcons";
 import { CookiePreferencesButton } from "@/components/common/CookiePreferencesButton";
 import { ContactBar } from "@/components/layout/ContactBar";
+import { PaymentBadges } from "@/components/payment/PaymentBadges";
 import { footerMessages } from "@/lib/i18n/messages/layout";
 import { DISTANCE_SALES_HREF, legalHref } from "@/lib/legalPages";
 import { storeForBranch, storeHref } from "@/lib/stores";
@@ -86,37 +87,6 @@ function LinkColumn({
           </Link>
         ))}
     </nav>
-  );
-}
-
-/**
- * The ways to pay, as small marks on white chips: the card schemes checkout
- * takes and the payment institution behind the card form. Drawn here (wordmarks
- * and the Mastercard circles), not images, so they are crisp and load nothing.
- */
-function PaymentBadges({ label }: { label: string }) {
-  const chip = "flex h-8 items-center justify-center rounded-md bg-white px-3 shadow-sm";
-  return (
-    <ul aria-label={label} className="flex flex-wrap items-center justify-center gap-2">
-      <li className={chip}>
-        <span className="text-[13px] font-extrabold tracking-tight text-[#1b75bb]">
-          Pay<span className="text-[#1e3a5f]">TR</span>
-        </span>
-      </li>
-      <li className={chip}>
-        <span className="text-[15px] font-black italic tracking-tight text-[#1a1f71]">VISA</span>
-      </li>
-      <li className={chip} aria-label="Mastercard">
-        <svg viewBox="0 0 38 24" className="h-5 w-8" aria-hidden>
-          <circle cx="14" cy="12" r="9" fill="#eb001b" />
-          <circle cx="24" cy="12" r="9" fill="#f79e1b" />
-          <path d="M19 4.6a9 9 0 0 1 0 14.8 9 9 0 0 1 0-14.8z" fill="#ff5f00" />
-        </svg>
-      </li>
-      <li className={chip}>
-        <span className="text-[14px] font-extrabold lowercase tracking-tight text-[#00a0a6]">troy</span>
-      </li>
-    </ul>
   );
 }
 

@@ -27,7 +27,7 @@ import {
   type AddressDraft,
 } from "@/components/cart/delivery/addressDraft";
 import { EmptyCart } from "@/components/cart/EmptyCart";
-import { GuestCheckoutStart } from "@/components/cart/GuestCheckoutStart";
+import { GUEST_FORM_ID, GuestCheckoutStart } from "@/components/cart/GuestCheckoutStart";
 import {
   DEFAULT_FIRM_CARD,
   METHOD_BY_FIRM_CARD,
@@ -60,6 +60,7 @@ import { fetchMe } from "@/lib/authApi";
 import { getApiErrorMessage } from "@/lib/errors";
 import { isExportAccount } from "@/lib/exportAccount";
 import { cartMessages } from "@/lib/i18n/messages/cart";
+import { guestMessages } from "@/lib/i18n/messages/guest";
 import { fetchPaytrStatus, openPaytrPage, type PaytrPage, type PaytrStatus } from "@/lib/paytr";
 import { retailPerks } from "@/lib/perks";
 import {
@@ -107,6 +108,7 @@ export function CartView({ checkoutStep = false }: { checkoutStep?: boolean } = 
   const to = useLocalePath();
   const locale = useLocale();
   const t = useMessages(cartMessages);
+  const guestStart = useMessages(guestMessages).start;
   const cartHydrated = useCartHydrated();
   const authHydrated = useAuthHydrated();
 
@@ -542,9 +544,17 @@ export function CartView({ checkoutStep = false }: { checkoutStep?: boolean } = 
   async function handleCheckout() {
     if (!isLoggedIn) {
       // On to /checkout, where a visitor signs in or goes on as a guest; there
-      // already, to the guest form.
-      if (checkoutStep) steps.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      else router.push(to("/checkout"));
+      // already, on as the guest: the button submits the guest form, so the
+      // delivery and payment steps open — or the browser points at the field
+      // still empty. (It used to scroll back to the form, which the visitor
+      // was already looking at: a tap that went nowhere.)
+      if (!checkoutStep) {
+        router.push(to("/checkout"));
+        return;
+      }
+      const form = document.getElementById(GUEST_FORM_ID);
+      if (form instanceof HTMLFormElement) form.requestSubmit();
+      else steps.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       return;
     }
     if (submitting || checkoutBlocker) return;
@@ -840,7 +850,7 @@ export function CartView({ checkoutStep = false }: { checkoutStep?: boolean } = 
         total={formatMoney(
           quote ? Number(quote.net_total) : isLoggedIn ? estimatedSubtotal : estimateCart(estimatedSubtotal, params).total,
         )}
-        action={t.view.goToPayment}
+        action={!isLoggedIn && checkoutStep ? guestStart.submit : t.view.goToPayment}
         onGo={() => {
           if (!isLoggedIn) return handleCheckout();
           beginCheckout();

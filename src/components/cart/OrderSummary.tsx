@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Building2, Check, Lock, Send, Ship, TrendingUp, Truck } from "lucide-react";
+import { Building2, Check, Lock, Send, Ship, ShieldCheck, TrendingUp, Truck } from "lucide-react";
 
 import { LegalConsent, MarketingConsent, type Agreements } from "@/components/cart/LegalConsent";
 import { useLocale, useMessages } from "@/components/i18n/LocaleProvider";
@@ -10,6 +10,7 @@ import { PaymentMethodPicker } from "@/components/cart/PaymentMethodPicker";
 import { ShippingConsent } from "@/components/cart/ShippingConsent";
 import { SultanPuanMark } from "@/components/icons/LoyaltyIcons";
 import { TransferDetails } from "@/components/payment/TransferDetails";
+import { PaymentBadges } from "@/components/payment/PaymentBadges";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { estimateCart } from "@/lib/cartEstimate";
@@ -558,6 +559,25 @@ export function OrderSummary(props: OrderSummaryProps) {
             </>
           )}
         </Button>
+        {/* Next to the pay button, where a large order is decided: how the card is
+            kept safe. Only what holds: TLS on every page, 3D Secure on every
+            PayTR payment, and the card form is PayTR's, never stored here. */}
+        {!props.quoteOnly && (
+          <div className="space-y-2 rounded-xl bg-slate-50 px-3 py-2.5 text-center dark:bg-white/5">
+            <p className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs font-medium text-slate-700 dark:text-zinc-300">
+              <span className="inline-flex items-center gap-1">
+                <Lock className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" aria-hidden />
+                {t.secureConnection}
+              </span>
+              <span className="inline-flex items-center gap-1">
+                <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" aria-hidden />
+                {t.secure3d}
+              </span>
+            </p>
+            <PaymentBadges label={t.acceptedCards} compact />
+            <p className="text-[11px] leading-4 text-slate-500 dark:text-zinc-400">{t.cardsNotStored}</p>
+          </div>
+        )}
         {!props.quoteOnly && (
           <p className="text-center text-xs text-slate-500 dark:text-zinc-400">
             {t.vatIncluded}

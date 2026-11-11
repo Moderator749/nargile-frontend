@@ -20,6 +20,9 @@ import { useAuthStore } from "@/store/useAuthStore";
  * agreements) follow exactly as for an account: the same fields, the same
  * checks, so a guest order is never missing anything an order needs.
  */
+/** The form's id: checkout's own buttons (the summary's, the phone's bar) submit it too. */
+export const GUEST_FORM_ID = "guest-checkout-start";
+
 export function GuestCheckoutStart() {
   const t = useMessages(guestMessages).start;
   const setAuth = useAuthStore((s) => s.setAuth);
@@ -56,6 +59,7 @@ export function GuestCheckoutStart() {
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_16rem]">
       <form
+        id={GUEST_FORM_ID}
         onSubmit={submit}
         aria-labelledby="guest-start-title"
         className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6 dark:border-white/10 dark:bg-zinc-900"
