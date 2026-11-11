@@ -5,6 +5,7 @@ import { BlogQuestionsButton } from "@/components/blog/BlogQuestionsDialog";
 import Link from "@/components/i18n/Link";
 import { LogoEmblem, LogoWordmark } from "@/components/brand/Logo";
 import { InstagramIcon, YouTubeIcon } from "@/components/icons/SocialIcons";
+import { CookiePreferencesButton } from "@/components/common/CookiePreferencesButton";
 import { ContactBar } from "@/components/layout/ContactBar";
 import { footerMessages } from "@/lib/i18n/messages/layout";
 import { DISTANCE_SALES_HREF, legalHref } from "@/lib/legalPages";
@@ -22,22 +23,27 @@ const linkClass = "text-sm leading-6 text-neutral-400 transition-colors duration
 const pillClass =
   "mt-6 inline-flex items-center gap-1.5 rounded-full border border-neutral-700 px-4 py-2 text-xs font-bold uppercase tracking-wide text-white transition-colors duration-200 hover:border-red-600 hover:text-red-400";
 
-/** A column of links, each behind a red arrow — pointing, and nudging, the way the text reads. */
-function ArrowLinks({ links }: { links: { label: string; href: string }[] }) {
+const arrowClass =
+  "mt-1.5 h-3.5 w-3.5 shrink-0 text-red-600 transition-transform duration-200 rtl:-scale-x-100 motion-safe:group-hover:translate-x-0.5 rtl:motion-safe:group-hover:-translate-x-0.5";
+
+/**
+ * A column of links, each behind a red arrow — pointing, and nudging, the way
+ * the text reads. `extra`: one more row after them that is not a link (a
+ * button drawn the same way).
+ */
+function ArrowLinks({ links, extra }: { links: { label: string; href: string }[]; extra?: ReactNode }) {
   return (
     // A phone's link is a row a finger can hit (40px, its padding); from md the list is as dense as it was.
     <ul className="md:space-y-2.5">
       {links.map((link, i) => (
         <li key={`${link.href}-${i}`}>
           <Link href={link.href} className={`group flex gap-2 py-2 md:py-0 ${linkClass}`}>
-            <ArrowRight
-              className="mt-1.5 h-3.5 w-3.5 shrink-0 text-red-600 transition-transform duration-200 rtl:-scale-x-100 motion-safe:group-hover:translate-x-0.5 rtl:motion-safe:group-hover:-translate-x-0.5"
-              aria-hidden
-            />
+            <ArrowRight className={arrowClass} aria-hidden />
             <span>{link.label}</span>
           </Link>
         </li>
       ))}
+      {extra && <li>{extra}</li>}
     </ul>
   );
 }
@@ -46,18 +52,21 @@ function ArrowLinks({ links }: { links: { label: string; href: string }[] }) {
  * One of the three link columns, with its pill under the list when it has one.
  * `always`: links the column shows whatever the editor left in it (the legal
  * texts under "Bilgi Sayfaları"), after its own, each once. `cta`: the pill
- * drawn some other way than as a plain link.
+ * drawn some other way than as a plain link. `extra`: a last row that is not
+ * a link (see ArrowLinks).
  */
 function LinkColumn({
   id,
   column,
   always = [],
   cta,
+  extra,
 }: {
   id: string;
   column: HomeFooterColumn;
   always?: { label: string; href: string }[];
   cta?: (href: string, label: string) => ReactNode;
+  extra?: ReactNode;
 }) {
   const own = new Set(column.links.map((link) => link.href));
   return (
@@ -65,7 +74,7 @@ function LinkColumn({
       <h2 id={id} className={headingClass}>
         {column.title}
       </h2>
-      <ArrowLinks links={[...column.links, ...always.filter((link) => !own.has(link.href))]} />
+      <ArrowLinks links={[...column.links, ...always.filter((link) => !own.has(link.href))]} extra={extra} />
       {column.cta_label &&
         column.cta_href &&
         (cta ? (
@@ -256,6 +265,13 @@ export async function SiteFooter({ footer }: { footer: HomeFooter }) {
               { href: legalHref("PRIVACY"), label: m.kvkk },
               { href: legalHref("COOKIES"), label: m.cookies },
             ]}
+            // "Çerez Tercihleri": the cookie banner again, to change the choice (KVKK).
+            extra={
+              <CookiePreferencesButton
+                className={`group flex w-full cursor-pointer gap-2 py-2 text-start md:py-0 ${linkClass}`}
+                icon={<ArrowRight className={arrowClass} aria-hidden />}
+              />
+            }
           />
           <LinkColumn id="footer-faq" column={footer.faq} />
         </div>
