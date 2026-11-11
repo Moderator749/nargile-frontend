@@ -28,6 +28,8 @@ export const chromeMessages = defineMessages({
     signOut: "Çıkış Yap",
     withCount: (label: string, n: number) => `${label} (${n} ürün)`,
     welcome: "Sultan Nargile'ye Hoş Geldiniz",
+    /** The strip when no announcement is live: the offer, with the panel's free-shipping threshold. */
+    welcomeOffer: (threshold: string) => `${threshold} Üzeri Siparişlerde Ücretsiz Kargo · Orijinal Ürün Güvencesi`,
   },
   en: {
     currencyLabel: "Currency (approximate; payment is in TL)",
@@ -46,6 +48,7 @@ export const chromeMessages = defineMessages({
     signOut: "Sign Out",
     withCount: (label: string, n: number) => `${label} (${n} ${n === 1 ? "item" : "items"})`,
     welcome: "Welcome to Sultan Nargile",
+    welcomeOffer: (threshold: string) => `Free Shipping on Orders over ${threshold} · Genuine Products`,
   },
   ar: {
     currencyLabel: "العملة (تقريبية؛ يتم الدفع بـ TL)",
@@ -64,6 +67,7 @@ export const chromeMessages = defineMessages({
     signOut: "تسجيل الخروج",
     withCount: (label: string, n: number) => `${label} (${n} منتج)`,
     welcome: "أهلاً بكم في SULTAN NARGILE",
+    welcomeOffer: (threshold: string) => `شحن مجاني للطلبات فوق ${threshold} · منتجات أصلية مضمونة`,
   },
 });
 

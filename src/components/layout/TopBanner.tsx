@@ -6,8 +6,10 @@ import { LiveAnnouncementBar } from "@/components/banner/LiveAnnouncementBar";
 import { AnnouncementBar } from "@/components/home/AnnouncementBar";
 import { useMessages } from "@/components/i18n/LocaleProvider";
 import { useCmsText } from "@/components/i18n/useCmsText";
+import { useStoreParameters } from "@/hooks/useStoreParameters";
 import { DEFAULT_BANNER_STYLE } from "@/lib/banner";
 import { API_URL } from "@/lib/config";
+import { formatMoneyCompact } from "@/lib/format";
 import { chromeMessages } from "@/lib/i18n/messages/layout";
 import type { Announcement } from "@/types";
 
@@ -35,6 +37,7 @@ export const WELCOME = chromeMessages.tr.welcome;
  */
 export function TopBanner() {
   const m = useMessages(chromeMessages);
+  const params = useStoreParameters();
   const [live, setLive] = useState<Announcement | null>(null);
   // The admin writes the banner in Turkish; its English and Arabic come from
   // the homepage translation memory.
@@ -66,11 +69,12 @@ export function TopBanner() {
     return <LiveAnnouncementBar key={`${message}|${live.expires_at}`} announcement={{ ...live, message }} onExpire={expired} />;
   }
 
-  // The greeting is not an announcement: the house gradient, and no icon to
-  // read anything into.
+  // No announcement live: the shop's offer (its free-shipping threshold as
+  // the panel sets it) rather than a greeting. Not an announcement: the house
+  // gradient, and no icon to read anything into.
   return (
     <AnnouncementBar
-      message={m.welcome}
+      message={m.welcomeOffer(formatMoneyCompact(params.free_shipping_threshold))}
       backgroundStyle={DEFAULT_BANNER_STYLE}
       bgImageUrl={null}
       icon="none"

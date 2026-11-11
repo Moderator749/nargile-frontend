@@ -11,6 +11,7 @@ import { ColorPicker } from "@/components/product/ColorPicker";
 import { CrossSells } from "@/components/product/CrossSells";
 import { ProductDescription } from "@/components/product/ProductDescription";
 import { RetailPerks, showsRetailPerks } from "@/components/product/RetailPerks";
+import { ShippingAndTrust } from "@/components/product/ShippingAndTrust";
 import type { AdvantageSources } from "@/lib/storeAdvantages";
 import { isExportAccount } from "@/lib/exportAccount";
 import { ProductGallery } from "@/components/product/ProductGallery";
@@ -392,6 +393,20 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
                 lines no taller than it, so the row keeps its height either way. */}
             <InCartNote count={inCart} onRemove={removeFromCart} stacked className="hidden min-w-0 shrink-0 sm:flex" />
           </div>
+          {/* Free shipping (or how far off), the shop's guarantees, and for a
+              set worth a question the WhatsApp line. The shipping line is a
+              retail promotion, so not a firm's or an export account's. */}
+          {variant && (
+            <ShippingAndTrust
+              product={product}
+              sku={variant.sku}
+              unitPrice={price && !pricesPending ? Number(price.price_incl_tax) : null}
+              quantity={quantity}
+              variantId={variant.id}
+              params={params}
+              showShipping={perksShown && !quoteOnly}
+            />
+          )}
           {/* The cart discount, SultanPuan and Kumbara in one row under the
               button. Havale is the price box's to state, so a firm's account,
               whose only perk would be that, gets no row. */}

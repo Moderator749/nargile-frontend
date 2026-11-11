@@ -23,5 +23,7 @@ export function cartLineFor(
     sku: variant.sku,
     brand: product.brand,
     category: opts.category ?? null,
+    // Absent on an older API is read as coal, as the shipping rule reads it: promise nothing.
+    coal: product.is_cart_rule_applied !== false,
   };
 }

@@ -544,6 +544,8 @@ export interface CartLineItem extends CartItem {
   sku?: string;
   brand?: string | null;
   category?: string | null;
+  /** "Sepet Kuralı" (coal) for the free-shipping rule, so a product page can say what the cart will ship at. */
+  coal?: boolean;
 }
 
 /**
