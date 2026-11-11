@@ -113,4 +113,13 @@ export const CATEGORY_SEO: Record<string, CategorySeo> = {
     description:
       "Tütün içermeyen bitkisel nargile aromaları: Falcon 250 gr ve Cosmic 200 gr çeşitleri, orijinal ürün güvencesiyle ve hızlı kargo ile.",
   },
+  // Shoppers search "yedek cam" / "nargile camı" (2k impressions, 0 clicks, on a
+  // bowl part); the shop calls them şişe, and the page and product names stay
+  // so. The title bridges the two; the types are what is stocked (geçme,
+  // Legend's kilitli and vidalı, the brands' own) — no "Rus" range is.
+  siseler: {
+    title: "Nargile Şişeleri ve Yedek Cam Çeşitleri | Geçme & Markalı",
+    description:
+      "Kırılan takımınıza uygun orijinal nargile şişesi ve yedek cam modelleri: geçme (contalı), kilitli ve vidalı şişeler; Oduman, Legend, Mr.Wood, Steamulation.",
+  },
 };
