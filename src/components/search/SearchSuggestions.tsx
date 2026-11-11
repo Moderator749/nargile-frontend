@@ -1,15 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import axios from "axios";
 import { ArrowRight, LayoutGrid, Package } from "lucide-react";
 
 import Link from "@/components/i18n/Link";
 import { useT } from "@/components/i18n/LocaleProvider";
+import { useListImpressions } from "@/components/catalog/useListImpressions";
 import { useDisplayMoney } from "@/hooks/useDisplayMoney";
 import { fetchSuggestions } from "@/lib/catalogApi";
 import { saleState } from "@/lib/flashSale";
+import { listItem, trackSelectItem, type GaList } from "@/lib/gaEvents";
 import { canOptimiseImage } from "@/lib/home";
 import { productHref, categoryHref } from "@/lib/seo";
 import { displayVariant } from "@/lib/variants";
@@ -46,18 +48,34 @@ export function useSuggestions(query: string): { data: Suggestions | null; term:
   return { data: term.length >= SUGGEST_FROM ? (found?.data ?? null) : null, term: found?.term ?? term };
 }
 
-/** A product as a suggestion: its photo, name, code and the price its card shows. */
-function ProductRow({ product, onPick }: { product: CatalogProduct; onPick: () => void }) {
-  const money = useDisplayMoney();
+/** Google Analytics' name for the suggestions under a search field, whatever was typed. */
+const SUGGESTIONS_LIST: GaList = { id: "search_suggestions", name: "Arama önerileri" };
+
+/** The price a suggestion shows: its card's. */
+function suggestionPrice(product: CatalogProduct) {
   const variant = displayVariant(product);
   const sale = saleState(product, variant, null);
-  const price = sale.kind === "live" ? sale.price : (variant?.price ?? variant?.list_price ?? null);
+  return { variant, price: sale.kind === "live" ? sale.price : (variant?.price ?? variant?.list_price ?? null) };
+}
+
+function suggestionItem(product: CatalogProduct) {
+  const { variant, price } = suggestionPrice(product);
+  return listItem(product, variant ?? null, price);
+}
+
+/** A product as a suggestion: its photo, name, code and the price its card shows. */
+function ProductRow({ product, index, onPick }: { product: CatalogProduct; index: number; onPick: () => void }) {
+  const money = useDisplayMoney();
+  const { price } = suggestionPrice(product);
   const image = product.image_url;
   return (
-    <li>
+    <li data-ga-index={index}>
       <Link
         href={productHref(product)}
-        onClick={onPick}
+        onClick={() => {
+          trackSelectItem(SUGGESTIONS_LIST, suggestionItem(product), index);
+          onPick();
+        }}
         className="flex min-h-14 items-center gap-3 rounded-lg px-2 py-1.5 transition-colors hover:bg-neutral-100 focus-visible:bg-neutral-100 focus-visible:outline-none dark:hover:bg-white/[0.06] dark:focus-visible:bg-white/[0.06]"
       >
         <span className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-md bg-white ring-1 ring-black/5">
@@ -98,6 +116,14 @@ export function SuggestionPanel({
 }) {
   const t = useT();
   const all = `/catalog?q=${encodeURIComponent(term)}`;
+  // Google Analytics: the suggested products a visitor saw (each once a page), and the one picked.
+  const products = useRef<HTMLUListElement>(null);
+  useListImpressions(
+    products,
+    SUGGESTIONS_LIST,
+    (index) => (data.products[index] ? suggestionItem(data.products[index]) : null),
+    data.products.map((p) => p.id).join(),
+  );
   return (
     <div className={className}>
       {data.categories.length > 0 && (
@@ -121,9 +147,9 @@ export function SuggestionPanel({
       )}
       <section aria-label={t.nav.searchProducts} className="px-2 py-2">
         {data.products.length > 0 ? (
-          <ul>
-            {data.products.map((p) => (
-              <ProductRow key={p.id} product={p} onPick={onPick} />
+          <ul ref={products}>
+            {data.products.map((p, i) => (
+              <ProductRow key={p.id} product={p} index={i} onPick={onPick} />
             ))}
           </ul>
         ) : (

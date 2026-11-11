@@ -6,11 +6,13 @@ import { ArrowRight, ChevronLeft, ChevronRight, Package } from "lucide-react";
 
 import Link from "@/components/i18n/Link";
 import { ProductImage } from "@/components/catalog/ProductImage";
+import { useListImpressions } from "@/components/catalog/useListImpressions";
 import { useMessages } from "@/components/i18n/LocaleProvider";
 import { useDisplayMoney } from "@/hooks/useDisplayMoney";
 import { useNow } from "@/hooks/useNow";
 import { fetchFlashSaleProducts } from "@/lib/catalogApi";
 import { DEALS_HREF, saleState } from "@/lib/flashSale";
+import { listItem, trackSelectItem, type GaList } from "@/lib/gaEvents";
 import { homeMessages } from "@/lib/i18n/messages/home";
 import { productHref, productImageAlt } from "@/lib/seo";
 import { displayVariant, soldOut as allSoldOut } from "@/lib/variants";
@@ -282,6 +284,9 @@ function savingPercent(now: CatalogPrice | null, was: CatalogPrice | null): numb
   return Math.round((1 - Number(now.price_incl_tax) / before) * 100);
 }
 
+/** Google Analytics' name for the homepage's deals carousel. */
+const DEALS_LIST: GaList = { id: "home_deals_funnel", name: "Ana sayfa: Fırsat vitrini" };
+
 export function DealsFunnel({ initialProducts, categories, title, subtitle, banner }: DealsFunnelProps) {
   const hydrated = useAuthHydrated();
   const token = useAuthStore((s) => s.token);
@@ -391,6 +396,20 @@ export function DealsFunnel({ initialProducts, categories, title, subtitle, bann
     };
   }, [loops, count, copies]);
 
+  // Google Analytics: each deal once, as the home copy of the loop shows it
+  // (the copies either side carry no index), and the click into it.
+  const gaItemAt = (index: number) => {
+    const product = products[index];
+    if (!product) return null;
+    const variant = displayVariant(product);
+    const sale = saleState(product, variant, now);
+    const price = sale.kind === "live" ? sale.price : (variant?.price ?? null);
+    const category = categories.find((c) => c.id === product.category_id);
+    return listItem(product, variant ?? null, price, category?.name);
+  };
+  // Keyed on the copies too: the loop is drawn again (new slides) once it has measured how many it needs.
+  useListImpressions(track, DEALS_LIST, gaItemAt, `${copies}|${products.map((p) => p.id).join()}`);
+
   if (count === 0) return null;
   const publicPrices = !mine;
   const categoryById = new Map(categories.map((c) => [c.id, c]));
@@ -478,7 +497,8 @@ export function DealsFunnel({ initialProducts, categories, title, subtitle, bann
               </button>
             ))}
           <ul ref={track} style={SNAP_PADDING} className={`${TRACK} ${count === 1 ? "justify-center" : ""}`}>
-            {slides.map(({ product, copy }) => {
+            {slides.map(({ product, copy }, n) => {
+              const position = n % count;
               const variant = displayVariant(product);
               const sale = saleState(product, variant, now);
               const regular = variant?.price ?? null;
@@ -494,8 +514,21 @@ export function DealsFunnel({ initialProducts, categories, title, subtitle, bann
               return (
                 // The copies are there to be seen, not read twice or tabbed
                 // through: the real deals are the list.
-                <li key={`${copy}-${product.id}`} aria-hidden={copy !== home || undefined} className={SLIDE}>
-                  <Link href={productHref(product)} tabIndex={copy !== home ? -1 : undefined} className={`${CARD} ${THEME.card}`}>
+                <li
+                  key={`${copy}-${product.id}`}
+                  aria-hidden={copy !== home || undefined}
+                  data-ga-index={copy === home ? position : undefined}
+                  className={SLIDE}
+                >
+                  <Link
+                    href={productHref(product)}
+                    tabIndex={copy !== home ? -1 : undefined}
+                    onClick={() => {
+                      const gaItem = gaItemAt(position);
+                      if (gaItem) trackSelectItem(DEALS_LIST, gaItem, position);
+                    }}
+                    className={`${CARD} ${THEME.card}`}
+                  >
                     {/* The photo's canvas: flush to the card's top and sides,
                         and the same white as the card, so there is no seam to
                         find. The photos are opaque JPEGs shot on white, which is
