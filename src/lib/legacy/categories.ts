@@ -17,7 +17,11 @@ export const LEGACY_CATEGORIES: Record<string, string> = {
   "meduse-experience-hookah-nargile-takimi": "meduse",
   "mr-wood-nargile-takimlari": "mr-wood",
   "sultan-nargile-takimlari-ve-malzemeleri": "sultan",
-  "dokum-nargile-takimlari": "klasik-takimlar",
+  // Measured as klasik (its products are there), but Google ranks it for
+  // "nargile takımı" and "nargile takımı fiyatları" (24k of its 26.6k
+  // impressions a month, Search Console 2026-11): those searchers want every
+  // set, so its signals go to the hub, which links on to Klasik.
+  "dokum-nargile-takimlari": "nargile-takimlari",
   "rus-nargile-takimlari-ve-modelleri": "rus-takimlar",
   "masaustu-ve-led-isikli-nargile-takimlari": "masaustu-takimlar",
   "nargile-siseleri": "siseler",

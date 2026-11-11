@@ -16,7 +16,7 @@ import { SITE_NAME } from "@/lib/site";
 
 const tr = {
   meta: {
-    siteTitle: "Nargile Takımı, Lüle, Kömür ve Aksesuarlar | Nargile Malzemesi",
+    siteTitle: "Nargile Malzemeleri: Nargile Takımı, Lüle, Kömür ve Aksesuar",
     /** The homepage's <h1> where the first slide has no title of its own: the page's subject, not its <title>. */
     homeHeading: "Nargile Takımı, Lüle, Nargile Kömürü ve Aksesuarları",
     defaultDescription:

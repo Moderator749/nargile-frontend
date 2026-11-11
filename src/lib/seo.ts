@@ -274,20 +274,23 @@ const DELIVERY_TIME = {
 };
 
 /**
- * Delivery in Turkey, on every offer. Free (a rate of 0) only where that is
- * certain for the product on its own: a retail cart ships on the shop from
- * `freeFrom` (the panel's "ücretsiz kargo limiti"), so one unit at or above it
- * does — unless it counts as coal, whose carts the "%50 Kuralı" can still send
- * karşı ödemeli. Otherwise the buyer pays the carrier on delivery at the
- * carrier's own rate, which no fixed figure here could honestly state: the
- * destination and the delivery time are given, and no shippingRate at all.
+ * Delivery in Turkey, on the offers that ship free: one unit at or above
+ * `freeFrom` (the panel's "ücretsiz kargo limiti") does on its own — unless it
+ * counts as coal, whose carts the "%50 Kuralı" can still send karşı ödemeli.
+ * Below that the buyer pays the carrier on delivery at the carrier's own rate,
+ * which no fixed figure here could honestly state, and a block without a rate
+ * is no use to Google: those offers carry none (null).
  */
 function shippingJsonLd(price: number, coal: boolean, freeFrom: number | null) {
   const free = freeFrom !== null && !coal && price >= freeFrom;
+  // Without a rate Google ignores the block and Search Console flags it
+  // ("shippingRate" is required with shippingDestination and deliveryTime),
+  // so an offer that cannot state one carries none.
+  if (!free) return null;
   return {
     "@type": "OfferShippingDetails",
     shippingDestination: { "@type": "DefinedRegion", addressCountry: "TR" },
-    ...(free ? { shippingRate: { "@type": "MonetaryAmount", value: 0, currency: "TRY" } } : {}),
+    shippingRate: { "@type": "MonetaryAmount", value: 0, currency: "TRY" },
     deliveryTime: DELIVERY_TIME,
   };
 }
