@@ -69,6 +69,7 @@ import {
   fetchCorporateInvoice,
   fetchLastAddress,
   fetchSavedAddresses,
+  releasePayment,
 } from "@/lib/ordersApi";
 import { ISTANBUL } from "@/lib/provinces";
 import { productHref } from "@/lib/seo";
@@ -611,6 +612,29 @@ export function CartView({ checkoutStep = false }: { checkoutStep?: boolean } = 
     }
   }
 
+  /**
+   * "Ödeme yöntemini değiştir": back to the form at once, the cart as it was,
+   * and the order PayTR's page was for released on the server — its stock and
+   * points back now rather than when the page times out (and no failed
+   * payment on record). Paid meanwhile (the card went through as they
+   * pressed): on to its confirmation instead. Should the call not get
+   * through, the next checkout releases it all the same (it supersedes any
+   * open card order).
+   */
+  async function leavePayment(order: Order) {
+    setCardPayment(null);
+    try {
+      const now = await releasePayment(order.id);
+      if (now.status === "APPROVED" || now.status === "SHIPPED" || now.status === "DELIVERED") {
+        router.push(to(`/orders/${now.id}/confirmation?payment=ok`));
+        return;
+      }
+    } catch {
+      // See above: the next checkout takes care of it.
+    }
+    refreshProfile(); // points the order held are back
+  }
+
   if (!cartHydrated) {
     return <main className="flex-1" aria-busy />;
   }
@@ -621,7 +645,7 @@ export function CartView({ checkoutStep = false }: { checkoutStep?: boolean } = 
         <PaytrFrame
           page={cardPayment.page}
           orderNumber={cardPayment.order.order_number}
-          onBack={() => setCardPayment(null)}
+          onBack={() => void leavePayment(cardPayment.order)}
         />
       </main>
     );

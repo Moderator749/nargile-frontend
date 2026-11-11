@@ -94,6 +94,17 @@ export async function checkout(payload: CheckoutRequest): Promise<Order> {
   return data;
 }
 
+/**
+ * "Ödeme yöntemini değiştir": leave PayTR's page of an unpaid card order. The
+ * server puts its stock and points back at once (the order is cancelled, not
+ * left to time out as a failed payment) and answers the order as it now
+ * stands — paid, if PayTR got there first.
+ */
+export async function releasePayment(id: string): Promise<Order> {
+  const { data } = await api.post<Order>(`/orders/${id}/release-payment`);
+  return data;
+}
+
 export async function fetchMyOrders(signal?: AbortSignal): Promise<Order[]> {
   const { data } = await api.get<Order[]>("/orders", { signal });
   return data;
