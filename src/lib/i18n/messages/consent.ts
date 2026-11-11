@@ -5,7 +5,7 @@ export const consentMessages = defineMessages({
   tr: {
     title: "Çerez Tercihleri",
     before:
-      "Sitemizde temel işlevleri sürdürmek ve alışveriş deneyiminizi iyileştirmek amacıyla yasal mevzuata uygun çerezler kullanılmaktadır. Detaylı bilgi için ",
+      "Alışverişinizi kolaylaştırmak, size uygun fırsatları öne çıkarmak ve sitemizin nasıl kullanıldığını ölçerek deneyiminizi geliştirmek için yasal mevzuata uygun çerezler kullanıyoruz. Detaylar için ",
     policy: "Çerez Politikamızı",
     after: " inceleyebilirsiniz.",
     acceptAll: "Tümünü Kabul Et",
@@ -15,7 +15,7 @@ export const consentMessages = defineMessages({
   en: {
     title: "Cookie Preferences",
     before:
-      "We use cookies, in line with the applicable legislation, to keep the site's essential functions running and to improve your shopping experience. For details, please read our ",
+      "We use cookies, in line with applicable law, to make your shopping easier, bring forward offers that suit you and improve your experience by measuring how our site is used. For details, see our ",
     policy: "Cookie Policy",
     after: ".",
     acceptAll: "Accept All",
@@ -25,7 +25,7 @@ export const consentMessages = defineMessages({
   ar: {
     title: "تفضيلات ملفات تعريف الارتباط",
     before:
-      "نستخدم ملفات تعريف الارتباط وفقًا للتشريعات المعمول بها للحفاظ على الوظائف الأساسية للموقع وتحسين تجربة التسوق لديك. لمزيد من التفاصيل يمكنك مراجعة ",
+      "نستخدم ملفات تعريف الارتباط وفقًا للتشريعات المعمول بها لتسهيل تسوقك، وإبراز العروض التي تناسبك، وتحسين تجربتك من خلال قياس كيفية استخدام موقعنا. لمزيد من التفاصيل يمكنك مراجعة ",
     policy: "سياسة ملفات تعريف الارتباط",
     after: ".",
     acceptAll: "قبول الكل",

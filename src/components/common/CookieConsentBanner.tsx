@@ -78,18 +78,21 @@ export function CookieConsentBanner() {
         </Link>
         {m.after}
       </p>
+      {/* KVKK: refusing is as easy as accepting — the same size, place and
+          text, a real button either way. Only the colour leads: solid red
+          for "Tümünü Kabul Et", a quiet grey for "Yalnızca Gerekli Çerezler". */}
       <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row">
         <button
           type="button"
           onClick={() => choose("denied")}
-          className="inline-flex h-10 items-center justify-center whitespace-nowrap rounded-xl border border-gray-300 px-3 sm:flex-1 text-sm font-semibold text-neutral-800 transition-colors duration-200 hover:border-neutral-400 hover:bg-gray-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500 dark:border-neutral-700 dark:text-neutral-100 dark:hover:border-neutral-500 dark:hover:bg-white/5"
+          className="inline-flex h-10 items-center justify-center whitespace-nowrap rounded-xl bg-neutral-200/70 px-3 text-sm font-medium text-neutral-700 transition-colors duration-200 hover:bg-neutral-200 hover:text-neutral-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500 sm:flex-1 dark:bg-white/10 dark:text-neutral-200 dark:hover:bg-white/15 dark:hover:text-white"
         >
           {m.necessaryOnly}
         </button>
         <button
           type="button"
           onClick={() => choose("granted")}
-          className="inline-flex h-10 items-center justify-center whitespace-nowrap rounded-xl bg-red-600 px-3 sm:flex-1 text-sm font-semibold text-white transition-colors duration-200 hover:bg-red-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
+          className="inline-flex h-10 items-center justify-center whitespace-nowrap rounded-xl bg-red-600 px-3 text-sm font-semibold text-white shadow-md shadow-red-600/25 transition-colors duration-200 hover:bg-red-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500 sm:flex-1 dark:shadow-red-950/40"
         >
           {m.acceptAll}
         </button>
