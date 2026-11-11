@@ -35,7 +35,7 @@ export const CATEGORY_SEO: Record<string, CategorySeo> = {
   "plastik-ve-slikon-sipsiler": {
     title: "Nargile Sipsisi Çeşitleri: Hijyenik Silikon & Özel Tasarım Sipsiler",
     description:
-      "Hijyenik, kişiye özel nargile sipsileri: silikon, plastik, askılı ve kehribar modeller. Perakende ve toptan sipsi fiyatları, hızlı kargo.",
+      "Hijyenik, kişiye özel nargile sipsileri (ağızlıkları): silikon, plastik, askılı ve kehribar modeller. Perakende ve toptan sipsi fiyatları, hızlı kargo.",
     // Past 60 characters already: the shop's name would only be cut off.
     absolute: true,
   },
@@ -43,7 +43,7 @@ export const CATEGORY_SEO: Record<string, CategorySeo> = {
   marpuclar: {
     title: "Nargile Marpuçları: Yıkanabilir Silikon & Özel Tasarım Marpuçlar",
     description:
-      "Hijyenik, yıkanabilir silikon ve özel tasarım nargile marpucu modelleri: Naimi ve daha fazlası. Perakende ve toptan marpuç fiyatları, hızlı kargo.",
+      "Hijyenik, yıkanabilir silikon nargile marpucu (hortumu) ve özel tasarım modeller: Naimi ve daha fazlası. Perakende ve toptan marpuç fiyatları, hızlı kargo.",
     // Past 60 characters already: the shop's name would only be cut off.
     absolute: true,
   },
@@ -72,10 +72,11 @@ export const CATEGORY_SEO: Record<string, CategorySeo> = {
       "SultanCoco, One Nation, BuCoco, Adya Coco's ve daha fazlası: küp hindistan cevizi nargile kömürleri, kutu ve 20 kg toptan paketler, hızlı kargo.",
   },
   // "nargile közlük" (399 impr, pos 7.5, CTR 1.8%, down 63%).
+  // "hmd" (1.9k impr in 90 days), "kaloud" (634), "lotus" (612): the HMDs this shelf holds.
   "kozlukler": {
-    title: "Nargile Közlüğü Modelleri ve Fiyatları",
+    title: "Nargile Közlüğü ve HMD | Kaloud Lotus, Copper Balance",
     description:
-      "Legend Hookah, Oduman, Steamulation ve Sultan Nargile közlükleri: kömürü sıcak ve güvenli tutan nargile közlüğü modelleri, uygun fiyat ve hızlı kargo.",
+      "Kaloud Lotus ve Copper Balance HMD'leri ile Legend Hookah, Oduman, Steamulation közlükleri: kömürü sıcak ve dengede tutan ısı yönetim araçları.",
   },
   // "hookah" (1.7k impr, pos 6.4, CTR 0.9%), "hookah nargile" (421, CTR 1.2%).
   "legend": {

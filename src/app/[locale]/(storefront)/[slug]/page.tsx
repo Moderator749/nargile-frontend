@@ -17,6 +17,7 @@ import {
   getBrands,
   getCategories,
   getCategoryBySlug,
+  getProductShelf,
   getCategoryProducts,
   getFreeShippingFrom,
   getProduct,
@@ -150,6 +151,11 @@ async function ProductPage(slug: string, { locale, t }: Awaited<ReturnType<typeo
     // language — its English and Arabic pages were indexed too.
     const next = RETIRED_PRODUCTS[slug];
     if (next) permanentRedirect(localePath(locale, next.replace(/^\/(?:product|catalog)\//, "/")));
+    // Any other product the shop has taken off sale (unpublished, deleted):
+    // its category, so an indexed or shared address never ends in a 404.
+    // An address no product ever had still does.
+    const shelf = await getProductShelf(slug);
+    if (shelf) permanentRedirect(localePath(locale, categoryHref(shelf)));
     notFound();
   }
   // Asked by an old store's spelling, by id or in other letter case: one

@@ -284,6 +284,18 @@ export function getProduct(ref: string): Promise<CatalogProductDetail | null> {
 }
 
 /**
+ * Where a product the shop no longer shows (unpublished, or deleted in the
+ * panel) sends its visitors: its category, one a shopper can open. Null for a
+ * product on sale, one with nowhere to go, and an address no product ever had
+ * (GET /products/{ref}/shelf).
+ */
+export async function getProductShelf(ref: string): Promise<string | null> {
+  if (ref.length > 255 || !PRODUCT_REF.test(ref)) return null;
+  const shelf = await getJsonOrNotFound<{ category_slug: string }>(`/products/${encodeURIComponent(ref)}/shelf`);
+  return shelf?.category_slug ?? null;
+}
+
+/**
  * "Parametreler" — free shipping, the coal rule, the discount ladders, Sultan
  * Puan — as checkout applies them, for pages that state the rules. Read fresh
  * every time (no-store), not from the catalog's day-long cache: a page quoting
