@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { Check, Hourglass, Minus, Plus, Truck } from "lucide-react";
 
 import Link from "@/components/i18n/Link";
 import { useMessages } from "@/components/i18n/LocaleProvider";
 import { ProductImage } from "@/components/catalog/ProductImage";
+import { useProductList } from "@/components/catalog/ProductListContext";
 import { useDisplayMoney } from "@/hooks/useDisplayMoney";
 import { useNow } from "@/hooks/useNow";
 import { categoryCopy } from "@/lib/categories";
@@ -13,6 +14,7 @@ import { cartLineFor } from "@/lib/cartLine";
 import { isExportAccount } from "@/lib/exportAccount";
 import { normalizeHex, readableInk } from "@/lib/color";
 import { formatCountdown, saleState } from "@/lib/flashSale";
+import { listItem, trackListImpression, trackSelectItem } from "@/lib/gaEvents";
 import { catalogMessages } from "@/lib/i18n/messages/catalog";
 import { productHref, productImageAlt } from "@/lib/seo";
 import { displayVariant, hasColorChoice, soldOut as allSoldOut } from "@/lib/variants";
@@ -37,6 +39,8 @@ interface ProductCardProps {
    * every other card's edge turns the shop's red, flat (HOVER).
    */
   dealHover?: boolean;
+  /** Its place in the list (from 0), for Google Analytics' view_item_list and select_item. */
+  index?: number;
 }
 
 // Shared by card and skeleton so both occupy identical space (0 CLS).
@@ -97,7 +101,7 @@ const HOVER = "hover:border-red-300 hover:shadow-none dark:hover:border-red-400/
 /** "Fırsat Ürünleri"'s own: a darker edge and a soft shadow. */
 const DEAL_HOVER = "hover:border-slate-300 hover:shadow-sm dark:hover:border-white/20 dark:hover:shadow-black/40";
 
-export function ProductCard({ product, category, isLoggedIn, publicPrices, pricesPending, eager, dealHover = false }: ProductCardProps) {
+export function ProductCard({ product, category, isLoggedIn, publicPrices, pricesPending, eager, dealHover = false, index }: ProductCardProps) {
   // A coloured product is still one card. The colour it speaks for is the first
   // that can be bought, so the price shown is one the visitor can actually get;
   // the card only reads "Tükendi" once every colour is gone.
@@ -129,6 +133,30 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
       ? Math.round((1 - Number(price.price_incl_tax) / Number(wasPrice.price_incl_tax)) * 100)
       : 0;
   const hasDiscount = discountPct > 0;
+
+  // Google Analytics: the card as an item of the list it is in (ProductList),
+  // reported once half of it has been in sight, and on the click into it.
+  const list = useProductList();
+  const article = useRef<HTMLElement>(null);
+  const gaItem = () => listItem(product, variant ?? null, pricesPending ? null : price, category?.name);
+  // The card as it is when it comes into sight (its price may have arrived since mount).
+  const seen = useEffectEvent(() => {
+    if (list && index !== undefined) trackListImpression(list, gaItem(), index);
+  });
+  useEffect(() => {
+    const element = article.current;
+    if (!list || index === undefined || !element) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        seen();
+        observer.disconnect();
+      },
+      { threshold: 0.5 },
+    );
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [list, index]);
   // Quick-add only makes sense when there is nothing to choose: picking a colour
   // for the visitor would put the wrong thing in their cart.
   // An export account is building a request, so an empty shelf does not stop
@@ -159,6 +187,7 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
 
   return (
     <article
+      ref={article}
       // Hover: the frame changes (HOVER), rather than the card floating up.
       className={`${cardClass} transition-[border-color,box-shadow] duration-300 ease-out ${dealHover ? DEAL_HOVER : HOVER}`}
     >
@@ -317,6 +346,9 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
           {/* Stretched link: the whole card opens the product page; the "+" sits above it. */}
           <Link
             href={productHref(product)}
+            onClick={() => {
+              if (list && index !== undefined) trackSelectItem(list, gaItem(), index);
+            }}
             className="after:absolute after:inset-0 after:rounded-2xl after:content-[''] focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:outline-offset-2 focus-visible:after:outline-accent"
           >
             {product.name}

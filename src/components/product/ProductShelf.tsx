@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 
+import { ProductList } from "@/components/catalog/ProductListContext";
 import { ProductCard } from "@/components/catalog/ProductCard";
 import type { CatalogProduct, Category } from "@/types";
 
@@ -42,11 +43,12 @@ export function ProductShelf({
       <h2 id={id} className="text-center text-2xl font-semibold tracking-tighter text-foreground sm:text-3xl">
         {title}
       </h2>
+      <ProductList id={id.replace(/-heading$/, "")} name={`Ürün sayfası: ${id.replace(/-heading$/, "")}`}>
       <ul className="mx-auto mt-8 flex flex-wrap justify-center gap-3 sm:gap-6">
-        {products.map((product) => (
+        {products.map((product, i) => (
           // Two side by side on a phone; four of these fit one row on xl and wrap evenly below it.
           <li key={product.id} className="flex w-[calc(50%-0.375rem)] flex-col sm:w-[20rem] sm:max-w-sm xl:w-[17.5rem] [&>article]:flex-1">
-            <ProductCard
+            <ProductCard index={i}
               product={product}
               category={product.category_id != null ? categoryById.get(product.category_id) : undefined}
               isLoggedIn={isLoggedIn}
@@ -58,6 +60,7 @@ export function ProductShelf({
           </li>
         ))}
       </ul>
+      </ProductList>
       {footer && <div className="mt-8 flex justify-center">{footer}</div>}
     </section>
   );

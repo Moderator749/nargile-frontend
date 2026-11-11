@@ -11,7 +11,6 @@ export const guestMessages = defineMessages({
     start: {
       title: "Üye olmadan devam et",
       lead: "Siparişinizi üyelik oluşturmadan verebilirsiniz. Sipariş onayı ve kargo bilgileri e-posta ve SMS ile size ulaşır.",
-      fullName: "Ad Soyad",
       email: "E-posta",
       phone: "Cep telefonu",
       phoneHint: "Kargo ve sipariş bilgilendirmeleri için.",
@@ -62,7 +61,6 @@ export const guestMessages = defineMessages({
     start: {
       title: "Continue as a guest",
       lead: "Order without creating an account. Your order confirmation and shipping updates reach you by e-mail and SMS.",
-      fullName: "Full name",
       email: "E-mail",
       phone: "Mobile phone",
       phoneHint: "For delivery and order updates.",
@@ -113,7 +111,6 @@ export const guestMessages = defineMessages({
     start: {
       title: "المتابعة كزائر",
       lead: "اطلب دون إنشاء حساب. يصلك تأكيد الطلب ومعلومات الشحن عبر البريد الإلكتروني والرسائل القصيرة.",
-      fullName: "الاسم الكامل",
       email: "البريد الإلكتروني",
       phone: "رقم الجوال",
       phoneHint: "لإشعارات الشحن والطلب.",

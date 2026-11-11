@@ -5,6 +5,7 @@ import Image from "next/image";
 import { ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
 
 import Link from "@/components/i18n/Link";
+import { ProductList } from "@/components/catalog/ProductListContext";
 import { ProductCard } from "@/components/catalog/ProductCard";
 import { useMessages } from "@/components/i18n/LocaleProvider";
 import { useOwnPrices } from "@/hooks/useOwnPrices";
@@ -232,17 +233,18 @@ export function BrandShowcase({
         <div className={`order-2 w-full overflow-hidden xl:col-span-9 ${reverseLayout ? "xl:order-1" : ""}`}>
           {/* The top padding keeps the cards' shadow from being clipped: a
             sideways scroller clips vertically too. */}
+          <ProductList id="home_brand_showcase" name={`Ana sayfa: Marka vitrini (${brandName})`}>
           <ul
             ref={track}
             onScroll={measure}
             className="flex w-full snap-x snap-mandatory flex-row flex-nowrap gap-3 overflow-x-auto scroll-smooth pt-2 pb-6 md:gap-6 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           >
-            {products.map((listed) => {
+            {products.map((listed, i) => {
               const product = mine?.get(listed.id) ?? listed;
               return (
                 <li key={listed.id} className={SLIDE}>
                   <div className="flex w-full flex-1 flex-col [&>article]:flex-1">
-                    <ProductCard
+                    <ProductCard index={i}
                       product={product}
                       category={product.category_id != null ? categoryById.get(product.category_id) : undefined}
                       isLoggedIn={loggedIn}
@@ -254,6 +256,7 @@ export function BrandShowcase({
               );
             })}
           </ul>
+          </ProductList>
         </div>
       </div>
     </section>

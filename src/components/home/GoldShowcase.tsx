@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
+import { ProductList } from "@/components/catalog/ProductListContext";
 import { ProductCard } from "@/components/catalog/ProductCard";
 import { GoldCoinBadge } from "@/components/home/GoldCoinBadge";
 import { useMessages } from "@/components/i18n/LocaleProvider";
@@ -13,6 +14,7 @@ import { retailPerks } from "@/lib/perks";
 import { isAdminRole } from "@/lib/roles";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useAuthHydrated } from "@/store/useHasHydrated";
+import type { GaList } from "@/lib/gaEvents";
 import type { CatalogProduct, Category } from "@/types";
 
 /**
@@ -86,6 +88,7 @@ const CARD_COIN =
  * the track's direction.
  */
 export function GoldShowcase({
+  list,
   title,
   subtitle,
   note,
@@ -106,6 +109,8 @@ export function GoldShowcase({
   categories: Category[];
   /** The band's ground and lines (TONES). */
   tone?: keyof typeof TONES;
+  /** Google Analytics' name for the row (ProductList). */
+  list: GaList;
 }) {
   const headingId = useId();
   const t = useMessages(homeMessages);
@@ -221,19 +226,20 @@ export function GoldShowcase({
         >
           {/* The top padding keeps the cards' shadow from being clipped: a
               sideways scroller clips vertically too. */}
+          <ProductList {...list}>
           <ul
             ref={track}
             onScroll={measure}
             className="mt-4 flex w-full snap-x snap-mandatory flex-row flex-nowrap gap-4 overflow-x-auto scroll-smooth pt-2 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           >
-            {products.map((listed) => {
+            {products.map((listed, i) => {
               const product = mine?.get(listed.id) ?? listed;
               return (
                 <li key={listed.id} className={SLIDE}>
                   {/* The coin on the card's top start corner: this row's mark, laid
                       over the shared card rather than built into it. */}
                   <div className={`relative flex w-full flex-1 flex-col [&>article]:flex-1 ${colours.card}`}>
-                    <ProductCard
+                    <ProductCard index={i}
                       product={product}
                       category={product.category_id != null ? categoryById.get(product.category_id) : undefined}
                       isLoggedIn={loggedIn}
@@ -248,6 +254,7 @@ export function GoldShowcase({
               );
             })}
           </ul>
+          </ProductList>
 
           {/* Under the cards, centred: how many, and the arrows. */}
           <div className="mt-4 flex items-center justify-center gap-3">

@@ -5,6 +5,7 @@ import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 
 import Link from "@/components/i18n/Link";
 import { useMessages } from "@/components/i18n/LocaleProvider";
+import { ProductList } from "@/components/catalog/ProductListContext";
 import { ProductCard } from "@/components/catalog/ProductCard";
 import { homeMessages } from "@/lib/i18n/messages/home";
 import { PAGE_CONTAINER } from "@/lib/layout";
@@ -162,18 +163,19 @@ export function ProductRow({
 
         {/* The padding keeps the cards' edges from being clipped: a sideways
             scroller clips vertically too. */}
+        <ProductList id={headingId.replace(/-baslik$/, "")} name={`Ana sayfa: ${headingId.replace(/-baslik$/, "")}`}>
         <ul
           ref={track}
           onScroll={measure}
           className="flex w-full snap-x snap-mandatory flex-row flex-nowrap gap-4 overflow-x-auto overscroll-x-contain scroll-smooth pt-2 pb-2 motion-reduce:scroll-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
-          {products.map((listed) => {
+          {products.map((listed, i) => {
             // A signed-in visitor's own copy, once it is in; its price is theirs.
             const product = mine?.get(listed.id) ?? listed;
             return (
               <li key={listed.id} className={SLIDE}>
                 <div className="flex w-full flex-1 flex-col [&>article]:flex-1">
-                  <ProductCard
+                  <ProductCard index={i}
                     product={product}
                     category={product.category_id != null ? categoryById.get(product.category_id) : undefined}
                     isLoggedIn={loggedIn}
@@ -185,6 +187,7 @@ export function ProductRow({
             );
           })}
         </ul>
+        </ProductList>
 
         {/* Under the row, centred: the arrows (while there is more than is
             in view) and, after a hairline, the way to the whole collection. */}

@@ -106,6 +106,82 @@ export function trackViewItem(gaItem: GaItem): void {
   track("view_item", { currency: CURRENCY, value: gaItem.price ?? 0, items: [{ ...gaItem, quantity: 1 }] });
 }
 
+// ---------------------------------------------------------------- lists
+
+/** A product list as GA reports it: a stable id and a Turkish name, whatever the page's language. */
+export interface GaList {
+  id: string;
+  name: string;
+}
+
+/** A listed product, at the price its card shows (null while unknown). */
+export function listItem(
+  product: CatalogProduct,
+  variant: CatalogVariant | null,
+  price: CatalogPrice | null,
+  category?: string | null,
+): GaItem {
+  return item({
+    item_id: variant?.sku || variant?.id || product.base_code || product.id,
+    item_name: product.name,
+    item_brand: product.brand ?? undefined,
+    item_category: category ?? undefined,
+    price: price ? money(Number(price.price_incl_tax)) : undefined,
+  });
+}
+
+/** Seen cards waiting to go out, per list; one view_item_list per list per flush. */
+const pending = new Map<string, { list: GaList; items: (GaItem & { index: number })[] }>();
+/** What this page has already reported: a card scrolled past twice counts once. */
+const seen = new Set<string>();
+let flushTimer: ReturnType<typeof setTimeout> | null = null;
+/** GA takes up to 200 items an event; a screenful is far fewer. */
+const LIST_CHUNK = 50;
+
+function flushImpressions(): void {
+  flushTimer = null;
+  for (const { list, items } of pending.values()) {
+    for (let i = 0; i < items.length; i += LIST_CHUNK) {
+      track("view_item_list", {
+        item_list_id: list.id,
+        item_list_name: list.name,
+        items: items.slice(i, i + LIST_CHUNK).map((it) => ({ ...it, item_list_id: list.id, item_list_name: list.name })),
+      });
+    }
+  }
+  pending.clear();
+}
+
+/**
+ * view_item_list for a card that came into sight (ProductCard): the cards seen
+ * within a second go out together, one event per list, each once per page —
+ * so a list's impressions are cards a visitor actually saw, not everything a
+ * grid loaded.
+ */
+export function trackListImpression(list: GaList, gaItem: GaItem, index: number): void {
+  if (typeof window === "undefined") return;
+  const key = `${location.pathname}|${list.id}|${gaItem.item_id}`;
+  if (seen.has(key)) return;
+  seen.add(key);
+  const entry = pending.get(list.id) ?? { list, items: [] };
+  entry.items.push({ ...gaItem, index });
+  pending.set(list.id, entry);
+  flushTimer ??= setTimeout(flushImpressions, 1000);
+}
+
+/** select_item: a card opened from a list. What was waiting to go out goes first, so GA sees the view before the click. */
+export function trackSelectItem(list: GaList, gaItem: GaItem, index: number): void {
+  if (flushTimer) {
+    clearTimeout(flushTimer);
+    flushImpressions();
+  }
+  track("select_item", {
+    item_list_id: list.id,
+    item_list_name: list.name,
+    items: [{ ...gaItem, index, item_list_id: list.id, item_list_name: list.name }],
+  });
+}
+
 // ---------------------------------------------------------------- purchase
 
 const orderItemsKey = (orderId: string) => `ga_order_items_${orderId}`;

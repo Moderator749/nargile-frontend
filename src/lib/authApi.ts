@@ -43,7 +43,8 @@ export async function confirmPasswordReset(
 }
 
 /** "Üye olmadan devam et": a session for one guest checkout. 409 when the address has an account. */
-export async function startGuest(body: { email: string; full_name: string; phone: string }): Promise<Token> {
+/** "Üye olmadan devam et": e-mail and phone; the name comes with the delivery address, at checkout. */
+export async function startGuest(body: { email: string; phone: string }): Promise<Token> {
   const { data } = await api.post<Token>("/auth/guest", body);
   return data;
 }

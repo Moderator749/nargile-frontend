@@ -13,6 +13,7 @@ import { isExportAccount } from "@/lib/exportAccount";
 import { isB2BSegment } from "@/lib/priceList";
 import { CatalogFilterBar } from "@/components/catalog/CatalogFilterBar";
 import { useCatalogDensity } from "@/lib/catalogView";
+import { ProductList } from "@/components/catalog/ProductListContext";
 import { ProductCard, ProductCardSkeleton } from "@/components/catalog/ProductCard";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
@@ -234,6 +235,15 @@ function CatalogGrid({
   // A phone's two-or-one choice (the filter bar's switch); wider screens keep their columns.
   const density = useCatalogDensity();
   const grid = `${gridClass} ${density === "one" ? "max-md:grid-cols-1" : ""}`;
+  // Google Analytics' name for this grid: stable and Turkish (a category by
+  // its slug, as its name changes with the page's language).
+  const gaList = brand
+    ? { id: `brand_${brand.slug ?? brand.name}`, name: `Marka: ${brand.name}` }
+    : searched
+      ? { id: "search_results", name: "Arama sonuçları" }
+      : activeCategory
+        ? { id: `category_${activeCategory.slug}`, name: `Kategori: ${activeCategory.slug}` }
+        : { id: "all_products", name: "Tüm ürünler" };
   const collection = brand ? brand.name : searched ? t.searchCollection(searched) : (activeCategory?.name ?? t.allProducts);
   const narrowed = filters.min.trim() !== "" || filters.max.trim() !== "" || filters.inStock || inGroup !== null;
   const listing: CatalogListing = {
@@ -325,6 +335,7 @@ function CatalogGrid({
         </div>
       ) : (
         <>
+          <ProductList {...gaList}>
           <ul
             className={`${grid} transition-opacity duration-200 ${catalog.refreshing ? "opacity-60" : ""}`}
             aria-busy={catalog.refreshing}
@@ -340,6 +351,7 @@ function CatalogGrid({
                     isLoggedIn={!!user}
                     publicPrices={catalog.publicPrices}
                     pricesPending={catalog.pricesPending}
+                    index={i}
                   />
                 </div>
               </li>
@@ -354,6 +366,7 @@ function CatalogGrid({
                 </li>
               ))}
           </ul>
+          </ProductList>
 
           {catalog.error && (
             <div className="mx-auto mt-8 max-w-md">

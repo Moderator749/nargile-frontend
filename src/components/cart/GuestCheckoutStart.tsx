@@ -26,7 +26,6 @@ export const GUEST_FORM_ID = "guest-checkout-start";
 export function GuestCheckoutStart() {
   const t = useMessages(guestMessages).start;
   const setAuth = useAuthStore((s) => s.setAuth);
-  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [busy, setBusy] = useState(false);
@@ -38,7 +37,7 @@ export function GuestCheckoutStart() {
     setBusy(true);
     setError(null);
     try {
-      const { access_token } = await startGuest({ email: email.trim(), full_name: fullName.trim(), phone: phone.trim() });
+      const { access_token } = await startGuest({ email: email.trim(), phone: phone.trim() });
       setAuth(access_token, await fetchMe(access_token));
     } catch (err) {
       const status = axios.isAxiosError(err) ? err.response?.status : undefined;
@@ -68,10 +67,9 @@ export function GuestCheckoutStart() {
           {t.title}
         </h2>
         <p className="mt-1 text-sm text-slate-600 dark:text-zinc-400">{t.lead}</p>
+        {/* E-mail and phone only: the name is asked once, with the delivery
+            address, which needs it anyway (the server names the guest from it). */}
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
-          <div className="sm:col-span-2">
-            <Input label={t.fullName} value={fullName} onChange={(e) => setFullName(e.target.value)} autoComplete="name" required minLength={2} maxLength={150} />
-          </div>
           <Input label={t.email} type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" inputMode="email" required maxLength={255} />
           <Input
             label={t.phone}

@@ -35,6 +35,7 @@ export function SultanPuanShowcase({
   if (!showcase.enabled) return null;
   return (
     <GoldShowcase
+      list={{ id: "home_sultanpuan", name: "Ana sayfa: SultanPuan" }}
       title={
         <>
           <span className={`${FIGURE} ${GOLD} text-3xl md:text-4xl`}>{t.percent(Number(showcase.rate_percent))}</span>

@@ -41,6 +41,7 @@ export function KumbaraShowcase({
 
   return (
     <GoldShowcase
+      list={{ id: "home_kumbara", name: "Ana sayfa: Kumbara" }}
       title={
         <>
           <span className="text-2xl font-extrabold tracking-tight text-amber-950 md:text-3xl dark:text-amber-100">

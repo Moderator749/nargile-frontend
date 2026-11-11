@@ -9,6 +9,7 @@ import { useLocale, useMessages } from "@/components/i18n/LocaleProvider";
 import { AdminCatalogPdf, useIsAdmin } from "@/components/catalog/AdminCatalogPdf";
 import { CatalogFilterBar } from "@/components/catalog/CatalogFilterBar";
 import { PriceCatalogExport } from "@/components/catalog/PriceCatalogExport";
+import { ProductList } from "@/components/catalog/ProductListContext";
 import { ProductCard } from "@/components/catalog/ProductCard";
 import { Button } from "@/components/ui/Button";
 import { useNow } from "@/hooks/useNow";
@@ -136,11 +137,12 @@ export function DealsGrid({
               </div>
             </div>
           ) : (
+            <ProductList id="deals" name="Fırsat Ürünleri">
             <ul className={CATALOG_GRID}>
               {shown.map((product, i) => (
                 <li key={product.id} className="flex">
                   <div className="flex w-full flex-col [&>article]:flex-1">
-                    <ProductCard
+                    <ProductCard index={i}
                       product={product}
                       eager={i < EAGER_CARDS}
                       category={product.category_id != null ? categoryById.get(product.category_id) : undefined}
@@ -153,6 +155,7 @@ export function DealsGrid({
                 </li>
               ))}
             </ul>
+            </ProductList>
           )}
         </>
       )}
