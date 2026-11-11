@@ -145,10 +145,11 @@ async function ProductPage(slug: string, { locale, t }: Awaited<ReturnType<typeo
     // address.
     const renamed = await getCategoryBySlug(slug);
     if (renamed && renamed.slug !== slug) permanentRedirect(localePath(locale, categoryHref(renamed.slug)));
-    // An old store's product the shop no longer sells: its model or its shelf
-    // (RETIRED_PRODUCTS), the address having been its, in Turkish.
-    const next = locale === DEFAULT_LOCALE ? RETIRED_PRODUCTS[slug] : undefined;
-    if (next) permanentRedirect(next.replace(/^\/(?:product|catalog)\//, "/"));
+    // A product the shop no longer sells (an old store's, or one unpublished
+    // since): its model or its shelf (RETIRED_PRODUCTS), in the page's
+    // language — its English and Arabic pages were indexed too.
+    const next = RETIRED_PRODUCTS[slug];
+    if (next) permanentRedirect(localePath(locale, next.replace(/^\/(?:product|catalog)\//, "/")));
     notFound();
   }
   // Asked by an old store's spelling, by id or in other letter case: one

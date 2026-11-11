@@ -25,7 +25,7 @@ export const LEGACY_CATEGORIES: Record<string, string> = {
   "nargile-lule-cesitleri": "luleler",
   kozlukler: "kozlukler",
   "nargile-marpuclari": "marpuclar",
-  "plastik-ve-ozel-sipsiler": "sipsiler",
+  "plastik-ve-ozel-sipsiler": "plastik-ve-slikon-sipsiler",
   "nargile-malzemeleri-ve-aksesuarlari": "malzemeler",
   "yedek-parca": "yedek-parca",
   "okey-tavla-ve-iskambil-kartlari": "oyun-eglence",

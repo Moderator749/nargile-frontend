@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { CatalogScreen } from "@/components/catalog/CatalogScreen";
 import { ancestorsOf, categoryCopy, categoryFamily, hasCategoryCopy } from "@/lib/categories";
+import { CATEGORY_SEO } from "@/lib/categorySeo";
 import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n/config";
 import type { getI18n } from "@/lib/i18n/server";
 import { getBrands, getPublicProducts } from "@/lib/server/catalog";
@@ -28,9 +29,12 @@ export async function categoryMetadata(category: Category, { locale, t }: I18n):
     : hasCategoryCopy(category.slug)
       ? categoryCopy(category.slug, locale).description
       : categoryDescription(category, products, locale);
+  // A category with its own title and description for its Turkish page (lib/categorySeo).
+  const own = locale === DEFAULT_LOCALE ? CATEGORY_SEO[category.slug] : undefined;
   return pageMetadata({
-    title: t.meta.categoryTitle(category.name),
-    description,
+    title: own?.title ?? t.meta.categoryTitle(category.name),
+    absoluteTitle: own?.absolute,
+    description: own?.description ?? description,
     href: categoryHref(category.slug),
     locale,
     locales: category.locales,
