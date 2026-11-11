@@ -89,5 +89,7 @@ export function gtagInitScript(id: string): string {
     `gtag('consent','default',${denied});`,
     `try{var c=JSON.parse(localStorage.getItem(${JSON.stringify(CONSENT_KEY)})||'null');if(c&&c.choice==='granted')gtag('consent','update',${granted});}catch(e){}`,
     `gtag('js',new Date());gtag('config','${id}');`,
+    // Events fired before this ran (lib/gaEvents' queue), after config so the consent defaults precede them.
+    "(window.__gaq||[]).forEach(function(a){gtag.apply(null,a);});window.__gaq=[];",
   ].join("");
 }

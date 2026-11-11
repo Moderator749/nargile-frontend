@@ -76,6 +76,7 @@ import { checkStock } from "@/lib/catalogApi";
 import { formatMoney } from "@/lib/format";
 import { estimateCart } from "@/lib/cartEstimate";
 import { useAuthStore } from "@/store/useAuthStore";
+import { rememberOrderItems, trackCart } from "@/lib/gaEvents";
 import { useCartStore } from "@/store/useCartStore";
 import { useAuthHydrated, useCartHydrated } from "@/store/useHasHydrated";
 import type {
@@ -207,7 +208,7 @@ export function CartView({ checkoutStep = false }: { checkoutStep?: boolean } = 
     checkStock([{ variant_id: variantId, quantity }])
       .then(([line]) => {
         if (!line || ask !== asked.current || !line.capped || line.quantity < 1) return;
-        updateQuantity(variantId, line.quantity);
+        updateQuantity(variantId, line.quantity, { track: false });
         setStockMax((m) => ({ ...m, [variantId]: line.quantity }));
       })
       .catch(() => {
@@ -222,7 +223,7 @@ export function CartView({ checkoutStep = false }: { checkoutStep?: boolean } = 
     checkStock(items.map((i) => ({ variant_id: i.variant_id, quantity: i.quantity })))
       .then((lines) => {
         const held = lines.filter((l) => l.capped && l.quantity > 0);
-        held.forEach((l) => updateQuantity(l.variant_id, l.quantity));
+        held.forEach((l) => updateQuantity(l.variant_id, l.quantity, { track: false }));
         if (held.length > 0) setStockMax((m) => ({ ...m, ...Object.fromEntries(held.map((l) => [l.variant_id, l.quantity])) }));
       })
       .catch(() => {});
@@ -251,6 +252,27 @@ export function CartView({ checkoutStep = false }: { checkoutStep?: boolean } = 
     landed.current = true;
     steps.current.scrollIntoView({ block: "start" });
   });
+
+  // Google Analytics: view_cart on the cart page; begin_checkout on arriving
+  // at /checkout, or — a signed-in buyer, who can order from the cart page
+  // itself — on heading for payment there (beginCheckout, below). Once each
+  // per page.
+  const cartViewed = useRef(false);
+  useEffect(() => {
+    if (checkoutStep || cartViewed.current || !cartHydrated || items.length === 0) return;
+    cartViewed.current = true;
+    trackCart("view_cart", items);
+  }, [checkoutStep, cartHydrated, items]);
+  const checkoutBegun = useRef(false);
+  const beginCheckout = useCallback(() => {
+    const lines = useCartStore.getState().items;
+    if (checkoutBegun.current || lines.length === 0) return;
+    checkoutBegun.current = true;
+    trackCart("begin_checkout", lines);
+  }, []);
+  useEffect(() => {
+    if (checkoutStep && cartHydrated && items.length > 0) beginCheckout();
+  }, [checkoutStep, cartHydrated, items.length, beginCheckout]);
   const accountType: AccountType = user?.account_type ?? "INDIVIDUAL";
   const abroad = shipsAbroad(accountType);
   // The export account: no payment screen, and an order that is a request.
@@ -528,6 +550,10 @@ export function CartView({ checkoutStep = false }: { checkoutStep?: boolean } = 
     if (submitting || checkoutBlocker) return;
     setSubmitting(true);
     setCheckoutError(null);
+    beginCheckout(); // ordering straight from the cart page: no /checkout on the way
+    // The shipping and the payment are both settled as the order is placed.
+    trackCart("add_shipping_info", items, { shipping_tier: method });
+    if (!quoteOnly) trackCart("add_payment_info", items, { payment_type: paymentMethod });
     try {
       const order = await checkout(
         buildCheckoutRequest(items, paymentMethod, points, method, toShippingAddress(draft), {
@@ -546,6 +572,8 @@ export function CartView({ checkoutStep = false }: { checkoutStep?: boolean } = 
           marketingConsent,
         }),
       );
+      // For its purchase event on the confirmation page, where the cart is gone.
+      rememberOrderItems(order.id, items);
       if (order.payment_method === "CREDIT_CARD") {
         // Paid on PayTR's page. The cart stays as it is until the payment is
         // confirmed, so a declined card can be tried again or swapped for a
@@ -813,7 +841,11 @@ export function CartView({ checkoutStep = false }: { checkoutStep?: boolean } = 
           quote ? Number(quote.net_total) : isLoggedIn ? estimatedSubtotal : estimateCart(estimatedSubtotal, params).total,
         )}
         action={t.view.goToPayment}
-        onGo={() => (isLoggedIn ? summary.current?.scrollIntoView({ behavior: "smooth", block: "start" }) : handleCheckout())}
+        onGo={() => {
+          if (!isLoggedIn) return handleCheckout();
+          beginCheckout();
+          summary.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }}
       />
       <div aria-hidden className="h-20 md:hidden" />
     </main>

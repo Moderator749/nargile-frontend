@@ -12,6 +12,7 @@ import { Alert } from "@/components/ui/Alert";
 import { countryName } from "@/lib/countries";
 import { getApiErrorMessage } from "@/lib/errors";
 import { formatMoney } from "@/lib/format";
+import { trackPurchase } from "@/lib/gaEvents";
 import { ordersMessages } from "@/lib/i18n/messages/orders";
 import { fetchBankAccounts, fetchOrder, orderNetTotal } from "@/lib/ordersApi";
 import { shippingOption } from "@/lib/shipping";
@@ -94,6 +95,13 @@ export function OrderConfirmation({ orderId }: { orderId: string }) {
   useEffect(() => {
     if (fromPaytr && paidByCard) useCartStore.getState().clearCart();
   }, [fromPaytr, paidByCard]);
+
+  // Google Analytics' purchase: a paid card order, or a havale/EFT order just
+  // placed; once per order (lib/gaEvents). Never from inside PayTR's frame,
+  // which this page leaves before it fetches anything.
+  useEffect(() => {
+    if (order && !framed) trackPurchase(order, fromPaytr);
+  }, [order, framed, fromPaytr]);
 
   if (framed) return <main className="flex-1" aria-busy />;
 

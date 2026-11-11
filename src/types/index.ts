@@ -540,6 +540,10 @@ export interface CartLineItem extends CartItem {
   image_url?: string | null;
   price: DecimalString;
   segment_price: DecimalString | null;
+  /** For analytics (lib/gaEvents): the colour's code, the brand and the category it was added from. Absent on lines added before they were kept. */
+  sku?: string;
+  brand?: string | null;
+  category?: string | null;
 }
 
 /**

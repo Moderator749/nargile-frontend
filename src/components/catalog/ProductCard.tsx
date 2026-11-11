@@ -150,7 +150,7 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
     // Display snapshot only: the server re-prices the cart (sale included) at checkout.
     useCartStore
       .getState()
-      .addItem(cartLineFor(product, variant, price, { quantity: 1, isLoggedIn, saleLive: sale.kind === "live" }));
+      .addItem(cartLineFor(product, variant, price, { quantity: 1, isLoggedIn, saleLive: sale.kind === "live", category: category?.name }));
     showCartToast({ kind: "added", name: product.name, image: product.image_url });
     setAdded(true);
     clearTimeout(timer.current);

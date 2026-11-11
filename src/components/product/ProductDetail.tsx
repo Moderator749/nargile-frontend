@@ -20,6 +20,7 @@ import { useStoreParameters } from "@/hooks/useStoreParameters";
 import { useNow } from "@/hooks/useNow";
 import { checkStock, fetchProduct } from "@/lib/catalogApi";
 import { cartLineFor } from "@/lib/cartLine";
+import { catalogItem, trackViewItem } from "@/lib/gaEvents";
 import { showCartToast } from "@/lib/cartToast";
 import { categoryCopy } from "@/lib/categories";
 import { normalizeHex, readableInk } from "@/lib/color";
@@ -132,6 +133,15 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
       ? `${money.format({ ...price, price_incl_tax: price.price_excl_tax })} ${t.plusVat}`
       : null;
   const canAdd = !!variant && !!price && !pricesPending && (!soldOut || quoteOnly);
+
+  // view_item, once per product, at the price this visitor sees (a signed-in
+  // buyer's once their own copy is in).
+  const viewed = useRef<string | null>(null);
+  useEffect(() => {
+    if (pricesPending || !variant || !price || viewed.current === product.id) return;
+    viewed.current = product.id;
+    trackViewItem(catalogItem(product, variant, price, category?.name));
+  }, [pricesPending, product, variant, price, category]);
   // The most this buyer may order of this colour, where it is known: the
   // stock count (sent to a firm's account only), or the most a stock check has
   // already taken a quantity down to. A request has none.
@@ -195,7 +205,12 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
       cart.updateQuantity(variant.id, held);
     } else {
       cart.addItem(
-        cartLineFor(product, variant, price, { quantity: held, isLoggedIn: loggedIn, saleLive: sale.kind === "live" }),
+        cartLineFor(product, variant, price, {
+          quantity: held,
+          isLoggedIn: loggedIn,
+          saleLive: sale.kind === "live",
+          category: category?.name,
+        }),
       );
     }
     setDraft(null);

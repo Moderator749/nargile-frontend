@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { SearchX } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 
@@ -30,6 +30,7 @@ import { publishSearchCount } from "@/lib/searchCount";
 import { catalogMessages } from "@/lib/i18n/messages/catalog";
 import { useAuthStore } from "@/store/useAuthStore";
 import type { CatalogProduct, Category } from "@/types";
+import { track } from "@/lib/gaEvents";
 import { CATALOG_GRID, PAGE_CONTAINER } from "@/lib/layout";
 import { CURRENT, IDLE, PILL } from "@/components/catalog/pillStyles";
 
@@ -201,6 +202,13 @@ function CatalogGrid({
         : { query: searched, count: total ?? shown.length, more: total === null && catalog.hasMore },
     );
   }, [searched, catalog.loading, shown.length, total, catalog.hasMore]);
+  // Google Analytics' search: once per term, when its results are in.
+  const searchTracked = useRef("");
+  useEffect(() => {
+    if (!searched || catalog.loading || searchTracked.current === searched) return;
+    searchTracked.current = searched;
+    track("search", { search_term: searched });
+  }, [searched, catalog.loading]);
   // A filter can empty a grid that has products behind it: say which it was.
   const filtered = shown.length === 0 && catalog.products.length > 0;
 

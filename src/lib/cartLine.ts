@@ -8,7 +8,7 @@ export function cartLineFor(
   product: CatalogProduct,
   variant: CatalogVariant,
   price: CatalogPrice,
-  opts: { quantity: number; isLoggedIn: boolean; saleLive: boolean },
+  opts: { quantity: number; isLoggedIn: boolean; saleLive: boolean; category?: string | null },
 ): CartLineItem {
   return {
     variant_id: variant.id,
@@ -19,5 +19,9 @@ export function cartLineFor(
     image_url: product.image_url,
     price: (variant.list_price ?? price).price_incl_tax,
     segment_price: opts.isLoggedIn || opts.saleLive ? price.price_incl_tax : null,
+    // For the analytics events (lib/gaEvents), which the cart line carries to checkout.
+    sku: variant.sku,
+    brand: product.brand,
+    category: opts.category ?? null,
   };
 }
