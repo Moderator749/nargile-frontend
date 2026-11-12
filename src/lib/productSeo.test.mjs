@@ -106,3 +106,11 @@ test("brand and name headings are both dropped; comma-joined capitals are calmed
   assert.equal(d, "Sıradışı robot tasarımı ve yenilikçi özellikleri. Orijinal Panada Hookah ürün güvencesi, ücretsiz kargo.");
   assert.equal(leadText(plain("<p>ŞEFTALİ, ANANAS, AHUDUDU,BÖĞÜRTLEN,YABAN MERSİNİ,BUZ AROMALI</p>"), "Falcon Milano", null), "Şeftali, ananas, ahududu, böğürtlen, yaban mersini, buz aromalı.");
 });
+
+test("a replica is never promised as an original; a heading of name and trade words is dropped", () => {
+  const d = productDescription({ lead: "Quasar Raas 2 Nargile Lülesi. Fransa'da geliştirilen bir lüle tasarımının replikasıdır.", name: "Quasar Raas 2 (Replika) Nargile Lülesi", brand: "Quasar", type: null, shipping: "threshold", threshold: "3.000 TL" });
+  assert.ok(!/orijinal/i.test(d), d);
+  assert.equal(d, "Fransa'da geliştirilen bir lüle tasarımının replikasıdır. Replika model, 3.000 TL üzeri ücretsiz kargo.");
+  const caos = productDescription({ lead: "Caos Lüle Seti. Yenilikçi tasarımı ve pratik kullanımı bir araya getirir.", name: "Caos Cam Lüle Seti", brand: "caos", type: null, shipping: "threshold", threshold: "3.000 TL" });
+  assert.ok(caos.startsWith("Yenilikçi tasarımı"), caos);
+});

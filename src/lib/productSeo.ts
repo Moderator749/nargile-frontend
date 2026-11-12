@@ -114,7 +114,7 @@ export function productTitle({
 
 /** The trade's words in product names: lower case in a sentence, whatever the name does. */
 const GENERIC = new Set(
-  "nargile nargilesi takim takimi seti set marpuc marpucu lule lulesi sise sisesi komur komuru kozluk kozlugu ahsap cam celik dokum pirinc kutu adet gr kg ml".split(" "),
+  "nargile nargilesi takim takimi takimlari seti set marpuc marpucu lule lulesi luleler sise sisesi komur komuru kozluk kozlugu ahsap cam cami celik dokum pirinc kutu adet gr kg ml model modeli replika orijinal".split(" "),
 );
 
 /** Not whitespace, and not in the shop's copy: a block's end until the text is split on it. */
@@ -204,8 +204,24 @@ function fit(text: string, budget: number): string {
 
 export type ShippingPromise = "free" | "threshold" | "none";
 
+/** Turkish letters to their ASCII bases, lower case: for matching words however they were typed. */
+const fold = (text: string) =>
+  text
+    .toLocaleLowerCase("tr")
+    .replace(/[çğıöşüâîû]/g, (c) => ({ ç: "c", ğ: "g", ı: "i", ö: "o", ş: "s", ü: "u", â: "a", î: "i", û: "u" })[c] ?? c);
+
+/** A replica ("Quasar Raas 2 (Replika)"): never promised as an original. */
+export const isReplica = (name: string) => /replika|muadil|imitasyon/i.test(name);
+
+/** A heading made only of the product's own words and the trade's ("Caos Lüle Seti.", "Quasar Raas 2 Nargile Lülesi."). */
+function onlyNames(sentence: string, naming: Set<string>): boolean {
+  const words = fold(sentence).split(/[^a-z0-9]+/).filter(Boolean);
+  return words.length > 0 && words.length <= 8 && words.every((w) => naming.has(w) || GENERIC.has(w));
+}
+
 /**
  * "<what it is, from its own text>. Orijinal <marka> ürün güvencesi, <kargo>."
+ * A replica says so instead ("Replika model, <kargo>.").
  * The shipping line is checkout's: free on this product alone (`free`), free
  * from the threshold (`threshold`, any non-coal product), or only fast
  * shipping for coal, whose carts the %50 rule can send karşı ödemeli.
@@ -230,14 +246,13 @@ export function productDescription({
   const b = tidyBrand(brand);
   const promise =
     shipping === "free" ? "ücretsiz kargo" : shipping === "threshold" ? `${threshold} üzeri ücretsiz kargo` : "hızlı kargo";
-  const tail = `Orijinal ${b ? `${b} ` : ""}ürün güvencesi, ${promise}.`;
-  // A first sentence that only repeats the name (a heading: "Copper Balance
-  // Klasik.") says nothing the title does not.
+  const tail = isReplica(name) ? `Replika model, ${promise}.` : `Orijinal ${b ? `${b} ` : ""}ürün güvencesi, ${promise}.`;
+  // Leading sentences that only name the product (headings: "Copper Balance
+  // Klasik.", "Panada Hookah. Bobby Robot Nargile Takımı.") say nothing the title does not.
   const sentences = lead.trim().match(/[^.!?]+[.!?]+|[^.!?]+$/g) ?? [];
-  // ("Panada Hookah. Bobby Robot Nargile Takımı." — the brand and the name as headings — too.)
-  const naming = squash(`${brand ?? ""} ${name} ${brand ?? ""}`);
+  const naming = new Set(fold(`${brand ?? ""} ${name}`).split(/[^a-z0-9]+/).filter(Boolean));
   let first = 0;
-  while (first < sentences.length - 1 && squash(sentences[first] ?? "").length > 0 && naming.includes(squash(sentences[first] ?? ""))) first++;
+  while (first < sentences.length - 1 && onlyNames(sentences[first] ?? "", naming)) first++;
   const own = sentences.slice(first).join("").trim();
   // A line that only repeats the name says nothing: say what it is instead.
   const body =
