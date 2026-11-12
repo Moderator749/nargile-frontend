@@ -26,6 +26,9 @@ import {
 import { getHomepage } from "@/lib/server/homepage";
 import { advantageSources } from "@/lib/storeAdvantages";
 import { nameWithCode } from "@/lib/slug";
+import { blockBreaks, cleanCode, leadText, productDescription, productTitle, productType, type ShippingPromise } from "@/lib/productSeo";
+import { formatMoneyCompact } from "@/lib/format";
+import { htmlToText } from "@/lib/richText";
 import { resolveNav } from "@/lib/storefrontNav";
 import { displayVariant, soldOut } from "@/lib/variants";
 
@@ -82,7 +85,7 @@ export async function generateMetadata(props: PageProps<"/[locale]/[slug]">): Pr
   if (shelf) return categoryMetadata(shelf, i18n);
   if (brand) return brandMetadata(brand, i18n);
   const { locale, t } = i18n;
-  const { product, category } = await load(slug);
+  const { product, categories, category } = await load(slug);
   if (!product) return { title: t.meta.productNotFound, robots: { index: false } };
 
   // "Açıklama ve SEO" wins when the admin filled it in; otherwise the page falls
@@ -102,8 +105,14 @@ export async function generateMetadata(props: PageProps<"/[locale]/[slug]">): Pr
       : `${t.meta.genuine} ${t.meta.shopPromise}`;
   const fallback = `${product.name}${product.brand ? `, ${product.brand}` : ""}${category ? ` · ${category.name}` : ""}. ${standing}`;
   const own = metaDescription(product.description);
-  const description =
-    product.meta_description?.trim() || metaDescription(own.length >= 70 ? own : `${own ? `${own} ` : ""}${fallback}`);
+  // The admin's own, unless it is boilerplate copied onto many products.
+  // (Quotes round it, or a stray one at its start, as some were pasted, and doubled spaces go.)
+  const adminDescription = product.meta_description_shared
+    ? ""
+    : product.meta_description
+        ?.replace(/^\s*["“”']+|["“”']+\s*$/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
   // "<Ürün> — <Marka> | <Mağaza>": the brand is what people search with, so
   // it goes in the title unless the name already says it.
   const brandSuffix =
@@ -112,9 +121,34 @@ export async function generateMetadata(props: PageProps<"/[locale]/[slug]">): Pr
       : "";
   const lead = displayVariant(product);
   const price = lead?.flash_sale?.price ?? lead?.list_price;
+
+  // Turkish: written for the search result (lib/productSeo) — what it is, its
+  // brand, the shop's promise, within what Google shows. English and Arabic
+  // keep the translation's own words.
+  let generatedTitle = `${nameWithCode(product.name, product.base_code)}${brandSuffix}`;
+  let generatedDescription = metaDescription(own.length >= 70 ? own : `${own ? `${own} ` : ""}${fallback}`);
+  if (locale === DEFAULT_LOCALE) {
+    const root = (ancestorsOf(category, categories)[0] ?? category)?.slug;
+    const type = productType(root, product.name);
+    const freeFrom = await getFreeShippingFrom();
+    // Checkout's rule, as the offer's structured data states it (lib/seo shippingJsonLd).
+    const coal = product.is_cart_rule_applied ?? true;
+    const amount = price ? Number(price.price_incl_tax) : null;
+    const shipping: ShippingPromise =
+      coal || freeFrom === null ? "none" : amount !== null && amount >= freeFrom ? "free" : "threshold";
+    generatedTitle = productTitle({ name: product.name, code: cleanCode(product.base_code, product.name), brand: product.brand, type });
+    generatedDescription = productDescription({
+      lead: leadText(htmlToText(blockBreaks(product.description)), product.name, product.brand),
+      name: product.name,
+      brand: product.brand,
+      type,
+      shipping,
+      threshold: formatMoneyCompact(freeFrom ?? 0),
+    });
+  }
+  const description = adminDescription || generatedDescription;
   return pageMetadata({
-    // The code too, unless the name already says it: shoppers and shops search by it.
-    title: metaTitle || `${nameWithCode(product.name, product.base_code)}${brandSuffix}`,
+    title: metaTitle || generatedTitle,
     absoluteTitle: !!metaTitle,
     description,
     href: productHref(product),

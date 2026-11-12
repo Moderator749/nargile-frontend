@@ -29,7 +29,23 @@ const controlClass =
 export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
+  // The slides cross-fade in one box, so every photo is "in view" and
+  // loading="lazy" holds none back: a phone fetched all of them with the
+  // first, on the connection the first one (the page's LCP) needs. The others
+  // join once the page has loaded — well before autoplay first moves on.
+  const [warm, setWarm] = useState(false);
   const count = slides.length;
+
+  useEffect(() => {
+    if (count < 2) return;
+    const start = () => setWarm(true);
+    if (document.readyState === "complete") {
+      start();
+      return;
+    }
+    window.addEventListener("load", start, { once: true });
+    return () => window.removeEventListener("load", start);
+  }, [count]);
   const t = useMessages(homeMessages);
 
   // Autoplay, unless paused (hover/focus), the tab is hidden, or motion is reduced.
@@ -78,6 +94,7 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
               slide={slide}
               heading={i === 0 ? "h1" : "h2"}
               preloadImage={i === 0}
+              showImage={i === 0 || i === index || warm}
               wrapperProps={{
                 role: "group",
                 "aria-roledescription": "slide",

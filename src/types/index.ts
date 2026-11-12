@@ -487,6 +487,8 @@ export interface CatalogProductDetail extends CatalogProduct {
   cross_sells?: CatalogProduct[];
   /** Every category it is listed under, the primary one first. */
   category_ids?: number[];
+  /** Its Turkish meta description is boilerplate copied onto three or more products: the page writes its own. */
+  meta_description_shared?: boolean;
 }
 
 // ---- Cart ----

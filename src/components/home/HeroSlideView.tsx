@@ -246,6 +246,7 @@ export function HeroSlideView({
   slide,
   heading,
   preloadImage = false,
+  showImage = true,
   className = "",
   wrapperProps,
   editor,
@@ -255,6 +256,8 @@ export function HeroSlideView({
   /** The title's element: h1 for the first slide, h2 after; a div in the editor. */
   heading: "h1" | "h2" | "div";
   preloadImage?: boolean;
+  /** False keeps the photo out of the page for now (a slide not yet shown); its wash and text stay. */
+  showImage?: boolean;
   className?: string;
   wrapperProps?: HTMLAttributes<HTMLDivElement>;
   /** Present in /admin/hero: parts become draggable and buttons stop being links. */
@@ -330,7 +333,7 @@ export function HeroSlideView({
     >
       {slide.image && (
         <>
-          {slide.mobileImage ? (
+          {!showImage ? null : slide.mobileImage ? (
             <ArtDirectedImage
               wide={slide.image}
               tall={slide.mobileImage}

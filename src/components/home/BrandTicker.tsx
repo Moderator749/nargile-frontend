@@ -8,6 +8,14 @@ import { brandHref } from "@/lib/seo";
 import type { Brand } from "@/types";
 
 const SECONDS_PER_BRAND = 3;
+/**
+ * A band must be at least as wide as the track's window (the page container,
+ * about 1,230px) or the loop shows a gap. The narrowest item — a short name,
+ * its dot and the gaps — is about 70px, so 18 fill it: a shorter list is
+ * repeated up to that, a longer one (66 brands today) is there once. Every
+ * repeat is markup and a link to hydrate, twice per homepage.
+ */
+const BAND_MIN_ITEMS = 18;
 
 /** A brand on the ticker: its logo where "Markalar" has one, else its name; a link to its page where it has one. */
 export type TickerBrand = Pick<Brand, "name"> & Partial<Pick<Brand, "slug" | "logo_url">>;
@@ -35,7 +43,7 @@ export function tickerBrands(brands: Brand[] | null | undefined, fallback: strin
  * masked to transparent, so names and dots fade into the background before
  * they reach the edge instead of being cut off. Each name carries the dot that
  * follows it, so in the loop every dot sits between two names (the last one
- * between the end of the list and its start). The track holds the list twice and slides by -50%, which
+ * between the end of the list and its start). The track holds the band twice and slides by -50%, which
  * lands on an identical frame, so the loop has no seam; the pause hangs off the
  * track's own hover rather than an ancestor `group`, which is what would
  * otherwise light every name at once.
@@ -66,7 +74,7 @@ export async function BrandTicker({
   // Capitals by the page's language: Turkish turns "i" into "İ", which an
   // English or Arabic page would show on "Khalil Mamoon".
   const upper = locale === "tr" ? "tr-TR" : "en-GB";
-  const half = [...brands, ...brands];
+  const half = Array.from({ length: Math.ceil(BAND_MIN_ITEMS / brands.length) }, () => brands).flat();
   const duration = `${half.length * SECONDS_PER_BRAND}s`;
 
   const band = (copy: number) => (
@@ -112,6 +120,9 @@ export async function BrandTicker({
             {brand.slug ? (
               <Link
                 href={brandHref(brand.slug)}
+                // Not fetched ahead: the track slides every brand past the
+                // screen, and each would be a page prefetched on a phone's data.
+                prefetch={false}
                 tabIndex={reachable ? undefined : -1}
                 className="group/brand flex items-center select-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-red-500"
               >
