@@ -109,6 +109,8 @@ export interface PricingFile {
   /** The last time a row was saved into it; the list is newest first by this. */
   updated_at: ISODateTime;
   record_count: number;
+  /** The distinct product codes of its rows, so the file list can be searched by code. */
+  product_codes?: string[];
 }
 
 export interface ApplyResult {

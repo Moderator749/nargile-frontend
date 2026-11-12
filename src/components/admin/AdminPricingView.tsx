@@ -13,7 +13,8 @@ import {
   type SheetDraft,
 } from "@/components/admin/pricing/PricingCalculator";
 import { PricingRecords } from "@/components/admin/pricing/PricingRecords";
-import { RecordSearch, matchesSearch } from "@/components/admin/pricing/RecordSearch";
+import { RecordSearch, foldRecord, matchesSearch } from "@/components/admin/pricing/RecordSearch";
+import { codeHitLabel, fileHit } from "@/lib/fileSearch";
 import { Alert } from "@/components/ui/Alert";
 import { getApiErrorMessage } from "@/lib/errors";
 import { formatDateParts } from "@/lib/format";
@@ -319,7 +320,11 @@ export function AdminPricingView() {
 
   const byProduct = (query: string) => (r: PricingRecord) => matchesSearch(query, r.product_code, r.product_name);
   const shownDrafts = drafts?.filter(byProduct(draftQuery)) ?? null;
-  const shownFiles = files.filter((f) => matchesSearch(fileQuery, f.name));
+  // Files by name or by a product code among their rows (the list carries the codes).
+  const shownFiles = files.flatMap((f) => {
+    const hit = fileHit(fileQuery, f.name, f.product_codes ?? [], foldRecord);
+    return hit ? [{ file: f, codes: hit.byName ? [] : hit.codes }] : [];
+  });
   const shownRows = fileRows?.filter(byProduct(rowQuery)) ?? null;
   // "Tümünü seç" picks what the filter leaves on screen.
   const visibleIds = (shownRows ?? []).map((r) => r.id);
@@ -611,21 +616,28 @@ export function AdminPricingView() {
           </p>
         ) : (
           <>
-            <RecordSearch value={fileQuery} onChange={setFileQuery} placeholder="Dosya adıyla ara..." shown={shownFiles.length} total={files.length} />
+            <RecordSearch
+              value={fileQuery}
+              onChange={setFileQuery}
+              placeholder="Dosya adı veya ürün koduyla ara..."
+              shown={shownFiles.length}
+              total={files.length}
+            />
             {shownFiles.length === 0 && (
               <p className="rounded-2xl border border-dashed border-slate-300 px-4 py-10 text-center text-sm text-slate-500 dark:border-white/15 dark:text-zinc-400">
                 “{fileQuery.trim()}” ile eşleşen dosya yok.
               </p>
             )}
             <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {shownFiles.map((f) => (
+              {shownFiles.map(({ file: f, codes }) => (
                 <li key={f.id} className="relative">
                   <button
                     type="button"
                     onClick={() => {
                       setFileRows(null);
                       setPicked(new Set());
-                      setRowQuery("");
+                      // Found by a code inside: open on the rows with that code.
+                      setRowQuery(codes.length > 0 ? fileQuery.trim() : "");
                       setOpenFile(f);
                     }}
                     className="flex w-full items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-left transition-colors hover:border-red-300 dark:border-white/10 dark:bg-zinc-900 dark:hover:border-red-500/40"
@@ -645,6 +657,14 @@ export function AdminPricingView() {
                       <span className="mt-1 block text-xs text-slate-500 dark:text-zinc-400">
                         {f.record_count} kayıt · oluşturuldu {stamp(f.created_at)}
                       </span>
+                      {codes.length > 0 && (
+                        <span
+                          className="mt-1.5 inline-block max-w-full truncate rounded-md bg-red-50 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-red-700 dark:bg-red-500/10 dark:text-red-300"
+                          title={codes.length > 1 ? codes.slice(0, 30).join(", ") : undefined}
+                        >
+                          {codeHitLabel(codes)}
+                        </span>
+                      )}
                       {/* Room for the two actions laid over the card's corner. */}
                       <span aria-hidden className="mt-2 block h-6" />
                     </span>
