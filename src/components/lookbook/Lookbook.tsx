@@ -185,7 +185,10 @@ function Plate({ item, shape }: { item: LookbookItem; shape: PlateShape }) {
         <div className={`flex min-w-0 flex-col ${wide ? "flex-1" : "shrink-0"}`}>
           {/* Identification: the code as a carmine-ruled pill, then the name. */}
           <div className={`${s.pad} pb-2 pt-2.5 ${wide ? "" : "border-t border-zinc-200"}`}>
-            <div className="flex items-center justify-between gap-2">
+            {/* Code and rates on one row; should a long code or a phone's enlarged
+                text leave too little room, the rates move under the code whole
+                (flex-wrap) rather than splitting "USD 49,8644 · EUR / 55,8153". */}
+            <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
               <span
                 // One line whatever the code ("NT770 G"): the pill never wraps or shrinks.
                 className={`shrink-0 whitespace-nowrap rounded-sm border px-1.5 py-[1px] font-mono font-semibold tracking-wider ${s.code}`}
@@ -194,7 +197,8 @@ function Plate({ item, shape }: { item: LookbookItem; shape: PlateShape }) {
                 {item.code || "—"}
               </span>
               {item.rates && (item.rates.usd || item.rates.eur) && (
-                <span className={`font-mono uppercase tracking-wider text-zinc-500 tabular-nums ${s.rates}`}>
+                // Never broken: the two rates are read together.
+                <span className={`ms-auto whitespace-nowrap font-mono uppercase tracking-wider text-zinc-500 tabular-nums ${s.rates}`}>
                   {item.rates.usd && <>USD {rate(item.rates.usd)}</>}
                   {item.rates.usd && item.rates.eur && <span className="mx-1 text-zinc-300">·</span>}
                   {item.rates.eur && <>EUR {rate(item.rates.eur)}</>}
