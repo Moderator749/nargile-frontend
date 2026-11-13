@@ -27,10 +27,26 @@ const MEDIA_IS_LOCAL = ["localhost", "127.0.0.1", "[::1]", "::1"].includes(MEDIA
  * browser never sees it: it reaches the API through /api/backend (below).
  */
 const BACKEND_URL = (process.env.BACKEND_URL ?? "http://127.0.0.1:8000").replace(/\/+$/, "");
+
+/**
+ * A build for the shop's own server (NEXT_OUTPUT=standalone, set by
+ * scripts/migrate-to-turhost.sh): .next/standalone holds a server.js with only
+ * the node_modules it needs, run by systemd behind Caddy. Off by default, so
+ * `next start` and Vercel builds stay as they were.
+ *
+ * Run it with HOSTNAME=localhost (or 0.0.0.0), never 127.0.0.1: src/proxy.ts
+ * rewrites every Turkish page (/x → /tr/x) to a URL on "localhost", and a
+ * server bound under another name takes that for a foreign host and proxies
+ * the page to itself — over https, so every such page is a 500.
+ */
+const STANDALONE = process.env.NEXT_OUTPUT === "standalone";
+
 // Rewrites are fixed at build time: a deployment built without the variable
 // would forward every API call to its own loopback. Fail the build instead.
-if (process.env.VERCEL && !process.env.BACKEND_URL) {
-  throw new Error("BACKEND_URL is not set (e.g. http://209.38.195.227:8000): the /api/backend proxy has nowhere to go.");
+// (On the shop's own server the API is on that loopback, but saying so is
+// still required: the env file states where it is.)
+if ((process.env.VERCEL || STANDALONE) && !process.env.BACKEND_URL) {
+  throw new Error("BACKEND_URL is not set (e.g. http://127.0.0.1:8000): the /api/backend proxy has nowhere to go.");
 }
 
 /**
@@ -40,6 +56,8 @@ if (process.env.VERCEL && !process.env.BACKEND_URL) {
 const RETIRED_ARTICLES: Record<string, string> = { "nargile-lule-rehberi": "nargile-lulesi-nedir" };
 
 const nextConfig: NextConfig = {
+  ...(STANDALONE ? { output: "standalone" as const } : {}),
+
   /*
 - Metadata (title, description, canonical, Open Graph) always in <head>.
 - By default Next streams it into <body> for ordinary browsers and blocks
