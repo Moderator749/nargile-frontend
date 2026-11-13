@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { LEGACY_CATEGORIES, LEGACY_PAGES, LEGACY_PARENT, RETIRED_CATEGORIES } from "./lib/legacy/categories";
 import { ROOT_ROUTES, isRootSlugPath } from "./lib/rootRoutes";
 import { OPENCART_CATEGORY_IDS, OPENCART_INFORMATION_IDS, OPENCART_PRODUCT_IDS, RETIRED_PRODUCTS } from "./lib/legacy/opencart";
+import { UNAVAILABLE, atRoot, oldProductTarget, type Lookup } from "./lib/legacy/oldProduct";
 
 /*
  * Permanent (301) redirects to a product's one address, /<slug> at the root —
@@ -119,26 +120,31 @@ function toLegacyShelf(request: NextRequest, category: string) {
   return NextResponse.redirect(url, 301);
 }
 
-/** The API did not answer the lookup: down, slow, a 5xx, or not JSON. */
-const UNAVAILABLE = Symbol("unavailable");
-
 /**
- * The slug of the published product this id or old address names; null when
- * the API says there is none, UNAVAILABLE when it could not say. Never
- * throws: a failed lookup is an answer of its own, not an error page.
+ * One field of an API answer: null on a 404 or when the field is missing,
+ * UNAVAILABLE when the API could not say. Never throws: a failed lookup is
+ * an answer of its own, not an error page.
  */
-async function productSlug(ref: string): Promise<string | null | typeof UNAVAILABLE> {
+async function apiField(path: string, field: string): Promise<Lookup> {
   try {
-    const res = await fetch(`${API_URL}/products/${encodeURIComponent(ref)}`, {
-      signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS),
-    });
+    const res = await fetch(`${API_URL}${path}`, { signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS) });
     if (res.status === 404) return null;
     if (!res.ok) return UNAVAILABLE;
-    const { slug } = (await res.json()) as { slug?: string };
-    return typeof slug === "string" && slug ? slug : null;
+    const value = ((await res.json()) as Record<string, unknown>)[field];
+    return typeof value === "string" && value ? value : null;
   } catch {
     return UNAVAILABLE;
   }
+}
+
+/** The slug of the published product this id or old address names. */
+function productSlug(ref: string): Promise<Lookup> {
+  return apiField(`/products/${encodeURIComponent(ref)}`, "slug");
+}
+
+/** The category of a product taken off sale (GET /products/{ref}/shelf). */
+function productShelf(ref: string): Promise<Lookup> {
+  return apiField(`/products/${encodeURIComponent(ref)}/shelf`, "category_slug");
 }
 
 /**
@@ -201,7 +207,7 @@ async function legacyProduct(request: NextRequest, slug: string, go: (request: N
   if (current === UNAVAILABLE) return forNow(go(request, `/${slug}`));
   if (current) return go(request, `/${current}`);
   const next = RETIRED_PRODUCTS[slug];
-  return next ? go(request, next.replace(/^\/(?:product|catalog)\//, "/")) : null;
+  return next ? go(request, atRoot(next)) : null;
 }
 
 /**
@@ -252,7 +258,20 @@ async function productRedirect(request: NextRequest, path: string, prefix: strin
 
   if (segments.length === 2 && segments[0] === "product") {
     const ref = segments[1];
-    if (!UUID.test(ref)) return moved(request, `${prefix}/${ref.toLowerCase()}`);
+    if (!UUID.test(ref)) {
+      // An old store's slug: straight to where the product page would send
+      // it (its current slug, its successor, its category), one 301 rather
+      // than one to /<slug> and a second from there.
+      const slug = ref.toLowerCase();
+      if (!isProductSlug(slug)) return moved(request, `${prefix}/${slug}`);
+      const target = await oldProductTarget(slug, {
+        current: productSlug,
+        retired: (key) => RETIRED_PRODUCTS[key],
+        shelf: productShelf,
+      });
+      if (target === UNAVAILABLE) return forNow(moved(request, `${prefix}/${slug}`));
+      return moved(request, `${prefix}${target ?? `/${slug}`}`);
+    }
     const slug = await productSlug(ref);
     if (slug === UNAVAILABLE) return forNow(moved(request, `${prefix}/${ref}`));
     if (slug) return moved(request, `${prefix}/${slug}`);
