@@ -1131,4 +1131,20 @@ export const RETIRED_PRODUCTS: Record<string, string> = {
   "steamulation-ultimate-one-gen-3-nargile-takimi-crystal": "/catalog/steamulation",
   "steamulation-ultimate-one-gen-3-nargile-takimi-gold-matt": "/catalog/steamulation",
   "steamulation-xpansion-nargile-takimi": "/catalog/steamulation",
+  // Still indexed and 404ing on 2026-11-13 (gsc_analytics.py broken-pages):
+  // the same model under its new code where there is one, else its shelf.
+  "cosmo-turkish-meteor-nargile-lulesi-1": "/product/ll270-cosmo-turkish-meteor-nargile-lulesi",
+  "cbb-p-basic-plus-lule": "/product/cbb-p-1-oduman-basic-plus-seramik-lule",
+  "kong-rampage-1": "/product/ll207-kong-rampage-killer-lule",
+  "hype-beast-nargile-lulesi-1-1": "/product/ll273-hype-beast-nargile-lulesi",
+  "hype-beast-nargile-lulesi-1-2": "/product/ll273-hype-beast-nargile-lulesi",
+  "la91-5-standart-natural-kozluk": "/product/la91-5-nargile-kozlugu",
+  "steamulation-ultimate-mini-nargile-takimi-black": "/catalog/steamulation",
+  "steamulation-ultimate-mini-nargile-takimi-gold": "/catalog/steamulation",
+  "steamulation-ultimate-gen-3-nargile-takimi-clear-3": "/catalog/steamulation",
+  "steamulation-ultimate-gen-3-nargile-takimi-orange-metallic": "/catalog/steamulation",
+  "steamulation-pure-one-nargile-takimi-silver-matt": "/catalog/steamulation",
+  "cosmic-dejavua-200-gr": "/catalog/bitkisel-urunler",
+  "cosmic-miss-lady-200-gr": "/catalog/bitkisel-urunler",
+  "mr-wood-classic-vulcan-z-nargile-takimi": "/catalog/mr-wood",
 };

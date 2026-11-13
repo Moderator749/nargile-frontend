@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { LEGACY_CATEGORIES, LEGACY_PAGES, LEGACY_PARENT, RETIRED_CATEGORIES } from "./lib/legacy/categories";
 import { ROOT_ROUTES, isRootSlugPath } from "./lib/rootRoutes";
 import { OPENCART_CATEGORY_IDS, OPENCART_INFORMATION_IDS, OPENCART_PRODUCT_IDS, RETIRED_PRODUCTS } from "./lib/legacy/opencart";
-import { UNAVAILABLE, atRoot, oldProductTarget, type Lookup } from "./lib/legacy/oldProduct";
+import { UNAVAILABLE, oldProductTarget, type Lookup } from "./lib/legacy/oldProduct";
 
 /*
  * Permanent (301) redirects to a product's one address, /<slug> at the root —
@@ -203,11 +203,18 @@ function movedTo(request: NextRequest, pathname: string, query?: Record<string, 
  * (utm_*…) for a friendly address, dropping it for /index.php?route=….
  */
 async function legacyProduct(request: NextRequest, slug: string, go: (request: NextRequest, pathname: string) => NextResponse = moved) {
-  const current = await productSlug(slug);
-  if (current === UNAVAILABLE) return forNow(go(request, `/${slug}`));
-  if (current) return go(request, `/${current}`);
-  const next = RETIRED_PRODUCTS[slug];
-  return next ? go(request, atRoot(next)) : null;
+  const target = await oldProductPath(slug);
+  if (target === UNAVAILABLE) return forNow(go(request, `/${slug}`));
+  return target ? go(request, target) : null;
+}
+
+/**
+ * Where an old product slug ends up — its page under its current slug, its
+ * successor (RETIRED_PRODUCTS), else the category of a product taken off sale
+ * — the product page's own order, so the answer is one 301 to the end.
+ */
+function oldProductPath(slug: string): Promise<Lookup> {
+  return oldProductTarget(slug, { current: productSlug, retired: (key) => RETIRED_PRODUCTS[key], shelf: productShelf });
 }
 
 /**
@@ -264,11 +271,7 @@ async function productRedirect(request: NextRequest, path: string, prefix: strin
       // than one to /<slug> and a second from there.
       const slug = ref.toLowerCase();
       if (!isProductSlug(slug)) return moved(request, `${prefix}/${slug}`);
-      const target = await oldProductTarget(slug, {
-        current: productSlug,
-        retired: (key) => RETIRED_PRODUCTS[key],
-        shelf: productShelf,
-      });
+      const target = await oldProductPath(slug);
       if (target === UNAVAILABLE) return forNow(moved(request, `${prefix}/${slug}`));
       return moved(request, `${prefix}${target ?? `/${slug}`}`);
     }
@@ -354,7 +357,16 @@ export async function proxy(request: NextRequest) {
   // parameters: the same page without them.
   if (request.nextUrl.search && (path === "/catalog" || isRootSlugPath(path))) {
     const clean = withoutOpenCartListing(request);
-    if (clean) return clean;
+    if (clean) {
+      // An old product's slug with them (/<old-slug>?tag=…&limit=25): straight
+      // to where it lives now, rather than to /<old-slug> and on from there.
+      const slug = path.slice(1).toLowerCase();
+      if (path !== "/catalog" && isProductSlug(slug)) {
+        const target = await oldProductPath(slug);
+        if (typeof target === "string" && target !== `/${slug}`) return moved(request, `${language ? `/${language}` : ""}${target}`);
+      }
+      return clean;
+    }
   }
 
   const redirect = await productRedirect(request, path, language ? `/${language}` : "");

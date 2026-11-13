@@ -84,6 +84,8 @@ const nextConfig: NextConfig = {
         [
           ["marka/sultan-nargile", "sultan"],
           ["marka/sultan", "sultan"],
+          // Meduse is a category here; its brand is "Meduse Experience".
+          ["marka/meduse", "meduse"],
         ].map(([from, to]) => ({ source: `${prefix}/${from}`, destination: `${prefix}/${to}`, statusCode: 301 as const })),
       ),
       // The lüle guide, split into four articles (see RETIRED_ARTICLES).
@@ -104,6 +106,10 @@ const nextConfig: NextConfig = {
     // AVIF where the browser takes it (a third smaller than WebP for these
     // photos), else WebP; the original JPEG only for a browser with neither.
     formats: ["image/avif", "image/webp"],
+    // A transformed photo is kept a month (the default is 4 hours), unless
+    // its source says longer (uploads: a year, immutable). Photos are not
+    // replaced in place, and every re-transformation is billed.
+    minimumCacheTTL: 2678400,
     remotePatterns: [
       // Product photos imported from the supplier catalog.
       new URL("https://www.nargilemalzemesi.com/image/**"),

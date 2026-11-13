@@ -98,6 +98,13 @@ export const RETIRED_CATEGORIES: Record<string, string> = {
   "meduse-nargile-takimlari": "meduse",
   // Folded into "Gazlar ve Pürmüzler" (scripts/apply_malzemeler_tree.py, 2026-11-06).
   "purmuzler": "gazlar",
+  // The Malzemeler tree's middle groups (2026-11-06), since taken out: their
+  // shelves live on directly under Nargile Malzemeleri.
+  "aksesuarlar": "malzemeler",
+  "sarf-malzemeleri": "malzemeler",
+  "yakicilar": "malzemeler",
+  // Renamed in the panel; /catalog/sipsiler took two hops through /sipsiler.
+  "sipsiler": "plastik-ve-slikon-sipsiler",
 };
 
 /** The old store's pages that were not categories, and its brand pages. */
