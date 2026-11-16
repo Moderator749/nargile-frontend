@@ -10,7 +10,11 @@ import { breadcrumbJsonLd, pageMetadata } from "@/lib/seo";
 import { getHomepage } from "@/lib/server/homepage";
 import { STORES, STORES_HREF, findStore, storeHref, storeJsonLd, whatsappLink } from "@/lib/stores";
 
-export const dynamicParams = false;
+// No `dynamicParams = false`: on a self-hosted server, revalidateTag("catalog",
+// { expire: 0 }) (every admin save, /api/revalidate) expires the prerendered
+// pages too, and a fallback-false route then has no entry and may not render
+// one — a NoFallbackError 404 until the next restart. Unknown slugs still 404
+// through notFound() below; known ones are rebuilt on demand.
 
 export function generateStaticParams() {
   return STORES.map((store) => ({ slug: store.slug }));

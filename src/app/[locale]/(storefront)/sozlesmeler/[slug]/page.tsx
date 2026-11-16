@@ -7,7 +7,11 @@ import { getI18n } from "@/lib/i18n/server";
 import { LEGAL_PAGES } from "@/lib/legalPages";
 import { getLegalDocuments } from "@/lib/server/catalog";
 
-export const dynamicParams = false;
+// No `dynamicParams = false`: on a self-hosted server, revalidateTag("catalog",
+// { expire: 0 }) (every admin save, /api/revalidate) expires the prerendered
+// pages too, and a fallback-false route then has no entry and may not render
+// one — a NoFallbackError 404 until the next restart. Unknown slugs still 404
+// through notFound() below; known ones are rebuilt on demand.
 
 export function generateStaticParams() {
   return LEGAL_PAGES.map(({ slug }) => ({ slug }));

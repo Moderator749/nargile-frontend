@@ -13,7 +13,11 @@ import { getI18n } from "@/lib/i18n/server";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
 import { pageMetadata } from "@/lib/seo";
 
-export const dynamicParams = false;
+// No `dynamicParams = false`: on a self-hosted server, revalidateTag("catalog",
+// { expire: 0 }) (every admin save, /api/revalidate) expires the prerendered
+// pages too, and a fallback-false route then has no entry and may not render
+// one — a NoFallbackError 404 until the next restart. Unknown slugs still 404
+// through notFound() below; known ones are rebuilt on demand.
 
 // The slugs are Turkish in every language (/en/blog/nargile-lulesi-nedir).
 export function generateStaticParams() {
