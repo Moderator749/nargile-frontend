@@ -69,10 +69,14 @@ export const CATEGORY_SEO: Record<string, CategorySeo> = {
       "Ceviz ve mermer detaylı Mr. Wood nargile takımları ve şişeleri: orijinal ürün güvencesi, uygun fiyat ve 3.000 TL üzeri ücretsiz kargo.",
   },
   // "nargile lüle" (256 impr, pos 10.3, CTR 0.4%), "lüle" (125, pos 9.2), "lüle nargile" (239, 0 clicks).
+  // 2026-11-17: "phunnel lüle" (1.1k impressions in 90 days), "toprak lüle" (630, pos 1.7, CTR 1.6%),
+  // "seramik lüle" (551), "erkek lüle" / "dişi lüle" (423 each) — the types lead; the closing
+  // passage has a section and product links for each.
   "luleler": {
-    title: "Nargile Lülesi Çeşitleri ve Fiyatları: Toprak, Phunnel, Cam",
+    title: "Nargile Lülesi Çeşitleri: Toprak, Seramik, Phunnel, Killer",
     description:
-      "Toprak, sırlı, phunnel ve cam nargile lüleleri: Oblako, Alpha Hookah, Cosmo Bowl, Kong ve daha fazlası. Orijinal ve replika modeller, hızlı kargo.",
+      "Toprak, seramik, phunnel, killer ve cam nargile lüleleri; erkek ve dişi modeller. Oduman, Alpha Hookah, Kong, Cosmo Bowl ve daha fazlası, hızlı kargo.",
+    h1: "Nargile Lülesi Çeşitleri",
   },
   // "nargile kömürü" (1.6k impr, pos 10.3, CTR 2%), "nargile kömürü fiyat", "nargile kömür". No free-shipping line: the coal rule.
   "komurler": {
