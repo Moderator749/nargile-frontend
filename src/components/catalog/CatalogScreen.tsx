@@ -92,15 +92,20 @@ export async function CatalogScreen({
           </>
         }
         sidebar={<CategorySidebar key="sidebar" items={resolveNav(home.navigation.sidebar, categories, brands)} fit />}
+        // Under the grid, in its column (each block's own top padding is the
+        // gap): the category's description, then its own passage. A page
+        // with neither ends at the grid: the homepage's "Alt SEO Metni" is
+        // the homepage's, and the same guide repeated on every listing would
+        // be one text on fifty addresses.
+        footer={
+          (description || closing) && (
+            <>
+              {description && <CategoryDescription title={title} html={description} />}
+              {closing && <CategoryClosing title={closing.title} html={closing.html} />}
+            </>
+          )
+        }
       />
-
-      {/* Under the grid (each block's own top padding is the gap): the
-          category's description, then its own passage. A page with neither
-          ends at the grid: the homepage's "Alt SEO Metni" is the homepage's,
-          and the same guide repeated on every listing would be one text on
-          fifty addresses. */}
-      {description && <CategoryDescription title={title} html={description} />}
-      {closing && <CategoryClosing title={closing.title} html={closing.html} />}
     </main>
   );
 }

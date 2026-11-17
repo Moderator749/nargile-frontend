@@ -12,7 +12,7 @@ import { catalogMessages } from "@/lib/i18n/messages/catalog";
 export async function CategoryDescription({ title, html }: { title: string; html: string }) {
   const t = await getMessages(catalogMessages);
   return (
-    <section aria-labelledby="category-description-heading" className="mx-auto w-full max-w-4xl px-4 pt-12 text-center">
+    <section aria-labelledby="category-description-heading" className="mx-auto w-full max-w-4xl pt-12 text-center">
       <h2
         id="category-description-heading"
         className="mb-4 text-balance text-lg font-bold tracking-tight text-gray-900 md:text-xl dark:text-white"

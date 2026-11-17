@@ -63,6 +63,12 @@ interface CatalogViewProps {
   groups?: { slug: string; name: string; ids: number[] }[];
   /** The always-open category column, beside the grid from `lg` up. */
   sidebar?: ReactNode;
+  /**
+   * What follows the grid (a category's description and closing passage):
+   * in the grid's own column, so it centres on the products, not on the
+   * page with the category column beside them.
+   */
+  footer?: ReactNode;
 }
 
 /**
@@ -95,6 +101,7 @@ export function CatalogView(props: CatalogViewProps) {
               <CatalogGridFromUrl {...props} />
             </Suspense>
           </div>
+          {props.footer}
         </div>
       </div>
     </section>
