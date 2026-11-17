@@ -887,7 +887,7 @@ export const OPENCART_CATEGORY_IDS: Record<string, string> = {
   "99": "siseler",
   "100": "malzemeler",
   "101": "komurler",
-  "102": "plastik-ve-slikon-sipsiler",
+  "102": "sipsiler",
   "103": "luleler",
   "104": "malzemeler",
   "105": "malzemeler",

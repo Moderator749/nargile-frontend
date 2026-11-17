@@ -14,16 +14,23 @@ export interface CategorySeo {
   title: string;
   description: string;
   absolute?: boolean;
+  /**
+   * The page's <h1> where it should say more than the category's name (which
+   * stays the menu's, the trail's and "<Ad> Hakkında"'s word for it).
+   */
+  h1?: string;
 }
 
 export const CATEGORY_SEO: Record<string, CategorySeo> = {
-  // "nargile takımı" (14.5k impressions a month, CTR 0.3%) and "nargile takımı
-  // fiyatları" (9.2k, 0.06%) were going to /klasik-takimlar: this is their page.
+  // "nargile takımı" (10.5k real impressions in 90 days, position 8–11 until the
+  // 2026-10-29 address change, 15–35 after) and "nargile takımı fiyatları": the
+  // hub is their page. Within 60 characters, and the shop's name as every page has it.
   "nargile-takimlari": {
-    title: "Nargile Takımları ve Fiyatları | Çelik, Rus & Klasik Modeller - Sultan Nargile",
+    title: "Nargile Takımı Modelleri ve Fiyatları | Nargile Malzemesi",
     description:
-      "En iyi nargile takımı modelleri indirimli fiyatlarla Sultan Nargile'de! Orijinal çelik, Rus ve masaüstü nargile takımlarını 3.000 TL üzeri ücretsiz kargo ile keşfedin.",
+      "Nargile takımı modelleri ve fiyatları: Rus, çelik, kahveci (klasik), masaüstü ve çantalı takımlar. Orijinal ürün güvencesi, 3.000 TL üzeri ücretsiz kargo.",
     absolute: true,
+    h1: "Nargile Takımı Modelleri ve Fiyatları",
   },
   // "oduman nargile" (1k impressions, CTR 0.2%), "oduman", "o duman nargile".
   oduman: {
@@ -31,13 +38,15 @@ export const CATEGORY_SEO: Record<string, CategorySeo> = {
     description:
       "Orijinal Oduman nargile takımları, lüleleri ve aksesuarları uygun fiyatlarla. Kafe ve toptan alımlara özel fiyatlar, 3.000 TL üzeri ücretsiz kargo.",
   },
-  // "sipsi" (935 impressions, CTR 0.3%), "nargile sipsi", "sipsi nargile", "nargile sipsisi".
-  "plastik-ve-slikon-sipsiler": {
-    title: "Nargile Sipsisi Çeşitleri: Hijyenik Silikon & Özel Tasarım Sipsiler",
+  // "sipsi" (3.5k impressions in 90 days, position 4.3, CTR 0.2%), "nargile sipsi",
+  // "sipsi nargile", "nargile sipsisi": the word itself leads. At /sipsiler again
+  // since 2026-11-17 (it was /plastik-ve-slikon-sipsiler, which now leads here).
+  sipsiler: {
+    title: "Sipsi Çeşitleri: Plastik ve Silikon Nargile Sipsileri",
     description:
-      "Hijyenik, kişiye özel nargile sipsileri (ağızlıkları): silikon, plastik, askılı ve kehribar modeller. Perakende ve toptan sipsi fiyatları, hızlı kargo.",
-    // Past 60 characters already: the shop's name would only be cut off.
+      "Sipsi çeşitleri: hijyenik plastik ve silikon nargile sipsileri, askılı, kehribar ve çelik modeller. Perakende ve toptan sipsi fiyatları, hızlı kargo.",
     absolute: true,
+    h1: "Sipsi Çeşitleri: Plastik ve Silikon Nargile Sipsileri",
   },
   // "marpuç" (865 impressions, CTR 0.6%), "nargile marpucu", "nargile marpuç", "marpuc".
   marpuclar: {
@@ -103,8 +112,10 @@ export const CATEGORY_SEO: Record<string, CategorySeo> = {
       "Elektrikli ocaklar, folyolar, rüzgarlıklar, çakmaklar ve daha fazlası: Clipper, Zemu, Mococo, Steamulation gibi markaların orijinal nargile malzemeleri.",
   },
   // "kahveci nargile takımı" (616 impr), "pirinç nargile takımı" (336), "osmanlı nargile takımı" (158): its products are döküm and pirinç.
+  // 2026-11-17: "kahveci" leads — 4.4k impressions in 90 days across its phrasings, against 1.1k for "pirinç".
   "klasik-takimlar": {
-    title: "Döküm ve Pirinç Nargile Takımları | Klasik Kahveci Modeller",
+    title: "Kahveci Nargile Takımları: Döküm ve Pirinç Klasik Modeller",
+    h1: "Kahveci ve Klasik Nargile Takımları",
     description:
       "Geleneksel döküm ve pirinç nargile takımları: Kahveci, Tuğralı, Şehzade, Hürrem ve daha fazlası. Orijinal ürün, 3.000 TL üzeri ücretsiz kargo.",
   },

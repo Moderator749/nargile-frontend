@@ -15,6 +15,8 @@ import type { Brand, CatalogProduct, Category } from "@/types";
 
 interface CatalogScreenProps {
   title: string;
+  /** The page's <h1> where it says more than `title` (lib/categorySeo); `title` stays the trail's and "<title> Hakkında"'s. */
+  heading?: string;
   breadcrumbs: Breadcrumb[];
   categories: Category[];
   activeCategory: Category | null;
@@ -49,6 +51,7 @@ interface CatalogScreenProps {
  */
 export async function CatalogScreen({
   title,
+  heading: h1,
   breadcrumbs,
   categories,
   activeCategory,
@@ -85,7 +88,7 @@ export async function CatalogScreen({
         // chips; then (in the grid) the filter bar and the products.
         heading={
           <>
-            <CatalogHeading title={title} breadcrumbs={breadcrumbs} searchable={searchable} compact />
+            <CatalogHeading title={h1 || title} breadcrumbs={breadcrumbs} searchable={searchable} compact />
             {intro && <CatalogIntro title={title} html={intro} />}
             {banner && <CategoryBanner src={banner} alt={title} />}
             {family && activeCategory && <CategoryFamilyNav family={family} current={activeCategory.slug} />}

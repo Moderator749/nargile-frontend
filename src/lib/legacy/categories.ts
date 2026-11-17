@@ -29,7 +29,7 @@ export const LEGACY_CATEGORIES: Record<string, string> = {
   "nargile-lule-cesitleri": "luleler",
   kozlukler: "kozlukler",
   "nargile-marpuclari": "marpuclar",
-  "plastik-ve-ozel-sipsiler": "plastik-ve-slikon-sipsiler",
+  "plastik-ve-ozel-sipsiler": "sipsiler",
   "nargile-malzemeleri-ve-aksesuarlari": "malzemeler",
   "yedek-parca": "yedek-parca",
   "okey-tavla-ve-iskambil-kartlari": "oyun-eglence",
@@ -103,8 +103,9 @@ export const RETIRED_CATEGORIES: Record<string, string> = {
   "aksesuarlar": "malzemeler",
   "sarf-malzemeleri": "malzemeler",
   "yakicilar": "malzemeler",
-  // Renamed in the panel; /catalog/sipsiler took two hops through /sipsiler.
-  "sipsiler": "plastik-ve-slikon-sipsiler",
+  // (The sipsi shelf is /sipsiler again since 2026-11-17; its interim address
+  // /plastik-ve-slikon-sipsiler is the panel's slug redirect, not listed here:
+  // listed, it would loop with the database's own redirect while either is behind.)
 };
 
 /** The old store's pages that were not categories, and its brand pages. */

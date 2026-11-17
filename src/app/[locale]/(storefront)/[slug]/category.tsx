@@ -59,6 +59,8 @@ export async function CategoryPage({
   return (
     <CatalogScreen
       title={name}
+      // The Turkish page's own heading where lib/categorySeo gives one; the name everywhere else.
+      heading={locale === DEFAULT_LOCALE ? CATEGORY_SEO[slug]?.h1 : undefined}
       breadcrumbs={[
         // Ana Sayfa > (Grup > (Alt kategori >)) Kategori, the first steps of the product's own trail.
         { name: t.nav.crumbHome, href: "/" },
