@@ -1,8 +1,9 @@
-import type { CSSProperties } from "react";
-import { ArrowRight, ArrowUpRight } from "lucide-react";
+import type { ComponentType, CSSProperties } from "react";
+import { ArrowRight } from "lucide-react";
 
 import { AdvantageFeatures } from "@/components/home/AdvantageFeatures";
 import { SultanPuanMark } from "@/components/icons/LoyaltyIcons";
+import { InstagramIcon, YouTubeIcon } from "@/components/icons/SocialIcons";
 import { SmoothAnchor } from "@/components/home/SmoothAnchor";
 import { PERKS_PAGE } from "@/lib/bilgi";
 import type { PromoBox } from "@/lib/home";
@@ -13,10 +14,18 @@ export type HeroAsideWords = (typeof homeMessages)["tr"];
 
 /**
  * The channels, in order; one without a link in /admin/promos is left out.
- * Each is a small frosted tile on the card: its name and the account's handle
- * — no badge of its own, the picture's neon signs just above say which is which.
+ * Each is a small frosted tile on the card: its brand's small badge in line
+ * with its name (on the same row, so the tile is no taller and stays clear of
+ * the picture's neon signs), and the account's handle where there is room.
  */
-const CHANNELS: { key: "instagram" | "youtube" }[] = [{ key: "instagram" }, { key: "youtube" }];
+const CHANNELS: {
+  key: "instagram" | "youtube";
+  Icon: ComponentType<{ className?: string }>;
+  badge: string;
+}[] = [
+  { key: "instagram", Icon: InstagramIcon, badge: "bg-gradient-to-tr from-amber-400 via-pink-500 to-purple-600" },
+  { key: "youtube", Icon: YouTubeIcon, badge: "bg-[#FF0000]" },
+];
 
 /** "https://www.instagram.com/sultannargile_bahcelievler" → "@sultannargile_bahcelievler"; null when it names no account. */
 function handleOf(href: string): string | null {
@@ -118,22 +127,23 @@ export function ChannelsCard({ box, t }: { box?: PromoBox; t: HeroAsideWords }) 
       </div>
       {channels.length > 0 && (
         <ul className={`mt-auto grid gap-2 pt-4 lg:gap-1.5 ${channels.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
-          {channels.map(({ key, href, label, handle }) => (
+          {channels.map(({ key, href, label, handle, Icon, badge }) => (
             <li key={key} className="min-w-0">
               <a
                 href={href}
                 target="_blank"
                 rel="noopener noreferrer"
                 // Frosted, not tinted: a light veil and a blur, so the tile reads as a button without darkening the picture.
-                className="group/channel flex h-full min-w-0 flex-col justify-center rounded-2xl bg-white/10 px-3 py-2.5 ring-1 lg:px-2.5 ring-inset ring-white/25 backdrop-blur-md transition-colors duration-200 hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                className="group/channel flex h-full min-w-0 flex-col justify-center rounded-2xl bg-white/10 px-3 py-2.5 ring-1 lg:px-2 ring-inset ring-white/25 backdrop-blur-md transition-colors duration-200 hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
               >
-                {/* In the narrow column beside the slider (two 107px tiles) the name and arrow sit a little closer. */}
-                <span className="flex items-center justify-between gap-2 lg:gap-1">
-                  <span className={`min-w-0 truncate text-sm font-semibold ${LIFT}`}>{label}</span>
-                  <ArrowUpRight
-                    className="h-4 w-4 shrink-0 lg:h-3.5 lg:w-3.5 text-white/75 transition-transform group-hover/channel:text-white motion-safe:group-hover/channel:-translate-y-0.5 motion-safe:group-hover/channel:translate-x-0.5 rtl:-scale-x-100"
-                    aria-hidden
-                  />
+                {/* Badge and name, no arrow: the brand's badge says it is a link, and the tiles (107px beside
+                    the slider, ~150px under it) have room for the badge and the whole name, not an arrow too.
+                    In the narrow column the badge is a little smaller. */}
+                <span className="flex items-center gap-2 lg:gap-1">
+                  <span aria-hidden className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-white shadow-sm shadow-black/40 transition-transform duration-200 motion-safe:group-hover/channel:scale-110 lg:h-5 lg:w-5 lg:rounded-md ${badge}`}>
+                    <Icon className="h-3.5 w-3.5 lg:h-3 lg:w-3" />
+                  </span>
+                  <span className={`min-w-0 flex-1 truncate text-sm font-semibold ${LIFT}`}>{label}</span>
                 </span>
                 {/* Under the slider there is room for the whole handle; in the narrow column beside it, only the name. */}
                 {handle && <span className={`mt-0.5 block truncate text-[11px] text-white/80 lg:hidden ${LIFT}`}>{handle}</span>}
