@@ -54,6 +54,13 @@ export const productMessages = defineMessages({
     crossSells: "Birlikte İyi Gider",
     similar: "Benzer Ürünler",
     allInCategory: (category: string) => `Tüm ${category} ürünleri`,
+    // A plural name stands as it is ("Tüm Nargile Lüleleri"); a brand's or a
+    // singular one takes "ürünleri" ("Tüm Legend Hookah ürünleri").
+    allOfCategory: (category: string) =>
+      /(?:lar|ler|ları|leri)$/.test(category.trim().split(/\s+/).pop()?.toLocaleLowerCase("tr") ?? "")
+        ? `Tüm ${category}`
+        : `Tüm ${category} ürünleri`,
+    categoryCount: (n: number) => `${n.toLocaleString("tr-TR")} ürün`,
     allOfBrand: (brand: string) => `Tüm ${brand} ürünleri`,
     relatedCategories: "İlgili Kategoriler",
     transfer: (rate: string) => `Havale / EFT ile (${rate} İndirim)`,
@@ -131,6 +138,8 @@ export const productMessages = defineMessages({
     crossSells: "Frequently Bought Together",
     similar: "Similar Products",
     allInCategory: (category: string) => `Shop all ${category}`,
+    allOfCategory: (category: string) => `Shop all ${category}`,
+    categoryCount: (n: number) => `${n.toLocaleString("en-US")} ${n === 1 ? "product" : "products"}`,
     allOfBrand: (brand: string) => `All ${brand} products`,
     relatedCategories: "Related Categories",
     transfer: (rate: string) => `with bank transfer (${rate} off)`,
@@ -206,6 +215,8 @@ export const productMessages = defineMessages({
     crossSells: "يُشترى معًا عادةً",
     similar: "منتجات مشابهة",
     allInCategory: (category: string) => `جميع منتجات ${category}`,
+    allOfCategory: (category: string) => `جميع منتجات ${category}`,
+    categoryCount: (n: number) => `${n.toLocaleString("ar")} منتج`,
     allOfBrand: (brand: string) => `جميع منتجات ${brand}`,
     relatedCategories: "أقسام ذات صلة",
     transfer: (rate: string) => `بالتحويل البنكي (خصم ${rate})`,

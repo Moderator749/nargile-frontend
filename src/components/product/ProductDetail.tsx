@@ -10,6 +10,7 @@ import { QuantityStepper } from "@/components/cart/QuantityStepper";
 import { ColorPicker } from "@/components/product/ColorPicker";
 import { CrossSells } from "@/components/product/CrossSells";
 import { ProductDescription } from "@/components/product/ProductDescription";
+import { ProductCategoryLink } from "@/components/product/ProductCategoryLink";
 import { RetailPerks, showsRetailPerks } from "@/components/product/RetailPerks";
 import { ShippingAndTrust } from "@/components/product/ShippingAndTrust";
 import type { AdvantageSources } from "@/lib/storeAdvantages";
@@ -424,6 +425,8 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
           {/* A three-line preview rather than a wall of text, so "Sepete Ekle"
               stays the first thing below the price. */}
           {product.description && <ProductDescription html={product.description} />}
+          {/* Every product of its primary category, once its own text is read. */}
+          {category && <ProductCategoryLink category={category} />}
         </div>
       </div>
 
