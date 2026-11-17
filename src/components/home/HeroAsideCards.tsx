@@ -143,7 +143,14 @@ export function AdvantagesCard({ box, t }: { box?: PromoBox; t: HeroAsideWords }
       <h2 className={`${TITLE} mt-2.5`}>{box?.title || t.aside.advantagesTitle}</h2>
       {/* The admin's line where there is room for it: under the slider, not in the narrow column. */}
       <p className={`mt-1.5 max-w-[34ch] text-[13px] leading-snug text-white/80 lg:hidden ${LIFT}`}>{box?.bottomText || t.aside.advantagesText}</p>
-      <div className={`mt-3 mb-4 ${LIFT}`}>
+      {/* The list on a frosted panel of its own, the width of the button under it: a light blur and a
+          soft veil steady the words over the gift's ribbon, while the picture around it stays untinted.
+          Not from `lg` to `xl`: beside a slider that short (the card 188–232px high at 1024–1180px) only
+          the title and the button fit, and the button was cut off at the card's foot. In the 224px column
+          from `xl` its lines are a pixel smaller, so the panel's padding never wraps one. */}
+      <div
+        className={`mt-3 mb-4 rounded-2xl bg-black/30 px-3 py-2.5 ring-1 ring-inset ring-white/10 backdrop-blur-[6px] lg:mt-2.5 lg:mb-3 lg:px-2 lg:py-2 lg:max-xl:hidden lg:[&_li]:gap-2 lg:[&_li]:text-[12px] ${LIFT}`}
+      >
         <AdvantageFeatures />
       </div>
       <span className="mt-auto flex h-10 w-full items-center justify-between gap-2 rounded-full bg-gradient-to-r from-amber-200 via-amber-300 to-amber-400 ps-4 pe-1 text-sm font-bold text-amber-950 shadow-[inset_0_1px_0_rgb(255_255_255/0.5)] transition-[filter] group-hover:brightness-105">
