@@ -54,7 +54,10 @@ const PHOTO = {
   // 130px from the card's top, between the heading and the tiles; above it,
   // the picture's dark top fades into the card's own (as dark) ground.
   // On a span of its own: `cqw` is the card's width only inside the card.
-  channels: "bg-[url('/images/promo/sosyal.webp')] bg-[length:100%_auto] bg-no-repeat bg-[position:50%_calc(130px-34.5cqw)]",
+  // From `lg` to `xl` the column is short (the slider 392–480px high at 1024–1279px): the signs sit 25px
+  // higher there, under the heading, and the card takes more of the column (see ChannelsCard).
+  channels:
+    "bg-[url('/images/promo/sosyal.webp')] bg-[length:100%_auto] bg-no-repeat bg-[position:50%_calc(130px-34.5cqw)] lg:max-xl:bg-[position:50%_calc(105px-34.5cqw)]",
   advantages: "bg-[url('/images/promo/kazanansizolun.webp')] bg-[position:72%_62%]",
 };
 /**
@@ -85,11 +88,13 @@ export function ChannelsCard({ box, t }: { box?: PromoBox; t: HeroAsideWords }) 
   });
   return (
     // A phone's card is as high as its words: some more height there keeps the signs in view between them.
-    <div className={`${CARD} [container-type:inline-size] max-sm:min-h-[290px]`}>
+    // From `lg` to `xl`, where the advantages card below is its title and button only, this one takes
+    // more of the column's height (1.35 to 1), so the tiles stay clear of the signs.
+    <div className={`${CARD} [container-type:inline-size] max-sm:min-h-[290px] lg:max-xl:flex-[1.35_1_0%]`}>
       {/* Faded in over its own first 24px only, where it starts below the card's edge (a phone, the narrow
           column), so no seam shows and the rest is untouched; on a wider card it starts above the edge and
           the fade falls outside it. */}
-      <span aria-hidden className={`pointer-events-none absolute inset-0 -z-20 [mask-image:linear-gradient(to_bottom,transparent_calc(130px-34.5cqw),black_calc(154px-34.5cqw))] ${PHOTO.channels}`} />
+      <span aria-hidden className={`pointer-events-none absolute inset-0 -z-20 [mask-image:linear-gradient(to_bottom,transparent_calc(130px-34.5cqw),black_calc(154px-34.5cqw))] lg:max-xl:[mask-image:linear-gradient(to_bottom,transparent_calc(105px-34.5cqw),black_calc(129px-34.5cqw))] ${PHOTO.channels}`} />
       <div>
         <p className={`${OVERLINE} text-white/75`}>{box?.text || t.followUs}</p>
         <h2 className={`${TITLE} mt-1.5`}>{box?.topTitle || t.aside.channelsTitle}</h2>
