@@ -34,6 +34,7 @@ const BLANK: PromoBoxWrite = {
   bottom_card_focus_x: 50,
   top_title: null,
   bottom_text: null,
+  features: null,
   top_shade: "left",
   bottom_shade: "left",
   is_active: true,
@@ -53,6 +54,7 @@ const toWrite = (b: PromoBoxContent): PromoBoxWrite => ({
   bottom_card_focus_x: b.bottom_card_focus_x ?? 50,
   top_title: b.top_title ?? null,
   bottom_text: b.bottom_text ?? null,
+  features: b.features ?? null,
   top_shade: b.top_shade ?? "left",
   bottom_shade: b.bottom_shade ?? "left",
   is_active: true,
@@ -67,6 +69,9 @@ function validate(v: PromoBoxWrite): string | null {
   if (![v.widget.instagram_label, v.widget.youtube_label, v.widget.anchor_label].every((l) => l.trim()))
     return "Etiketler boş olamaz.";
   if (!isSiteOrHttpsLink(v.href)) return "Geçerli bir bağlantı girin (/… veya https://…).";
+  for (const photo of [v.top_card_image_url, v.bottom_card_image_url])
+    if (photo && !(photo.startsWith("/") && !photo.startsWith("//")) && !/^https?:\/\//.test(photo))
+      return "Görsel adresi /images/… veya https://… ile başlamalı.";
   return null;
 }
 

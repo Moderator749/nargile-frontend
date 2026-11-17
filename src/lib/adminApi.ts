@@ -200,6 +200,16 @@ export async function adminUploadImages(files: File[], name?: string): Promise<U
   return data;
 }
 
+/** A promo card's background ("Promo Kutusu"), stored as a WebP up to 1200px. */
+export async function adminUploadPromoCard(file: File): Promise<UploadedImage> {
+  const form = new FormData();
+  form.append("file", file);
+  const { data } = await api.post<UploadedImage>("/admin/uploads/promo-card", form, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return data;
+}
+
 /** A category page's banner: stored as a WebP up to 2560px wide (wider than a product photo's 1800). */
 export async function adminUploadBanner(file: File): Promise<UploadedImage> {
   const form = new FormData();

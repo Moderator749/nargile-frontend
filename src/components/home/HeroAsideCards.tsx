@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { ArrowRight, ArrowUpRight } from "lucide-react";
 
 import { AdvantageFeatures } from "@/components/home/AdvantageFeatures";
@@ -42,7 +43,7 @@ const CARD = [
   "before:pointer-events-none before:absolute before:inset-x-8 before:top-0 before:z-10 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/45 before:to-transparent",
 ].join(" ");
 /**
- * Each card's picture, placed so its subject stays in view — the neon
+ * Each card's own picture (unless /admin/promos gives it another), placed so its subject stays in view — the neon
  * Instagram and YouTube signs between the heading and the tiles; the gift
  * box to the right of the words.
  */
@@ -65,6 +66,15 @@ const PHOTO = {
  * holds each letter against the neon and the gift's glow, and a soft halo
  * around it — on the letters only, the picture itself left as it is.
  */
+/**
+ * An admin's own picture for a card (/admin/promos): it covers the card,
+ * centred down it and across it where the admin put its focus. The address is
+ * the API's (a site path or an http(s) URL); quoted and escaped here all the same.
+ */
+function ownPhoto(src: string, focusX = 50): CSSProperties {
+  const x = Math.min(100, Math.max(0, Number.isFinite(focusX) ? focusX : 50));
+  return { backgroundImage: `url(${JSON.stringify(src)})`, backgroundSize: "cover", backgroundPosition: `${x}% 50%` };
+}
 const LIFT = "[text-shadow:0_1px_2px_rgb(0_0_0/0.9),0_0_14px_rgb(0_0_0/0.65)]";
 const OVERLINE = `text-[10.5px] font-bold uppercase tracking-[0.2em] lg:tracking-[0.14em] ${LIFT}`;
 const TITLE = `text-balance text-[1.375rem] font-extrabold leading-[1.15] tracking-tight text-white ${LIFT}`;
@@ -94,7 +104,12 @@ export function ChannelsCard({ box, t }: { box?: PromoBox; t: HeroAsideWords }) 
       {/* Faded in over its own first 24px only, where it starts below the card's edge (a phone, the narrow
           column), so no seam shows and the rest is untouched; on a wider card it starts above the edge and
           the fade falls outside it. */}
-      <span aria-hidden className={`pointer-events-none absolute inset-0 -z-20 [mask-image:linear-gradient(to_bottom,transparent_calc(130px-34.5cqw),black_calc(154px-34.5cqw))] lg:max-xl:[mask-image:linear-gradient(to_bottom,transparent_calc(105px-34.5cqw),black_calc(129px-34.5cqw))] ${PHOTO.channels}`} />
+      {/* An admin's own picture simply covers the card; the shop's is placed for its signs (PHOTO). */}
+      {box?.topImage ? (
+        <span aria-hidden className="pointer-events-none absolute inset-0 -z-20 bg-no-repeat" style={ownPhoto(box.topImage, box.topFocusX)} />
+      ) : (
+        <span aria-hidden className={`pointer-events-none absolute inset-0 -z-20 [mask-image:linear-gradient(to_bottom,transparent_calc(130px-34.5cqw),black_calc(154px-34.5cqw))] lg:max-xl:[mask-image:linear-gradient(to_bottom,transparent_calc(105px-34.5cqw),black_calc(129px-34.5cqw))] ${PHOTO.channels}`} />
+      )}
       <div>
         <p className={`${OVERLINE} text-white/75`}>{box?.text || t.followUs}</p>
         <h2 className={`${TITLE} mt-1.5`}>{box?.topTitle || t.aside.channelsTitle}</h2>
@@ -139,7 +154,8 @@ export function AdvantagesCard({ box, t }: { box?: PromoBox; t: HeroAsideWords }
   return (
     <SmoothAnchor
       href={advantagesHref(box?.href)}
-      className={`group ${CARD} ${PHOTO.advantages} transition-shadow duration-300 hover:shadow-[0_22px_48px_-18px_rgb(0_0_0/0.65)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent`}
+      style={box?.bottomImage ? ownPhoto(box.bottomImage, box.bottomFocusX) : undefined}
+      className={`group ${CARD} ${box?.bottomImage ? "" : PHOTO.advantages} transition-shadow duration-300 hover:shadow-[0_22px_48px_-18px_rgb(0_0_0/0.65)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent`}
     >
       <p className={`${OVERLINE} flex items-center gap-2 text-amber-300`}>
         <SultanPuanMark className="h-6 w-6 shrink-0 drop-shadow-[0_2px_4px_rgb(120_53_15/0.45)]" />
@@ -156,7 +172,7 @@ export function AdvantagesCard({ box, t }: { box?: PromoBox; t: HeroAsideWords }
       <div
         className={`mt-3 mb-4 rounded-2xl bg-black/30 px-3 py-2.5 ring-1 ring-inset ring-white/10 backdrop-blur-[6px] lg:mt-2.5 lg:mb-3 lg:px-2 lg:py-2 lg:max-xl:hidden lg:[&_li]:gap-2 lg:[&_li]:text-[12px] ${LIFT}`}
       >
-        <AdvantageFeatures />
+        <AdvantageFeatures lines={box?.features} />
       </div>
       <span className="mt-auto flex h-10 w-full items-center justify-between gap-2 rounded-full bg-gradient-to-r from-amber-200 via-amber-300 to-amber-400 ps-4 pe-1 text-sm font-bold text-amber-950 shadow-[inset_0_1px_0_rgb(255_255_255/0.5)] transition-[filter] group-hover:brightness-105">
         {box?.widget?.anchor_label || t.aside.advantagesLink}

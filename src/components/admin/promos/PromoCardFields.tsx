@@ -2,6 +2,8 @@
 
 import { AdvantagesCard, ChannelsCard } from "@/components/home/HeroAsideCards";
 import { useMessages } from "@/components/i18n/LocaleProvider";
+import { PromoImageField } from "@/components/admin/promos/PromoImageField";
+import { inputClass } from "@/components/admin/homepage/fields";
 import { Input } from "@/components/ui/Input";
 import type { PromoBox } from "@/lib/home";
 import { homeMessages } from "@/lib/i18n/messages/home";
@@ -15,8 +17,8 @@ const fieldset = "space-y-3 rounded-xl border border-slate-200 p-4 dark:border-w
 /**
  * The community card's fields (the top card beside the hero): its two texts,
  * the shop's channels. A text left blank shows the site's own copy, named in
- * its placeholder and translated with the site. The cards have no photo: they
- * are type and icons on a cream ground (HeroAsideCards).
+ * its placeholder and translated with the site. Its background: the shop's
+ * neon-sign picture unless one is uploaded here (PromoImageField).
  */
 export function TopCardFields({
   value: v,
@@ -68,11 +70,24 @@ export function TopCardFields({
         <Input label="YouTube etiketi" value={widget.youtube_label} maxLength={40} onChange={(e) => setWidget({ youtube_label: e.target.value })} />
       </div>
       <p className={fixed}>Boş bırakılan kanal gösterilmez. Bağlantılar yeni sekmede açılır.</p>
+      <PromoImageField
+        value={v.top_card_image_url}
+        focusX={v.top_card_focus_x}
+        fallback={SHOP_PHOTO.top}
+        onChange={(top_card_image_url) => set({ top_card_image_url })}
+        onFocusX={(top_card_focus_x) => set({ top_card_focus_x })}
+      />
     </fieldset>
   );
 }
 
-/** The advantages card's fields (the bottom card): every text on it and its link. */
+/** The shop's own pictures (public/images/promo), shown while a card has none of its own. */
+const SHOP_PHOTO = { top: "/images/promo/sosyal.webp", bottom: "/images/promo/kazanansizolun.webp" };
+
+/** The advantages card's lines: as many inputs as the card has room for. */
+const MAX_FEATURES = 4;
+
+/** The advantages card's fields (the bottom card): every text on it, its lines, its link and its picture. */
 export function BottomCardFields({
   value: v,
   set,
@@ -110,6 +125,7 @@ export function BottomCardFields({
         />
         <p className={fixed}>Başlığın altındaki satır. Boş: sitenin kendi metni (yer tutucudaki).</p>
       </div>
+      <FeatureLines value={v.features} onChange={(features) => set({ features })} />
       <div className="grid grid-cols-2 gap-3">
         <Input
           label="Bağlantı metni"
@@ -127,7 +143,52 @@ export function BottomCardFields({
           hint="Kartın tamamı bu adrese gider."
         />
       </div>
+      <PromoImageField
+        value={v.bottom_card_image_url}
+        focusX={v.bottom_card_focus_x}
+        fallback={SHOP_PHOTO.bottom}
+        onChange={(bottom_card_image_url) => set({ bottom_card_image_url })}
+        onFocusX={(bottom_card_focus_x) => set({ bottom_card_focus_x })}
+      />
     </fieldset>
+  );
+}
+
+/**
+ * The advantages card's short lines, one input each. All blank: the site's own
+ * lines, which follow the live free-shipping threshold and SultanPuan rate and
+ * are translated; typed lines are shown as typed, in every language.
+ */
+function FeatureLines({ value, onChange }: { value: string[] | null; onChange: (lines: string[] | null) => void }) {
+  const t = useMessages(homeMessages);
+  const lines = Array.from({ length: MAX_FEATURES }, (_, i) => value?.[i] ?? "");
+  const setLine = (i: number, text: string) => {
+    const next = lines.map((line, j) => (j === i ? text : line));
+    // Trailing blanks dropped; none left = the site's own lines.
+    while (next.length && !next[next.length - 1].trim()) next.pop();
+    onChange(next.length ? next : null);
+  };
+  const own = [t.aside.featureOriginal, t.aside.featureShipping("…"), t.aside.featureLoyalty("…")];
+  return (
+    <div className="space-y-1.5">
+      <p className="text-sm font-medium text-slate-700 dark:text-zinc-300">Özellik satırları</p>
+      {lines.map((line, i) => (
+        <input
+          key={i}
+          value={line}
+          maxLength={60}
+          aria-label={`Özellik satırı ${i + 1}`}
+          placeholder={value?.some((l) => l.trim()) ? "" : own[i] ?? ""}
+          onChange={(e) => setLine(i, e.target.value)}
+          className={inputClass}
+        />
+      ))}
+      <p className={fixed}>
+        En fazla 4 kısa satır (~30 karakter, dar kartta tek satıra sığsın); her biri onay işaretiyle gösterilir. Hepsi boş:
+        sitenin kendi satırları (güncel ücretsiz kargo limiti ve SultanPuan oranıyla, her dilde çevrili). 1024–1279 px
+        genişlikte kart dar olduğundan liste gizlenir.
+      </p>
+    </div>
   );
 }
 
@@ -142,6 +203,11 @@ export function previewBox(v: PromoBoxWrite): PromoBox {
     widget: v.widget,
     topTitle: v.top_title ?? undefined,
     bottomText: v.bottom_text ?? undefined,
+    topImage: v.top_card_image_url ?? undefined,
+    topFocusX: v.top_card_focus_x,
+    bottomImage: v.bottom_card_image_url ?? undefined,
+    bottomFocusX: v.bottom_card_focus_x,
+    features: v.features?.some((f) => f.trim()) ? v.features.filter((f) => f.trim()) : undefined,
   };
 }
 

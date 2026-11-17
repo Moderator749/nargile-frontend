@@ -1414,6 +1414,8 @@ export interface PromoBoxContent {
   top_title: string | null;
   /** The line under the advantages card's title; null = the site's own. */
   bottom_text: string | null;
+  /** The advantages card's short lines (up to 4); null = the site's own, live ones. */
+  features: string[] | null;
   top_shade: PromoShade;
   bottom_shade: PromoShade;
   is_active: boolean;

@@ -111,6 +111,13 @@ export interface PromoBox {
   /** The community card's title and the advantages card's line; absent = the site's own copy. */
   topTitle?: string;
   bottomText?: string;
+  /** Each card's own background and where its crop centres across it (0–100); absent = the shop's picture. */
+  topImage?: string;
+  topFocusX?: number;
+  bottomImage?: string;
+  bottomFocusX?: number;
+  /** The advantages card's lines; absent = the site's own, live ones. */
+  features?: string[];
 }
 
 /** The box beside the hero: the first active one whose requirement is met (the API sends them in order). */
@@ -126,6 +133,11 @@ export function heroPromo(boxes: PromoBoxContent[], has: Record<Requirement, boo
       widget: b.widget,
       topTitle: b.top_title ?? undefined,
       bottomText: b.bottom_text ?? undefined,
+      topImage: b.top_card_image_url ?? undefined,
+      topFocusX: b.top_card_focus_x,
+      bottomImage: b.bottom_card_image_url ?? undefined,
+      bottomFocusX: b.bottom_card_focus_x,
+      features: b.features?.length ? b.features : undefined,
     }
   );
 }

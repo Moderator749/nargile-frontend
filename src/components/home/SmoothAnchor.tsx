@@ -1,6 +1,6 @@
 "use client";
 
-import type { MouseEvent, ReactNode } from "react";
+import type { CSSProperties, MouseEvent, ReactNode } from "react";
 
 import Link from "@/components/i18n/Link";
 import { usePagePath } from "@/components/i18n/navigation";
@@ -12,7 +12,17 @@ import { usePagePath } from "@/components/i18n/navigation";
  * ordinary link that lands on the section. "This page" is the path without its
  * language, so "/#avantajlar" glides on /en and /ar too.
  */
-export function SmoothAnchor({ href, className, children }: { href: string; className?: string; children: ReactNode }) {
+export function SmoothAnchor({
+  href,
+  className,
+  style,
+  children,
+}: {
+  href: string;
+  className?: string;
+  style?: CSSProperties;
+  children: ReactNode;
+}) {
   const page = usePagePath();
   function onClick(event: MouseEvent<HTMLAnchorElement>) {
     const [path, hash] = href.split("#");
@@ -26,7 +36,7 @@ export function SmoothAnchor({ href, className, children }: { href: string; clas
   }
 
   return (
-    <Link href={href} onClick={onClick} className={className}>
+    <Link href={href} onClick={onClick} className={className} style={style}>
       {children}
     </Link>
   );
