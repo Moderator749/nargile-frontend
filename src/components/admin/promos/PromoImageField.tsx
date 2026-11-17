@@ -98,8 +98,9 @@ export function PromoImageField({
         <p className="text-[11px] text-red-600 dark:text-red-400">{error}</p>
       ) : (
         <p className="text-[11px] text-slate-500 dark:text-zinc-500">
-          PNG, JPEG veya WebP, en fazla 5 MB; 1200 px WebP olarak saklanır. Kart neredeyse kare: kareye yakın, koyu tonlu bir
-          görsel seçin, beyaz yazılar okunaklı kalsın. Görsel kartı kaplar; “Yatay odak” hangi kısmının görüneceğini seçer.
+          PNG, JPEG veya WebP, en fazla 5 MB; 1200 px WebP olarak saklanır. Kart neredeyse kare: kareye yakın bir görsel seçin.
+          Görsel kartı kaplar; “Yatay odak” hangi kısmının görüneceğini seçer. Açık renkli görsellerde de yazılar okunsun diye
+          yüklenen görselin üstü ve altı otomatik olarak koyulaştırılır, ortası olduğu gibi kalır.
         </p>
       )}
     </div>
