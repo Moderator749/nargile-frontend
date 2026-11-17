@@ -220,8 +220,10 @@ function onlyNames(sentence: string, naming: Set<string>): boolean {
 }
 
 /**
- * "<what it is, from its own text>. Orijinal <marka> ürün güvencesi, <kargo>."
- * A replica says so instead ("Replika model, <kargo>.").
+ * "<what it is, from its own text>. Orijinal <marka> ürün güvencesi ve <kargo>
+ * fırsatıyla hemen satın alın.", within about 150–158 characters when the
+ * product's text is long enough to fill them.
+ * A replica says so instead ("Replika model, <kargo> fırsatıyla hemen satın alın.").
  * The shipping line is checkout's: free on this product alone (`free`), free
  * from the threshold (`threshold`, any non-coal product), or only fast
  * shipping for coal, whose carts the %50 rule can send karşı ödemeli.
@@ -246,7 +248,9 @@ export function productDescription({
   const b = tidyBrand(brand);
   const promise =
     shipping === "free" ? "ücretsiz kargo" : shipping === "threshold" ? `${threshold} üzeri ücretsiz kargo` : "hızlı kargo";
-  const tail = isReplica(name) ? `Replika model, ${promise}.` : `Orijinal ${b ? `${b} ` : ""}ürün güvencesi, ${promise}.`;
+  // The same promise leading into the call to action ("…fırsatıyla hemen satın alın.").
+  const promiseWith = shipping === "none" ? "hızlı kargoyla" : `${promise} fırsatıyla`;
+  const replica = isReplica(name);
   // Leading sentences that only name the product (headings: "Copper Balance
   // Klasik.", "Panada Hookah. Bobby Robot Nargile Takımı.") say nothing the title does not.
   const sentences = lead.trim().match(/[^.!?]+[.!?]+|[^.!?]+$/g) ?? [];
@@ -259,5 +263,24 @@ export function productDescription({
     own.length >= 40 && squash(own) !== squash(name)
       ? own
       : `${tidyName(name)}${type ? `, ${type.toLocaleLowerCase("tr")}` : ""}`;
+  // The closing line ends on a call to action. Longest first, a shorter one
+  // where the product's own text needs the room: its words are what sets the
+  // page apart, so they keep at least BODY_MIN characters, or all of it.
+  const tails = replica
+    ? [`Replika model, ${promiseWith} hemen satın alın.`, `Replika model, ${promise}. Hemen satın alın.`]
+    : [
+        ...(b ? [`Orijinal ${b} ürün güvencesi ve ${promiseWith} hemen satın alın.`] : []),
+        `Orijinal ürün güvencesi ve ${promiseWith} hemen satın alın.`,
+        `Orijinal ürün, ${promise}. Hemen satın alın.`,
+      ];
+  const ended = /[.!?…]$/.test(body) ? body : `${body}.`;
+  const tail =
+    tails.find((t) => {
+      const budget = DESCRIPTION_MAX - t.length - 1;
+      return ended.length <= budget || budget >= BODY_MIN;
+    }) ?? tails[tails.length - 1];
   return `${fit(body, DESCRIPTION_MAX - tail.length - 1)} ${tail}`;
 }
+
+/** The fewest characters of the product's own text a description keeps before its closing line is shortened. */
+const BODY_MIN = 70;

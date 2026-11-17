@@ -53,19 +53,19 @@ test("titles fit in 60, dropping the code, then the brand, then the type", () =>
   assert.equal(titles[4], "Steamulation Ultimate Black Gloss Gen 3 Nargile Takımı Graphite Metallic");
 });
 
-test("descriptions lead with the product, end with the promise, fit in 158", () => {
+test("descriptions lead with the product, end with the promise and a call to action, fit in 158", () => {
   const set = productDescription({
     lead: "Alpha Hookah Echo, paslanmaz çelik kalitesini ve renkli eloksal alüminyum şıklığını, sadelik ve zarafet ile birleştiren üst segment bir nargile takımıdır. Detaylar sayfada.",
     name: "Alpha Hookah Echo Nargile Takımı", brand: "alpha hookah", type: null, shipping: "free", threshold: "3.000 TL",
   });
   assert.ok(set.length <= DESCRIPTION_MAX, `${set.length}: ${set}`);
-  assert.ok(set.endsWith("Orijinal Alpha Hookah ürün güvencesi, ücretsiz kargo."), set);
+  assert.ok(set.endsWith("ücretsiz kargo fırsatıyla hemen satın alın."), set);
 
   const coal = productDescription({ lead: "", name: "SultanCoco Nargile Kömürü", brand: "Sultan Nargile", type: null, shipping: "none", threshold: "3.000 TL" });
-  assert.equal(coal, "SultanCoco Nargile Kömürü. Orijinal Sultan Nargile ürün güvencesi, hızlı kargo.");
+  assert.equal(coal, "SultanCoco Nargile Kömürü. Orijinal Sultan Nargile ürün güvencesi ve hızlı kargoyla hemen satın alın.");
 
   const bowl = productDescription({ lead: "Ürün Kodu: LL105", name: "Toprak Lüle - Büyük Erkek", brand: null, type: null, shipping: "threshold", threshold: "3.000 TL" });
-  assert.equal(bowl, "Toprak Lüle - Büyük Erkek. Orijinal ürün güvencesi, 3.000 TL üzeri ücretsiz kargo.");
+  assert.equal(bowl, "Toprak Lüle - Büyük Erkek. Orijinal ürün güvencesi ve 3.000 TL üzeri ücretsiz kargo fırsatıyla hemen satın alın.");
 
   const quoted = productDescription({ lead: leadText("''NAİMİ WOODKING'' marpucu keçi derisinden, usta ellerde şekillendirilmiş.", "Naimi Woodking", "Naimi"), name: "Naimi Woodking", brand: "Naimi", type: null, shipping: "threshold", threshold: "3.000 TL" });
   assert.ok(!quoted.includes("'"), quoted);
@@ -96,21 +96,32 @@ test("a heading that repeats the name is dropped; a long first sentence is cut a
   const lead = leadText(plain("<h2>Copper Balance Klasik</h2><p>Bu közlük (HMD), nargile sektöründe alüminyum ya da çelik yerine saf bakırdan üretilmiştir ve ısıyı kömürün her yanına eşit dağıtır, böylece yanık tat olmadan uzun bir içim sunar.</p>"), "Copper Balance - Klasik", "COPPER BALANCE");
   const d = productDescription({ lead, name: "Copper Balance - Klasik", brand: "COPPER BALANCE", type: "Közlük (HMD)", shipping: "threshold", threshold: "3.000 TL" });
   assert.ok(d.startsWith("Bu közlük (HMD), nargile sektöründe"), d);
-  assert.ok(d.length <= DESCRIPTION_MAX && d.includes("… Orijinal Copper Balance ürün güvencesi"), d);
+  assert.ok(d.length <= DESCRIPTION_MAX && d.includes("… Orijinal ürün güvencesi ve 3.000 TL üzeri ücretsiz kargo fırsatıyla hemen satın alın."), d);
   assert.equal(leadText(plain("<p>BOL DUMANLI ÜRÜNDÜR,</p>"), "X", null), "Bol dumanlı üründür.");
 });
 
 test("brand and name headings are both dropped; comma-joined capitals are calmed", () => {
   const lead = leadText(plain("<h3>Panada Hookah</h3><h2>Bobby Robot Nargile Takımı</h2><p>Sıradışı robot tasarımı ve yenilikçi özellikleri.</p>"), "Bobby Robot Nargile Takımı", "PANADA HOOKAH");
   const d = productDescription({ lead, name: "Bobby Robot Nargile Takımı", brand: "PANADA HOOKAH", type: null, shipping: "free", threshold: "3.000 TL" });
-  assert.equal(d, "Sıradışı robot tasarımı ve yenilikçi özellikleri. Orijinal Panada Hookah ürün güvencesi, ücretsiz kargo.");
+  assert.equal(d, "Sıradışı robot tasarımı ve yenilikçi özellikleri. Orijinal Panada Hookah ürün güvencesi ve ücretsiz kargo fırsatıyla hemen satın alın.");
   assert.equal(leadText(plain("<p>ŞEFTALİ, ANANAS, AHUDUDU,BÖĞÜRTLEN,YABAN MERSİNİ,BUZ AROMALI</p>"), "Falcon Milano", null), "Şeftali, ananas, ahududu, böğürtlen, yaban mersini, buz aromalı.");
 });
 
 test("a replica is never promised as an original; a heading of name and trade words is dropped", () => {
   const d = productDescription({ lead: "Quasar Raas 2 Nargile Lülesi. Fransa'da geliştirilen bir lüle tasarımının replikasıdır.", name: "Quasar Raas 2 (Replika) Nargile Lülesi", brand: "Quasar", type: null, shipping: "threshold", threshold: "3.000 TL" });
   assert.ok(!/orijinal/i.test(d), d);
-  assert.equal(d, "Fransa'da geliştirilen bir lüle tasarımının replikasıdır. Replika model, 3.000 TL üzeri ücretsiz kargo.");
+  assert.equal(d, "Fransa'da geliştirilen bir lüle tasarımının replikasıdır. Replika model, 3.000 TL üzeri ücretsiz kargo fırsatıyla hemen satın alın.");
   const caos = productDescription({ lead: "Caos Lüle Seti. Yenilikçi tasarımı ve pratik kullanımı bir araya getirir.", name: "Caos Cam Lüle Seti", brand: "caos", type: null, shipping: "threshold", threshold: "3.000 TL" });
   assert.ok(caos.startsWith("Yenilikçi tasarımı"), caos);
+});
+
+test("a long text fills 150–158 characters; the closing line shortens before the product's own words", () => {
+  const lead = "Alpha Hookah Echo, paslanmaz çelik kalitesini ve renkli eloksal alüminyum şıklığını, sadelik ve zarafet ile birleştiren üst segment bir nargile takımıdır. Detaylar sayfada.";
+  for (const shipping of ["free", "threshold", "none"]) {
+    const d = productDescription({ lead, name: "Alpha Hookah Echo Nargile Takımı", brand: "alpha hookah", type: null, shipping, threshold: "3.000 TL" });
+    assert.ok(d.length >= 140 && d.length <= DESCRIPTION_MAX, `${d.length}: ${d}`);
+    assert.ok(/hemen satın alın\.$/i.test(d), d);
+    // About BODY_MIN (70) characters of the product's own text kept (cut back to a whole word) before the closing line.
+    assert.ok(d.indexOf(" Orijinal") >= 60, d);
+  }
 });
