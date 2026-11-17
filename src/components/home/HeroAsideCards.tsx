@@ -1,9 +1,7 @@
-import type { ComponentType } from "react";
 import { ArrowRight, ArrowUpRight } from "lucide-react";
 
 import { AdvantageFeatures } from "@/components/home/AdvantageFeatures";
 import { SultanPuanMark } from "@/components/icons/LoyaltyIcons";
-import { InstagramIcon, YouTubeIcon } from "@/components/icons/SocialIcons";
 import { SmoothAnchor } from "@/components/home/SmoothAnchor";
 import { PERKS_PAGE } from "@/lib/bilgi";
 import type { PromoBox } from "@/lib/home";
@@ -14,17 +12,10 @@ export type HeroAsideWords = (typeof homeMessages)["tr"];
 
 /**
  * The channels, in order; one without a link in /admin/promos is left out.
- * Each is a small glass tile on the card: its brand's badge, its name and
- * the account's handle.
+ * Each is a small frosted tile on the card: its name and the account's handle
+ * — no badge of its own, the picture's neon signs just above say which is which.
  */
-const CHANNELS: {
-  key: "instagram" | "youtube";
-  Icon: ComponentType<{ className?: string }>;
-  badge: string;
-}[] = [
-  { key: "instagram", Icon: InstagramIcon, badge: "bg-gradient-to-tr from-amber-400 via-pink-500 to-purple-600" },
-  { key: "youtube", Icon: YouTubeIcon, badge: "bg-[#FF0000]" },
-];
+const CHANNELS: { key: "instagram" | "youtube" }[] = [{ key: "instagram" }, { key: "youtube" }];
 
 /** "https://www.instagram.com/sultannargile_bahcelievler" → "@sultannargile_bahcelievler"; null when it names no account. */
 function handleOf(href: string): string | null {
@@ -38,8 +29,8 @@ function handleOf(href: string): string | null {
 
 /**
  * A card on a photograph: the picture covers it (public/images/promo, 800px
- * webp), a dark scrim of its own over it keeps the words legible wherever the
- * picture is bright, a light line runs along its top edge, a fine inner ring
+ * webp), untinted — no scrim over it; the words carry a tight shadow of their
+ * own instead (LIFT). A light line runs along its top edge, a fine inner ring
  * and a soft drop shadow — rounded as the slider is. Dark in either theme.
  * Its own height below `lg` (where it stands under the slider), half the
  * slider's from `lg`, in the 264px column beside it — hence the tighter
@@ -53,7 +44,7 @@ const CARD = [
 /**
  * Each card's picture, placed so its subject stays in view — the neon
  * Instagram and YouTube signs between the heading and the tiles; the gift
- * box to the right of the words — and the scrim that suits it.
+ * box to the right of the words.
  */
 const PHOTO = {
   // The signs are the middle of the picture's upper half (about 24–45% of its
@@ -61,24 +52,17 @@ const PHOTO = {
   // move them out from under the heading. The picture is the card's width
   // (a square: 100cqw high) and set so the signs' centre (34.5% down) falls
   // 130px from the card's top, between the heading and the tiles; above it,
-  // the picture's dark top gives way to the card's own ground under the scrim.
+  // the picture's dark top fades into the card's own (as dark) ground.
   // On a span of its own: `cqw` is the card's width only inside the card.
   channels: "bg-[url('/images/promo/sosyal.webp')] bg-[length:100%_auto] bg-no-repeat bg-[position:50%_calc(130px-34.5cqw)]",
   advantages: "bg-[url('/images/promo/kazanansizolun.webp')] bg-[position:72%_62%]",
 };
-const SCRIM = {
-  // Dark at the heading and under the tiles, clear across the signs between them.
-  channels: "bg-[linear-gradient(180deg,rgb(8_6_14/0.88)_0%,rgb(8_6_14/0.45)_38%,rgb(8_6_14/0.2)_58%,rgb(8_6_14/0.85)_100%)]",
-  // Dark down the side the words are on, the gift box lit on the other.
-  advantages:
-    "bg-[linear-gradient(90deg,rgb(10_8_5/0.9)_0%,rgb(10_8_5/0.7)_45%,rgb(10_8_5/0.15)_100%),linear-gradient(180deg,rgb(10_8_5/0.55)_0%,transparent_35%,transparent_65%,rgb(10_8_5/0.75)_100%)]",
-};
-/** The scrim, between the picture and the card's words. */
-function Scrim({ className }: { className: string }) {
-  return <span aria-hidden className={`pointer-events-none absolute inset-0 -z-10 ${className}`} />;
-}
-/** A soft shadow under the words: legible on the brightest part of either picture. */
-const LIFT = "[text-shadow:0_1px_10px_rgb(0_0_0/0.55)]";
+/**
+ * The words' own shadow, the pictures having no scrim: a tight dark edge that
+ * holds each letter against the neon and the gift's glow, and a soft halo
+ * around it — on the letters only, the picture itself left as it is.
+ */
+const LIFT = "[text-shadow:0_1px_2px_rgb(0_0_0/0.9),0_0_14px_rgb(0_0_0/0.65)]";
 const OVERLINE = `text-[10.5px] font-bold uppercase tracking-[0.2em] lg:tracking-[0.14em] ${LIFT}`;
 const TITLE = `text-balance text-[1.375rem] font-extrabold leading-[1.15] tracking-tight text-white ${LIFT}`;
 
@@ -92,7 +76,7 @@ function advantagesHref(href: string | null | undefined): string {
   return !link || /^\/?#avantajlar$/.test(link) ? PERKS_PAGE.href : link;
 }
 
-/** The community card: the shop's channels as two glass tiles. */
+/** The community card: the shop's channels as two frosted tiles. */
 export function ChannelsCard({ box, t }: { box?: PromoBox; t: HeroAsideWords }) {
   const widget = box?.widget;
   const channels = CHANNELS.flatMap(({ key, ...channel }) => {
@@ -102,9 +86,10 @@ export function ChannelsCard({ box, t }: { box?: PromoBox; t: HeroAsideWords }) 
   return (
     // A phone's card is as high as its words: some more height there keeps the signs in view between them.
     <div className={`${CARD} [container-type:inline-size] max-sm:min-h-[290px]`}>
-      {/* Faded in from the top, so where the picture starts below the card's edge shows no seam. */}
-      <span aria-hidden className={`pointer-events-none absolute inset-0 -z-20 [mask-image:linear-gradient(to_bottom,transparent,black_80px)] ${PHOTO.channels}`} />
-      <Scrim className={SCRIM.channels} />
+      {/* Faded in over its own first 24px only, where it starts below the card's edge (a phone, the narrow
+          column), so no seam shows and the rest is untouched; on a wider card it starts above the edge and
+          the fade falls outside it. */}
+      <span aria-hidden className={`pointer-events-none absolute inset-0 -z-20 [mask-image:linear-gradient(to_bottom,transparent_calc(130px-34.5cqw),black_calc(154px-34.5cqw))] ${PHOTO.channels}`} />
       <div>
         <p className={`${OVERLINE} text-white/75`}>{box?.text || t.followUs}</p>
         <h2 className={`${TITLE} mt-1.5`}>{box?.topTitle || t.aside.channelsTitle}</h2>
@@ -112,29 +97,26 @@ export function ChannelsCard({ box, t }: { box?: PromoBox; t: HeroAsideWords }) 
         <p className="sr-only">{t.aside.channelsNote}</p>
       </div>
       {channels.length > 0 && (
-        <ul className={`mt-auto grid gap-2 pt-4 ${channels.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
-          {channels.map(({ key, href, label, handle, Icon, badge }) => (
+        <ul className={`mt-auto grid gap-2 pt-4 lg:gap-1.5 ${channels.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
+          {channels.map(({ key, href, label, handle }) => (
             <li key={key} className="min-w-0">
               <a
                 href={href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group/channel flex h-full flex-col gap-2 rounded-2xl bg-black/35 p-3 ring-1 ring-inset ring-white/15 backdrop-blur-md transition-colors duration-200 hover:bg-black/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                // Frosted, not tinted: a light veil and a blur, so the tile reads as a button without darkening the picture.
+                className="group/channel flex h-full min-w-0 flex-col justify-center rounded-2xl bg-white/10 px-3 py-2.5 ring-1 lg:px-2.5 ring-inset ring-white/25 backdrop-blur-md transition-colors duration-200 hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
               >
-                <span className="flex items-center justify-between">
-                  <span aria-hidden className={`flex h-8 w-8 items-center justify-center rounded-xl text-white shadow-md shadow-black/30 ${badge}`}>
-                    <Icon className="h-4 w-4" />
-                  </span>
+                {/* In the narrow column beside the slider (two 107px tiles) the name and arrow sit a little closer. */}
+                <span className="flex items-center justify-between gap-2 lg:gap-1">
+                  <span className={`min-w-0 truncate text-sm font-semibold ${LIFT}`}>{label}</span>
                   <ArrowUpRight
-                    className="h-4 w-4 text-white/45 transition-transform group-hover/channel:text-white motion-safe:group-hover/channel:-translate-y-0.5 motion-safe:group-hover/channel:translate-x-0.5 rtl:-scale-x-100"
+                    className="h-4 w-4 shrink-0 lg:h-3.5 lg:w-3.5 text-white/75 transition-transform group-hover/channel:text-white motion-safe:group-hover/channel:-translate-y-0.5 motion-safe:group-hover/channel:translate-x-0.5 rtl:-scale-x-100"
                     aria-hidden
                   />
                 </span>
-                <span className="min-w-0">
-                  <span className="block truncate text-sm font-semibold">{label}</span>
-                  {/* Under the slider there is room for the whole handle; in the narrow column beside it, only the name. */}
-                  {handle && <span className="block truncate text-[11px] text-white/55 lg:hidden">{handle}</span>}
-                </span>
+                {/* Under the slider there is room for the whole handle; in the narrow column beside it, only the name. */}
+                {handle && <span className={`mt-0.5 block truncate text-[11px] text-white/80 lg:hidden ${LIFT}`}>{handle}</span>}
                 <span className="sr-only">{t.newTab}</span>
               </a>
             </li>
@@ -154,7 +136,6 @@ export function AdvantagesCard({ box, t }: { box?: PromoBox; t: HeroAsideWords }
       href={advantagesHref(box?.href)}
       className={`group ${CARD} ${PHOTO.advantages} transition-shadow duration-300 hover:shadow-[0_22px_48px_-18px_rgb(0_0_0/0.65)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent`}
     >
-      <Scrim className={SCRIM.advantages} />
       <p className={`${OVERLINE} flex items-center gap-2 text-amber-300`}>
         <SultanPuanMark className="h-6 w-6 shrink-0 drop-shadow-[0_2px_4px_rgb(120_53_15/0.45)]" />
         <span className="min-w-0 truncate">{eyebrow}</span>
