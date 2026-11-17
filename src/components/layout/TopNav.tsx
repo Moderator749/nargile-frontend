@@ -115,7 +115,8 @@ function CategoryDrawer({ categories, links = [] }: { categories: ResolvedNav[];
  * 16rem of the row and the seven labels have to fit on one line in the rest.
  */
 const LINK =
-  "whitespace-nowrap border-b-2 py-2 text-xs font-semibold transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent xl:text-sm";
+  // 11px from `lg` to `xl`: six links beside the Kategoriler button stay on one line at 1024px.
+  "whitespace-nowrap border-b-2 py-2 text-xs font-semibold transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent lg:text-[11px] xl:text-sm";
 
 /**
  * The horizontal bar under the header: every destination is a link, and a click
