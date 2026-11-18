@@ -1,6 +1,7 @@
 import { notFound, permanentRedirect } from "next/navigation";
 
 import { brandForSlug } from "@/lib/brandMatch";
+import { RETIRED_CATEGORIES } from "@/lib/legacy/categories";
 import { localePath } from "@/lib/i18n/config";
 import { getI18n } from "@/lib/i18n/server";
 import { brandHref } from "@/lib/seo";
@@ -16,6 +17,12 @@ import { getBrands, required } from "@/lib/server/catalog";
 export default async function OldBrandPage(props: PageProps<"/[locale]/marka/[slug]">) {
   const [{ slug }, { locale }] = await Promise.all([props.params, getI18n()]);
   const brand = brandForSlug(slug, required(await getBrands(), "/brands"));
-  if (!brand) notFound();
+  if (!brand) {
+    // A brand row merged into another (lib/legacy/categories): its old address
+    // goes where its products are now, in the same language.
+    const merged = RETIRED_CATEGORIES[slug.toLowerCase()];
+    if (merged) permanentRedirect(localePath(locale, `/${merged}`));
+    notFound();
+  }
   permanentRedirect(localePath(locale, brandHref(brand.slug)));
 }

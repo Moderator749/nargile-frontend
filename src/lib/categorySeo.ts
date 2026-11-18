@@ -33,10 +33,27 @@ export const CATEGORY_SEO: Record<string, CategorySeo> = {
     h1: "Nargile Takımı Modelleri ve Fiyatları",
   },
   // "oduman nargile" (1k impressions, CTR 0.2%), "oduman", "o duman nargile".
+  // 2026-11-18: still CTR 0.3% at position ~10 for "oduman nargile" (326
+  // impressions in two weeks): the query first, and what sets the shop apart.
   oduman: {
-    title: "Orijinal Oduman Nargile Modelleri & Uygun Fiyatlar",
+    title: "Oduman Nargile Takımları ve Fiyatları | Türkiye Distribütörü",
     description:
-      "Orijinal Oduman nargile takımları, lüleleri ve aksesuarları uygun fiyatlarla. Kafe ve toptan alımlara özel fiyatlar, 3.000 TL üzeri ücretsiz kargo.",
+      "Oduman nargile takımları, yedek şişeler, lüleler ve aksesuarlar Türkiye distribütöründen. Cosmo, Infinity ve çantalı modeller; 3.000 TL üzeri ücretsiz kargo.",
+    absolute: true,
+  },
+  // "sultan nargile" (~500 impressions in two weeks, position ~8) lands on
+  // single products, not on the brand's shelf (2026-11-18).
+  sultan: {
+    title: "Sultan Nargile Takımları: Nirvana ve Çantalı Modeller",
+    description:
+      "Sultan Nargile takımları: Nirvana serisi yer tipi, masaüstü ve 35 cm çantalı modeller, yedek şişe ve aksesuarlar. 3.000 TL üzeri ücretsiz kargo.",
+    absolute: true,
+  },
+  // "quasar lüle" (~200 impressions, position ~10) lands on a single product (2026-11-18).
+  "quasar-luleler": {
+    title: "Quasar Lüle: Raas 2, Raas Mini ve Yedek Lüle Camı",
+    description:
+      "Quasar lüle çeşitleri: borosilikat cam hazneli Raas 2, Raas 2 Black ve Raas Mini ile yedek Raas lüle camı. Orijinal Quasar ürünleri, hızlı kargo.",
   },
   // "sipsi" (3.5k impressions in 90 days, position 4.3, CTR 0.2%), "nargile sipsi",
   // "sipsi nargile", "nargile sipsisi": the word itself leads. At /sipsiler again

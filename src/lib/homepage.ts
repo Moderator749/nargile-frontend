@@ -60,7 +60,7 @@ export const DEFAULT_SEO_INTRO: HomeSeoIntro = {
   // with — the homepage's only link to the Nargile Takımları hub (2026-11-17).
   content:
     '<p>Aradığınız ürüne türüyle ulaşın: <a href="/nargile-takimlari">nargile takımı modelleri ve fiyatları</a>, <a href="/klasik-takimlar">kahveci nargile takımları</a>, <a href="/luleler">nargile lülesi çeşitleri</a>, <a href="/komurler">nargile kömürü</a>, <a href="/marpuclar">nargile marpucu</a> ve <a href="/sipsiler">sipsi çeşitleri</a>.</p>' +
-    "<p>Evde nargile kullananlar için de, her gün onlarca takımın çalıştığı kafeler için de doğru ürünü bulmak kolay olmalı. Bu yüzden ürünlerimizi türlerine ve markalarına göre ayırıyor, her kategoride seçim yaparken işinize yarayacak bilgileri paylaşıyoruz. Kafe, toptancı ve bayilere özel fiyatlar, hızlı kargo ve orijinal ürün güvencesiyle ihtiyacınız olan her şey kapınızda.</p>",
+    "<p>Evde nargile kullananlar için de, her gün onlarca takımın çalıştığı kafeler için de doğru ürünü bulmak kolay olmalı. Tüm modelleri tek sayfada karşılaştırmak için <a href=\"/nargile-takimlari\">nargile takımı</a> sayfamıza göz atabilirsiniz. Bu yüzden ürünlerimizi türlerine ve markalarına göre ayırıyor, her kategoride seçim yaparken işinize yarayacak bilgileri paylaşıyoruz. Kafe, toptancı ve bayilere özel fiyatlar, hızlı kargo ve orijinal ürün güvencesiyle ihtiyacınız olan her şey kapınızda.</p>",
 };
 
 export const DEFAULT_HOMEPAGE: Homepage = {

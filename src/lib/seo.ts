@@ -4,6 +4,7 @@ import { DEFAULT_LOCALE, LOCALES, OG_LOCALE, localePath, type Locale } from "@/l
 import { colorLabel } from "@/lib/i18n/colors";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { htmlToText } from "@/lib/richText";
+import { schemaSku } from "@/lib/schemaSku";
 import { DEFAULT_OG_IMAGE, INDEXING_ALLOWED, SITE_NAME, SITE_URL, canonicalMedia } from "@/lib/site";
 import { publishedStores, storeHref } from "@/lib/stores";
 import { displayVariant, soldOut } from "@/lib/variants";
@@ -453,7 +454,7 @@ export function productJsonLd(
     price: price!.price_incl_tax,
     priceCurrency: price!.currency,
     url,
-    ...(variant ? { sku: variant.sku } : {}),
+    ...(variant ? { sku: schemaSku(variant.sku) } : {}),
     availability: availability(inStock),
     itemCondition: "https://schema.org/NewCondition",
     seller: { "@id": `${SITE_URL}/#organization` },
@@ -483,8 +484,8 @@ export function productJsonLd(
         return {
           "@type": "Product",
           name: colour ? `${product.name} - ${colour}` : product.name,
-          sku: variant.sku,
-          mpn: variant.sku,
+          sku: schemaSku(variant.sku),
+          mpn: schemaSku(variant.sku),
           url,
           ...(images.length > 0 ? { image: images } : {}),
           ...(colour ? { color: colour } : {}),
@@ -498,8 +499,8 @@ export function productJsonLd(
   return {
     ...common,
     "@type": "Product",
-    mpn: product.base_code,
-    ...(lead ? { sku: lead.sku } : {}),
+    mpn: schemaSku(product.base_code),
+    ...(lead ? { sku: schemaSku(lead.sku) } : {}),
     ...(product.color_names && product.color_names.length > 0 ? { color: product.color_names.map((c) => colorLabel(c, locale)) } : {}),
     ...(price ? { offers: offer(!soldOut(product), product.variants[0] ?? lead ?? undefined) } : {}),
   };

@@ -33,6 +33,9 @@ export const LEGACY_CATEGORIES: Record<string, string> = {
   "nargile-malzemeleri-ve-aksesuarlari": "malzemeler",
   "yedek-parca": "yedek-parca",
   "okey-tavla-ve-iskambil-kartlari": "oyun-eglence",
+  // Old store shelves still indexed after the move (Search Console, 2026-11-18).
+  "hortum-yaylari": "silikon-ve-buzlu-marpuclar",
+  "lule-ve-marpuc-baglantilari": "marpuclar",
   "nargile-tutunu-markalari-ve-cesitleri": "bitkisel-urunler",
   kampanyalar: "kampanyalar",
   // Its WD Hookah sets are steel sets here (unpublished for now).
