@@ -106,6 +106,23 @@ export const RETIRED_CATEGORIES: Record<string, string> = {
   // (The sipsi shelf is /sipsiler again since 2026-11-17; its interim address
   // /plastik-ve-slikon-sipsiler is the panel's slug redirect, not listed here:
   // listed, it would loop with the database's own redirect while either is behind.)
+  // 2026-11-18: the duplicate "Kullan-at Marpuçlar" shelf (the very products of
+  // Tek Kullanımlık Marpuçlar). (The misspelt /legen-hookah-ruzgarliklar is the
+  // panel's slug redirect to /legend-hookah-ruzgarliklar, so not listed here.)
+  "kullan-at-marpuclar": "tek-kullanimlik-marpuclar",
+  // 2026-11-18: empty duplicate brand rows, merged into the brand row that
+  // holds the products (brand pages share the root with categories).
+  alpha: "alpha-hookah",
+  kong: "kong-bowl",
+  oblako: "oblako-bowl",
+  kolos: "kolos-bowl",
+  solaris: "solaris-bowl",
+  japona: "japona-bowl",
+  hoob: "hoob-hookah",
+  blade: "blade-hookah",
+  metsan: "metsan-nargile",
+  naimi: "naimi-marpuc",
+  "copper-blance": "copper-balance",
 };
 
 /** The old store's pages that were not categories, and its brand pages. */
