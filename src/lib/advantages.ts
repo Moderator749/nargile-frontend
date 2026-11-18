@@ -63,7 +63,7 @@ export const ADVANTAGES: AdvantageItem[] = [
     badge: "%100 Orijinal",
     title: "Orijinal Ürün Güvencesi",
     description:
-      "Tüm nargile takımları ve tütün markalarında doğrudan distribütör garantisi.",
+      "Tüm nargile takımı markalarında doğrudan distribütör garantisi.",
     note: "Barkodlu ve faturalı sevkiyat.",
     image: "/images/avantaj-hero-1.jpg",
     icon: "badge-check",
@@ -80,7 +80,7 @@ export const ADVANTAGES: AdvantageItem[] = [
     badge: "Toptan tedarik",
     title: "Nargile Kafeler & İşletmeler",
     description:
-      "Kafeler ve tobacco shoplar için özel toptan fiyat listeleri ve düzenli sevkiyat.",
+      "Kafeler ve nargile satış noktaları için özel toptan fiyat listeleri ve düzenli sevkiyat.",
     note: "Kurumsal üyelik ile anında toptan fiyatlar.",
     image: "/images/avantaj-legend.jpg",
     icon: "store",

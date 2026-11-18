@@ -53,9 +53,9 @@ const COPY: Record<string, WrittenCopy> = {
   aksesuarlar: {
     icon: Cog,
     description: {
-      tr: "Askılı sipsiler, tütün çatalları, matlar, şerbetlikler, çantalar, elekler, köz tavaları, bacalar, rüzgarlıklar ve maşalar.",
-      en: "Sipsi pipes with lanyards, tobacco forks, mats, molasses catchers, bags, screens, charcoal pans, charcoal chimney starters, wind covers and charcoal tongs.",
-      ar: "سبسي مع علّاقة، شوك المعسل، حصائر، مصائد المعسل، حقائب، شبكات، صحون فحم، مداخن إشعال الفحم، أغطية رأس الشيشة وملاقط فحم.",
+      tr: "Askılı sipsiler, aroma çatalları, matlar, şerbetlikler, çantalar, elekler, köz tavaları, bacalar, rüzgarlıklar ve maşalar.",
+      en: "Sipsi pipes with lanyards, packing forks, mats, molasses catchers, bags, screens, charcoal pans, charcoal chimney starters, wind covers and charcoal tongs.",
+      ar: "سبسي مع علّاقة، شوك الخليط، حصائر، مصائد الشربت، حقائب، شبكات، صحون فحم، مداخن إشعال الفحم، أغطية رأس الشيشة وملاقط فحم.",
     },
   },
   marpuclar: {

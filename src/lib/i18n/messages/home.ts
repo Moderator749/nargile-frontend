@@ -124,7 +124,7 @@ export const homeMessages = defineMessages({
     bento2: {
       label: "Nargile Takımları ve Markalar",
       boxes: [
-        { alt: "Altın ve siyah nargile takımları", eyebrow: "Klasik & Modern", title: "Nargile\nTakımları", subtitle: "Her zevke bir takım" },
+        { alt: "Altın ve siyah nargile takımları", eyebrow: "Klasik & Modern", title: "Nargile\nTakımları", subtitle: "Her tercihe bir takım" },
         { alt: "Legend Hookah çelik nargile takımı", eyebrow: "Premium Seri", title: "Legend\nHookah", subtitle: "Çelik gövde, usta işçiliği" },
         { alt: "Oduman kristal gövdeli nargile takımı", eyebrow: "Kristal Gövde", title: "Oduman\nNargile", subtitle: "Koleksiyonu keşfedin" },
       ],
@@ -140,7 +140,7 @@ export const homeMessages = defineMessages({
     bento4: {
       label: "Nargile Takımları, Çelik Takımlar ve Lüleler",
       boxes: [
-        { alt: "Kristal gövdeli altın ve siyah klasik nargile takımları", eyebrow: "Klasikten Moderne", title: "Nargile\nTakımları", subtitle: "Her keyfe uygun takım" },
+        { alt: "Kristal gövdeli altın ve siyah klasik nargile takımları", eyebrow: "Klasikten Moderne", title: "Nargile\nTakımları", subtitle: "Her ihtiyaca uygun takım" },
         { alt: "Karanlık zeminde çelik nargile takımı", eyebrow: "Premium Seri", title: "Çelik\nTakımlar", subtitle: "Dayanıklı, şık, uzun ömürlü" },
         { alt: "Renkli lüleler, marpuçlar ve maşa", eyebrow: "Her Damağa", title: "Lüleler", subtitle: "Toprak, silikon ve phunnel" },
       ],
@@ -165,7 +165,7 @@ export const homeMessages = defineMessages({
       sultan:
         "Geleneksel nargile zanaatını modern mühendislikle buluşturan Sultan Nargile; dayanıklı çelik takımları, tescilli aksesuarları ve benzersiz içim kalitesiyle sektör standartlarını belirliyor.",
       oduman:
-        "Camın zarafetini paslanmaz çelikle birleştiren Oduman, kompakt ve yenilikçi tasarımlarıyla nargile deneyimine modern bir dokunuş katıyor. Her detayıyla kusursuz bir içim keyfi.",
+        "Camın zarafetini paslanmaz çelikle birleştiren Oduman, kompakt ve yenilikçi tasarımlarıyla nargile takımlarına modern bir dokunuş katıyor. Her detayında özenli işçilik.",
       legend:
         "Geleneksel estetiği modern nargile mühendisliğiyle buluşturan Legend Hookah, benzersiz tahliye sistemleri ve kusursuz işçiliğiyle elit bir performans sunar.",
     },
@@ -174,7 +174,7 @@ export const homeMessages = defineMessages({
       kozlukSubtitle: "Isı yöneticileri, elekler ve lüle başlıkları: kömürü doğru ısıda tutan aparatlar",
       kozlukMore: "Tüm Közlükleri Gör",
       gamesTitle: "Oyun & Eğlence",
-      gamesSubtitle: "Tavla, okey ve iskambil: sohbetin en keyifli ortakları",
+      gamesSubtitle: "Tavla, okey ve iskambil: kafeler ve ev için masa oyunları",
       gamesMore: "Tüm Oyunları Gör",
     },
   },
@@ -197,7 +197,7 @@ export const homeMessages = defineMessages({
       channelsTitle: "Join the Community",
       advantagesEyebrow: "Perks & Advantages",
       advantagesTitle: "Order more. Pay less.",
-      advantagesText: "Enjoy wholesale and retail perks every time you shop with Sultan Nargile.",
+      advantagesText: "Get wholesale and retail perks every time you shop with Sultan Nargile.",
       advantagesLink: "Explore the perks",
       channelsNote: "New arrivals, offers and how-to videos",
       featureOriginal: "Genuine products, guaranteed",
@@ -308,7 +308,7 @@ export const homeMessages = defineMessages({
       heading: "Our Brands",
       collection: "Explore the Collection",
       sultan:
-        "Sultan Nargile brings traditional hookah craftsmanship together with modern engineering, setting the industry standard with durable stainless steel hookah sets, patented accessories and an unmatched smoking experience.",
+        "Sultan Nargile brings traditional hookah craftsmanship together with modern engineering, setting the industry standard with durable stainless steel hookah sets, patented accessories and dependable performance.",
       oduman:
         "Oduman pairs the elegance of glass with stainless steel, bringing a modern touch to the hookah experience with compact, innovative designs. A flawless session, down to every detail.",
       legend:
@@ -455,7 +455,7 @@ export const homeMessages = defineMessages({
       sultan:
         "تجمع Sultan Nargile بين حرفة الشيشة التقليدية والهندسة الحديثة، وتضع معايير القطاع بأطقم شيشة ستانلس ستيل متينة وإكسسوارات مسجلة الملكية وجودة تدخين لا مثيل لها.",
       oduman:
-        "تجمع Oduman بين أناقة الزجاج والستانلس ستيل، وتضيف لمسة عصرية إلى تجربة الشيشة بتصاميم مدمجة ومبتكرة. متعة تدخين مثالية في كل تفصيل.",
+        "تجمع Oduman بين أناقة الزجاج والستانلس ستيل، وتضيف لمسة عصرية إلى أطقم الشيشة بتصاميم مدمجة ومبتكرة. عناية بالتفاصيل في كل قطعة.",
       legend:
         "تجمع Legend Hookah بين الجمال التقليدي وهندسة الشيشة الحديثة، وتقدم أداءً راقيًا بفضل أنظمة تفريغ الدخان المميزة والصنعة المتقنة.",
     },
