@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { BlogAnchorAlias } from "@/components/blog/BlogAnchorAlias";
 import { BLOG_QUESTION_LIST, BlogQuestionItem } from "@/components/blog/BlogQuestionItem";
 import { InfoPage } from "@/components/info/InfoPage";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -29,6 +30,7 @@ export default async function BlogPage() {
   return (
     <InfoPage title={m.title} href={BLOG_HREF}>
       <JsonLd data={faqJsonLd(asFaqItems(items), locale)} />
+      <BlogAnchorAlias />
       <p className="text-sm leading-6 text-slate-600 dark:text-neutral-200">{m.questionsIntro}</p>
       <div className={`mt-4 ${BLOG_QUESTION_LIST}`}>
         {items.map((item) => (

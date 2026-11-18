@@ -291,7 +291,7 @@ export const BLOG_QUESTIONS_EN: BlogQuestion[] = [
     ]
   },
   {
-    "id": "mukemmel-bir-nargile-keyfi-icin-nelere-dikkat-edilmeli",
+    "id": "dogru-nargile-kullanimi-icin-nelere-dikkat-edilmeli",
     "question": "What should be considered for a perfect hookah experience?",
     "answer": [
       {
@@ -339,7 +339,7 @@ export const BLOG_QUESTIONS_EN: BlogQuestion[] = [
     ]
   },
   {
-    "id": "nargile-komuru-secimi-nargile-keyfini-ve-sagligi-nasil-etkiler",
+    "id": "nargile-komuru-secimi-kullanimi-nasil-etkiler",
     "question": "How does the choice of hookah charcoal affect the hookah experience and health?",
     "answer": [
       {

@@ -263,7 +263,7 @@ export const BLOG_QUESTIONS_AR: BlogQuestion[] = [
     ]
   },
   {
-    "id": "mukemmel-bir-nargile-keyfi-icin-nelere-dikkat-edilmeli",
+    "id": "dogru-nargile-kullanimi-icin-nelere-dikkat-edilmeli",
     "question": "مَاذَا يَجِبُ أَنْ أُرَاعِيَ لِأَسْتَمْتِعَ بِنَارْجِيلَةٍ مِثَالِيَّةٍ؟",
     "answer": [
       {
@@ -314,7 +314,7 @@ export const BLOG_QUESTIONS_AR: BlogQuestion[] = [
     ]
   },
   {
-    "id": "nargile-komuru-secimi-nargile-keyfini-ve-sagligi-nasil-etkiler",
+    "id": "nargile-komuru-secimi-kullanimi-nasil-etkiler",
     "question": "كيف يؤثر اختيار فحم النرجيلة على أداء الشيشة؟",
     "answer": [
       {

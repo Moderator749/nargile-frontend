@@ -310,7 +310,7 @@ export const BLOG_QUESTIONS: BlogQuestion[] = [
     ]
   },
   {
-    "id": "mukemmel-bir-nargile-keyfi-icin-nelere-dikkat-edilmeli",
+    "id": "dogru-nargile-kullanimi-icin-nelere-dikkat-edilmeli",
     "question": "Doğru nargile kullanımı için nelere dikkat edilmeli?",
     "answer": [
       {
@@ -358,7 +358,7 @@ export const BLOG_QUESTIONS: BlogQuestion[] = [
     ]
   },
   {
-    "id": "nargile-komuru-secimi-nargile-keyfini-ve-sagligi-nasil-etkiler",
+    "id": "nargile-komuru-secimi-kullanimi-nasil-etkiler",
     "question": "Nargile kömürü seçimi kullanımı nasıl etkiler?",
     "answer": [
       {
