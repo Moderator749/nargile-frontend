@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import axios from "axios";
 import { ArrowLeft, Check, Package, Plus, RotateCw, Save } from "lucide-react";
 
+import { Law4207Notice } from "@/components/admin/Law4207Notice";
 import { RichTextEditor } from "@/components/admin/RichTextEditor";
 import { AdminPageHeader, panelClass } from "@/components/admin/AdminShell";
 import { BrandCombobox } from "@/components/admin/products/BrandCombobox";
@@ -387,6 +388,7 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
                 <CharCount value={draft.metaDescription} max={META_DESCRIPTION_MAX} />
               </SheetField>
             </div>
+            <Law4207Notice texts={[draft.name, draft.description, draft.metaTitle, draft.metaDescription]} />
             <SheetField
               id="sheet-slug"
               label="Sayfa Adresi (slug)"

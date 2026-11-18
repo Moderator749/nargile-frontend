@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Check, Sparkles } from "lucide-react";
 
+import { Law4207Notice } from "@/components/admin/Law4207Notice";
 import { RichTextEditor } from "@/components/admin/RichTextEditor";
 import { SheetField, sheetInputClass } from "@/components/admin/products/SheetParts";
 import {
@@ -139,6 +140,7 @@ export function TranslationFields({
             <Count value={t.metaDescription} max={META_DESCRIPTION_MAX} />
           </SheetField>
         </div>
+        <Law4207Notice texts={[t.name, t.description, t.metaTitle, t.metaDescription]} lang={tab} />
       </div>
     </div>
   );

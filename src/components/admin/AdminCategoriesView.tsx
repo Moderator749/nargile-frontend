@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode, type SubmitEvent 
 import { ChevronRight, ChevronsDownUp, ChevronsUpDown, FolderTree, Pencil, Plus, Search, SlidersHorizontal, Trash2, X } from "lucide-react";
 
 import { panelClass } from "@/components/admin/AdminShell";
+import { Law4207Notice } from "@/components/admin/Law4207Notice";
 import { RichTextEditor } from "@/components/admin/RichTextEditor";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
@@ -475,6 +476,7 @@ export function AdminCategoriesView({
                 placeholder="İlk paragraf görünür; devamı “Devamını Oku” ile açılır."
               />
             </div>
+            <Law4207Notice texts={[form.name, form.description, form.seoTitle, form.seoText]} />
           </fieldset>
           {/* The category in English and Arabic: its /en and /ar pages and
               the menu there. No name = the Turkish is shown (not indexed). */}
