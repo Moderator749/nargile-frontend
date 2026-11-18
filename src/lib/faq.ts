@@ -32,7 +32,7 @@ export const FAQ: FaqItem[] = [
     id: "markalar",
     question: "Hangi markaların Türkiye dağıtımını yapıyorsunuz?",
     answer:
-      "Kendi markalarımız Sultan Nargile ve Legend Hookah'ı üretiyor, Oduman Nargile'nin Türkiye dağıtımını yapıyoruz. Ayrıca Adalya, Revoshi, Daim, Manterra ve Rosanna gibi tütün; Black Coco's, Coco Pearls, One Nation ve BuCoco gibi kömür markalarının yetkili bayisiyiz.",
+      "Kendi markalarımız Sultan Nargile ve Legend Hookah'ı üretiyor, Oduman Nargile'nin Türkiye dağıtımını yapıyoruz. Ayrıca Steamulation, Alpha Hookah ve Mr.Wood gibi nargile takımı ve aksesuar markalarının; Black Coco's, Coco Pearls, One Nation ve BuCoco gibi kömür markalarının yetkili bayisiyiz.",
   },
   {
     id: "minimum-siparis",

@@ -13,7 +13,7 @@ export const FAQ_EN: FaqItem[] = [
     id: "markalar",
     question: "Which brands do you distribute in Türkiye?",
     answer:
-      "We make our own brands, Sultan Nargile and Legend Hookah, and we are the Türkiye distributor of Oduman Nargile. We are also an authorised dealer for tobacco brands such as Adalya, Revoshi, Daim, Manterra and Rosanna, and for charcoal brands such as Black Coco's, Coco Pearls, One Nation and BuCoco.",
+      "We make our own brands, Sultan Nargile and Legend Hookah, and we are the Türkiye distributor of Oduman Nargile. We are also an authorised dealer for hookah equipment and accessory brands such as Steamulation, Alpha Hookah and Mr.Wood, and for charcoal brands such as Black Coco's, Coco Pearls, One Nation and BuCoco.",
   },
   {
     id: "minimum-siparis",

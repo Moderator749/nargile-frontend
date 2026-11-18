@@ -38,7 +38,7 @@ export const ARTICLES: Article[] = [
     datePublished: "2026-04-10",
     intro:
       "Nargile içim performansını ve aromasını belirleyen en önemli ekipmanların başında nargile lülesi gelir. Doğru lüleyi seçmek; dolum tekniğinden ısı yönetimine, içimin yumuşaklığından aromanın yoğunluğuna kadar her şeyi değiştirir.",
-    body: `Lülenin temel işlevi, içine konan nargile tütününden ısı yardımıyla duman üretmektir. Lüleler genellikle 15–25 gram arası tütün kapasitesine sahiptir.
+    body: `Lülenin temel işlevi, içine konan nargile aromasından ısı yardımıyla duman üretmektir. Lüleler genellikle 15–25 gram arası aroma kapasitesine sahiptir.
 
 Günümüzde toprak, kil, taş ve seramik gibi geleneksel çamur türevlerinden üretilen sırlı veya sırsız modellerin yanı sıra cam, silikon ve metal malzemelerden üretilen modern seçenekler de mevcuttur. Tasarımlarına göre ise lüleler temel olarak Phunnel lüle ve Killer lüle olmak üzere iki ana kategoriye ayrılır.`,
   },
@@ -52,25 +52,25 @@ Günümüzde toprak, kil, taş ve seramik gibi geleneksel çamur türevlerinden 
 
 ## Phunnel lüle
 
-Phunnel modellerde tütün çukurunun tabanında, merkezden yaklaşık 10 mm yükselen tek bir delik yer alır.
+Phunnel modellerde lüle çukurunun tabanında, merkezden yaklaşık 10 mm yükselen tek bir delik yer alır.
 
-Yüksek hava akışı: Tütün dolumu yapıldığında ortadaki delik kapanmaz; böylece rahat ve ferah bir çekim sağlanır.
+Yüksek hava akışı: Aroma dolumu yapıldığında ortadaki delik kapanmaz; böylece rahat ve ferah bir çekim sağlanır.
 
-Temiz takım ve şişe: İçim sırasında lüle tabanından ser borusuna veya difüzöre tütün düşmez, tıkanma olmaz. Tütün şerbeti takıma ve şişeye akmadığı için takımınız temiz kalır.
+Temiz takım ve şişe: Kullanım sırasında lüle tabanından ser borusuna veya difüzöre aroma düşmez, tıkanma olmaz. Aromanın şerbeti takıma ve şişeye akmadığı için takımınız temiz kalır.
 
-Uzun ömürlü ve yoğun tat: Lülede kalan şerbet tütünün kurumasını önler; aroma daha yoğun, içim süresi daha uzun olur.
+Uzun ömürlü ve yoğun tat: Lülede kalan şerbet karışımın kurumasını önler; aroma daha belirgin, kullanım süresi daha uzun olur.
 
-Yumuşak içim: Folyo veya közlük (HMD) kullanımında duman üstten yanmayla başlar. Merkezdeki deliğin üzerinde doğrudan tütün olmadığından dumanla birlikte daha fazla hava çekilir ve içim yumuşar.
+Yumuşak içim: Folyo veya közlük (HMD) kullanımında duman üstten yanmayla başlar. Merkezdeki deliğin üzerinde doğrudan karışım olmadığından dumanla birlikte daha fazla hava çekilir ve çekiş yumuşar.
 
 ## Killer lüle
 
-Killer (klasik delikli) modellerde tütün çukurunun tabanında 4 ile 7 arasında delik bulunur.
+Killer (klasik delikli) modellerde lüle çukurunun tabanında 4 ile 7 arasında delik bulunur.
 
-Gevşek dolum: Tütün, lüle üst seviyesinin 2–3 mm altında kalacak şekilde, adeta tuz eker gibi gevşek doldurulmalıdır. Üstten bakıldığında delikler değil, yalnızca tütün görünmelidir.
+Gevşek dolum: Aroma, lüle üst seviyesinin 2–3 mm altında kalacak şekilde, adeta tuz eker gibi gevşek doldurulmalıdır. Üstten bakıldığında delikler değil, yalnızca aroma görünmelidir.
 
 Hava akışı yönetimi: Deliklerin tıkanmaması rahat çekim için kritiktir; bu modellerde lüle içi elek kullanımı tavsiye edilir.
 
-Yoğun ve sert duman: Hava doğrudan tütünün içinden ve alttaki deliklerden geçer. Duman çok daha yoğun, doyurucu ve nispeten sert (tok) hissedilir.`,
+Yoğun ve sert duman: Hava doğrudan aromanın içinden ve alttaki deliklerden geçer. Duman çok daha yoğun, doyurucu ve nispeten sert (tok) hissedilir.`,
   },
   {
     slug: "sirli-mi-sirsiz-mi-lule",
@@ -78,17 +78,17 @@ Yoğun ve sert duman: Hava doğrudan tütünün içinden ve alttaki deliklerden 
     description:
       "Sırlı ve sırsız lüle farkı: aroma bağlama, lülenin kusması, temizlik ve farklı aromalarla kullanım açısından hangi lüleyi seçmelisiniz?",
     datePublished: "2026-04-10",
-    body: `Çamur türevli lülelerin (toprak, kil, seramik) dış yüzeyine ve tütün çukuruna uygulanan renkli, desenli koruyucu katmana sır adı verilir.
+    body: `Çamur türevli lülelerin (toprak, kil, seramik) dış yüzeyine ve lüle çukuruna uygulanan renkli, desenli koruyucu katmana sır adı verilir.
 
 ## Sırsız lüleler (toprak ve kil)
 
-Aroma bağlama: Sırsız lüleler fırınlanmış olsalar bile mikroskobik gözenekleri sayesinde zamanla tütün şerbetini emer. Bu yüzden sırsız lülede hep aynı aromayı (örneğin yalnızca çift elma veya yalnızca nane) içmek gerekir; farklı tatlar kullanıldığında kokular karışır ve performans düşer.
+Aroma bağlama: Sırsız lüleler fırınlanmış olsalar bile mikroskobik gözenekleri sayesinde zamanla aromanın şerbetini emer. Bu yüzden sırsız lülede hep aynı aromayı (örneğin yalnızca çift elma veya yalnızca nane) kullanmak gerekir; farklı tatlar kullanıldığında kokular karışır ve performans düşer.
 
 Lülenin kusması: Temizlik sırasında emilen su ve şerbet lüle içinde kalır, ısı gördüğünde genleşerek dışarı sızar. Fırınlaması yüksek, sert lülelerde daha az görülür. Görsel bir kirlilik yaratsa da sürekli aynı aroma içildiğinde tat yoğunluğunu artırır.
 
 ## Sırlı lüleler (seramik ve taş)
 
-Çok yönlü kullanım: Sır tabakası şerbetin emilmesini engeller; aynı lüleyle farklı tütün ve aromalar sorunsuzca denenebilir.
+Çok yönlü kullanım: Sır tabakası şerbetin emilmesini engeller; aynı lüleyle farklı aromalar sorunsuzca denenebilir.
 
 Kolay temizlik: Pürüzsüz yüzeyi sayesinde içim sonrası temizliği oldukça pratiktir.
 
@@ -100,11 +100,11 @@ Tasarım farkı: Sırlı Phunnel modellerde şerbet emilimi sıfıra yakındır.
     description:
       "Metal, cam, toprak ve seramik lüleler ısıyı nasıl yönetir? Malzemesine göre doğru nargile lülesini seçmek için pratik bir rehber.",
     datePublished: "2026-04-10",
-    body: `Keyifli bir içim doğru ısı yönetimiyle başlar. Isıyı 1–2 dakika içinde ideal seviyeye getirmek ve içim boyunca sabit tutabilmek lülenin malzemesine bağlıdır. Doğru lüle seçilmediğinde elinizde maşa ile sürekli köz ayarı yapmak zorunda kalabilirsiniz.
+    body: `Rahat bir çekiş doğru ısı yönetimiyle başlar. Isıyı 1–2 dakika içinde ideal seviyeye getirmek ve içim boyunca sabit tutabilmek lülenin malzemesine bağlıdır. Doğru lüle seçilmediğinde elinizde maşa ile sürekli köz ayarı yapmak zorunda kalabilirsiniz.
 
-Metal lüleler: Genellikle alüminyumdan üretilir. Isıyı çok hızlı iletir ama kömürdeki ısı değişimlerinden anında etkilenir; sürekli köz ekleyip azaltmanıza, tütünün hızlı yanmasına ve acı tat gelmesine yol açabilir. Isı yönetimi zor olduğu için profesyonel içimlerde pek tavsiye edilmez.
+Metal lüleler: Genellikle alüminyumdan üretilir. Isıyı çok hızlı iletir ama kömürdeki ısı değişimlerinden anında etkilenir; sürekli köz ekleyip azaltmanıza, karışımın hızlı yanmasına ve acı tat oluşmasına yol açabilir. Isı yönetimi zor olduğu için profesyonel içimlerde pek tavsiye edilmez.
 
-Cam lüleler: İnce cam modellerde ısı kontrolü zordur, tütünün yanma riski yüksektir. Quasar gibi markaların kalın cam çukurlu ve kalın silikon gövdeli setleri ise istisnadır: silikon gövde fazla ısıyı emer, kapaklı özel közlük ısıyı dengede tutar. Konforlu ve yüksek aromalı bir içim arayanlar için en doğru tercihlerden biridir.
+Cam lüleler: İnce cam modellerde ısı kontrolü zordur, karışımın yanma riski yüksektir. Quasar gibi markaların kalın cam çukurlu ve kalın silikon gövdeli setleri ise istisnadır: silikon gövde fazla ısıyı emer, kapaklı özel közlük ısıyı dengede tutar. Konforlu ve yüksek aromalı bir içim arayanlar için en doğru tercihlerden biridir.
 
 Toptan veya perakende lüle siparişleriniz için katalogdaki toprak, taş, seramik, sırlı, sırsız, Phunnel ve Killer seçeneklerini inceleyerek içim tarzınıza ve bütçenize en uygun modeli seçebilirsiniz.`,
   },

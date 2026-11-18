@@ -13,7 +13,7 @@ export const FAQ_AR: FaqItem[] = [
     id: "markalar",
     question: "ما الماركات التي توزّعونها في تركيا؟",
     answer:
-      "نُنتج ماركتينا الخاصتين Sultan Nargile وLegend Hookah، ونتولّى توزيع Oduman Nargile في تركيا. كما أننا موزّع معتمد لماركات المعسّل مثل Adalya وRevoshi وDaim وManterra وRosanna، ولماركات الفحم مثل Black Coco's وCoco Pearls وOne Nation وBuCoco.",
+      "نُنتج ماركتينا الخاصتين Sultan Nargile وLegend Hookah، ونتولّى توزيع Oduman Nargile في تركيا. كما أننا موزّع معتمد لماركات معدات الشيشة وإكسسواراتها مثل Steamulation وAlpha Hookah وMr.Wood، ولماركات الفحم مثل Black Coco's وCoco Pearls وOne Nation وBuCoco.",
   },
   {
     id: "minimum-siparis",
