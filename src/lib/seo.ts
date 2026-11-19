@@ -368,7 +368,7 @@ export function websiteJsonLd(locale: Locale = DEFAULT_LOCALE) {
 }
 
 /** Every photo of the product, cover first — what the gallery shows — on the shop's own domain. */
-function productImages(product: { image_url: string | null; image_urls?: string[] }): string[] {
+export function productImages(product: { image_url: string | null; image_urls?: string[] }): string[] {
   const gallery = product.image_urls ?? [];
   return (gallery.length > 0 ? gallery : product.image_url ? [product.image_url] : []).map(canonicalMedia);
 }
