@@ -15,3 +15,6 @@ export const LEGAL_PAGES: { slug: string; key: LegalKey }[] = [
 export const legalHref = (key: LegalKey) => `/sozlesmeler/${LEGAL_PAGES.find((p) => p.key === key)!.slug}`;
 
 export const DISTANCE_SALES_HREF = "/bilgi/mesafeli-satis-sozlesmesi";
+
+/** The return policy page (lib/content/iade): Google Merchant Center links it. */
+export const RETURNS_HREF = "/bilgi/iptal-ve-iade-kosullari";

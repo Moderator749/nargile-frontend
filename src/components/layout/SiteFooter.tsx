@@ -9,7 +9,7 @@ import { CookiePreferencesButton } from "@/components/common/CookiePreferencesBu
 import { ContactBar } from "@/components/layout/ContactBar";
 import { PaymentBadges } from "@/components/payment/PaymentBadges";
 import { footerMessages } from "@/lib/i18n/messages/layout";
-import { DISTANCE_SALES_HREF, legalHref } from "@/lib/legalPages";
+import { DISTANCE_SALES_HREF, RETURNS_HREF, legalHref } from "@/lib/legalPages";
 import { storeForBranch, storeHref } from "@/lib/stores";
 import { getMessages } from "@/lib/i18n/server";
 import type { HomeFooter, HomeFooterColumn, HomeSocialKind } from "@/types";
@@ -226,12 +226,13 @@ export async function SiteFooter({ footer }: { footer: HomeFooter }) {
           />
           {/* Every legal text a shop has to show, under "Bilgi Sayfaları" with the
               rest. Cancellation and returns are article 6 of the distance sales
-              agreement, so that link covers them. */}
+              agreement; their own page sums them up (Merchant Center links it). */}
           <LinkColumn
             id="footer-info"
             column={footer.info}
             always={[
               { href: DISTANCE_SALES_HREF, label: m.distanceSales },
+              { href: RETURNS_HREF, label: m.returns },
               { href: legalHref("PRIVACY"), label: m.kvkk },
               { href: legalHref("COOKIES"), label: m.cookies },
             ]}

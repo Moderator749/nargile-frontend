@@ -18,6 +18,7 @@
 
 import { BILGI_DOCUMENTS_AR, PERKS_PAGE_AR } from "@/lib/content/bilgi.ar";
 import { BILGI_DOCUMENTS_EN, PERKS_PAGE_EN } from "@/lib/content/bilgi.en";
+import { RETURNS_DOCUMENT, RETURNS_DOCUMENT_AR, RETURNS_DOCUMENT_EN } from "@/lib/content/iade";
 import type { Locale } from "@/lib/i18n/config";
 
 export const BILGI_HREF = "/bilgi";
@@ -51,7 +52,8 @@ export const PERKS_PAGE = {
     "Ücretsiz kargo, İstanbul içi aynı gün kurye, taksit, sepet ve havale indirimleri, SultanPuan ve KumbaraPuan: bireysel alışverişlerinizdeki tüm ayrıcalıklar.",
 };
 
-export const BILGI_DOCUMENTS: BilgiDocument[] = [
+/** The shop's Word documents, verbatim. */
+const WORD_DOCUMENTS: BilgiDocument[] = [
   {
     slug: "uyelik-ve-kullanim-sartlari",
     title: "Üyelik ve Kullanım Şartları",
@@ -328,7 +330,17 @@ export const BILGI_DOCUMENTS: BilgiDocument[] = [
   },
 ];
 
-const DOCUMENTS: Record<Locale, BilgiDocument[]> = { tr: BILGI_DOCUMENTS, en: BILGI_DOCUMENTS_EN, ar: BILGI_DOCUMENTS_AR };
+/**
+ * The Bilgi documents in Turkish: the Word documents, then the return policy
+ * page (lib/content/iade), a plain-words summary of the agreement's return terms.
+ */
+export const BILGI_DOCUMENTS: BilgiDocument[] = [...WORD_DOCUMENTS, RETURNS_DOCUMENT];
+
+const DOCUMENTS: Record<Locale, BilgiDocument[]> = {
+  tr: BILGI_DOCUMENTS,
+  en: [...BILGI_DOCUMENTS_EN, RETURNS_DOCUMENT_EN],
+  ar: [...BILGI_DOCUMENTS_AR, RETURNS_DOCUMENT_AR],
+};
 
 /** The Bilgi documents in a language, in the Turkish order. */
 export const bilgiDocuments = (locale: Locale): BilgiDocument[] => DOCUMENTS[locale];
