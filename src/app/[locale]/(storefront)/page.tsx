@@ -42,6 +42,7 @@ import { resolveShowcase, tileSlug } from "@/lib/showcase";
 import { resolveNav } from "@/lib/storefrontNav";
 import { getI18n } from "@/lib/i18n/server";
 import { PAGE_CONTAINER } from "@/lib/layout";
+import { lastIfSoldOut } from "@/lib/catalogFilters";
 import { displayVariant } from "@/lib/variants";
 import type { CatalogProduct, HomeBlock, HomeMobileSection } from "@/types";
 
@@ -81,9 +82,13 @@ const CATEGORY_ROW_COUNT = 10;
 
 type Picks = Record<(typeof PICK_KEYS)[number], CatalogProduct[]>;
 
-/** A product worth showing: one with a photo and a price to put under it. */
+/**
+ * A product worth showing: one with a photo and a price to put under it.
+ * Sold-out ones go to the end, in their order, before the row is cut to
+ * length: a row opens on what can be bought (lastIfSoldOut).
+ */
 const showable = (products: CatalogProduct[] | null, count = PICKS_COUNT) =>
-  (products ?? []).filter((p) => p.image_url && p.variants.some((v) => v.price)).slice(0, count);
+  lastIfSoldOut((products ?? []).filter((p) => p.image_url && p.variants.some((v) => v.price))).slice(0, count);
 
 /**
  * A product as its card needs it. Each card's product is written into the
@@ -104,7 +109,8 @@ const forCards = (products: CatalogProduct[] | null): CatalogProduct[] | null =>
 /** One card per name: a category can list the same item in several sizes ("Alüminyum Közlük - Kapaksız" ×4). */
 function onePerName(products: CatalogProduct[] | null): CatalogProduct[] {
   const seen = new Set<string>();
-  return (products ?? []).filter((p) => {
+  // The in-stock one of a repeated name is the one kept.
+  return lastIfSoldOut(products ?? []).filter((p) => {
     const name = p.name.trim().toLocaleLowerCase("tr");
     return !seen.has(name) && !!seen.add(name);
   });
@@ -205,9 +211,10 @@ async function getBrandShowcase(brand: string, slug: string): Promise<CatalogPro
       ? p.brand_slug === slug
       : p.brand?.toLocaleLowerCase("tr-TR") === brand.toLocaleLowerCase("tr-TR"),
   );
-  return showable(own, own.length)
-    .sort((a, b) => priceOf(b) - priceOf(a))
-    .slice(0, BRAND_SHOWCASE_COUNT);
+  return lastIfSoldOut(showable(own, own.length).sort((a, b) => priceOf(b) - priceOf(a))).slice(
+    0,
+    BRAND_SHOWCASE_COUNT,
+  );
 }
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -277,7 +284,7 @@ export default async function HomePage() {
   const showcase = resolveShowcase(home.showcase.tiles, allCategories, brands ?? [], artwork);
   // The deals funnel is the page's only deals section, and it is there only
   // when there is a deal to put in it.
-  const deals = (flashSales ?? []).filter((p) => p.is_opportunity).map(forCard);
+  const deals = lastIfSoldOut((flashSales ?? []).filter((p) => p.is_opportunity)).map(forCard);
 
   // Content tied to flash sales (a slide, the "Şok" promo box) only shows while one is live.
   // Managed in /admin/hero and /admin/promos.
@@ -319,7 +326,9 @@ export default async function HomePage() {
     : ready.length > 0
       ? ready
       : showable(await getPublicProducts(undefined, PICKS_COUNT * 4), PICKS_COUNT * 4);
-  const picks = fillPicks(lists, spare);
+  // A tab topped up past a sold-out product still ends on it.
+  const filled = fillPicks(lists, spare);
+  const picks: Picks = { bestsellers: lastIfSoldOut(filled.bestsellers), newest: lastIfSoldOut(filled.newest) };
 
   // "Sizin İçin Seçtiklerimiz": the admin's picks that can be shown (a photo and
   // a price). Until there are any, the house's own — the featured category, then

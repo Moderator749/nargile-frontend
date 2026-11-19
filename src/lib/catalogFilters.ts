@@ -124,8 +124,9 @@ function sorted(products: CatalogProduct[], sort: SortKey, now: number | null, l
 /**
  * Whatever the order, what cannot be bought goes last, in that same order.
  * The API already lists them so (`list_products`); this keeps it so when the
- * grid re-sorts by price or name.
+ * grid re-sorts by price or name. The homepage's rows use it too, so a sold-out
+ * product never opens a row there.
  */
-function lastIfSoldOut(products: CatalogProduct[]): CatalogProduct[] {
+export function lastIfSoldOut(products: CatalogProduct[]): CatalogProduct[] {
   return [...products.filter((p) => !soldOut(p)), ...products.filter((p) => soldOut(p))];
 }
