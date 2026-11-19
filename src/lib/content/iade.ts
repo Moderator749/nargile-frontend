@@ -3,8 +3,9 @@
  * of the signed distance sales agreement (lib/bilgi, articles 5.2–5.5, 6, 7)
  * in plain words, for shoppers and for Google Merchant Center's return-policy
  * check. It adds no obligation of its own: every term comes from that
- * agreement, except the refund deadline (Mesafeli Sözleşmeler Yönetmeliği
- * md. 13) and the rights on defective goods (6502 sayılı Kanun md. 11), which
+ * agreement, except the refund deadline (3 business days after the item
+ * arrives — the shop's Merchant Center setting, 2026-11-19 — capped by the
+ * 14 days of Mesafeli Sözleşmeler Yönetmeliği md. 13) and the rights on defective goods (6502 sayılı Kanun md. 11), which
  * are the law's. If the agreement changes, change this page with it — the
  * agreement is the binding text and the page says so.
  *
@@ -20,7 +21,7 @@ export const RETURNS_DOCUMENT: BilgiDocument = {
   title: "İptal, İade ve Değişim Koşulları",
   sourceTitle: "İPTAL, İADE VE DEĞİŞİM KOŞULLARI",
   description:
-    "İade ve değişim koşulları: 14 gün cayma hakkı, ücretsiz iade kargosu, kullanılmamış ve ambalajı açılmamış ürün, 30 gün değişim, 14 gün içinde para iadesi.",
+    "İade ve değişim koşulları: 14 gün cayma hakkı, ücretsiz iade kargosu, kullanılmamış ve ambalajı açılmamış ürün, 30 gün değişim, 3 iş gününde para iadesi.",
   blocks: [
     {
       type: "p",
@@ -34,7 +35,7 @@ export const RETURNS_DOCUMENT: BilgiDocument = {
         "Ürün durumu: Kullanılmamış, orijinal kutusunda, koruyucu ambalajı (jelatin, bant, mühür) açılmamış ve yeniden satılabilir olmalıdır. Kusurlu veya hasarlı gelen ürünler her durumda iade edilebilir.",
         "İade kargo ücreti: Cayma hakkıyla yapılan iadelerde ve kusurlu/hasarlı ürünlerde kargo ücreti bize aittir (anlaşmalı kargo firmamızla gönderildiğinde).",
         "Değişim: Kabul edilir. Teslimden itibaren 30 gün içinde; değişimde gidiş-dönüş kargo ücreti alıcıya aittir.",
-        "Para iadesi: Cayma bildiriminiz bize ulaştıktan sonra en geç 14 gün içinde, ödemeyi yaptığınız yönteme kesintisiz olarak.",
+        "Para iadesi: Ürün sağlam şekilde tarafımıza ulaştıktan sonra 3 iş günü içinde, ödemeyi yaptığınız yönteme kesintisiz olarak.",
         "İade yöntemi: Kargo ile.",
       ],
     },
@@ -70,7 +71,7 @@ export const RETURNS_DOCUMENT: BilgiDocument = {
     { type: "h2", text: "4. Para İadesi" },
     {
       type: "p",
-      text: "Ücret iadesi, cayma bildiriminizin bize ulaştığı tarihten itibaren en geç 14 gün içinde, ödemeyi yaptığınız yönteme (kredi kartı veya banka hesabı) kesintisiz olarak yapılır. Kredi kartı iadelerinin hesabınıza yansıma süresi bankanıza bağlıdır. Stokta olmadığı için iptal ettiğimiz siparişlerde ödediğiniz tutar en geç 3 gün içinde iade edilir.",
+      text: "Ücret iadesi, ürün sağlam şekilde tarafımıza ulaştıktan sonra 3 iş günü içinde, ödemeyi yaptığınız yönteme (kredi kartı veya banka hesabı) kesintisiz olarak yapılır; her durumda cayma bildiriminizin bize ulaştığı tarihten itibaren yasal süre olan 14 günü geçmez. Kredi kartı iadelerinin hesabınıza yansıma süresi bankanıza bağlıdır. Stokta olmadığı için iptal ettiğimiz siparişlerde ödediğiniz tutar en geç 3 gün içinde iade edilir.",
     },
     { type: "h2", text: "5. Değişim" },
     {
@@ -102,7 +103,7 @@ export const RETURNS_DOCUMENT_EN: BilgiDocument = {
   title: "Cancellation, Return and Exchange Policy",
   sourceTitle: "İPTAL, İADE VE DEĞİŞİM KOŞULLARI",
   description:
-    "Return and exchange policy: 14-day right of withdrawal, free return shipping, unused items in unopened packaging, 30-day exchanges, refunds within 14 days.",
+    "Return policy: 14-day right of withdrawal, free return shipping, unused items in unopened packaging, 30-day exchanges, refunds in 3 business days.",
   blocks: [
     NOTICE_EN,
     {
@@ -117,7 +118,7 @@ export const RETURNS_DOCUMENT_EN: BilgiDocument = {
         "Condition: unused, in the original box, with the protective packaging (film, tape, seal) unopened, and resaleable. Defective or damaged items can always be returned.",
         "Return shipping: free for returns under the right of withdrawal and for defective/damaged items (when sent with our contracted carrier).",
         "Exchanges: accepted within 30 days of delivery; the customer pays shipping both ways for an exchange.",
-        "Refund: within 14 days of your withdrawal notice reaching us, to your original payment method, in full.",
+        "Refund: within 3 business days after the returned item reaches us in undamaged condition, to your original payment method, in full.",
         "Return method: by cargo.",
       ],
     },
@@ -153,7 +154,7 @@ export const RETURNS_DOCUMENT_EN: BilgiDocument = {
     { type: "h2", text: "4. Refunds" },
     {
       type: "p",
-      text: "The refund is made in full to the payment method you used (credit card or bank account) within 14 days of the date your withdrawal notice reaches us at the latest. How long a card refund takes to appear on your account depends on your bank. For orders we cancel because an item is out of stock, the amount paid is refunded within 3 days.",
+      text: "The refund is made in full to the payment method you used (credit card or bank account) within 3 business days after the returned item reaches us in undamaged condition, and in any case no later than the legal limit of 14 days from the date your withdrawal notice reaches us. How long a card refund takes to appear on your account depends on your bank. For orders we cancel because an item is out of stock, the amount paid is refunded within 3 days.",
     },
     { type: "h2", text: "5. Exchanges" },
     {
@@ -182,7 +183,7 @@ export const RETURNS_DOCUMENT_AR: BilgiDocument = {
   title: "شروط الإلغاء والإرجاع والاستبدال",
   sourceTitle: "İPTAL, İADE VE DEĞİŞİM KOŞULLARI",
   description:
-    "شروط الإرجاع والاستبدال لدى سلطان نرجيلة: حق العدول خلال 14 يومًا، شحن إرجاع مجاني، منتج غير مستخدم بتغليف غير مفتوح، استبدال خلال 30 يومًا، واسترداد المبلغ خلال 14 يومًا.",
+    "شروط الإرجاع والاستبدال لدى سلطان نرجيلة: حق العدول خلال 14 يومًا، شحن إرجاع مجاني، منتج غير مستخدم بتغليف غير مفتوح، استبدال خلال 30 يومًا، واسترداد المبلغ خلال 3 أيام عمل.",
   blocks: [
     NOTICE_AR,
     {
@@ -197,7 +198,7 @@ export const RETURNS_DOCUMENT_AR: BilgiDocument = {
         "حالة المنتج: غير مستخدم، في علبته الأصلية، وتغليفه الواقي (النايلون، الشريط، الختم) غير مفتوح، وقابل لإعادة البيع. يمكن دائمًا إرجاع المنتجات المعيبة أو التالفة.",
         "تكلفة شحن الإرجاع: علينا في حالات حق العدول والمنتجات المعيبة/التالفة (عند الإرسال مع شركة الشحن المتعاقدة معنا).",
         "الاستبدال: مقبول خلال 30 يومًا من الاستلام، وتكلفة الشحن ذهابًا وإيابًا على المشتري.",
-        "استرداد المبلغ: خلال 14 يومًا كحد أقصى من وصول إشعار العدول إلينا، كاملًا وبطريقة الدفع نفسها.",
+        "استرداد المبلغ: خلال 3 أيام عمل بعد وصول المنتج المرتجع إلينا سليمًا، كاملًا وبطريقة الدفع نفسها.",
         "طريقة الإرجاع: عبر الشحن.",
       ],
     },
@@ -233,7 +234,7 @@ export const RETURNS_DOCUMENT_AR: BilgiDocument = {
     { type: "h2", text: "4. استرداد المبلغ" },
     {
       type: "p",
-      text: "يُردّ المبلغ كاملًا إلى وسيلة الدفع التي استخدمتها (بطاقة ائتمان أو حساب بنكي) خلال 14 يومًا كحد أقصى من تاريخ وصول إشعار العدول إلينا. تعتمد مدة ظهور المبلغ المسترد في حساب البطاقة على البنك. وفي الطلبات التي نلغيها لعدم توفر المنتج في المخزون يُردّ المبلغ المدفوع خلال 3 أيام.",
+      text: "يُردّ المبلغ كاملًا إلى وسيلة الدفع التي استخدمتها (بطاقة ائتمان أو حساب بنكي) خلال 3 أيام عمل بعد وصول المنتج المرتجع إلينا سليمًا، وفي جميع الأحوال قبل انقضاء المهلة القانونية البالغة 14 يومًا من تاريخ وصول إشعار العدول إلينا. تعتمد مدة ظهور المبلغ المسترد في حساب البطاقة على البنك. وفي الطلبات التي نلغيها لعدم توفر المنتج في المخزون يُردّ المبلغ المدفوع خلال 3 أيام.",
     },
     { type: "h2", text: "5. الاستبدال" },
     {

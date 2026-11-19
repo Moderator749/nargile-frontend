@@ -22,3 +22,10 @@ export function measurementId(env: Env): string | null {
 }
 
 export const GA_MEASUREMENT_ID: string | null = measurementId(process.env);
+
+/**
+ * The shop's Microsoft Clarity project, loaded wherever GA4 is (the live shop
+ * only, same gate as `measurementId`) and only after "Tümünü Kabul Et"
+ * (components/analytics/MicrosoftClarity).
+ */
+export const CLARITY_PROJECT_ID: string | null = GA_MEASUREMENT_ID ? "zg2edkyiav" : null;
