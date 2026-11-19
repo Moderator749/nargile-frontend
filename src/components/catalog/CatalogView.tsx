@@ -77,8 +77,10 @@ interface CatalogViewProps {
  * The dock has no search box — the header's one, and the brand rows in the
  * category column, both navigate to `?q=…` — but the term still has to reach
  * the grid. Reading it needs a Suspense boundary on a statically rendered
- * page, and the fallback renders the very same grid with no term, so the
- * products are in the prerendered HTML rather than waiting on hydration.
+ * page; only the small reader (`UrlWatcher`) sits in one, never the grid. A
+ * grid in the boundary's fallback was replaced by the real one at hydration:
+ * every card, photo included, mounted anew, and the first row's photo — the
+ * page's LCP — counted only then (~1.2 s later on a phone, 2026-11-19).
  */
 export function CatalogView(props: CatalogViewProps) {
   // The page's frame, heading (its one <h1>) and category column stay outside
@@ -97,9 +99,7 @@ export function CatalogView(props: CatalogViewProps) {
           {props.heading}
           {/* A brand page's term is fixed by the route; its filters are in the URL all the same. */}
           <div>
-            <Suspense fallback={<CatalogGrid {...props} query={brandQuery(props.brand)} initialFilters={EMPTY_FILTERS} initialGroup={null} />}>
-              <CatalogGridFromUrl {...props} />
-            </Suspense>
+            <CatalogGridFromUrl {...props} />
           </div>
           {props.footer}
         </div>
@@ -114,20 +114,65 @@ const brandQuery = (brand: CatalogViewProps["brand"]) => (brand && !brand.byRela
 /** The URL parameter of a brand page's group chips. */
 const GROUP_PARAM = "tur";
 
-function CatalogGridFromUrl(props: CatalogViewProps) {
+interface UrlState {
+  query: string;
+  filters: CatalogFilters;
+  group: string | null;
+}
+
+const urlKey = (u: UrlState) => `${u.query}\n${filtersToParams(u.filters, new URLSearchParams()).toString()}\n${u.group ?? ""}`;
+
+/** Reads the address (which needs Suspense on a static page) and reports it; draws nothing. */
+function UrlWatcher({
+  brand,
+  groups,
+  onChange,
+}: Pick<CatalogViewProps, "brand" | "groups"> & { onChange: (url: UrlState) => void }) {
   const params = useSearchParams();
-  const query = props.brand ? brandQuery(props.brand) : (params.get("q") ?? "").trim();
   const group = params.get(GROUP_PARAM);
-  // Keyed on the term: a new search starts the grid over. The filters it
-  // opens with are the address's (a reload, the back button, a shared link).
+  const url: UrlState = {
+    query: brand ? brandQuery(brand) : (params.get("q") ?? "").trim(),
+    filters: filtersFromParams(params),
+    group: groups?.some((g) => g.slug === group) ? group : null,
+  };
+  const key = urlKey(url);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `key` stands for `url`
+  useEffect(() => onChange(url), [key, onChange]);
+  return null;
+}
+
+function CatalogGridFromUrl(props: CatalogViewProps) {
+  // First render (the prerendered HTML and hydration alike): the bare page —
+  // the brand's own term, no filters. The same grid then stays mounted.
+  const initial = useMemo<UrlState>(() => ({ query: brandQuery(props.brand), filters: EMPTY_FILTERS, group: null }), [props.brand]);
+  const [url, setUrl] = useState<UrlState>(initial);
+  const [restored, setRestored] = useState(0);
+  const seen = useRef(false);
+  const onChange = useCallback(
+    (next: UrlState) => {
+      // An address that arrives with a term, filters or a group (a reload, the
+      // back button, a shared link) starts the grid over once, with them.
+      // Later the grid writes its own filters to the address; those need nothing.
+      if (!seen.current && urlKey(next) !== urlKey(initial)) setRestored((n) => n + 1);
+      seen.current = true;
+      setUrl(next);
+    },
+    [initial],
+  );
   return (
-    <CatalogGrid
-      key={query}
-      {...props}
-      query={query}
-      initialFilters={filtersFromParams(params)}
-      initialGroup={props.groups?.some((g) => g.slug === group) ? group : null}
-    />
+    <>
+      <Suspense fallback={null}>
+        <UrlWatcher brand={props.brand} groups={props.groups} onChange={onChange} />
+      </Suspense>
+      {/* Keyed on the term: a new search starts the grid over. */}
+      <CatalogGrid
+        key={`${url.query}\n${restored}`}
+        {...props}
+        query={url.query}
+        initialFilters={url.filters}
+        initialGroup={url.group}
+      />
+    </>
   );
 }
 
