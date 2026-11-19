@@ -207,8 +207,11 @@ export const FLASH_SALE_LIMIT = 50;
 export async function getFlashSaleProducts(): Promise<CatalogProduct[] | null> {
   try {
     // The section is a grid now: ask for every live deal, not a rail's worth.
+    // Cached for a minute (and dropped at once by any panel save, "catalog"):
+    // the homepage is ISR on the same minute. A sale's end needs no fetch — the
+    // cards turn to "missed" in the browser when their countdown runs out.
     const res = await fetch(`${API_URL}${await inLanguage(`/products/flash-sales?limit=${FLASH_SALE_LIMIT}`)}`, {
-      cache: "no-store",
+      next: { revalidate: 60, tags: ["catalog"] },
       signal: AbortSignal.timeout(API_TIMEOUT_MS),
     });
     return res.ok ? ((await res.json()) as CatalogProduct[]) : null;

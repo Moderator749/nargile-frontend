@@ -49,8 +49,13 @@ export function ProductImage({
   // new search) is not an empty white box.
   const [loadedSrc, setLoadedSrc] = useState<string | null>(null);
   if (!src || failedSrc === src) return fallback;
+  // The eager photos (the first row, the page's LCP) start on the final white
+  // surface: they are fetched first and arrive almost at once, and the pulse
+  // would otherwise hold them dimmed (the photo blends into it) until the page
+  // has hydrated and onLoad has run — about a second on a phone.
   const surface =
-    surfaceClassName ?? (loadedSrc === src ? DEFAULT_SURFACE : "bg-[#f5f5f7] motion-safe:animate-pulse dark:bg-zinc-200");
+    surfaceClassName ??
+    (eager || loadedSrc === src ? DEFAULT_SURFACE : "bg-[#f5f5f7] motion-safe:animate-pulse dark:bg-zinc-200");
 
   return (
     // Supplier photos are shot on white; the card is white too, so they sit seamlessly.

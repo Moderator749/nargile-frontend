@@ -46,11 +46,14 @@ import { lastIfSoldOut } from "@/lib/catalogFilters";
 import { displayVariant } from "@/lib/variants";
 import type { CatalogProduct, HomeBlock, HomeMobileSection } from "@/types";
 
-// Rendered per request so a flash sale that starts or ends is reflected at once
-// (its countdowns and the slides that depend on one). Catalog fetches keep their
-// own revalidate window in the data cache. The special-day strip is read in the
-// browser from the layout, so it is current whatever this says.
-export const revalidate = 0;
+// ISR, regenerated at most once a minute (and at once on any panel save, via
+// the "catalog" tag): served from cache, TTFB ~100 ms instead of a full render
+// per visit. A flash sale that starts shows within a minute (its fetch shares the
+// minute); one that ends turns to "missed" in the browser when its countdown
+// runs out. Cart, prices for logged-in buyers, consent and session are all
+// client-side, so a cached page is the same for everyone. The special-day strip
+// is read in the browser from the layout, so it is current whatever this says.
+export const revalidate = 60;
 
 /** Category whose products are featured on the homepage. */
 const FEATURED_CATEGORY_SLUG = "celik-takimlar";
