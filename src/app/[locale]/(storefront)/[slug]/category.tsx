@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { CatalogScreen } from "@/components/catalog/CatalogScreen";
+import { InStockAlternatives } from "@/components/catalog/InStockAlternatives";
 import { ancestorsOf, categoryCopy, categoryFamily, hasCategoryCopy } from "@/lib/categories";
 import { CATEGORY_SEO } from "@/lib/categorySeo";
 import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n/config";
@@ -73,6 +74,8 @@ export async function CategoryPage({
       activeCategory={category}
       products={products}
       brands={brands ?? []}
+      // A shelf with (almost) nothing in stock offers what is, under its grid.
+      afterGrid={<InStockAlternatives category={category} categories={categories} products={products} />}
       // The admin's description, else the shop's written copy where it has
       // one (the meta description's generated fallback is for search
       // results, not the page), under the products. Long text is clamped,

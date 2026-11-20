@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 import { CatalogHeading, CatalogIntro } from "@/components/catalog/CatalogHeading";
 import { CategoryBanner } from "@/components/catalog/CategoryBanner";
 import { CategoryClosing } from "@/components/catalog/CategoryClosing";
@@ -42,6 +44,8 @@ interface CatalogScreenProps {
   family?: CategoryFamily | null;
   /** A category's wide banner under its heading; none = no space kept. */
   banner?: string | null;
+  /** Straight under the grid, before the description: e.g. in-stock alternatives on a sold-out shelf. */
+  afterGrid?: ReactNode;
 }
 
 /**
@@ -66,6 +70,7 @@ export async function CatalogScreen({
   searchable,
   family,
   banner,
+  afterGrid,
 }: CatalogScreenProps) {
   const [home, locale] = await Promise.all([getHomepage(), getLocale()]);
   const pageHref = breadcrumbs[breadcrumbs.length - 1].href;
@@ -101,8 +106,9 @@ export async function CatalogScreen({
         // the homepage's, and the same guide repeated on every listing would
         // be one text on fifty addresses.
         footer={
-          (description || closing) && (
+          (afterGrid || description || closing) && (
             <>
+              {afterGrid}
               {description && <CategoryDescription title={title} html={description} />}
               {closing && <CategoryClosing title={closing.title} html={closing.html} />}
             </>

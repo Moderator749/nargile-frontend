@@ -27,10 +27,20 @@ export function SimilarProducts({
   products,
   categories,
   category,
+  id = "similar-products-heading",
+  titleKey = "similar",
+  listName,
 }: {
   products: CatalogProduct[];
   categories: Category[];
+  /** The shelf the link under the cards leads to. */
   category: Category;
+  /** The heading's id (two shelves on one page need two). */
+  id?: string;
+  /** Its heading: "Benzer Ürünler", or under a sold-out shelf "Stokta Benzer Alternatifler". */
+  titleKey?: "similar" | "inStockAlternatives";
+  /** The list's name in analytics (ProductShelf's default otherwise). */
+  listName?: string;
 }) {
   const hydrated = useAuthHydrated();
   const token = useAuthStore((s) => s.token);
@@ -62,8 +72,9 @@ export function SimilarProducts({
 
   return (
     <ProductShelf
-      id="similar-products-heading"
-      title={t.similar}
+      id={id}
+      title={t[titleKey]}
+      listName={listName}
       products={mine ?? products}
       categories={categories}
       isLoggedIn={loggedIn}

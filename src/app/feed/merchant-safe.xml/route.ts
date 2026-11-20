@@ -1,7 +1,7 @@
 import { htmlToText } from "@/lib/richText";
 import { productHref, productImages } from "@/lib/seo";
 import { getCategories, getPublicProducts } from "@/lib/server/catalog";
-import { SITE_URL } from "@/lib/site";
+import { MEDIA_PATH, SITE_URL } from "@/lib/site";
 import type { CatalogProduct, CatalogVariant } from "@/types";
 
 /**
@@ -37,6 +37,23 @@ const weightKg = (product: CatalogProduct, category: string) =>
 const RESTRICTED =
   /nargile|hookah|shisha|sheesha|ş[iı]şe|tütün|tutun|tobacco|sigara|cigar|duman|smok|köz|kömür|komur|charcoal|marpuç|lüle|vape|puro/i;
 
+/**
+ * A photo's final address. The shop's JPEG/PNG uploads were all converted to
+ * WebP of the same name and the originals removed; the old address answers
+ * with a 301 (saas_backend app/core/media_files.py), and every new upload is
+ * stored as WebP. Merchant Center gets the WebP itself, not the redirect.
+ */
+function finalImage(src: string): string {
+  try {
+    const url = new URL(src, SITE_URL);
+    if (!url.pathname.startsWith(MEDIA_PATH)) return src;
+    url.pathname = url.pathname.replace(/\.(jpe?g|png)$/i, ".webp");
+    return url.toString();
+  } catch {
+    return src;
+  }
+}
+
 const xml = (s: string) =>
   s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" })[c]!);
 
@@ -56,7 +73,7 @@ function description(product: CatalogProduct, category: string): string {
 function item(product: CatalogProduct, variant: CatalogVariant, category: string, categoryName: string): string | null {
   const price = variant.list_price;
   if (!price) return null;
-  const images = productImages(product);
+  const images = productImages(product).map(finalImage);
   if (images.length === 0) return null;
   const grouped = product.variants.length > 1;
   const title = grouped && variant.color_name ? `${product.name} - ${variant.color_name}` : product.name;

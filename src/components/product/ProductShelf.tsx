@@ -22,6 +22,7 @@ export function ProductShelf({
   pricesPending,
   footer,
   itemFooter,
+  listName,
 }: {
   /** The heading's id, for the section's aria-labelledby. */
   id: string;
@@ -35,6 +36,8 @@ export function ProductShelf({
   footer?: ReactNode;
   /** Under one card: e.g. its tick in "Birlikte İyi Gider"'s set. */
   itemFooter?: (product: CatalogProduct) => ReactNode;
+  /** The list's name in analytics; a product page's shelf by default. */
+  listName?: string;
 }) {
   if (products.length === 0) return null;
   const categoryById = new Map(categories.map((c) => [c.id, c]));
@@ -43,7 +46,7 @@ export function ProductShelf({
       <h2 id={id} className="text-center text-2xl font-semibold tracking-tighter text-foreground sm:text-3xl">
         {title}
       </h2>
-      <ProductList id={id.replace(/-heading$/, "")} name={`Ürün sayfası: ${id.replace(/-heading$/, "")}`}>
+      <ProductList id={id.replace(/-heading$/, "")} name={listName ?? `Ürün sayfası: ${id.replace(/-heading$/, "")}`}>
       <ul className="mx-auto mt-8 flex flex-wrap justify-center gap-3 sm:gap-6">
         {products.map((product, i) => (
           // Two side by side on a phone; four of these fit one row on xl and wrap evenly below it.

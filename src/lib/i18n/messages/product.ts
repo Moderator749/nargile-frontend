@@ -53,6 +53,7 @@ export const productMessages = defineMessages({
     description: "Ürün Açıklaması",
     crossSells: "Birlikte İyi Gider",
     similar: "Benzer Ürünler",
+    inStockAlternatives: "Stokta Benzer Alternatifler",
     allInCategory: (category: string) => `Tüm ${category} ürünleri`,
     // A plural name stands as it is ("Tüm Nargile Lüleleri"); a brand's or a
     // singular one takes "ürünleri" ("Tüm Legend Hookah ürünleri").
@@ -137,6 +138,7 @@ export const productMessages = defineMessages({
     description: "Product Description",
     crossSells: "Frequently Bought Together",
     similar: "Similar Products",
+    inStockAlternatives: "Similar Alternatives In Stock",
     allInCategory: (category: string) => `Shop all ${category}`,
     allOfCategory: (category: string) => `Shop all ${category}`,
     categoryCount: (n: number) => `${n.toLocaleString("en-US")} ${n === 1 ? "product" : "products"}`,
@@ -214,6 +216,7 @@ export const productMessages = defineMessages({
     description: "وصف المنتج",
     crossSells: "يُشترى معًا عادةً",
     similar: "منتجات مشابهة",
+    inStockAlternatives: "بدائل مشابهة متوفرة",
     allInCategory: (category: string) => `جميع منتجات ${category}`,
     allOfCategory: (category: string) => `جميع منتجات ${category}`,
     categoryCount: (n: number) => `${n.toLocaleString("ar")} منتج`,
