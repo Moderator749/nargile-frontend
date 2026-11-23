@@ -7,6 +7,7 @@ import { sheetInputClass } from "@/components/admin/products/SheetParts";
 import { adminCreateBrand } from "@/lib/adminApi";
 import { getApiErrorMessage } from "@/lib/errors";
 import type { Brand } from "@/types";
+import { brandCaps, capsInputValue } from "@/lib/brandCase";
 import { foldSearch } from "@/lib/searchFold";
 
 const fold = (s: string) => foldSearch(s.trim());
@@ -16,7 +17,8 @@ type Option = { kind: "none" } | { kind: "brand"; brand: Brand } | { kind: "crea
 /**
  * The product sheet's brand: type to search the brand list ("Markalar"),
  * pick one, or add the typed name as a new brand on the spot. The product
- * stores the brand's name, which the brand page's search finds it by.
+ * stores the brand's name, which the brand page's search finds it by. What is
+ * typed goes into capitals as it is typed (lib/brandCase: "i" → "I").
  */
 export function BrandCombobox({
   id,
@@ -78,7 +80,7 @@ export function BrandCombobox({
       setError(null);
       try {
         const created = await adminCreateBrand({
-          name: option.name,
+          name: brandCaps(option.name),
           is_active: true,
           sort_order: Math.max(0, ...brands.map((b) => b.sort_order)) + 10,
         });
@@ -136,10 +138,11 @@ export function BrandCombobox({
           onClick={() => !open && openList()}
           onBlur={() => !creating && close()}
           onChange={(e) => {
-            setQuery(e.target.value);
+            setQuery(capsInputValue(e.target, (e.nativeEvent as InputEvent).isComposing));
             setActive(0);
             setOpen(true);
           }}
+          onCompositionEnd={(e) => setQuery(capsInputValue(e.currentTarget))}
           onKeyDown={onKeyDown}
           className={`${sheetInputClass} pe-16`}
         />

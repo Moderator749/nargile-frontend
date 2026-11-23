@@ -276,11 +276,14 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
           <p className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground">
             {/* The brand, a link to its page (every product it makes). */}
             {product.brand && product.brand_slug ? (
-              <Link href={brandHref(product.brand_slug)} className="hover:text-foreground hover:underline">
+              <Link href={brandHref(product.brand_slug)} className="normal-case hover:text-foreground hover:underline">
                 {product.brand}
               </Link>
+            ) : product.brand ? (
+              // A brand exactly as it is stored; only a category's name is set in capitals.
+              <span className="normal-case">{product.brand}</span>
             ) : (
-              (product.brand ?? category?.name ?? "Nargile Malzemesi")
+              (category?.name ?? "Nargile Malzemesi")
             )}
           </p>
           <h1 className="mt-3 text-balance text-2xl font-bold leading-snug tracking-tight text-foreground sm:text-[26px]">

@@ -53,7 +53,7 @@ export function CategoryList({
     <ul>
       {items.map((item, i) => {
         const current = isCurrent(item);
-        const label = navLabel(item.label, locale);
+        const label = navLabel(item, locale);
         return (
           <li key={`${item.href}-${i}`} className="border-b border-border last:border-0">
             <Link

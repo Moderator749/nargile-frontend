@@ -20,6 +20,7 @@ import {
   adminUpdateBrand,
   adminUploadBrandLogo,
 } from "@/lib/adminApi";
+import { capsInputValue } from "@/lib/brandCase";
 import { getApiErrorMessage } from "@/lib/errors";
 import { refreshStorefront } from "@/lib/revalidate";
 import type { Brand, BrandWrite } from "@/types";
@@ -251,7 +252,7 @@ export function AdminBrandsView({
                     {b.logo_url ? (
                       <Image src={b.logo_url} alt="" width={112} height={40} unoptimized className="h-9 w-auto max-w-full object-contain grayscale" />
                     ) : (
-                      <span className="truncate text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{b.name}</span>
+                      <span className="truncate text-xs font-semibold tracking-[0.2em] text-slate-500">{b.name}</span>
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
@@ -316,7 +317,14 @@ export function AdminBrandsView({
               </button>
             )}
           </div>
-          <Input label="Marka adı" value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="ör. Mr. Wood" />
+          {/* In capitals as typed ("i" → "I"); the storefront shows it exactly so. */}
+          <Input
+            label="Marka adı"
+            value={form.name}
+            onChange={(e) => set("name", capsInputValue(e.target, (e.nativeEvent as InputEvent).isComposing))}
+            onCompositionEnd={(e) => set("name", capsInputValue(e.currentTarget))}
+            placeholder="ör. MR. WOOD"
+          />
           <Input
             label="Katalog araması"
             value={form.searchTerm}

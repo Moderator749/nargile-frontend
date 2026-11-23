@@ -6,6 +6,25 @@ import { getMessages } from "@/lib/i18n/server";
 import type { Breadcrumb } from "@/lib/seo";
 
 /**
+ * `text` with each `verbatim` in it kept exactly as written inside a line set
+ * in capitals: a brand's name as "Markalar" stores it ("SHISHA FOIL", never
+ * "SHİSHA FOİL"), the words around it ("Ürünleri") in capitals as before.
+ */
+function keepCase(text: string, verbatim: string | undefined) {
+  if (!verbatim || !text.includes(verbatim)) return text;
+  return text.split(verbatim).flatMap((part, i) =>
+    i === 0
+      ? [part]
+      : [
+          <span key={i} className="normal-case">
+            {verbatim}
+          </span>,
+          part,
+        ],
+  );
+}
+
+/**
  * The page's name and the one line of trail above it. A listing's is
  * `compact` on a phone — one line each — so the first row of products is in
  * view as the page opens.
@@ -19,8 +38,11 @@ export async function CatalogHeading({
   breadcrumbs,
   searchable = false,
   compact = false,
+  verbatim,
 }: {
   title: string;
+  /** A brand's name in the title and trail, shown as stored rather than in capitals. */
+  verbatim?: string;
   breadcrumbs: Breadcrumb[];
   /** A product listing's: the name on one line on a phone. */
   compact?: boolean;
@@ -38,13 +60,13 @@ export async function CatalogHeading({
               <li key={crumb.href} className="flex items-center gap-1.5">
                 {last ? (
                   <span aria-current="page" className="text-foreground">
-                    {crumb.name}
+                    {keepCase(crumb.name, verbatim)}
                   </span>
                 ) : (
                   <>
                     {/* A finger-sized target on the 10px line, without moving it. */}
                     <Link href={crumb.href} className="-my-3 inline-block py-3 transition-colors duration-200 hover:text-foreground">
-                      {crumb.name}
+                      {keepCase(crumb.name, verbatim)}
                     </Link>
                     <span aria-hidden className="text-neutral-300 dark:text-neutral-700">
                       /
@@ -66,7 +88,7 @@ export async function CatalogHeading({
             : "mt-2 text-xl sm:text-2xl"
         }`}
       >
-        {searchable ? <SearchTitle title={title} /> : title}
+        {searchable ? <SearchTitle title={title} /> : keepCase(title, verbatim)}
       </h1>
     </header>
   );

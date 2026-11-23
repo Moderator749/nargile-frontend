@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "@/components/i18n/Link";
 import { canOptimiseImage } from "@/lib/home";
 import { homeMessages } from "@/lib/i18n/messages/home";
-import { getLocale, getMessages } from "@/lib/i18n/server";
+import { getMessages } from "@/lib/i18n/server";
 import { brandHref } from "@/lib/seo";
 import type { Brand } from "@/types";
 
@@ -70,10 +70,9 @@ export async function BrandTicker({
   className?: string;
 }) {
   if (brands.length === 0) return null;
-  const [locale, t] = await Promise.all([getLocale(), getMessages(homeMessages)]);
-  // Capitals by the page's language: Turkish turns "i" into "İ", which an
-  // English or Arabic page would show on "Khalil Mamoon".
-  const upper = locale === "tr" ? "tr-TR" : "en-GB";
+  const t = await getMessages(homeMessages);
+  // Names exactly as "Markalar" stores them (the admin enters them in capitals),
+  // never re-cased here: a Turkish page would turn "i" into "İ".
   const half = Array.from({ length: Math.ceil(BAND_MIN_ITEMS / brands.length) }, () => brands).flat();
   const duration = `${half.length * SECONDS_PER_BRAND}s`;
 
@@ -108,7 +107,7 @@ export async function BrandTicker({
           />
         ) : (
           <span className="transition-colors duration-200 group-hover/brand:text-neutral-900 dark:group-hover/brand:text-white">
-            {brand.name.toLocaleUpperCase(upper)}
+            {brand.name}
           </span>
         );
         return (
@@ -157,7 +156,7 @@ export async function BrandTicker({
           {/* Still, the list wraps instead, so there is no moving edge to fade. */}
           <div className="overflow-hidden rounded-none py-4 [mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)] sm:py-5 motion-reduce:[mask-image:none]">
             <div
-              className="flex w-max text-xs font-bold uppercase tracking-[0.2em] text-neutral-500 motion-safe:animate-[marquee_var(--marquee-duration)_linear_infinite] motion-safe:rtl:translate-x-1/2 motion-safe:rtl:[animation-direction:reverse] hover:[animation-play-state:paused] motion-reduce:w-full motion-reduce:justify-center sm:text-sm dark:text-neutral-500"
+              className="flex w-max text-xs font-bold tracking-[0.2em] text-neutral-500 motion-safe:animate-[marquee_var(--marquee-duration)_linear_infinite] motion-safe:rtl:translate-x-1/2 motion-safe:rtl:[animation-direction:reverse] hover:[animation-play-state:paused] motion-reduce:w-full motion-reduce:justify-center sm:text-sm dark:text-neutral-500"
               style={{ "--marquee-duration": duration } as React.CSSProperties}
             >
               {band(0)}

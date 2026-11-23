@@ -253,7 +253,7 @@ export function TopNav({
             seven come to about 600px of a 696px bar, so it has to stay small
             there for them to keep to one line. */}
         <ul className="flex min-w-0 flex-1 flex-wrap items-center justify-center gap-x-4 gap-y-1 lg:justify-between lg:gap-x-3 xl:gap-x-6">
-          {links.map(({ label, href, accent }) => {
+          {links.map(({ label, href, accent, verbatim }) => {
             const current = isRootSlugPath(href) && pathname === href;
             return (
               <li key={label} className="shrink-0">
@@ -268,7 +268,7 @@ export function TopNav({
                         : "border-transparent text-gray-600 hover:border-red-700 hover:text-red-700 dark:text-neutral-300 dark:hover:border-red-400 dark:hover:text-red-400"
                   }`}
                 >
-                  {navLabel(label, locale)}
+                  {navLabel({ label, verbatim }, locale)}
                 </Link>
               </li>
             );

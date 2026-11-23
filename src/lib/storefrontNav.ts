@@ -33,6 +33,8 @@ export interface ResolvedNav {
   label: string;
   href: string;
   accent?: boolean;
+  /** The label is a brand's own name (the entry left it blank): shown as stored, never re-cased. */
+  verbatim?: boolean;
 }
 
 /**
@@ -110,7 +112,8 @@ export function navHref(
  * menus capitalise as they render (TopNav, CategoryList), where the language
  * is known, rather than resolveNav, which every page calls without one.
  */
-export const navLabel = (label: string, locale: Locale) => label.toLocaleUpperCase(INTL_LOCALE[locale]);
+export const navLabel = ({ label, verbatim }: Pick<ResolvedNav, "label" | "verbatim">, locale: Locale) =>
+  verbatim ? label : label.toLocaleUpperCase(INTL_LOCALE[locale]);
 
 /**
  * The entries as links, against the catalog as it stands. An entry that names
@@ -127,12 +130,23 @@ export function resolveNav(
   return entries.flatMap((entry) => {
     // Switched off in "Kategori Düzenle": kept in the list, not shown.
     if (entry.enabled === false) return [];
-    const label =
-      entry.label.trim() ||
-      (entry.slug ? (bySlug.get(entry.slug)?.name ?? brandBySlug.get(entry.slug)?.name) : undefined) ||
+    const own = entry.label.trim();
+    const category = entry.slug ? bySlug.get(entry.slug)?.name : undefined;
+    // A brand's name, as "Markalar" stores it: shown exactly so in the menus.
+    const brandName =
+      (entry.slug && !category ? brandBySlug.get(entry.slug)?.name : undefined) ||
       (entry.brand ? brandBySlug.get(entry.brand)?.name : undefined);
+    const label = own || category || brandName;
     // A nameless entry whose category is gone (or switched off) has nothing to say.
     if (!label) return [];
-    return [{ label, href: navHref(entry, bySlug, brandBySlug), accent: entry.accent || undefined }];
+    const verbatim = !own && !category && !!brandName;
+    return [
+      {
+        label,
+        href: navHref(entry, bySlug, brandBySlug),
+        accent: entry.accent || undefined,
+        ...(verbatim ? { verbatim: true } : {}),
+      },
+    ];
   });
 }

@@ -117,7 +117,8 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
   const quoteOnly = isExportAccount(useAuthStore((s) => s.user));
   const isHeavy = product.tags?.includes("HEAVY_CARGO") ?? false;
   const Icon = categoryCopy(category?.slug).icon;
-  const maker = product.brand?.trim() || category?.name || "";
+  const brandName = product.brand?.trim() || "";
+  const maker = brandName || category?.name || "";
   const money = useDisplayMoney();
   const t = useMessages(catalogMessages).card;
 
@@ -330,7 +331,8 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
             shifts the card. */}
         <div className="flex flex-col gap-0.5">
           <p className="h-4 truncate text-xs uppercase leading-4 tracking-wider text-muted-foreground @max-[13rem]:text-[10px]">
-            {maker}
+            {/* A brand exactly as it is stored ("Markalar"); a category's name in capitals. */}
+            <span className={brandName ? "normal-case" : undefined}>{maker}</span>
             {needsColorChoice && (
               <>
                 {maker && " · "}
