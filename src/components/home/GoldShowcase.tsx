@@ -67,15 +67,11 @@ const TONES = {
   },
 } as const;
 
-/** The small minted coin on each card: the advantages section's, card-sized. */
-const CARD_COIN =
-  "pointer-events-none absolute start-3 top-3 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-amber-200 via-amber-400 to-amber-600 text-[9px] font-bold tracking-tight text-amber-950/80 shadow-[0_6px_14px_-6px_rgba(217,119,6,0.6)] ring-1 ring-inset ring-white/50";
-
 /**
  * A loyalty band on the homepage — "%10 SultanPuan", "Kumbara 20.000 TL": a
  * band edge to edge (gold or silver, `tone`), the offer across its top in three parts (the title
  * over its line, a note in the middle, the call by the coin), and under it a
- * row of products sliding sideways by itself, each marked with the SP coin.
+ * row of products sliding sideways by itself.
  * The two bands are this one component, so they cannot drift apart; each
  * brings only its words and its products.
  *
@@ -236,8 +232,8 @@ export function GoldShowcase({
               const product = mine?.get(listed.id) ?? listed;
               return (
                 <li key={listed.id} className={SLIDE}>
-                  {/* The coin on the card's top start corner: this row's mark, laid
-                      over the shared card rather than built into it. */}
+                  {/* The card marks a price that earns SultanPuan itself ("%10
+                      SultanPuan", ProductCard), here as everywhere else. */}
                   <div className={`relative flex w-full flex-1 flex-col [&>article]:flex-1 ${colours.card}`}>
                     <ProductCard index={i}
                       product={product}
@@ -246,9 +242,6 @@ export function GoldShowcase({
                       publicPrices={!mine}
                       pricesPending={loggedIn && !mine}
                     />
-                    <span aria-hidden className={CARD_COIN}>
-                      SP
-                    </span>
                   </div>
                 </li>
               );

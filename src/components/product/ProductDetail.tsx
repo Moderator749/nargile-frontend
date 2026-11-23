@@ -12,6 +12,7 @@ import { CrossSells } from "@/components/product/CrossSells";
 import { ProductDescription } from "@/components/product/ProductDescription";
 import { ProductCategoryLink } from "@/components/product/ProductCategoryLink";
 import { RetailPerks, showsRetailPerks } from "@/components/product/RetailPerks";
+import { SultanPuanPriceCallout } from "@/components/catalog/SultanPuanBadge";
 import { ShippingAndTrust } from "@/components/product/ShippingAndTrust";
 import type { AdvantageSources } from "@/lib/storeAdvantages";
 import { isExportAccount } from "@/lib/exportAccount";
@@ -320,6 +321,8 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
               <p className="text-sm text-muted-foreground">{card.noPrice}</p>
             )}
             <p className="mt-1.5 text-xs text-muted-foreground">{t.vatIncluded}</p>
+            {/* "%10 SultanPuan" by the price that earns it, as on its card. */}
+            {!pricesPending && <SultanPuanPriceCallout priceInclTax={price?.price_incl_tax} />}
           </div>
 
           <div className="mt-4 flex flex-wrap gap-2">

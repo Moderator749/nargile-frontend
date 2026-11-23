@@ -97,6 +97,7 @@ export const productMessages = defineMessages({
       close: "Kapat",
       images: "Görseller",
     },
+    sultanPuan: { band: (band: string) => `${band} alışverişlerde` },
     perks: {
       label: "Bireysel alışveriş avantajları",
       // Each benefit's name, under its figure, which is drawn as a badge.
@@ -176,6 +177,7 @@ export const productMessages = defineMessages({
       close: "Close",
       images: "Images",
     },
+    sultanPuan: { band: (band: string) => `on orders of ${band}` },
     perks: {
       label: "Shopping perks for individual customers",
       volume: "Cart discount",
@@ -254,6 +256,7 @@ export const productMessages = defineMessages({
       close: "إغلاق",
       images: "الصور",
     },
+    sultanPuan: { band: (band: string) => `على الطلبات بقيمة \u2066${band}\u2069` },
     perks: {
       label: "مزايا التسوق للأفراد",
       volume: "خصم السلة",
