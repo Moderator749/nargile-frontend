@@ -1,4 +1,5 @@
 import { EMPTY_ADDRESS, TURKEY, type AddressDraft } from "@/components/cart/delivery/addressDraft";
+import type { CheckoutProblem } from "@/lib/checkoutProblems";
 import type { Locale } from "@/lib/i18n/config";
 import { checkoutMessages } from "@/lib/i18n/messages/checkout";
 import { digitsOnly, isValidTaxId } from "@/lib/trIdentity";
@@ -64,15 +65,21 @@ export function initialInvoice(onFile: CorporateInvoiceDetails | null): InvoiceD
  * rejected, and an invoice without an address is not a document at all.
  */
 export function invoiceProblem(invoice: InvoiceDraft, locale: Locale = "tr"): string | null {
-  if (!invoice.toCompany) return null;
+  return invoiceProblems(invoice, locale)[0]?.message ?? null;
+}
+
+/** Every one of `invoiceProblem`'s findings, in the form's order. */
+export function invoiceProblems(invoice: InvoiceDraft, locale: Locale = "tr"): CheckoutProblem[] {
+  if (!invoice.toCompany) return [];
   const m = checkoutMessages[locale].problems;
-  if (invoice.companyTitle.trim().length < 2) return m.companyTitle;
-  if (!invoice.city) return m.invoiceCity;
-  if (invoice.district.trim().length < 2) return m.invoiceDistrict;
-  if (invoice.line.trim().length < 5) return m.invoiceLine;
-  if (invoice.taxOffice.trim().length < 2) return m.taxOffice;
-  if (!isValidTaxId(digitsOnly(invoice.taxNumber))) return m.taxNumber;
-  return null;
+  const found: CheckoutProblem[] = [];
+  if (invoice.companyTitle.trim().length < 2) found.push({ field: "invoiceTitle", message: m.companyTitle });
+  if (invoice.line.trim().length < 5) found.push({ field: "invoiceLine", message: m.invoiceLine });
+  if (!invoice.city) found.push({ field: "invoiceCity", message: m.invoiceCity });
+  if (invoice.district.trim().length < 2) found.push({ field: "invoiceDistrict", message: m.invoiceDistrict });
+  if (invoice.taxOffice.trim().length < 2) found.push({ field: "taxOffice", message: m.taxOffice });
+  if (!isValidTaxId(digitsOnly(invoice.taxNumber))) found.push({ field: "taxNumber", message: m.taxNumber });
+  return found;
 }
 
 /** Whether the firm's address is complete enough to be shown or shipped to. */

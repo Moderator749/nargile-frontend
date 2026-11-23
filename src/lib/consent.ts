@@ -85,11 +85,37 @@ export function gtagInitScript(id: string): string {
   const denied = JSON.stringify(consentSignals("denied"));
   const granted = JSON.stringify(consentSignals("granted"));
   return [
-    "window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}",
+    // Inside a frame — PayTR's, where the confirmation page opens for a moment
+    // before it steps out to the top window — nothing is set up: no config, so
+    // no page view and no session that starts at paytr.com. gtag.js then finds
+    // an empty dataLayer and sends nothing. lib/gaEvents drops events there too.
+    "if(window.top===window.self){",
+    "window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}window.gtag=gtag;",
     `gtag('consent','default',${denied});`,
     `try{var c=JSON.parse(localStorage.getItem(${JSON.stringify(CONSENT_KEY)})||'null');if(c&&c.choice==='granted')gtag('consent','update',${granted});}catch(e){}`,
-    `gtag('js',new Date());gtag('config','${id}');`,
+    // A browser the shop's team has used the panel in is its own traffic
+    // (lib/internalTraffic): GA4's "Internal traffic" data filter leaves it out.
+    // `set` carries it on every event, the config on the page view itself.
+    `var g={};try{if(localStorage.getItem(${JSON.stringify(INTERNAL_TRAFFIC_KEY)})==='1'){g.traffic_type='internal';gtag('set',g);}}catch(e){}`,
+    `gtag('js',new Date());gtag('config','${id}',g);`,
     // Events fired before this ran (lib/gaEvents' queue), after config so the consent defaults precede them.
     "(window.__gaq||[]).forEach(function(a){gtag.apply(null,a);});window.__gaq=[];",
+    "}",
   ].join("");
+}
+
+/**
+ * Set in a browser once someone signs in to the admin panel there
+ * (components/admin/AdminShell). Kept after signing out: the device is the
+ * shop's, and its later storefront visits are still the team's own.
+ */
+export const INTERNAL_TRAFFIC_KEY = "ga_internal_traffic";
+
+/** Marks this browser as the shop's own for GA4 (`traffic_type: internal`). */
+export function markInternalTraffic(): void {
+  try {
+    localStorage.setItem(INTERNAL_TRAFFIC_KEY, "1");
+  } catch {
+    // Storage blocked: this visit is counted as a customer's; nothing breaks.
+  }
 }

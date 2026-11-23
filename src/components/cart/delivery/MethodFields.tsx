@@ -1,11 +1,11 @@
 "use client";
 
+import { FieldError, INVALID_ARIA, invalidProps, useFieldError } from "@/components/cart/CheckoutErrors";
 import { useMessages } from "@/components/i18n/LocaleProvider";
 import { checkoutMessages } from "@/lib/i18n/messages/checkout";
 import type { ShippingMethod } from "@/types";
 
-const inputClass =
-  "block h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20 dark:border-white/15 dark:bg-zinc-900 dark:text-zinc-100";
+const inputClass = `block h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20 dark:border-white/15 dark:bg-zinc-900 dark:text-zinc-100 ${INVALID_ARIA}`;
 const labelClass = "block text-sm font-medium text-slate-700 dark:text-zinc-300";
 const noteClass = "text-xs text-slate-500 dark:text-zinc-400";
 /** A phone number reads left to right on an Arabic page too; it only sits on the right. */
@@ -36,6 +36,7 @@ export function MethodFields({
   onChange: (patch: Partial<MethodDetails>) => void;
 }) {
   const t = useMessages(checkoutMessages).method;
+  const freightError = useFieldError("freightPhone");
   if (method === "YURTICI_DOOR") {
     return (
       <div className="space-y-1.5">
@@ -85,8 +86,10 @@ export function MethodFields({
               value={value.freightPhone}
               onChange={(e) => onChange({ freightPhone: e.target.value })}
               placeholder="0212 000 00 00"
+              {...invalidProps("freight-phone", freightError)}
               className={phoneClass}
             />
+            <FieldError id="freight-phone-error" message={freightError} />
           </div>
         </div>
       </div>
@@ -114,6 +117,8 @@ export function ReceiverFields({
   idPrefix: string;
 }) {
   const t = useMessages(checkoutMessages).receiver;
+  const nameError = useFieldError("receiverName");
+  const phoneError = useFieldError("receiverPhone");
   return (
     <div className="space-y-3">
       <label className="flex cursor-pointer items-start gap-3 text-sm">
@@ -141,8 +146,10 @@ export function ReceiverFields({
               required
               value={name}
               onChange={(e) => onChange({ receiverName: e.target.value })}
+              {...invalidProps(`${idPrefix}-receiver-name`, nameError)}
               className={inputClass}
             />
+            <FieldError id={`${idPrefix}-receiver-name-error`} message={nameError} />
           </div>
           <div className="space-y-1.5">
             <label htmlFor={`${idPrefix}-receiver-phone`} className={labelClass}>
@@ -158,8 +165,10 @@ export function ReceiverFields({
               placeholder="05xx xxx xx xx"
               value={phone}
               onChange={(e) => onChange({ receiverPhone: e.target.value })}
+              {...invalidProps(`${idPrefix}-receiver-phone`, phoneError)}
               className={phoneClass}
             />
+            <FieldError id={`${idPrefix}-receiver-phone-error`} message={phoneError} />
           </div>
         </div>
       )}

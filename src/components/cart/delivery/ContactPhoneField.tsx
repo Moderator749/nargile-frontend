@@ -1,11 +1,12 @@
 "use client";
 
+import { useFieldError } from "@/components/cart/CheckoutErrors";
 import { phoneProblem } from "@/components/cart/delivery/addressDraft";
 import { useLocale, useMessages } from "@/components/i18n/LocaleProvider";
 import { checkoutMessages } from "@/lib/i18n/messages/checkout";
 
 const inputClass =
-  "block h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20 aria-[invalid=true]:border-red-500 dark:border-white/15 dark:bg-zinc-900 dark:text-zinc-100 rtl:text-right";
+  "block h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20 aria-[invalid=true]:border-red-500 aria-[invalid=true]:ring-1 aria-[invalid=true]:ring-red-500/40 dark:border-white/15 dark:bg-zinc-900 dark:text-zinc-100 rtl:text-right";
 
 /**
  * The order's phone number, asked once whichever card is picked: the courier
@@ -23,8 +24,9 @@ export function ContactPhoneField({
 }) {
   const locale = useLocale();
   const m = useMessages(checkoutMessages);
-  // Said once something has been typed: an empty field is the blocker's to name.
-  const problem = value.trim() ? phoneProblem(value, abroad, locale) : null;
+  // Said once something has been typed, or once a "Siparişi Tamamla" tap found it missing.
+  const asked = useFieldError("phone");
+  const problem = (value.trim() ? phoneProblem(value, abroad, locale) : null) ?? asked ?? null;
 
   return (
     <div className="mt-4 max-w-sm space-y-1.5">
@@ -40,6 +42,7 @@ export function ContactPhoneField({
         dir="ltr"
         required
         aria-invalid={problem ? true : undefined}
+        data-invalid={problem ? "" : undefined}
         aria-describedby="contact-phone-hint"
         placeholder={abroad ? m.export.address.phonePlaceholder : m.address.phonePlaceholder}
         value={value}

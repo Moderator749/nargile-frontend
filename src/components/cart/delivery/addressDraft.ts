@@ -11,6 +11,7 @@
  * address abroad needs a country and a city, and has neither.
  */
 
+import type { CheckoutProblem } from "@/lib/checkoutProblems";
 import type { Locale } from "@/lib/i18n/config";
 import { checkoutMessages } from "@/lib/i18n/messages/checkout";
 import { isValidPhone, isValidInternationalPhone } from "@/lib/trIdentity";
@@ -139,19 +140,41 @@ export function phoneProblem(phone: string, abroad: boolean, locale: Locale = "t
  * an address on file is offered as it stands or the form comes back for it.
  */
 export function placeProblem(a: AddressDraft, locale: Locale = "tr"): string | null {
+  return placeProblems(a, locale)[0]?.message ?? null;
+}
+
+/** Every field of the place that is not usable yet, in the form's order. */
+function placeProblems(a: AddressDraft, locale: Locale): CheckoutProblem[] {
   const m = checkoutMessages[locale];
   const abroad = a.country !== TURKEY;
-  if (a.full_name.trim().length < 2) return m.problems.name;
-  if (!a.country) return abroad ? m.export.problems.country : m.problems.country;
+  const found: CheckoutProblem[] = [];
+  if (a.full_name.trim().length < 2) found.push({ field: "name", message: m.problems.name });
+  if (!a.country) found.push({ field: "country", message: abroad ? m.export.problems.country : m.problems.country });
   if (abroad) {
-    if (a.city.trim().length < 2) return m.export.problems.city;
-    if (a.line.trim().length < 5) return m.export.problems.line;
-    return null;
+    if (a.city.trim().length < 2) found.push({ field: "city", message: m.export.problems.city });
+    if (a.line.trim().length < 5) found.push({ field: "line", message: m.export.problems.line });
+    return found;
   }
-  if (!a.city) return m.problems.city;
-  if (a.district.trim().length < 2) return m.problems.district;
-  if (a.line.trim().length < 5) return m.problems.line;
-  return null;
+  if (!a.city) found.push({ field: "city", message: m.problems.city });
+  if (a.district.trim().length < 2) found.push({ field: "district", message: m.problems.district });
+  if (a.line.trim().length < 5) found.push({ field: "line", message: m.problems.line });
+  return found;
+}
+
+/**
+ * All of `addressProblem`'s findings rather than the first: the name, the
+ * number, then the place — the order the step shows them in, number first
+ * after the name because it sits above the cards.
+ */
+export function addressProblems(a: AddressDraft, locale: Locale = "tr"): CheckoutProblem[] {
+  const place = placeProblems(a, locale);
+  const name = place.filter((p) => p.field === "name");
+  const phone = phoneProblem(a.phone, a.country !== TURKEY, locale);
+  return [
+    ...(phone ? [{ field: "phone" as const, message: phone }] : []),
+    ...name,
+    ...place.filter((p) => p.field !== "name"),
+  ];
 }
 
 /** "Başka biri teslim alacak": both fields or neither, and both must be usable. */
@@ -160,6 +183,16 @@ export function receiverProblem(name: string, phone: string, abroad: boolean, lo
   if (name.trim().length < 2) return m.problems.receiverName;
   const ok = abroad ? isValidInternationalPhone(phone) : isValidPhone(phone);
   return ok ? null : m.problems.receiverPhone;
+}
+
+/** `receiverProblem`'s findings, one per field. */
+export function receiverProblems(name: string, phone: string, abroad: boolean, locale: Locale = "tr"): CheckoutProblem[] {
+  const m = checkoutMessages[locale];
+  const found: CheckoutProblem[] = [];
+  if (name.trim().length < 2) found.push({ field: "receiverName", message: m.problems.receiverName });
+  const ok = abroad ? isValidInternationalPhone(phone) : isValidPhone(phone);
+  if (!ok) found.push({ field: "receiverPhone", message: m.problems.receiverPhone });
+  return found;
 }
 
 /**

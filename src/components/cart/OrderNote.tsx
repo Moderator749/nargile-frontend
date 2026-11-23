@@ -1,6 +1,7 @@
 "use client";
 
-import { MessageSquareText } from "lucide-react";
+import { useState } from "react";
+import { MessageSquareText, Plus } from "lucide-react";
 
 import { useMessages } from "@/components/i18n/LocaleProvider";
 import { cartMessages } from "@/lib/i18n/messages/cart";
@@ -15,6 +16,10 @@ export const ORDER_NOTE_MAX = 500;
  * — so there is nothing to validate and nothing to get wrong. The counter only
  * appears once the note is long enough for the limit to matter, which keeps the
  * box quiet for the two-line note that most of them are.
+ *
+ * Folded behind "Not ekle" until it is wanted (2026-11-23): an optional box
+ * should not cost every phone a screen of scrolling. A note already written
+ * keeps it open.
  */
 export function OrderNote({
   value,
@@ -32,6 +37,24 @@ export function OrderNote({
   const t = useMessages(cartMessages);
   const left = ORDER_NOTE_MAX - value.length;
   const copy = exportCopy ? t.export.note : t.note;
+  const [opened, setOpened] = useState(false);
+
+  if (!opened && !value) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpened(true)}
+        aria-expanded={false}
+        aria-controls="order-note"
+        className="inline-flex items-center gap-2 rounded-lg px-1 py-1.5 text-sm font-medium text-slate-700 transition-colors duration-200 hover:text-red-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 dark:text-zinc-300 dark:hover:text-red-300"
+      >
+        <Plus className="h-4 w-4" aria-hidden />
+        <MessageSquareText className="h-4 w-4 text-slate-400 dark:text-zinc-500" aria-hidden />
+        {copy.add}
+        <span className="font-normal text-slate-500 dark:text-zinc-400">{copy.optional}</span>
+      </button>
+    );
+  }
 
   return (
     <section
@@ -51,6 +74,9 @@ export function OrderNote({
         <textarea
           id="order-note"
           rows={3}
+          // Opened by "Not ekle": straight into the box. (A note already there
+          // keeps the box open from the start, and nothing is focused then.)
+          autoFocus={opened && !value}
           maxLength={ORDER_NOTE_MAX}
           value={value}
           onChange={(e) => onChange(e.target.value)}

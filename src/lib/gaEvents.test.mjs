@@ -8,7 +8,7 @@ globalThis.window = { gtag: (...args) => sent.push(args) };
 globalThis.location = { pathname: "/nargile-luleleri" };
 mock.timers.enable({ apis: ["setTimeout"] });
 
-const { trackListImpression, trackSelectItem } = await import("./gaEvents.ts");
+const { track, trackListImpression, trackSelectItem } = await import("./gaEvents.ts");
 
 const list = { id: "category_nargile-luleleri", name: "Kategori: nargile-luleleri" };
 const other = { id: "home_kumbara", name: "Ana sayfa: Kumbara" };
@@ -39,4 +39,18 @@ test("a click sends what was still waiting first, then select_item with its plac
   const [click] = events("select_item");
   assert.equal(click.item_list_id, list.id);
   assert.deepEqual([click.items[0].item_id, click.items[0].index], ["LL3", 2]);
+});
+
+test("inside a frame (PayTR's) nothing is sent or kept", () => {
+  const before = sent.length;
+  window.self = window;
+  window.top = {};
+  try {
+    track("purchase", { value: 1 });
+    assert.equal(sent.length, before);
+    assert.equal(window.__gaq, undefined);
+  } finally {
+    delete window.self;
+    delete window.top;
+  }
 });

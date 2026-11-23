@@ -20,6 +20,7 @@ import { INTL_LOCALE } from "@/lib/i18n/messages";
 import { cartMessages } from "@/lib/i18n/messages/cart";
 import { shippingOption } from "@/lib/shipping";
 import { formatRate, transferDiscountHint } from "@/lib/storeParameters";
+import type { CheckoutProblem } from "@/lib/checkoutProblems";
 import type { Cart, LegalDocument, LegalKey, PaymentMethod, ShippingMethod, StoreParameters } from "@/types";
 
 interface OrderSummaryProps {
@@ -64,8 +65,15 @@ interface OrderSummaryProps {
   onMarketingConsentChange: (value: boolean) => void;
   submitting: boolean;
   checkoutError: string | null;
-  /** Why the order can't be placed yet (e.g. incomplete address); null = ready. */
-  blocker: string | null;
+  /**
+   * Everything the order still waits for, in the page's order; empty = ready.
+   * Listed beside the button, which stays tappable whatever is missing.
+   */
+  problems: CheckoutProblem[];
+  /** A tap has asked for the order: the list turns red, as the fields do. */
+  showErrors: boolean;
+  /** An entry in the list was tapped: take the buyer to its field. */
+  onProblemClick: (problem: CheckoutProblem) => void;
   /** The live store parameters: the havale hint, the guest note, Sultan Puan. */
   params: StoreParameters;
   /** Whether card payment (PayTR) is open. */
@@ -330,8 +338,10 @@ export function OrderSummary(props: OrderSummaryProps) {
   const rate = (value: string | number) => formatRate(value, locale);
   const shippingTitle = shippingOption(props.shippingMethod, locale).title;
   const needsConsent = !!quote?.shipping.receiver_pays;
-  const canCheckout = !isLoggedIn || (!!quote && !quoteLoading && !quoteError && !props.blocker);
   const { params } = props;
+  // The total being worked out is a moment, not a task for the buyer, and a
+  // failed one has its own alert above: the list leaves both out.
+  const listed = props.problems.filter((p) => p.field !== "quote");
   // A Bayi / Toptan / Kafe account sees its cart as an invoice: before VAT, the
   // VAT, after VAT. Retail keeps the consumer view, VAT-inclusive throughout.
   const b2bInvoice =
@@ -510,7 +520,6 @@ export function OrderSummary(props: OrderSummaryProps) {
 
       <div className="mt-5 space-y-3">
         {quoteError && <Alert variant="error">{quoteError}</Alert>}
-        {props.blocker && isLoggedIn && <p className="text-center text-xs text-slate-500 dark:text-zinc-400">{props.blocker}</p>}
         {checkoutError && <Alert variant="error">{checkoutError}</Alert>}
 
         {/* A request consents to nothing: no carriage price has been named, and
@@ -535,7 +544,20 @@ export function OrderSummary(props: OrderSummaryProps) {
           <MarketingConsent checked={props.marketingConsent} onChange={props.onMarketingConsentChange} />
         )}
 
-        <Button type="button" onClick={props.onCheckout} loading={submitting} disabled={!canCheckout}>
+        {/* What the order still waits for, every item of it, right by the button
+            — not only the first. Each entry takes the buyer to its field. */}
+        {isLoggedIn && listed.length > 0 && (
+          <CheckoutChecklist
+            title={m.view.checklistTitle}
+            problems={listed}
+            urgent={props.showErrors}
+            onPick={props.onProblemClick}
+          />
+        )}
+
+        {/* Never disabled for something missing: a tap then shows what and where
+            (CartView.handleCheckout) instead of doing nothing. */}
+        <Button type="button" onClick={props.onCheckout} loading={submitting}>
           {!isLoggedIn ? (
             props.quoteOnly ? (
               m.export.signIn
@@ -585,5 +607,45 @@ export function OrderSummary(props: OrderSummaryProps) {
         )}
       </div>
     </section>
+  );
+}
+
+/** The list beside the pay button: grey while the form is being filled, red once a tap asked for the order. */
+function CheckoutChecklist({
+  title,
+  problems,
+  urgent,
+  onPick,
+}: {
+  title: string;
+  problems: CheckoutProblem[];
+  urgent: boolean;
+  onPick: (problem: CheckoutProblem) => void;
+}) {
+  return (
+    <div
+      aria-live="polite"
+      className={`rounded-xl px-3 py-2.5 text-xs leading-5 transition-colors duration-200 ${
+        urgent
+          ? "bg-red-50 text-red-800 ring-1 ring-red-500/30 dark:bg-red-500/10 dark:text-red-200 dark:ring-red-400/30"
+          : "bg-slate-50 text-slate-600 dark:bg-white/5 dark:text-zinc-300"
+      }`}
+    >
+      <p className="font-semibold">{title}</p>
+      <ul className="mt-1 space-y-0.5">
+        {problems.map((problem) => (
+          <li key={problem.field} className="flex items-start gap-1.5">
+            <span aria-hidden className="mt-[0.5rem] h-1 w-1 shrink-0 rounded-full bg-current opacity-70" />
+            <button
+              type="button"
+              onClick={() => onPick(problem)}
+              className="text-start underline-offset-2 hover:underline focus-visible:underline focus-visible:outline-none"
+            >
+              {problem.message}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }

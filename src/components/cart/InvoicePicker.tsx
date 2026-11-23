@@ -1,6 +1,6 @@
 "use client";
 
-import { Building2, ReceiptText } from "lucide-react";
+import { Building2, ReceiptText, Truck } from "lucide-react";
 
 import { useMessages } from "@/components/i18n/LocaleProvider";
 import { CorporateInvoiceFields } from "@/components/cart/invoice/CorporateInvoiceFields";
@@ -43,6 +43,7 @@ export function InvoicePicker({
   onBillingAddressSaved,
   corporateOnFile,
   onCorporateSaved,
+  guest = false,
 }: {
   value: InvoiceDraft;
   onChange: (patch: Partial<InvoiceDraft>) => void;
@@ -52,10 +53,18 @@ export function InvoicePicker({
   onBillingAddressSaved: () => void;
   corporateOnFile: CorporateInvoiceDetails | null;
   onCorporateSaved: (details: CorporateInvoiceDetails) => void;
+  /**
+   * A guest checkout. A guest has no invoice address on file, so instead of an
+   * empty "Fatura adresim" card (which read as something to fill in) it is told
+   * where the invoice goes: to the delivery address, which is what the shop
+   * does for any retail order without one (admin_orders._invoice_address).
+   */
+  guest?: boolean;
 }) {
   const t = useMessages(checkoutMessages).invoice;
   return (
     <section
+      id="fatura-bilgileri"
       aria-labelledby="invoice-heading"
       className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-white/10 dark:bg-zinc-900 sm:p-6"
     >
@@ -100,6 +109,11 @@ export function InvoicePicker({
           onFile={corporateOnFile}
           onSaved={onCorporateSaved}
         />
+      ) : guest && !billingAddress && !addressesLoading ? (
+        <p className="mt-4 flex items-start gap-2 rounded-lg bg-slate-50 px-3 py-2.5 text-sm text-slate-700 dark:bg-white/[0.03] dark:text-zinc-300">
+          <Truck className="mt-0.5 h-4 w-4 shrink-0 text-slate-400 dark:text-zinc-500" aria-hidden />
+          {t.guestNote}
+        </p>
       ) : (
         <PersonalInvoicePanel
           address={billingAddress}

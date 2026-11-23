@@ -5,9 +5,9 @@ import { countryOptions } from "@/lib/countries";
 import { checkoutMessages } from "@/lib/i18n/messages/checkout";
 import { TR_PROVINCES } from "@/lib/provinces";
 import { TURKEY, type AddressDraft } from "@/components/cart/delivery/addressDraft";
+import { FieldError, INVALID_ARIA, invalidProps, useFieldError } from "@/components/cart/CheckoutErrors";
 
-const inputClass =
-  "block h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20 dark:border-white/15 dark:bg-zinc-900 dark:text-zinc-100";
+const inputClass = `block h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20 dark:border-white/15 dark:bg-zinc-900 dark:text-zinc-100 ${INVALID_ARIA}`;
 const labelClass = "block text-sm font-medium text-slate-700 dark:text-zinc-300";
 
 /**
@@ -41,6 +41,14 @@ export function AddressFields({
   // The export customer's form, in their language; the Turkish form's, in the page's.
   const x = m.export.address;
   const set = (patch: Partial<AddressDraft>) => onChange({ ...value, ...patch });
+  // Red, with the reason underneath, once a "Siparişi Tamamla" tap found them wanting.
+  const errors = {
+    name: useFieldError("name"),
+    country: useFieldError("country"),
+    city: useFieldError("city"),
+    district: useFieldError("district"),
+    line: useFieldError("line"),
+  };
   const locked = lockPlace
     ? { disabled: true, "aria-describedby": "addr-place-note", className: `${inputClass} cursor-not-allowed opacity-70` }
     : { className: inputClass };
@@ -62,8 +70,10 @@ export function AddressFields({
           maxLength={120}
           value={value.full_name}
           onChange={(e) => set({ full_name: e.target.value })}
+          {...invalidProps("addr-name", errors.name)}
           className={inputClass}
         />
+        <FieldError id="addr-name-error" message={errors.name} />
       </div>
 
       {abroad ? (
@@ -77,6 +87,7 @@ export function AddressFields({
               autoComplete="country"
               value={value.country === TURKEY ? "" : value.country}
               onChange={(e) => set({ country: e.target.value })}
+              {...invalidProps("addr-country", errors.country)}
               {...locked}
             >
               <option value="">{x.countryPlaceholder}</option>
@@ -86,6 +97,7 @@ export function AddressFields({
                 </option>
               ))}
             </select>
+            <FieldError id="addr-country-error" message={errors.country} />
           </div>
           <div className="space-y-1.5">
             <label htmlFor="addr-city" className={labelClass}>
@@ -97,8 +109,10 @@ export function AddressFields({
               maxLength={80}
               value={value.city}
               onChange={(e) => set({ city: e.target.value })}
+              {...invalidProps("addr-city", errors.city)}
               {...locked}
             />
+            <FieldError id="addr-city-error" message={errors.city} />
           </div>
           <div className="space-y-1.5">
             <label htmlFor="addr-postal" className={labelClass}>
@@ -124,9 +138,11 @@ export function AddressFields({
               maxLength={300}
               value={value.line}
               onChange={(e) => set({ line: e.target.value })}
+              {...invalidProps("addr-line", errors.line)}
               placeholder={x.linePlaceholder}
               className={`${inputClass} h-auto resize-y py-2.5`}
             />
+            <FieldError id="addr-line-error" message={errors.line} />
           </div>
         </>
       ) : (
@@ -140,6 +156,7 @@ export function AddressFields({
               autoComplete="address-level1"
               value={value.city}
               onChange={(e) => set({ city: e.target.value })}
+              {...invalidProps("addr-city", errors.city)}
               {...locked}
             >
               <option value="">{m.place.select}</option>
@@ -149,6 +166,7 @@ export function AddressFields({
                 </option>
               ))}
             </select>
+            <FieldError id="addr-city-error" message={errors.city} />
           </div>
           <div className="space-y-1.5">
             <label htmlFor="addr-district" className={labelClass}>
@@ -160,8 +178,10 @@ export function AddressFields({
               maxLength={80}
               value={value.district}
               onChange={(e) => set({ district: e.target.value })}
+              {...invalidProps("addr-district", errors.district)}
               {...locked}
             />
+            <FieldError id="addr-district-error" message={errors.district} />
           </div>
           <div className="space-y-1.5 sm:col-span-2">
             <label htmlFor="addr-line" className={labelClass}>
@@ -174,9 +194,11 @@ export function AddressFields({
               maxLength={300}
               value={value.line}
               onChange={(e) => set({ line: e.target.value })}
+              {...invalidProps("addr-line", errors.line)}
               placeholder={m.address.linePlaceholder}
               className={`${inputClass} h-auto resize-y py-2.5`}
             />
+            <FieldError id="addr-line-error" message={errors.line} />
           </div>
         </>
       )}

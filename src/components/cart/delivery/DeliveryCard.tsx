@@ -3,17 +3,13 @@
 import type { ReactNode } from "react";
 import { Check, type LucideIcon } from "lucide-react";
 
-import { useMessages } from "@/components/i18n/LocaleProvider";
-import { checkoutMessages } from "@/lib/i18n/messages/checkout";
 
 /**
- * One delivery choice: what it is, and an "Onay" button that confirms it.
+ * One delivery choice: what it is, with a radio mark that shows the chosen one.
  *
- * The card carries the choice twice on purpose — the whole card is the radio's
- * label, and the button is the explicit confirmation the blueprint asks for.
- * Both do the same thing, so either reads as "this one". The button is a real
- * button rather than something inside the label, which keeps the markup valid
- * and both controls reachable from the keyboard.
+ * The whole card is the radio's label, so a tap anywhere on it picks it; the
+ * mark at its end only shows which is picked. (It used to be an "Onay" button
+ * beside the label, which read as a second step to confirm — 2026-11-23.)
  *
  * A confirmed card stands out and the rest fade back, so the open one is
  * obvious at a glance.
@@ -48,7 +44,6 @@ export function DeliveryCard({
   /** What this option asks for, revealed once it is the chosen one. */
   children?: ReactNode;
 }) {
-  const t = useMessages(checkoutMessages).delivery;
   return (
     <div
       className={`rounded-xl border p-3 transition-[color,background-color,border-color,box-shadow,opacity] duration-200 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-red-500/40 ${
@@ -90,28 +85,17 @@ export function DeliveryCard({
               </span>
             )}
           </span>
+          <span
+            aria-hidden
+            className={`ms-auto mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors duration-200 ${
+              selected
+                ? "border-red-600 bg-red-600 text-white dark:border-red-400 dark:bg-red-400 dark:text-zinc-950"
+                : "border-slate-300 dark:border-white/20"
+            }`}
+          >
+            {selected && <Check className="h-3 w-3" strokeWidth={3} />}
+          </span>
         </label>
-        <button
-          type="button"
-          onClick={onSelect}
-          disabled={disabled}
-          aria-pressed={selected}
-          className={`inline-flex h-8 shrink-0 items-center gap-1 rounded-lg px-2.5 text-xs font-medium transition-colors duration-200 ${
-            selected
-              ? "bg-emerald-600 text-white"
-              : disabled
-                ? "cursor-not-allowed border border-slate-200 text-slate-400 dark:border-white/10 dark:text-zinc-500"
-                : "border border-slate-300 text-slate-600 hover:border-emerald-500 hover:text-emerald-700 dark:border-white/15 dark:text-zinc-300 dark:hover:border-emerald-400 dark:hover:text-emerald-300"
-          }`}
-        >
-          {selected ? (
-            <>
-              <Check className="h-3.5 w-3.5" aria-hidden /> {t.confirmed}
-            </>
-          ) : (
-            t.confirm
-          )}
-        </button>
       </div>
       {selected && children && (
         <div className="mt-3 border-t border-slate-200 pt-3 dark:border-white/10">{children}</div>

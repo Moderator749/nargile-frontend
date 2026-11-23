@@ -2,6 +2,7 @@
 
 import { ReceiptText } from "lucide-react";
 
+import { FieldError, INVALID_ARIA, invalidProps, useFieldError } from "@/components/cart/CheckoutErrors";
 import { AddressFields } from "@/components/cart/delivery/AddressFields";
 import { useLocale, useMessages } from "@/components/i18n/LocaleProvider";
 import { addressSummary, type AddressDraft } from "@/components/cart/delivery/addressDraft";
@@ -68,6 +69,7 @@ interface FirmDeliveryProps {
 export function FirmDelivery(props: FirmDeliveryProps) {
   const locale = useLocale();
   const m = useMessages(checkoutMessages);
+  const branchError = useFieldError("branch");
   const t = m.firm;
   const summaryOf = (entry: SavedAddress) => addressSummary(entry, (code) => countryName(code, locale));
   const { saved, card, address, registeredInIstanbul, subtotal, istanbulMinimum } = props;
@@ -155,8 +157,10 @@ export function FirmDelivery(props: FirmDeliveryProps) {
                         value={props.branchName}
                         onChange={(e) => props.onBranchNameChange(e.target.value)}
                         placeholder={t.branchPlaceholder}
-                        className={inputClass}
+                        {...invalidProps("branch-name", branchError)}
+                        className={`${inputClass} ${INVALID_ARIA}`}
                       />
+                      <FieldError id="branch-name-error" message={branchError} />
                       <p className={noteClass}>{t.branchNote}</p>
                     </div>
                     {addressForm}

@@ -13,19 +13,20 @@ import {
   EMPTY_ADDRESS,
   NEW_ADDRESS,
   TURKEY,
-  addressProblem,
+  addressProblems,
   placeProblem,
   billingIndex,
   freightProblem,
   fromSaved,
   savedIndex,
-  receiverProblem,
+  receiverProblems,
   shipsToRegistered,
   shipsAbroad,
   toShippingAddress,
   type AddressChoice,
   type AddressDraft,
 } from "@/components/cart/delivery/addressDraft";
+import { CheckoutErrorsProvider } from "@/components/cart/CheckoutErrors";
 import { EmptyCart } from "@/components/cart/EmptyCart";
 import { GUEST_FORM_ID, GuestCheckoutStart } from "@/components/cart/GuestCheckoutStart";
 import {
@@ -42,7 +43,7 @@ import {
   initialInvoice,
   invoiceAddressSummary,
   invoiceFirmName,
-  invoiceProblem,
+  invoiceProblems,
   invoiceShippingAddress,
   toInvoicePayload,
   type InvoiceDraft,
@@ -78,7 +79,14 @@ import { checkStock } from "@/lib/catalogApi";
 import { formatMoney } from "@/lib/format";
 import { estimateCart } from "@/lib/cartEstimate";
 import { useAuthStore } from "@/store/useAuthStore";
-import { rememberOrderItems, trackCart } from "@/lib/gaEvents";
+import {
+  PROBLEM_TARGETS,
+  errorsByField,
+  firstPresent,
+  validationEventParams,
+  type CheckoutProblem,
+} from "@/lib/checkoutProblems";
+import { rememberOrderItems, track, trackCart } from "@/lib/gaEvents";
 import { useCartStore } from "@/store/useCartStore";
 import { useAuthHydrated, useCartHydrated } from "@/store/useHasHydrated";
 import type {
@@ -503,14 +511,24 @@ export function CartView({ checkoutStep = false }: { checkoutStep?: boolean } = 
         ? "YURTICI_BRANCH"
         : "YURTICI_DOOR";
 
-  const addressFault = addressProblem(draft, locale);
-
-  const deliveryProblem =
-    invoiceProblem(invoice, locale) ??
-    (firmFlow && card === "BRANCH" ? branchProblem(branchName, locale) : null) ??
-    addressFault ??
-    (otherReceiver ? receiverProblem(receiverName, receiverPhone, abroad, locale) : null) ??
-    (method === "NAKLIYE_AMBARI" ? freightProblem(details.freightPhone, locale) : null);
+  /*
+   * Everything still between the buyer and the order, field by field, in the
+   * order the page shows them: the fields at the top first, the boxes beside
+   * the button last. The button stays tappable; a tap with anything here
+   * scrolls to the first, focuses it and turns all of them red (see
+   * handleCheckout), and the list itself sits beside the button.
+   */
+  const deliveryProblems: CheckoutProblem[] = [
+    ...invoiceProblems(invoice, locale),
+    ...(firmFlow && card === "BRANCH" && branchProblem(branchName, locale)
+      ? [{ field: "branch" as const, message: branchProblem(branchName, locale)! }]
+      : []),
+    ...addressProblems(draft, locale),
+    ...(otherReceiver ? receiverProblems(receiverName, receiverPhone, abroad, locale) : []),
+    ...(method === "NAKLIYE_AMBARI" && freightProblem(details.freightPhone, locale)
+      ? [{ field: "freightPhone" as const, message: freightProblem(details.freightPhone, locale)! }]
+      : []),
+  ];
 
   const { quote, loading: quoteLoading, error: quoteError } = useCartQuote(
     items,
@@ -531,15 +549,51 @@ export function CartView({ checkoutStep = false }: { checkoutStep?: boolean } = 
         ? t.view.overStock(overStock.product_name, overStock.available_quantity)
         : t.view.soldOut(overStock.product_name)
     : null;
-  const checkoutBlocker = quoteOnly
-    ? // A request asks for one thing the cart cannot supply: how it travels.
-      (deliveryProblem ??
-      (transportMode === null ? t.export.transportBlocker : null))
-    : (stockProblem ??
-      deliveryProblem ??
-      (needsConsent && !shippingConsent ? t.view.consentBlocker : null) ??
-      // An order is a contract: both agreements, or no order.
-      (agreements.distanceSales && agreements.terms ? null : t.view.agreementsBlocker));
+  // The total is the server's: until it is in, or when it failed, the order waits for it.
+  const quoteProblem: CheckoutProblem[] = quoteError
+    ? [{ field: "quote", message: quoteError }]
+    : !quote || quoteLoading
+      ? [{ field: "quote", message: t.view.quoteNotReady }]
+      : [];
+  const problems: CheckoutProblem[] = !isLoggedIn
+    ? []
+    : quoteOnly
+      ? [
+          // A request asks for one thing the cart cannot supply: how it travels.
+          ...deliveryProblems,
+          ...(transportMode === null ? [{ field: "transport" as const, message: t.export.transportBlocker }] : []),
+          ...quoteProblem,
+        ]
+      : [
+          ...(stockProblem ? [{ field: "stock" as const, message: stockProblem }] : []),
+          ...deliveryProblems,
+          ...(needsConsent && !shippingConsent ? [{ field: "shippingConsent" as const, message: t.view.consentBlocker }] : []),
+          // An order is a contract: both agreements, or no order.
+          ...(agreements.distanceSales ? [] : [{ field: "distanceSales" as const, message: t.view.distanceSalesBlocker }]),
+          ...(agreements.terms ? [] : [{ field: "terms" as const, message: t.view.termsBlocker }]),
+          ...quoteProblem,
+        ];
+  // Red fields only once a tap has asked for the order; live from then on.
+  const [showErrors, setShowErrors] = useState(false);
+  const fieldErrors = showErrors ? errorsByField(problems) : {};
+
+  /** Scroll to where `problem` is fixed and put the cursor there. */
+  function revealProblem(problem: CheckoutProblem) {
+    setShowErrors(true);
+    // After the red lines have been drawn, so the field lands where it stays.
+    requestAnimationFrame(() => {
+      const id = firstPresent(PROBLEM_TARGETS[problem.field], (key) => document.getElementById(key));
+      const target = id ? document.getElementById(id) : summary.current;
+      if (!target) return;
+      const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      target.scrollIntoView({ behavior: still ? "auto" : "smooth", block: "center" });
+      const field = target.matches("input, select, textarea")
+        ? target
+        : target.querySelector<HTMLElement>("input:not([type=hidden]):not([disabled]), select, textarea");
+      (field as HTMLElement | null)?.focus({ preventScroll: true });
+    });
+  }
+
   const serverLines = new Map(quote?.items.map((i) => [i.variant_id, i]));
 
   async function handleCheckout() {
@@ -558,10 +612,18 @@ export function CartView({ checkoutStep = false }: { checkoutStep?: boolean } = 
       else steps.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       return;
     }
-    if (submitting || checkoutBlocker) return;
+    if (submitting) return;
+    // Heading for the order from the cart page itself (no /checkout on the way),
+    // on a phone or a computer alike; once per page.
+    beginCheckout();
+    if (problems.length > 0) {
+      // Field names only, never what was typed.
+      track("checkout_validation_error", validationEventParams(problems));
+      revealProblem(problems[0]);
+      return;
+    }
     setSubmitting(true);
     setCheckoutError(null);
-    beginCheckout(); // ordering straight from the cart page: no /checkout on the way
     // The shipping and the payment are both settled as the order is placed.
     trackCart("add_shipping_info", items, { shipping_tier: method });
     if (!quoteOnly) trackCart("add_payment_info", items, { payment_type: paymentMethod });
@@ -662,6 +724,7 @@ export function CartView({ checkoutStep = false }: { checkoutStep?: boolean } = 
   const itemCount = items.reduce((n, i) => n + i.quantity, 0);
 
   return (
+    <CheckoutErrorsProvider errors={fieldErrors}>
     <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6">
       {/* An export account is addressed in English, or in Arabic on an Arabic page. */}
       <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{quoteOnly ? t.export.title : t.view.title}</h1>
@@ -730,6 +793,7 @@ export function CartView({ checkoutStep = false }: { checkoutStep?: boolean } = 
                 onBillingAddressSaved={reloadAddresses}
                 corporateOnFile={corporateOnFile}
                 onCorporateSaved={setCorporateOnFile}
+                guest={!!user?.is_guest}
               />
             </div>
           )}
@@ -858,7 +922,9 @@ export function CartView({ checkoutStep = false }: { checkoutStep?: boolean } = 
           legalDocuments={legalDocuments}
           submitting={submitting}
           checkoutError={checkoutError}
-          blocker={isLoggedIn ? checkoutBlocker : null}
+          problems={problems}
+          showErrors={showErrors}
+          onProblemClick={revealProblem}
         />
         </div>
       </div>
@@ -877,12 +943,14 @@ export function CartView({ checkoutStep = false }: { checkoutStep?: boolean } = 
         action={!isLoggedIn && checkoutStep ? guestStart.submit : t.view.goToPayment}
         onGo={() => {
           if (!isLoggedIn) return handleCheckout();
-          beginCheckout();
+          // Only a scroll to the summary, which a computer has no bar for:
+          // begin_checkout waits for the pay button, as it does there.
           summary.current?.scrollIntoView({ behavior: "smooth", block: "start" });
         }}
       />
       <div aria-hidden className="h-20 md:hidden" />
     </main>
+    </CheckoutErrorsProvider>
   );
 }
 

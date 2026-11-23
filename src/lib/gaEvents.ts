@@ -38,6 +38,9 @@ export interface GaItem {
 
 export function track(name: string, params: Record<string, unknown>): void {
   if (typeof window === "undefined") return;
+  // Inside a frame (PayTR's, for a moment after a payment): GA4 is not set up
+  // there (lib/consent's init script), and nothing is kept for it either.
+  if (window.top !== window.self) return;
   if (window.gtag) {
     window.gtag("event", name, params);
     return;

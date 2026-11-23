@@ -31,6 +31,7 @@ import { StaffHome } from "@/components/admin/team/StaffHome";
 import { TeamChannel } from "@/components/admin/team/TeamChannel";
 import { fetchMe } from "@/lib/authApi";
 import { applySavedOrder, isDefaultOrder } from "@/lib/savedOrder";
+import { markInternalTraffic } from "@/lib/consent";
 import { isAdminRole, isTeamRole } from "@/lib/roles";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useTeamChannel } from "@/store/useTeamChannel";
@@ -266,6 +267,13 @@ export function AdminShell({ children }: { children: ReactNode }) {
         // A 401 logs out via the interceptor; other errors keep the cached profile.
       });
   }, [token]);
+
+  // A browser the team uses the panel in: its storefront visits are tagged as
+  // the shop's own traffic for GA4 from now on (lib/consent).
+  const team = !!user && isTeamRole(user.role);
+  useEffect(() => {
+    if (team) markInternalTraffic();
+  }, [team]);
 
   if (!hydrated) return <main className="flex-1" aria-busy />;
 

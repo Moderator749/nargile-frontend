@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { FileText } from "lucide-react";
 
+import { FieldError, useFieldError } from "@/components/cart/CheckoutErrors";
 import { useMessages } from "@/components/i18n/LocaleProvider";
 import { RichText } from "@/components/ui/RichText";
 import { Dialog } from "@/components/ui/Dialog";
@@ -48,16 +49,30 @@ export function LegalConsent({
       ? { label: t.distanceSales, fallback: t.distanceSalesTitle }
       : { label: t.terms, fallback: t.termsTitle };
   const openItem = ITEMS.find((item) => item.key === open);
+  // Red once a "Siparişi Tamamla" tap found them unticked.
+  const errors: Record<keyof Agreements, string | undefined> = {
+    distanceSales: useFieldError("distanceSales"),
+    terms: useFieldError("terms"),
+  };
 
   return (
-    <div className="space-y-2 rounded-xl bg-slate-50 px-3 py-3 dark:bg-white/5">
+    <div
+      className={`space-y-2 rounded-xl px-3 py-3 transition-colors duration-200 ${
+        errors.distanceSales || errors.terms
+          ? "bg-red-50 ring-1 ring-red-500/40 dark:bg-red-500/10"
+          : "bg-slate-50 dark:bg-white/5"
+      }`}
+    >
       {ITEMS.map(({ field, key }) => (
-        <div key={field} className="flex items-start gap-2.5 text-xs leading-5">
+        <div key={field}>
+        <div className="flex items-start gap-2.5 text-xs leading-5">
           <input
             id={`agreement-${field}`}
             type="checkbox"
             checked={value[field]}
             onChange={(e) => onChange({ [field]: e.target.checked } as Partial<Agreements>)}
+            aria-invalid={errors[field] ? true : undefined}
+            aria-describedby={errors[field] ? `agreement-${field}-error` : undefined}
             className="mt-0.5 h-4 w-4 shrink-0 accent-red-600"
           />
           <label htmlFor={`agreement-${field}`} className="cursor-pointer text-slate-600 dark:text-zinc-300">
@@ -72,6 +87,10 @@ export function LegalConsent({
             <FileText className="h-3.5 w-3.5" aria-hidden />
             {t.read}
           </button>
+        </div>
+        <div className="ps-6.5">
+          <FieldError id={`agreement-${field}-error`} message={errors[field]} />
+        </div>
         </div>
       ))}
 

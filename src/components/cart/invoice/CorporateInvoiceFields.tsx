@@ -17,6 +17,7 @@ import {
   toCorporatePayload,
   type InvoiceDraft,
 } from "@/components/cart/invoiceDraft";
+import { FieldError, INVALID_ARIA, invalidProps, useFieldError } from "@/components/cart/CheckoutErrors";
 import { Alert } from "@/components/ui/Alert";
 import { getApiErrorMessage } from "@/lib/errors";
 import { checkoutMessages } from "@/lib/i18n/messages/checkout";
@@ -49,6 +50,15 @@ export function CorporateInvoiceFields({
   const locale = useLocale();
   const m = useMessages(checkoutMessages);
   const t = m.corporate;
+  // Red, with the reason, once a "Siparişi Tamamla" tap found them wanting.
+  const errors = {
+    "invoice-title": useFieldError("invoiceTitle"),
+    "invoice-line": useFieldError("invoiceLine"),
+    "invoice-city": useFieldError("invoiceCity"),
+    "invoice-district": useFieldError("invoiceDistrict"),
+    "invoice-tax-office": useFieldError("taxOffice"),
+    "invoice-tax-number": useFieldError("taxNumber"),
+  };
   // A firm on file opens collapsed; anything else opens as a form to fill in.
   const [editing, setEditing] = useState(onFile === null);
   const [saving, setSaving] = useState(false);
@@ -106,8 +116,10 @@ export function CorporateInvoiceFields({
           value={value.companyTitle}
           onChange={(e) => onChange({ companyTitle: e.target.value })}
           placeholder={t.titlePlaceholder}
-          className={inputClass}
+          {...invalidProps("invoice-title", errors["invoice-title"])}
+          className={`${inputClass} ${INVALID_ARIA}`}
         />
+        <FieldError id="invoice-title-error" message={errors["invoice-title"]} />
       </div>
       <div className="space-y-1.5 sm:col-span-2">
         <label htmlFor="invoice-trade-name" className={labelClass}>
@@ -134,8 +146,10 @@ export function CorporateInvoiceFields({
           value={value.line}
           onChange={(e) => onChange({ line: e.target.value })}
           placeholder={t.linePlaceholder}
-          className={areaClass}
+          {...invalidProps("invoice-line", errors["invoice-line"])}
+          className={`${areaClass} ${INVALID_ARIA}`}
         />
+        <FieldError id="invoice-line-error" message={errors["invoice-line"]} />
       </div>
       <div className="space-y-1.5">
         <label htmlFor="invoice-city" className={labelClass}>
@@ -146,7 +160,8 @@ export function CorporateInvoiceFields({
           required
           value={value.city}
           onChange={(e) => onChange({ city: e.target.value })}
-          className={inputClass}
+          {...invalidProps("invoice-city", errors["invoice-city"])}
+          className={`${inputClass} ${INVALID_ARIA}`}
         >
           <option value="">{m.place.select}</option>
           {TR_PROVINCES.map((province) => (
@@ -155,6 +170,7 @@ export function CorporateInvoiceFields({
             </option>
           ))}
         </select>
+        <FieldError id="invoice-city-error" message={errors["invoice-city"]} />
       </div>
       <div className="space-y-1.5">
         <label htmlFor="invoice-district" className={labelClass}>
@@ -166,8 +182,10 @@ export function CorporateInvoiceFields({
           required
           value={value.district}
           onChange={(e) => onChange({ district: e.target.value })}
-          className={inputClass}
+          {...invalidProps("invoice-district", errors["invoice-district"])}
+          className={`${inputClass} ${INVALID_ARIA}`}
         />
+        <FieldError id="invoice-district-error" message={errors["invoice-district"]} />
       </div>
       <div className="space-y-1.5">
         <label htmlFor="invoice-tax-office" className={labelClass}>
@@ -180,8 +198,10 @@ export function CorporateInvoiceFields({
           value={value.taxOffice}
           onChange={(e) => onChange({ taxOffice: e.target.value })}
           placeholder={t.taxOfficePlaceholder}
-          className={inputClass}
+          {...invalidProps("invoice-tax-office", errors["invoice-tax-office"])}
+          className={`${inputClass} ${INVALID_ARIA}`}
         />
+        <FieldError id="invoice-tax-office-error" message={errors["invoice-tax-office"]} />
       </div>
       <div className="space-y-1.5">
         <label htmlFor="invoice-tax-number" className={labelClass}>
@@ -195,8 +215,10 @@ export function CorporateInvoiceFields({
           value={value.taxNumber}
           onChange={(e) => onChange({ taxNumber: e.target.value })}
           placeholder={t.taxNumberPlaceholder}
-          className={inputClass}
+          {...invalidProps("invoice-tax-number", errors["invoice-tax-number"])}
+          className={`${inputClass} ${INVALID_ARIA}`}
         />
+        <FieldError id="invoice-tax-number-error" message={errors["invoice-tax-number"]} />
         <p className={noteClass}>{t.taxNumberNote}</p>
       </div>
 
