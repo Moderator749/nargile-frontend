@@ -114,7 +114,9 @@ export function BentoBoxView({
     >
       <Image
         src={box.image}
-        alt={box.alt}
+        // The admin's own words for the photo; a box left without them is
+        // described by its title, never by nothing.
+        alt={box.alt?.trim() || box.title?.trim() || ""}
         fill
         sizes={sizes}
         loading={eager ? "eager" : "lazy"}

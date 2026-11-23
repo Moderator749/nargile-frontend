@@ -143,4 +143,8 @@ export const LEGACY_PAGES: Record<string, string> = {
   "legend-hookah-nargile": "/legend",
   "sultan-nargile": "/sultan",
   "oduman%20nargile": "/oduman", // the old store's own spelling, with a space
+  // Turkish words people (and old bookmarks) type for the sign-in and contact
+  // pages: the sign-in, and the stores page with the branches' phones and addresses.
+  giris: "/login",
+  iletisim: "/magazalar",
 };

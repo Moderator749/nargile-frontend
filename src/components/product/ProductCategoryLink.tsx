@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/i18n/Link";
 import { ArrowRight, LayoutGrid } from "lucide-react";
 
 import { useMessages } from "@/components/i18n/LocaleProvider";
