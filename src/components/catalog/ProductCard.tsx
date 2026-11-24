@@ -220,15 +220,9 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
           <span className="flex flex-col items-start gap-1.5">
             {/* "%10 SultanPuan": the price shown earns it bought alone. Not on a
                 sold-out card (nothing to earn it with), nor while a signed-in
-                buyer's own price is still on its way. A ribbon pulled out of this
-                row's inset, flush into the photo's corner; the cargo pill, if
-                any, sits under it. */}
-            {!soldOut && !pricesPending && (
-              <SultanPuanCardBadge
-                priceInclTax={price?.price_incl_tax}
-                className="-ms-3 -mt-3 @max-[13rem]:-ms-2 @max-[13rem]:-mt-2"
-              />
-            )}
+                buyer's own price is still on its way. The cargo pill, if any,
+                sits under it. */}
+            {!soldOut && !pricesPending && <SultanPuanCardBadge priceInclTax={price?.price_incl_tax} />}
             {isHeavy && (
               <span className={`${badgeClass} bg-black/70 text-white`}>
                 <Truck className="h-3 w-3" aria-hidden /> {t.heavy}
