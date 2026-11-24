@@ -218,15 +218,22 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
             badge and a deal's clock, the clock moves under, still at the end. */}
         <div className="pointer-events-none absolute inset-x-3 top-3 flex flex-wrap items-start justify-between gap-2 @max-[13rem]:inset-x-2 @max-[13rem]:top-2 @max-[13rem]:gap-1.5">
           <span className="flex flex-col items-start gap-1.5">
+            {/* "%10 SultanPuan": the price shown earns it bought alone. Not on a
+                sold-out card (nothing to earn it with), nor while a signed-in
+                buyer's own price is still on its way. A ribbon pulled out of this
+                row's inset, flush into the photo's corner; the cargo pill, if
+                any, sits under it. */}
+            {!soldOut && !pricesPending && (
+              <SultanPuanCardBadge
+                priceInclTax={price?.price_incl_tax}
+                className="-ms-3 -mt-3 @max-[13rem]:-ms-2 @max-[13rem]:-mt-2"
+              />
+            )}
             {isHeavy && (
               <span className={`${badgeClass} bg-black/70 text-white`}>
                 <Truck className="h-3 w-3" aria-hidden /> {t.heavy}
               </span>
             )}
-            {/* "%10 SultanPuan": the price shown earns it bought alone. Not on a
-                sold-out card (nothing to earn it with), nor while a signed-in
-                buyer's own price is still on its way. */}
-            {!soldOut && !pricesPending && <SultanPuanCardBadge priceInclTax={price?.price_incl_tax} />}
           </span>
           {soldOut ? (
             <span className={`${badgeClass} bg-white/80 text-zinc-900 ring-1 ring-inset ring-black/10`}>{t.soldOut}</span>
