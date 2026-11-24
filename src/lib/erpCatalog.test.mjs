@@ -99,3 +99,27 @@ test("without an ERP price the list price stays exactly as stored", () => {
   const p = listCatalogPrice(LISTED("4237.29", "5000.00"));
   assert.deepEqual([p.excl, p.vat, p.total, p.display, p.fromErp], [4237.29, 762.71, 5000, null, false]);
 });
+
+// MLZ163: a USD worksheet's retail 0.45 (KDV dahil, 20%) is kept as 0.375 before VAT,
+// and every catalogue shows 0.45 again — 0.38 × 1.20 = 0.456 showed 0.46.
+test("an ERP price typed after VAT is kept so VAT gives it back exactly", async () => {
+  const { erpAfterVat, erpBeforeVat, erpText, splitVat } = await import("./erpCatalog.ts");
+  assert.equal(erpBeforeVat(0.45, 20), "0.375");
+  assert.equal(erpAfterVat(0.375, 20), 0.45);
+  // Where the kuruş already gives it back, the kuruş it stays.
+  assert.equal(erpBeforeVat(115, 20), "95.83");
+  assert.equal(erpBeforeVat(0.46, 20), "0.38");
+  assert.equal(erpBeforeVat(12.34, 0), "12.34");
+  assert.deepEqual([erpText(105), erpText(0.375), erpText(95.8333)], ["105.00", "0.375", "95.8333"]);
+  // The split shows the base to the kuruş and still adds up: 0.38 + 0.07 = 0.45.
+  assert.deepEqual(splitVat(0.375, 20, true), { excl: 0.38, vat: 0.07, total: 0.45 });
+  assert.deepEqual(splitVat(1000, 20, true), { excl: 1000, vat: 200, total: 1200 });
+});
+
+test("the storefront catalogue prints 0.375 USD as 0.45 KDV dahil", () => {
+  const p = listCatalogPrice({
+    currency: "USD", price_excl_tax: "0.38", price_incl_tax: "0.46", vat_rate: "20",
+    erp_price: "0.375", erp_currency: "USD", vat_display: true,
+  });
+  assert.deepEqual([p.currency, p.excl, p.vat, p.total, p.fromErp], ["USD", 0.38, 0.07, 0.45, true]);
+});

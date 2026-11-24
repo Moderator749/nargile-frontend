@@ -7,6 +7,8 @@
 import {
   CATALOG_SEGMENTS,
   ERP_DISPLAY_FIELDS,
+  erpAfterVat,
+  erpBeforeVat,
   type CatalogSegment,
   type ErpCatalogFields,
   type ErpDisplayField,
@@ -143,11 +145,34 @@ export function translationStarted(t: TranslationDraft): boolean {
  * Each price is a cell of both sides at the sheet's "KDV Oranı", as in the
  * price table: a group shown "KDV dahil" is typed and shown KDV dahil, the
  * rest KDV hariç (`erpSide`). Only the KDV hariç side is saved, so the PDF
- * prints the KDV dahil price back from it.
+ * prints the KDV dahil price back from it — exactly: 0.45 typed KDV dahil at
+ * 20% is saved as 0.375, not 0.38 (which prints 0.46). See `erpSaved`.
  */
 export interface ErpDraft {
-  prices: Record<CurrencyType, Record<SheetSegment, CellDraft>>;
+  prices: Record<CurrencyType, Record<SheetSegment, ErpCell>>;
   display: Record<CatalogSegment, boolean | null>;
+}
+
+/**
+ * An ERP cell. `exact` is the price as the product keeps it (0.375), while
+ * the boxes show it to the kuruş (0,38 / 0,45): it is saved as it was until
+ * either box is typed into (a typed cell is a new object, without it).
+ */
+export type ErpCell = CellDraft & { exact?: string };
+
+/**
+ * What a cell saves, KDV hariç, as the server takes it; null when empty or
+ * not a price. Untouched: the stored price as it was. A group shown "KDV
+ * dahil": from the KDV dahil box, exactly (`erpBeforeVat`). Otherwise the KDV
+ * hariç box.
+ */
+export function erpSaved(cell: ErpCell, side: "excl" | "incl", rate: VatRate): string | null {
+  if (cell.exact) return cell.exact;
+  if (side === "incl") {
+    const incl = parseDecimalInput(cell.incl);
+    if (incl !== null) return erpBeforeVat(Number(incl), rate);
+  }
+  return parseDecimalInput(cell.excl);
 }
 
 export const noErpDisplay = (): ErpDraft["display"] => ({ DEALER: null, WHOLESALE: null, CAFE: null, RETAIL: null });
@@ -285,8 +310,12 @@ export function draftFromSheet(sheet: SavedProductSheet): SheetDraft {
   const draft = emptyDraft();
   const money = (v: string | null | undefined) => (v == null ? "" : kurusToInput(Math.round(Number(v) * 100)));
   const vatRate = savedVatRate(sheet);
-  // Saved KDV hariç; the KDV dahil side follows at the sheet's rate.
-  const erpCell = (v: string | null | undefined): CellDraft => ({ excl: money(v), incl: withVat(money(v), vatRate) });
+  // Saved KDV hariç; the KDV dahil side follows at the sheet's rate, from the
+  // price as kept (0.375 → 0,45, never 0,38 → 0,46).
+  const erpCell = (v: string | null | undefined): ErpCell =>
+    v == null
+      ? { excl: "", incl: "" }
+      : { excl: money(v), incl: kurusToInput(Math.round(erpAfterVat(Number(v), vatRate) * 100)), exact: v };
   for (const row of sheet.prices) {
     for (const { segment } of SHEET_COLUMNS) {
       const cell = row.cells[segment];
@@ -431,12 +460,12 @@ export function draftProblem(draft: SheetDraft): string | null {
 
 export const cellFilled = (cell: CellDraft) => !!parseDecimalInput(cell.excl) || !!parseDecimalInput(cell.incl);
 
-/** The ERP prices as the server takes them: only the cells typed, KDV hariç, as decimal strings. */
-export function erpMatrix(prices: ErpDraft["prices"]): PriceMatrix {
+/** The ERP prices as the server takes them: only the cells typed, KDV hariç, as decimal strings (`erpSaved`). */
+export function erpMatrix(erp: ErpDraft, rate: VatRate): PriceMatrix {
   const matrix: PriceMatrix = {};
   for (const currency of SHEET_CURRENCIES)
     for (const { segment } of SHEET_COLUMNS) {
-      const value = parseDecimalInput(prices[currency][segment].excl);
+      const value = erpSaved(erp.prices[currency][segment], erpSide(erp.display[segment]), rate);
       if (value !== null) (matrix[currency] ??= {})[segment] = value;
     }
   return matrix;
@@ -503,7 +532,7 @@ export function toPayload(draft: SheetDraft): ProductSheet {
     prices,
     rules: { ...draft.rules },
     erp: {
-      erp_prices: erpMatrix(draft.erp.prices),
+      erp_prices: erpMatrix(draft.erp, draft.vatRate),
       ...(Object.fromEntries(CATALOG_SEGMENTS.map((segment) => [ERP_DISPLAY_FIELDS[segment], draft.erp.display[segment]])) as Pick<
         ErpCatalogFields,
         ErpDisplayField

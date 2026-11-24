@@ -52,12 +52,45 @@ export function erpPriceFor(
   return pick ? { amount: Number(prices![pick]![segment]), currency: pick } : null;
 }
 
-/** A price split for an invoice, the VAT the difference so the three add up to the kuruş. */
+/** To the kuruş, half up — a binary fraction a hair under it (0.375 × 1.2 = 0.44999…) still rounds up. */
+const toCents = (n: number) => Math.round((n + Math.sign(n) * 1e-9) * 100) / 100;
+
+/**
+ * A price split for an invoice, the VAT the difference so the three add up to
+ * the kuruş. A base kept to more than the kuruş (an ERP 0.375) shows 0.38, the
+ * total 0.45 from the exact base, and the VAT 0.07 between them.
+ */
 export function splitVat(amount: number, vatRate: number, amountIsBeforeVat: boolean) {
-  const round = (n: number) => Math.round(n * 100) / 100;
-  const excl = amountIsBeforeVat ? amount : round(amount / (1 + vatRate / 100));
-  const total = amountIsBeforeVat ? round(amount * (1 + vatRate / 100)) : amount;
-  return { excl, vat: round(total - excl), total };
+  const excl = toCents(amountIsBeforeVat ? amount : amount / (1 + vatRate / 100));
+  const total = amountIsBeforeVat ? toCents(amount * (1 + vatRate / 100)) : amount;
+  return { excl, vat: toCents(total - excl), total };
+}
+
+/**
+ * An ERP price as the product keeps it: to the kuruş ("95.83"), or with the
+ * places it needs beyond them, up to four ("0.375") — as the server's
+ * `pricing_engine.erp_text`.
+ */
+export function erpText(amount: number): string {
+  const four = Math.round((amount + 1e-12) * 10000) / 10000;
+  return toCents(four) === four ? four.toFixed(2) : four.toFixed(4).replace(/0+$/, "");
+}
+
+/**
+ * An ERP price typed after VAT, before VAT as the product keeps it: to the
+ * kuruş when VAT put back on that gives the typed price again (115 at 20% is
+ * 95.83), else to four places (0.45 is 0.375, since 0.38 shows as 0.46) — as
+ * the server's `pricing_engine.erp_before_vat`.
+ */
+export function erpBeforeVat(inclVat: number, vatRate: number): string {
+  const factor = 1 + vatRate / 100;
+  const cents = toCents(inclVat / factor);
+  return toCents(cents * factor) === toCents(inclVat) ? cents.toFixed(2) : erpText(inclVat / factor);
+}
+
+/** An ERP price (before VAT, as kept) after VAT, to the kuruş: 0.375 at 20% is 0.45. */
+export function erpAfterVat(amount: number, vatRate: number): number {
+  return toCents(amount * (1 + vatRate / 100));
 }
 
 /** One group's price as the price catalogue (PDF) shows it. */

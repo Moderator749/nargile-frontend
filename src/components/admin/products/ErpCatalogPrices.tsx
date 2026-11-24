@@ -7,6 +7,7 @@ import {
   SHEET_COLUMNS,
   SHEET_CURRENCIES,
   erpPriceInvalid,
+  erpSaved,
   erpSide,
   noErpDisplay,
   typedCell,
@@ -14,7 +15,7 @@ import {
   type VatRate,
 } from "@/components/admin/products/sheetDraft";
 import { CATALOG_SEGMENTS, type CatalogSegment } from "@/lib/erpCatalog";
-import { parseDecimalInput, tidyPriceInput } from "@/lib/format";
+import { tidyPriceInput } from "@/lib/format";
 import { stepOnArrowKey } from "@/lib/numberStep";
 import type { CurrencyType, SheetSegment } from "@/types";
 
@@ -108,8 +109,10 @@ export function ErpCatalogPrices({
                   const side = erpSide(erp.display[segment]);
                   const cell = erp.prices[c][segment];
                   const value = cell[side];
-                  // Under a KDV dahil box, the KDV hariç price that is saved.
-                  const saved = side === "incl" && parseDecimalInput(cell.excl) !== null ? tidyPriceInput(cell.excl) : null;
+                  // Under a KDV dahil box, the KDV hariç price that is saved —
+                  // to four places when the kuruş would not give the box back (0,375).
+                  const exact = side === "incl" ? erpSaved(cell, side, vatRate) : null;
+                  const saved = exact === null ? null : exact.split(".")[1]?.length > 2 ? exact.replace(".", ",") : tidyPriceInput(exact);
                   const savedId = `${name}-${c}-${segment}-saved`;
                   return (
                     <td key={segment} className="border border-slate-300 p-1.5 align-top dark:border-white/15">
