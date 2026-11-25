@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { LEGACY_CATEGORIES, LEGACY_PAGES, LEGACY_PARENT, RETIRED_CATEGORIES } from "./lib/legacy/categories";
 import { ROOT_ROUTES, isRootSlugPath } from "./lib/rootRoutes";
+import { SIGNED_IN_COOKIE } from "./lib/auth";
 import { OPENCART_CATEGORY_IDS, OPENCART_INFORMATION_IDS, OPENCART_PRODUCT_IDS, RETIRED_PRODUCTS } from "./lib/legacy/opencart";
 import { UNAVAILABLE, oldProductTarget, type Lookup } from "./lib/legacy/oldProduct";
 
@@ -134,6 +135,47 @@ async function apiField(path: string, field: string): Promise<Lookup> {
     return typeof value === "string" && value ? value : null;
   } catch {
     return UNAVAILABLE;
+  }
+}
+
+// ── "Grup Erişim Kısıtlamaları" for visitors who are not signed in ──────────
+// A closed page, or a closed category's, brand's or product's address, is
+// answered with the notice (app/[locale]/(storefront)/erisim-kisitli), 403,
+// before any of it is rendered. A signed-in visitor (the nm_auth cookie,
+// lib/auth) goes on: their own group is checked by the page with their token
+// (components/layout/AccessGate), and the API enforces both either way.
+
+const GUEST_RULES_TTL_MS = 60_000;
+let guestRules: { at: number; routes: string[]; catalog: boolean } | null = null;
+
+async function guestAccess(): Promise<{ routes: string[]; catalog: boolean }> {
+  if (guestRules && Date.now() - guestRules.at < GUEST_RULES_TTL_MS) return guestRules;
+  try {
+    const res = await fetch(`${API_URL}/access/guest`, { signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS) });
+    if (res.ok) {
+      const body = (await res.json()) as { routes?: string[]; catalog?: boolean };
+      guestRules = { at: Date.now(), routes: body.routes ?? [], catalog: !!body.catalog };
+      return guestRules;
+    }
+  } catch {
+    // The API is unreachable: keep what was known; its own endpoints still refuse.
+  }
+  return guestRules ?? { routes: [], catalog: false };
+}
+
+/** Whether a guest may not open this path (no language prefix). */
+async function closedToGuests(path: string): Promise<boolean> {
+  const rules = await guestAccess();
+  const wanted = path.toLowerCase().replace(/\/+$/, "") || "/";
+  if (rules.routes.some((r) => r !== "/" && (wanted === r || wanted.startsWith(`${r}/`)))) return true;
+  if (!rules.catalog || !(isRootSlugPath(path) || /^\/marka\/[^/]+\/?$/.test(path))) return false;
+  try {
+    const res = await fetch(`${API_URL}/access/check?path=${encodeURIComponent(path)}`, {
+      signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS),
+    });
+    return res.ok && ((await res.json()) as { allowed?: boolean }).allowed === false;
+  } catch {
+    return false; // the page's own data request is refused by the API anyway
   }
 }
 
@@ -378,6 +420,13 @@ export async function proxy(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = `/${language ?? "tr"}/_/${segments[0]}`;
     return NextResponse.rewrite(url);
+  }
+
+  if (!/^\/admin(?:\/|$)/.test(path) && !request.cookies.has(SIGNED_IN_COOKIE) && (await closedToGuests(path))) {
+    const url = request.nextUrl.clone();
+    url.pathname = `/${language ?? "tr"}/erisim-kisitli`;
+    url.search = "";
+    return NextResponse.rewrite(url, { status: 403 });
   }
 
   if (language) return NextResponse.next();

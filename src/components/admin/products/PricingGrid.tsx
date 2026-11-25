@@ -31,10 +31,13 @@ export function PricingGrid({
   prices,
   vatRate,
   onChange,
+  retailKurus = false,
 }: {
   prices: SheetDraft["prices"];
   vatRate: VatRate;
   onChange: (currency: CurrencyType, segment: SheetSegment, cell: CellDraft) => void;
+  /** "Perakende TL kuruşlu kalsın": the retail TL cell is left as typed. */
+  retailKurus?: boolean;
 }) {
   return (
     <div className="overflow-x-auto">
@@ -79,7 +82,7 @@ export function PricingGrid({
                 const cell = prices[currency][segment];
                 // Retail in TL is whole lira, rounded up, as the server saves it: shown so on leaving the box.
                 const settle = (next: CellDraft) =>
-                  currency === "TRY" && segment === "RETAIL" ? wholeLiraRetail(next, vatRate) : next;
+                  currency === "TRY" && segment === "RETAIL" && !retailKurus ? wholeLiraRetail(next, vatRate) : next;
                 return (
                   <td key={segment} className="border border-slate-300 p-1.5 dark:border-white/15">
                     <div className="grid grid-cols-2 gap-2">
@@ -116,8 +119,10 @@ export function PricingGrid({
         </tbody>
       </table>
       <p className="mt-1.5 text-[11px] leading-4 text-slate-500 dark:text-zinc-400">
-        Perakende TL fiyatı tam liraya yukarı yuvarlanır (7,50 → 8,00; KDV hariç ondan hesaplanır). Bayi, toptan ve kafe
-        kuruşuyla kaydedilir.
+        {retailKurus
+          ? "Bu üründe perakende TL fiyatı yazıldığı gibi (kuruşlu) kaydedilir. "
+          : "Perakende TL fiyatı tam liraya yukarı yuvarlanır (7,50 → 8,00; KDV hariç ondan hesaplanır). "}
+        Bayi, toptan ve kafe kuruşuyla kaydedilir.
       </p>
     </div>
   );

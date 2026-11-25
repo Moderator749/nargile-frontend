@@ -292,6 +292,7 @@ export function emptyDraft(): SheetDraft {
       gives_points: true,
       can_use_points: true,
       is_cart_rule_applied: false,
+      allow_retail_kurus: false,
     },
     erp: emptyErp(),
     opportunity: {
@@ -388,6 +389,7 @@ export function draftFromSheet(sheet: SavedProductSheet): SheetDraft {
       has_dealer_havale_discount: sheet.rules.has_dealer_havale_discount ?? false,
       has_toptan_havale_discount: sheet.rules.has_toptan_havale_discount ?? false,
       has_cafe_havale_discount: sheet.rules.has_cafe_havale_discount ?? false,
+      allow_retail_kurus: sheet.rules.allow_retail_kurus ?? false,
     },
     erp: sheet.erp
       ? {

@@ -697,6 +697,20 @@ export async function adminAssignSegment(userId: string, segment: SegmentType): 
   return data;
 }
 
+/** "Hesap Türü": Bireysel, or Kurumsal with the firm's invoice details. The price list is not touched. */
+export interface AccountTypeEdit {
+  kind: "INDIVIDUAL" | "CORPORATE";
+  business_type?: "CAFE" | "TOBACCO_SHOP" | null;
+  company_title?: string | null;
+  tax_office?: string | null;
+  tax_number?: string | null;
+}
+
+export async function adminEditAccountType(userId: string, edit: AccountTypeEdit): Promise<AdminCustomerDetail> {
+  const { data } = await api.put<AdminCustomerDetail>(`/admin/customers/${userId}/account-type`, edit);
+  return data;
+}
+
 export async function adminCustomerWallet(userId: string, signal?: AbortSignal): Promise<Wallet> {
   const { data } = await api.get<Wallet>(`/admin/customers/${userId}/wallet`, { signal });
   return data;

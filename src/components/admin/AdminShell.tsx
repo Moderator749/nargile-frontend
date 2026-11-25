@@ -8,6 +8,7 @@ import {
   Boxes,
   Calculator,
   ClipboardList,
+  EyeOff,
   FileSpreadsheet,
   FileText,
   House,
@@ -79,6 +80,8 @@ const NAV: NavItem[] = [
   // Every threshold the checkout applies, the İstanbul delivery limit included
   // (the old "Teslimat Ayarları" page, /admin/settings, redirects here).
   { href: "/admin/parameters", label: "Parametreler", icon: SlidersHorizontal },
+  // Which customer groups may not see which categories, brands and pages.
+  { href: "/admin/access-rules", label: "Grup Erişim Kısıtlamaları", icon: EyeOff },
   { href: "/admin/bank-accounts", label: "Banka Hesapları", icon: Landmark },
   { href: "/admin/settings/legal", label: "Sözleşmeler", icon: FileText },
   { href: "/admin/pricing-calculator", label: "Fiyat Hesaplama Cetveli", icon: Calculator },

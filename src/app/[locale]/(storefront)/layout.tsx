@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { GoogleAnalytics } from "@/components/analytics/GoogleAnalytics";
 import { MicrosoftClarity } from "@/components/analytics/MicrosoftClarity";
 import { CookieConsentBanner } from "@/components/common/CookieConsentBanner";
+import { AccessGate } from "@/components/layout/AccessGate";
 import { StorefrontChrome } from "@/components/layout/StorefrontChrome";
 import { CLARITY_PROJECT_ID } from "@/lib/analytics";
 
@@ -18,7 +19,9 @@ import { CLARITY_PROJECT_ID } from "@/lib/analytics";
 export default function StorefrontLayout({ children }: { children: ReactNode }) {
   return (
     <>
-      <StorefrontChrome>{children}</StorefrontChrome>
+      <StorefrontChrome>
+        <AccessGate>{children}</AccessGate>
+      </StorefrontChrome>
       <CookieConsentBanner />
       <GoogleAnalytics />
       {CLARITY_PROJECT_ID && <MicrosoftClarity projectId={CLARITY_PROJECT_ID} />}

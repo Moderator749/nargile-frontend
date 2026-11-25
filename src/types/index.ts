@@ -1086,6 +1086,8 @@ export interface SheetRules {
   can_use_points: boolean;
   /** "Sepet Kuralı": the product counts as coal for the cargo rule (its category plays no part). */
   is_cart_rule_applied: boolean;
+  /** "Perakende TL kuruşlu kalsın": retail TL is kept as typed (7,50), not rounded up to whole lira. */
+  allow_retail_kurus?: boolean;
 }
 
 export interface SheetOpportunity {

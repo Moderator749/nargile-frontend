@@ -15,6 +15,7 @@ import {
   SEGMENT_LABELS,
   SegmentChip,
 } from "@/components/admin/customers/CustomerLabels";
+import { AccountTypeEditor } from "@/components/admin/customers/AccountTypeEditor";
 import { SegmentAssign } from "@/components/admin/customers/SegmentAssign";
 import { SystemAdminBadge } from "@/components/admin/SystemAdminBadge";
 import { Alert } from "@/components/ui/Alert";
@@ -258,6 +259,17 @@ export function CustomerDetailView({ userId }: { userId: string }) {
             </div>
           )}
         </Panel>
+
+        {manageable && (
+          <Panel title="Hesap Türü">
+            {/* Keyed by what it edits, so a save reopens it on the new figures. */}
+            <AccountTypeEditor
+              key={`${customer.account_type}-${customer.profile?.billing_entity_type ?? ""}-${customer.profile?.tax_number ?? ""}`}
+              customer={customer}
+              onSaved={setCustomer}
+            />
+          </Panel>
+        )}
 
         {manageable && (
           <Panel title="Fiyat Grubu">

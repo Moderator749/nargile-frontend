@@ -479,7 +479,21 @@ export function ProductSheetForm({ productId }: { productId?: string }) {
               Oranı değiştirmek, girilmiş tüm KDV dahil tutarları yeniden hesaplar.
             </p>
           </div>
-          <PricingGrid prices={draft.prices} vatRate={draft.vatRate} onChange={setCell} />
+          <PricingGrid
+            prices={draft.prices}
+            vatRate={draft.vatRate}
+            onChange={setCell}
+            retailKurus={draft.rules.allow_retail_kurus ?? false}
+          />
+          <div className="mt-3">
+            <RuleSwitch
+              id="rule-retail-kurus"
+              label="Perakende TL kuruşlu kalsın"
+              hint="Açıkken bu ürünün perakende TL fiyatı tam liraya yuvarlanmaz (7,50 → 7,50); ürün formu, Fiyat Hesaplama Cetveli ve Toplu Fiyat yazıldığı gibi kaydeder."
+              checked={draft.rules.allow_retail_kurus ?? false}
+              onChange={(v) => set("rules", { ...draft.rules, allow_retail_kurus: v })}
+            />
+          </div>
         </SheetSection>
 
         <SheetSection
