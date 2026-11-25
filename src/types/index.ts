@@ -1469,6 +1469,8 @@ export interface Wallet {
   expiring_soon: number;
   /** The program's switch: off means nothing is earned or spent (the balance is kept). */
   enabled: boolean;
+  /** Whether this account has Sultan Puan and Sultan Kumbara at all (bireysel Perakende only). */
+  eligible?: boolean;
   /** TRY per point. */
   conversion_rate: DecimalString;
   lots: WalletLot[];
@@ -1603,6 +1605,10 @@ export interface AdminCustomerDetail {
   segment: SegmentType | null;
   order_count: number;
   loyalty_balance: number;
+  /** Sultan Puan / Sultan Kumbara: only a bireysel Perakende account has them. */
+  loyalty_eligible?: boolean;
+  /** Points history from before (read-only when not eligible). */
+  loyalty_history?: boolean;
   profile: AdminCustomerProfile | null;
   addresses: AdminCustomerAddress[];
   /** Their standing Kafe/Toptan/Bayi request, decided from the applications queue. */

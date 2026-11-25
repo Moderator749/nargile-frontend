@@ -27,3 +27,11 @@ test("categories come in tree order with their depth", () => {
   ]);
   assert.deepEqual(tree.map((c) => [c.id, c.depth]), [[1, 0], [3, 1], [2, 0], [4, 0]]);
 });
+
+test("an editor's set is unchanged whatever its order", async () => {
+  const { sameRules, customerLabel } = await import("./accessRulesMath.ts");
+  assert.ok(sameRules({ category_ids: [2, 1], brand_ids: [], routes: ["/b", "/a"] }, { category_ids: [1, 2], brand_ids: [], routes: ["/a", "/b"] }));
+  assert.ok(!sameRules({ category_ids: [1], brand_ids: [], routes: [] }, { category_ids: [1], brand_ids: [3], routes: [] }));
+  assert.equal(customerLabel({ company_title: "KARMA İÇECEK", full_name: "Ali", email: "a@b.c" }), "KARMA İÇECEK");
+  assert.equal(customerLabel({ company_title: null, full_name: null, email: "a@b.c" }), "a@b.c");
+});

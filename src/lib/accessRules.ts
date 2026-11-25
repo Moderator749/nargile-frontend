@@ -52,4 +52,38 @@ export async function saveTierRules(tier: AccessTier, rules: TierRules): Promise
   return data;
 }
 
-export { categoryTree, normalizeRoute, routeCovers } from "./accessRulesMath";
+export { categoryTree, customerLabel, normalizeRoute, routeCovers, sameRules } from "./accessRulesMath";
+
+// ── Per customer ("Cari bazında") ────────────────────────────────────────────
+
+export interface RuleCustomer {
+  id: string;
+  email: string;
+  full_name: string | null;
+  company_title: string | null;
+  phone: string | null;
+  segment: string | null;
+  rule_count: number;
+}
+
+export interface CustomerRules {
+  customer: RuleCustomer;
+  rules: TierRules;
+}
+
+/** The customers that have rules of their own, most first. */
+export async function fetchRuleCustomers(signal?: AbortSignal): Promise<RuleCustomer[]> {
+  const { data } = await api.get<RuleCustomer[]>("/admin/access-rules/customers", { signal });
+  return data;
+}
+
+export async function fetchCustomerRules(userId: string, signal?: AbortSignal): Promise<CustomerRules> {
+  const { data } = await api.get<CustomerRules>(`/admin/access-rules/customers/${userId}`, { signal });
+  return data;
+}
+
+/** One customer's whole set: hidden from them on top of their group's rules. */
+export async function saveCustomerRules(userId: string, rules: TierRules): Promise<CustomerRules> {
+  const { data } = await api.put<CustomerRules>(`/admin/access-rules/customers/${userId}`, rules);
+  return data;
+}

@@ -12,6 +12,7 @@ import { GuestClaim } from "@/components/account/GuestClaim";
 import { PasswordPanel } from "@/components/account/PasswordPanel";
 import { ProfilePanel } from "@/components/account/ProfilePanel";
 import { WalletPanel } from "@/components/account/WalletPanel";
+import { showsWallet } from "@/lib/loyaltyAccess";
 import { AdminPanelLink } from "@/components/layout/AdminPanelLink";
 import { Alert } from "@/components/ui/Alert";
 import { getApiErrorMessage } from "@/lib/errors";
@@ -35,7 +36,8 @@ export function AccountView() {
   const [promptAnswers, setPromptAnswers] = useState(0);
 
   useEffect(() => {
-    if (!hydrated || !token) return;
+    // No wallet to ask for on an account without the program.
+    if (!hydrated || !token || !showsWallet(user, null)) return;
     const controller = new AbortController();
     fetchMyWallet(controller.signal)
       .then(setWallet)
@@ -43,7 +45,7 @@ export function AccountView() {
         if (!controller.signal.aborted) setError(getApiErrorMessage(err, m.walletFailed));
       });
     return () => controller.abort();
-  }, [hydrated, token, m.walletFailed]);
+  }, [hydrated, token, user, m.walletFailed]);
 
   if (!hydrated) return <main className="flex-1" aria-busy />;
   if (!user) {
@@ -99,16 +101,22 @@ export function AccountView() {
         </div>
       )}
 
-      <h2 className="mt-10 text-lg font-bold tracking-tight">{m.wallet}</h2>
-      <div className="mt-4">
-        {error ? (
-          <Alert variant="error">{error}</Alert>
-        ) : wallet ? (
-          <WalletPanel wallet={wallet} />
-        ) : (
-          <div className="h-40 rounded-2xl bg-slate-100 motion-safe:animate-pulse dark:bg-white/5" aria-busy />
-        )}
-      </div>
+      {/* Sultan Puan and Sultan Kumbara are a bireysel Perakende account's only:
+          a Kafe, Toptan or Bayi account sees neither (lib/loyaltyAccess). */}
+      {showsWallet(user, wallet) && (
+        <>
+          <h2 className="mt-10 text-lg font-bold tracking-tight">{m.wallet}</h2>
+          <div className="mt-4">
+            {error ? (
+              <Alert variant="error">{error}</Alert>
+            ) : wallet ? (
+              <WalletPanel wallet={wallet} />
+            ) : (
+              <div className="h-40 rounded-2xl bg-slate-100 motion-safe:animate-pulse dark:bg-white/5" aria-busy />
+            )}
+          </div>
+        </>
+      )}
 
       <div className="mt-10">
         {/* Read afresh once the card above records an answer. */}

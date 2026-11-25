@@ -676,6 +676,47 @@ export async function adminListCustomersPage(
   return { customers: data, total: Number(headers["x-total-count"] ?? data.length) };
 }
 
+/** "Sipariş / Alışveriş Geçmişi": one line of an order, as the history lists it. */
+export interface CustomerOrderLine {
+  product_name: string;
+  variant: string | null;
+  sku: string;
+  quantity: number;
+}
+
+export interface CustomerOrder {
+  id: string;
+  order_number: string;
+  created_at: string;
+  total_amount: string;
+  currency: string;
+  payment_method: string;
+  status: string;
+  is_quote: boolean;
+  lines: CustomerOrderLine[];
+}
+
+export interface CustomerOrderHistory {
+  orders: CustomerOrder[];
+  order_count: number;
+  paid_count: number;
+  total_spent: string;
+  currency: string;
+}
+
+/** A customer's orders, newest first, optionally within İstanbul days (YYYY-MM-DD, both inclusive). */
+export async function adminCustomerOrders(
+  userId: string,
+  range: { from?: string; to?: string } = {},
+  signal?: AbortSignal,
+): Promise<CustomerOrderHistory> {
+  const { data } = await api.get<CustomerOrderHistory>(`/admin/customers/${userId}/orders`, {
+    params: { date_from: range.from || undefined, date_to: range.to || undefined },
+    signal,
+  });
+  return data;
+}
+
 /** The cities customers are actually in, for the grid's İl filter. */
 export async function adminCustomerCities(signal?: AbortSignal): Promise<string[]> {
   const { data } = await api.get<string[]>("/admin/customers/cities", { signal });

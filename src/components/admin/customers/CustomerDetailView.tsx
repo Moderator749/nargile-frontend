@@ -15,7 +15,9 @@ import {
   SEGMENT_LABELS,
   SegmentChip,
 } from "@/components/admin/customers/CustomerLabels";
+import { CustomerAccessRules } from "@/components/admin/access/CustomerAccessRules";
 import { AccountTypeEditor } from "@/components/admin/customers/AccountTypeEditor";
+import { CustomerOrderHistory } from "@/components/admin/customers/CustomerOrderHistory";
 import { SegmentAssign } from "@/components/admin/customers/SegmentAssign";
 import { SystemAdminBadge } from "@/components/admin/SystemAdminBadge";
 import { Alert } from "@/components/ui/Alert";
@@ -26,6 +28,7 @@ import { countryName } from "@/lib/countries";
 import { getApiErrorMessage } from "@/lib/errors";
 import type { AccountType, AdminCustomerAddress, AdminCustomerDetail, Wallet } from "@/types";
 import { stepOnArrowKey } from "@/lib/numberStep";
+import { LOYALTY_OFF_NOTICE, adminLoyaltyView } from "@/lib/loyaltyAccess";
 
 const ICONS: Record<AccountType, typeof User> = {
   INDIVIDUAL: User,
@@ -115,6 +118,7 @@ export function CustomerDetailView({ userId }: { userId: string }) {
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
   const [pointsResult, setPointsResult] = useState<{ kind: "success" | "error"; text: string } | null>(null);
+  const [accessOpen, setAccessOpen] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -189,6 +193,7 @@ export function CustomerDetailView({ userId }: { userId: string }) {
   // but itself and its peers) simply has no price list or points controls:
   // nothing says why, and nothing hints there would be any.
   const manageable = customer.can_manage ?? true;
+  const loyalty = adminLoyaltyView(customer);
 
   return (
     <>
@@ -288,6 +293,35 @@ export function CustomerDetailView({ userId }: { userId: string }) {
         )}
       </div>
 
+      <CustomerOrderHistory userId={customer.id} />
+
+      {manageable && (
+        <section aria-labelledby="access-heading" className={`${panelClass} mt-6 p-5 sm:p-6`}>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 id="access-heading" className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-zinc-400">
+              Erişim Kısıtlamaları (Cari)
+            </h2>
+            <button
+              type="button"
+              onClick={() => setAccessOpen((o) => !o)}
+              aria-expanded={accessOpen}
+              className="inline-flex h-9 items-center rounded-lg px-3 text-xs font-semibold text-slate-700 ring-1 ring-inset ring-slate-300 transition-colors duration-200 hover:bg-slate-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5"
+            >
+              {accessOpen ? "Kapat" : "Kategori, marka ve sayfa kısıtla"}
+            </button>
+          </div>
+          <p className="mt-2 text-xs text-slate-500 dark:text-zinc-400">
+            Bu müşterinin, fiyat grubunun kısıtlamalarına ek olarak göremeyeceği kategoriler, markalar ve sayfalar. Tüm
+            gruplar için: Grup Erişim Kısıtlamaları.
+          </p>
+          {accessOpen && (
+            <div className="mt-4">
+              <CustomerAccessRules userId={customer.id} />
+            </div>
+          )}
+        </section>
+      )}
+
       <section aria-labelledby="points-heading" className={`${panelClass} mt-6 p-5 sm:p-6`}>
         <h2
           id="points-heading"
@@ -295,6 +329,25 @@ export function CustomerDetailView({ userId }: { userId: string }) {
         >
           Sultan Puan
         </h2>
+        {loyalty !== "active" ? (
+          <>
+            {/* Kafe, Toptan, Bayi: no points and no Kumbara — a notice, and old history read-only. */}
+            <p className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+              {LOYALTY_OFF_NOTICE}
+            </p>
+            {loyalty === "off-with-history" && (
+              <div className="mt-6">
+                <p className="mb-3 text-xs text-slate-500 dark:text-zinc-400">Geçmiş puan hareketleri (salt okunur):</p>
+                {wallet ? (
+                  <WalletPanel wallet={{ ...wallet, enabled: false }} />
+                ) : (
+                  <div className="h-40 rounded-2xl bg-slate-100 motion-safe:animate-pulse dark:bg-white/5" aria-busy />
+                )}
+              </div>
+            )}
+          </>
+        ) : (
+          <>
         {manageable && (
           <form
             onSubmit={adjust}
@@ -332,6 +385,8 @@ export function CustomerDetailView({ userId }: { userId: string }) {
             <div className="h-40 rounded-2xl bg-slate-100 motion-safe:animate-pulse dark:bg-white/5" aria-busy />
           )}
         </div>
+          </>
+        )}
       </section>
     </>
   );

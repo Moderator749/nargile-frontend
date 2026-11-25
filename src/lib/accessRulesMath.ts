@@ -49,3 +49,18 @@ export function categoryTree(options: AccessOption[]): (AccessOption & { depth: 
   }
   return out;
 }
+
+/** The same set, order aside: whether an editor holds unsaved changes. */
+export function sameRules(
+  a: { category_ids: number[]; brand_ids: number[]; routes: string[] },
+  b: { category_ids: number[]; brand_ids: number[]; routes: string[] },
+): boolean {
+  const key = (r: typeof a) =>
+    JSON.stringify([[...r.category_ids].sort((x, y) => x - y), [...r.brand_ids].sort((x, y) => x - y), [...r.routes].sort()]);
+  return key(a) === key(b);
+}
+
+/** A customer as a picker lists them: the firm's title first, then the name, then the e-mail. */
+export function customerLabel(c: { company_title?: string | null; full_name?: string | null; email: string }): string {
+  return c.company_title || c.full_name || c.email;
+}
