@@ -6,6 +6,7 @@ import { Building2, Check, Lock, Send, Ship, ShieldCheck, TrendingUp, Truck } fr
 import { LegalConsent, MarketingConsent, type Agreements } from "@/components/cart/LegalConsent";
 import { useLocale, useMessages } from "@/components/i18n/LocaleProvider";
 import { LoyaltyPointsInput } from "@/components/cart/LoyaltyPointsInput";
+import { invoiceView } from "@/lib/cartInvoice";
 import { PaymentMethodPicker } from "@/components/cart/PaymentMethodPicker";
 import { ShippingConsent } from "@/components/cart/ShippingConsent";
 import { SultanPuanMark } from "@/components/icons/LoyaltyIcons";
@@ -33,6 +34,8 @@ interface OrderSummaryProps {
    * the server decides the amounts either way.
    */
   perks: boolean;
+  /** A Kurumsal account: its cart reads as an invoice even on Perakende (lib/cartInvoice). */
+  corporate?: boolean;
   /**
    * Whether it has Sultan Puan — the points box and what the cart earns —
    * which goes by the price list alone (lib/perks `loyaltyPerks`): a Kurumsal
@@ -350,8 +353,18 @@ export function OrderSummary(props: OrderSummaryProps) {
   const listed = props.problems.filter((p) => p.field !== "quote");
   // A Bayi / Toptan / Kafe account sees its cart as an invoice: before VAT, the
   // VAT, after VAT. Retail keeps the consumer view, VAT-inclusive throughout.
+  // A firm's cart reads as an invoice: Kafe, Toptan, Bayi — and a Kurumsal account
+  // on Perakende, which gets the promotions but keeps this view (lib/cartInvoice).
   const b2bInvoice =
-    !!quote && !quote.perks_eligible && !props.quoteOnly && quote.subtotal_excl_tax != null && quote.vat_total != null;
+    !!quote &&
+    invoiceView({
+      perksEligible: quote.perks_eligible,
+      corporate: !!props.corporate,
+      quoteOnly: !!props.quoteOnly,
+      hasVat: quote.subtotal_excl_tax != null && quote.vat_total != null,
+    });
+  // Its promotions, each before VAT, in place of the line havale of a B2B list.
+  const retailInvoice = b2bInvoice && !!quote?.perks_eligible;
   // Sultan Puan is a retail promotion and can be switched off in the panel.
   // The server's word once the quote is in; until then, the account's.
   const loyalty = (quote?.loyalty_eligible ?? props.loyaltyPerks ?? props.perks) && params.loyalty.enabled && !props.guest;
@@ -419,17 +432,58 @@ export function OrderSummary(props: OrderSummaryProps) {
               }
               value={formatMoney(quote.subtotal_excl_tax!)}
             />
-            {Number(quote.discount_amount) > 0 && (
-              <Row
-                label={
-                  <>
-                    {t.havaleDiscount(rate(quote.discount_rate))} <span className="text-xs opacity-75">{t.exclVat}</span>
-                    <span className="block text-xs opacity-75">{t.markedOnly}</span>
-                  </>
-                }
-                value={`−${formatMoney(quote.line_discount_excl_tax ?? quote.discount_amount)}`}
-                tone="discount"
-              />
+            {retailInvoice ? (
+              <>
+                {Number(quote.volume_discount_amount) > 0 && (
+                  <Row
+                    label={
+                      <span>
+                        {t.volumeDiscount(rate(quote.volume_discount_rate))} <span className="text-xs opacity-75">{t.exclVat}</span>
+                      </span>
+                    }
+                    value={`−${formatMoney(quote.volume_discount_excl_tax ?? quote.volume_discount_amount)}`}
+                    tone="discount"
+                  />
+                )}
+                {Number(quote.discount_amount) > 0 && (
+                  <Row
+                    label={
+                      <>
+                        {t.havaleDiscount(rate(quote.discount_rate))} <span className="text-xs opacity-75">{t.exclVat}</span>
+                        {Number(quote.volume_discount_amount) > 0 && (
+                          <span className="block text-xs opacity-75">{t.afterVolume}</span>
+                        )}
+                      </>
+                    }
+                    value={`−${formatMoney(quote.discount_excl_tax ?? quote.discount_amount)}`}
+                    tone="discount"
+                  />
+                )}
+                {Number(quote.points_discount) > 0 && (
+                  <Row
+                    label={
+                      <span>
+                        Sultan Puan <span className="text-xs opacity-75">{t.exclVat}</span>
+                      </span>
+                    }
+                    value={`−${formatMoney(quote.points_discount_excl_tax ?? quote.points_discount)}`}
+                    tone="discount"
+                  />
+                )}
+              </>
+            ) : (
+              Number(quote.discount_amount) > 0 && (
+                <Row
+                  label={
+                    <>
+                      {t.havaleDiscount(rate(quote.discount_rate))} <span className="text-xs opacity-75">{t.exclVat}</span>
+                      <span className="block text-xs opacity-75">{t.markedOnly}</span>
+                    </>
+                  }
+                  value={`−${formatMoney(quote.line_discount_excl_tax ?? quote.discount_amount)}`}
+                  tone="discount"
+                />
+              )
             )}
             <Row
               label={t.vat((quote.vat_rates ?? []).map((r) => rate(Number(r) / 100)).join(" / ") || rate(0))}
@@ -454,11 +508,16 @@ export function OrderSummary(props: OrderSummaryProps) {
             {!props.quoteOnly && (
               <div className="space-y-2 pt-1">
                 <ShippingNote quote={quote} />
+                {retailInvoice && <VolumeNudge quote={quote} />}
               </div>
             )}
-            <p className="text-xs text-slate-500 dark:text-zinc-400">
-              {b2bHavale ? t.b2bHavaleNote : t.b2bNote}
-            </p>
+            {retailInvoice ? (
+              loyalty && <LoyaltyEarnCard points={quote.loyalty_points_to_earn} rate={Number(params.loyalty.conversion_rate)} />
+            ) : (
+              <p className="text-xs text-slate-500 dark:text-zinc-400">
+                {b2bHavale ? t.b2bHavaleNote : t.b2bNote}
+              </p>
+            )}
           </>
         ) : quote ? (
           <>

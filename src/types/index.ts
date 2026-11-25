@@ -722,6 +722,10 @@ export interface Cart {
   subtotal_excl_tax?: DecimalString;
   /** A B2B account's line discounts (havale) before VAT; subtotal_excl_tax − this + vat_total = the lines' total. */
   line_discount_excl_tax?: DecimalString;
+  /** A Perakende cart's cart-wide discounts before VAT (a Kurumsal account's invoice view); vat_total is then after them. */
+  volume_discount_excl_tax?: DecimalString;
+  discount_excl_tax?: DecimalString;
+  points_discount_excl_tax?: DecimalString;
   vat_total?: DecimalString;
   vat_rates?: DecimalString[];
   loyalty_points_to_earn: number;

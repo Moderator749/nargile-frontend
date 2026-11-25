@@ -63,6 +63,7 @@ import { isExportAccount } from "@/lib/exportAccount";
 import { cartMessages } from "@/lib/i18n/messages/cart";
 import { guestMessages } from "@/lib/i18n/messages/guest";
 import { fetchPaytrStatus, openPaytrPage, type PaytrPage, type PaytrStatus } from "@/lib/paytr";
+import { isCorporateAccount } from "@/lib/cartInvoice";
 import { loyaltyPerks, retailPerks } from "@/lib/perks";
 import {
   buildCheckoutRequest,
@@ -898,6 +899,7 @@ export function CartView({ checkoutStep = false }: { checkoutStep?: boolean } = 
           isLoggedIn={isLoggedIn}
           guest={!!user?.is_guest}
           perks={perks}
+          corporate={isCorporateAccount(user?.account_type)}
           loyaltyPerks={loyaltyOk}
           params={params}
           cardAvailable={cardAvailable}
