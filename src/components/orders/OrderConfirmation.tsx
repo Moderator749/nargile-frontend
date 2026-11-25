@@ -99,9 +99,11 @@ export function OrderConfirmation({ orderId }: { orderId: string }) {
   // Google Analytics' purchase: a paid card order, or a havale/EFT order just
   // placed; once per order (lib/gaEvents). Never from inside PayTR's frame,
   // which this page leaves before it fetches anything.
+  // A branch's or test account's order ("Şube / Test") is no online sale: no purchase event.
+  const internalAccount = useAuthStore((s) => !!s.user?.exclude_from_stock_and_reports);
   useEffect(() => {
-    if (order && !framed) trackPurchase(order, fromPaytr);
-  }, [order, framed, fromPaytr]);
+    if (order && !framed && !internalAccount) trackPurchase(order, fromPaytr);
+  }, [order, framed, fromPaytr, internalAccount]);
 
   if (framed) return <main className="flex-1" aria-busy />;
 

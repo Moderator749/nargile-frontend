@@ -70,12 +70,17 @@ import type { HomeTranslations } from "@/lib/homeTranslations";
 
 export const ADMIN_PAGE_SIZE = 50;
 
+/** Which orders the list shows: every one, the online ones, or a branch's / test account's ("Şube / Test"). */
+export type OrderKind = "all" | "normal" | "internal";
+
 export async function adminListOrders(
   params: {
     status?: OrderStatus | null;
     shippingMethod?: ShippingMethod | null;
     /** An order number, or its last six characters ("#A1B2C3"). */
     number?: string | null;
+    /** "Normal Siparişler" / "Şube / Test" / "Tümü" (all, the default). */
+    kind?: OrderKind;
     skip?: number;
     limit?: number;
   },
@@ -86,6 +91,7 @@ export async function adminListOrders(
       status: params.status ?? undefined,
       shipping_method: params.shippingMethod ?? undefined,
       number: params.number || undefined,
+      kind: params.kind && params.kind !== "all" ? params.kind : undefined,
       skip: params.skip ?? 0,
       limit: params.limit ?? ADMIN_PAGE_SIZE,
     },
@@ -108,11 +114,14 @@ export async function adminLatestOrders(
 }
 
 export async function adminOrderStatusCounts(
-  params: { shippingMethod?: ShippingMethod | null },
+  params: { shippingMethod?: ShippingMethod | null; kind?: OrderKind },
   signal?: AbortSignal,
 ): Promise<Record<OrderStatus, number>> {
   const { data } = await api.get<Record<OrderStatus, number>>("/admin/orders/status-counts", {
-    params: { shipping_method: params.shippingMethod ?? undefined },
+    params: {
+      shipping_method: params.shippingMethod ?? undefined,
+      kind: params.kind && params.kind !== "all" ? params.kind : undefined,
+    },
     signal,
   });
   return data;
@@ -735,6 +744,12 @@ export async function adminCustomerDetail(userId: string, signal?: AbortSignal):
  */
 export async function adminAssignSegment(userId: string, segment: SegmentType): Promise<AdminCustomerDetail> {
   const { data } = await api.put<AdminCustomerDetail>(`/admin/customers/${userId}/segment`, { segment });
+  return data;
+}
+
+/** "Stok ve Raporlardan Hariç Tut (Şube / Test Hesabı)": on or off, from the account's next order on. */
+export async function adminSetStockExclusion(userId: string, enabled: boolean): Promise<AdminCustomerDetail> {
+  const { data } = await api.put<AdminCustomerDetail>(`/admin/customers/${userId}/stock-exclusion`, { enabled });
   return data;
 }
 

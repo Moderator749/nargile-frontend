@@ -165,6 +165,8 @@ export interface User {
   created_at: ISODateTime;
   /** Returned by GET /auth/me (UserMe); absent from other user responses. */
   segment_code?: SegmentType | null;
+  /** "Şube / Test": not held to the online stock; its orders stay out of the reports (lib/stockLimit). */
+  exclude_from_stock_and_reports?: boolean;
   /** Usable Sultan Puan (each worth `loyalty.conversion_rate` TRY). Returned by GET /auth/me only. */
   loyalty_balance?: number;
   /** Campaign consent on file (ticari elektronik ileti onayı). */
@@ -1225,6 +1227,8 @@ export interface AdminOrderItem extends OrderItem {
 }
 
 export interface AdminOrder extends Omit<Order, "items"> {
+  /** "Şube / Test": a branch's or test account's order — no online stock, out of the reports. */
+  exclude_from_stock_and_reports?: boolean;
   customer_email: string;
   customer_name: string | null;
   customer_phone: string | null;
@@ -1538,6 +1542,8 @@ export type CustomerSort = "name" | "created" | "orders";
 /** One row of the customers grid. */
 export interface AdminCustomer {
   id: UUID;
+  /** "Şube / Test": out of the stock and the reports (Stok ve Raporlardan Hariç Tut). */
+  exclude_from_stock_and_reports?: boolean;
   email: string;
   /** A guest checkout's buyer ("Misafir"), not an account. */
   is_guest?: boolean;
@@ -1595,6 +1601,8 @@ export interface AdminCustomerProfile {
 /** One customer in full, for their admin page. */
 export interface AdminCustomerDetail {
   id: UUID;
+  /** "Şube / Test": out of the stock and the reports (Stok ve Raporlardan Hariç Tut). */
+  exclude_from_stock_and_reports?: boolean;
   email: string;
   username: string | null;
   full_name: string | null;

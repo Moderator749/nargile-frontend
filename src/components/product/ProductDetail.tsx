@@ -22,6 +22,7 @@ import { useDisplayMoney } from "@/hooks/useDisplayMoney";
 import { useStoreParameters } from "@/hooks/useStoreParameters";
 import { useNow } from "@/hooks/useNow";
 import { checkStock, fetchProduct } from "@/lib/catalogApi";
+import { heldToOnlineStock } from "@/lib/stockLimit";
 import { cartLineFor } from "@/lib/cartLine";
 import { catalogItem, trackViewItem } from "@/lib/gaEvents";
 import { showCartToast } from "@/lib/cartToast";
@@ -127,6 +128,8 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
   // may ask for a colour that is out of stock, and for more of it than exists.
   // The server agrees — nothing is deducted for a request (`is_quote_account`).
   const quoteOnly = isExportAccount(user);
+  // An export or a branch / test account is not held to the online stock (lib/stockLimit).
+  const unlimited = !heldToOnlineStock(user);
   // Every signed-in segment but Perakende sees the price before VAT as well.
   const vatSplit = loggedIn && !pricesPending && !!user && (user.segment_code ?? "RETAIL") !== "RETAIL";
   // Its own price only: nothing until that has arrived. The split is the API's
@@ -135,7 +138,7 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
     vatSplit && price && Number(price.vat_rate) > 0
       ? `${money.format({ ...price, price_incl_tax: price.price_excl_tax })} ${t.plusVat}`
       : null;
-  const canAdd = !!variant && !!price && !pricesPending && (!soldOut || quoteOnly);
+  const canAdd = !!variant && !!price && !pricesPending && (!soldOut || unlimited);
 
   // view_item, once per product, at the price this visitor sees (a signed-in
   // buyer's once their own copy is in).
@@ -151,7 +154,7 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
   const [stockMax, setStockMax] = useState<Record<string, number>>({});
   const [limitHit, setLimitHit] = useState(false);
   const learned = variant ? stockMax[variant.id] : undefined;
-  const maxQuantity = quoteOnly ? null : (learned ?? (variant?.available_quantity || null));
+  const maxQuantity = unlimited ? null : (learned ?? (variant?.available_quantity || null));
   const capped = (q: number) => Math.max(1, maxQuantity !== null ? Math.min(q, maxQuantity) : q);
   /**
    * A quantity held to the stock without the count being shown: asked about
@@ -160,7 +163,7 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
    */
   const asked = useRef(0);
   async function holdToStock(q: number): Promise<number> {
-    if (!variant || quoteOnly || maxQuantity !== null) return q;
+    if (!variant || unlimited || maxQuantity !== null) return q;
     const ask = ++asked.current;
     try {
       const [line] = await checkStock([{ variant_id: variant.id, quantity: q }]);

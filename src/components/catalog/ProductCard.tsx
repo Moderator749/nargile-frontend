@@ -12,12 +12,12 @@ import { useDisplayMoney } from "@/hooks/useDisplayMoney";
 import { useNow } from "@/hooks/useNow";
 import { categoryCopy } from "@/lib/categories";
 import { cartLineFor } from "@/lib/cartLine";
-import { isExportAccount } from "@/lib/exportAccount";
 import { normalizeHex, readableInk } from "@/lib/color";
 import { formatCountdown, saleState } from "@/lib/flashSale";
 import { listItem, trackListImpression, trackSelectItem } from "@/lib/gaEvents";
 import { catalogMessages } from "@/lib/i18n/messages/catalog";
 import { productHref, productImageAlt } from "@/lib/seo";
+import { heldToOnlineStock } from "@/lib/stockLimit";
 import { displayVariant, hasColorChoice, soldOut as allSoldOut } from "@/lib/variants";
 import { useAuthStore } from "@/store/useAuthStore";
 import { showCartToast } from "@/lib/cartToast";
@@ -115,7 +115,9 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
   // until that arrives, as their prices are.
   const soldOut = !pricesPending && allSoldOut(product);
   // Subscribed, not read once: the card re-renders when the account changes.
-  const quoteOnly = isExportAccount(useAuthStore((s) => s.user));
+  const cardUser = useAuthStore((s) => s.user);
+  // An export or a branch / test account may add what the site has none of (lib/stockLimit).
+  const unlimited = !heldToOnlineStock(cardUser);
   const isHeavy = product.tags?.includes("HEAVY_CARGO") ?? false;
   const Icon = categoryCopy(category?.slug).icon;
   const brandName = product.brand?.trim() || "";
@@ -164,7 +166,7 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
   // An export account is building a request, so an empty shelf does not stop
   // it adding the line; the shop answers with a quote (see `lib/exportAccount`).
   const canAdd =
-    !!variant && !!price && !pricesPending && (!soldOut || quoteOnly) && !needsColorChoice;
+    !!variant && !!price && !pricesPending && (!soldOut || unlimited) && !needsColorChoice;
 
   // How many of this variant are already in the cart (0 until the cart has loaded).
   const cartHydrated = useCartHydrated();

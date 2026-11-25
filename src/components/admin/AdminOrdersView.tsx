@@ -4,7 +4,7 @@ import { Fragment, useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { CircleCheck, CreditCard, Landmark, Printer, RefreshCw, Search, Van, X, XCircle } from "lucide-react";
+import { CircleCheck, CreditCard, Landmark, Printer, RefreshCw, Search, Store, Van, X, XCircle } from "lucide-react";
 
 import { AdminPageHeader, panelClass } from "@/components/admin/AdminShell";
 import { CargoSelect } from "@/components/admin/orders/CargoSelect";
@@ -20,7 +20,7 @@ import { canApproveOrder, canShipOrder, useOrderActions, type OrderPatch } from 
 import { StatusBadge } from "@/components/orders/StatusBadge";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
-import { ADMIN_PAGE_SIZE, adminListOrders, adminOrderStatusCounts } from "@/lib/adminApi";
+import { ADMIN_PAGE_SIZE, adminListOrders, adminOrderStatusCounts, type OrderKind } from "@/lib/adminApi";
 import { getApiErrorMessage } from "@/lib/errors";
 import { formatDate, formatMoney } from "@/lib/format";
 import { orderNetTotal } from "@/lib/ordersApi";
@@ -100,6 +100,18 @@ function PaymentStatus({ order: o }: { order: AdminOrder }) {
   );
 }
 
+/** A branch's or test account's order: took no online stock, out of the reports. */
+export function BranchFlag() {
+  return (
+    <span
+      className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-violet-600 px-2 py-0.5 text-[11px] font-semibold text-white"
+      title="Şube / test hesabının siparişi: online stoktan düşmez, raporlara ve ciroya girmez, müşteriye SMS gitmez."
+    >
+      <Store className="h-3 w-3" aria-hidden /> Şube / Test
+    </span>
+  );
+}
+
 /** The shop's own İstanbul run: loaded on the van, not handed to a carrier. */
 function IstanbulFlag() {
   return (
@@ -141,6 +153,8 @@ export function AdminOrdersView() {
   const number = searchParams.get(ORDER_PARAM)?.trim().replace(/^#/, "") || null;
   const [status, setStatus] = useState<OrderStatus | null>(null);
   const [istanbulOnly, setIstanbulOnly] = useState(false);
+  // "Tümü" by default: a branch's or test account's orders stay in view, badged.
+  const [kind, setKind] = useState<OrderKind>("all");
   const [attempt, setAttempt] = useState(0);
   const [list, setList] = useState<ListState | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -151,11 +165,12 @@ export function AdminOrdersView() {
   // Looking one order up, the tab and the İstanbul filter stand aside.
   const shippingMethod = istanbulOnly && !number ? ("ISTANBUL_FREE" as const) : null;
   const listStatus = number ? null : status;
-  const key = `${number ? `#${number}` : (status ?? "ALL")}:${istanbulOnly}:${attempt}`;
+  const listKind: OrderKind = number ? "all" : kind;
+  const key = `${number ? `#${number}` : (status ?? "ALL")}:${istanbulOnly}:${listKind}:${attempt}`;
 
   useEffect(() => {
     const controller = new AbortController();
-    adminListOrders({ status: listStatus, shippingMethod, number }, controller.signal)
+    adminListOrders({ status: listStatus, shippingMethod, number, kind: listKind }, controller.signal)
       .then((orders) => {
         setList({ key, orders, error: null, hasMore: orders.length === ADMIN_PAGE_SIZE });
         // The order a link named, opened; a handful at most (a shared suffix).
@@ -166,7 +181,7 @@ export function AdminOrdersView() {
         setList({ key, orders: [], error: getApiErrorMessage(err, "Siparişler yüklenemedi."), hasMore: false });
       });
     return () => controller.abort();
-  }, [key, listStatus, shippingMethod, number]);
+  }, [key, listStatus, shippingMethod, number, listKind]);
 
   const current = list?.key === key ? list : null;
   const pickedOrders = current ? current.orders.filter((o) => picked.has(o.id)) : [];
@@ -201,7 +216,7 @@ export function AdminOrdersView() {
     const controller = new AbortController();
     const load = () => {
       if (document.visibilityState === "hidden") return;
-      adminOrderStatusCounts({ shippingMethod }, controller.signal).then(setCounts).catch(() => {});
+      adminOrderStatusCounts({ shippingMethod, kind: listKind }, controller.signal).then(setCounts).catch(() => {});
     };
     load();
     const timer = setInterval(load, COUNTS_REFRESH_MS);
@@ -209,7 +224,7 @@ export function AdminOrdersView() {
       controller.abort();
       clearInterval(timer);
     };
-  }, [key, shippingMethod, changes]);
+  }, [key, shippingMethod, listKind, changes]);
 
   // The row stays where it is, as it now stands (a recovered order shows as a
   // transfer on the "Ödeme başarısız" tab until the next refresh).
@@ -233,7 +248,7 @@ export function AdminOrdersView() {
     if (!current || loadingMore) return;
     setLoadingMore(true);
     try {
-      const next = await adminListOrders({ status: listStatus, shippingMethod, number, skip: current.orders.length });
+      const next = await adminListOrders({ status: listStatus, shippingMethod, number, kind: listKind, skip: current.orders.length });
       setList((prev) =>
         prev && prev.key === key
           ? { ...prev, orders: [...prev.orders, ...next], hasMore: next.length === ADMIN_PAGE_SIZE }
@@ -429,6 +444,19 @@ export function AdminOrdersView() {
           <input type="checkbox" checked={istanbulOnly} onChange={(e) => setIstanbulOnly(e.target.checked)} className="accent-sky-600" />
           <Van className="h-4 w-4" aria-hidden /> Sadece İstanbul içi
         </label>
+        <label className="inline-flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-zinc-300">
+          <Store className="h-4 w-4 text-violet-600 dark:text-violet-300" aria-hidden />
+          <span className="sr-only">Sipariş türü</span>
+          <select
+            value={kind}
+            onChange={(e) => setKind(e.target.value as OrderKind)}
+            className="h-9 rounded-full border border-slate-300 bg-white px-3 text-sm dark:border-white/15 dark:bg-zinc-900"
+          >
+            <option value="all">Tümü</option>
+            <option value="normal">Normal Siparişler</option>
+            <option value="internal">Şube / Test</option>
+          </select>
+        </label>
       </div>
 
       {number && (
@@ -532,6 +560,11 @@ export function AdminOrdersView() {
                           {o.shipping_method === "ISTANBUL_FREE" && (
                             <div className="mt-1.5 flex">
                               <IstanbulFlag />
+                            </div>
+                          )}
+                          {o.exclude_from_stock_and_reports && (
+                            <div className="mt-1.5 flex">
+                              <BranchFlag />
                             </div>
                           )}
                         </td>

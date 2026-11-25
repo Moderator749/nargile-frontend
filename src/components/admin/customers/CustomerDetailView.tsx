@@ -20,6 +20,7 @@ import { AccountTypeEditor } from "@/components/admin/customers/AccountTypeEdito
 import { CustomerOrderHistory } from "@/components/admin/customers/CustomerOrderHistory";
 import { SegmentAssign } from "@/components/admin/customers/SegmentAssign";
 import { SystemAdminBadge } from "@/components/admin/SystemAdminBadge";
+import { BranchAccountToggle, BranchBadge } from "@/components/admin/customers/BranchAccount";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -204,6 +205,7 @@ export function CustomerDetailView({ userId }: { userId: string }) {
         actions={
           <span className="flex items-center gap-2">
             {customer.is_superadmin && <SystemAdminBadge />}
+            {customer.exclude_from_stock_and_reports && <BranchBadge />}
             <Icon className="h-5 w-5 text-slate-400 dark:text-zinc-500" aria-hidden />
             <SegmentChip segment={customer.segment} />
           </span>
@@ -264,6 +266,12 @@ export function CustomerDetailView({ userId }: { userId: string }) {
             </div>
           )}
         </Panel>
+
+        {manageable && (
+          <Panel title="Şube / Test Hesabı">
+            <BranchAccountToggle customer={customer} onSaved={setCustomer} />
+          </Panel>
+        )}
 
         {manageable && (
           <Panel title="Hesap Türü">

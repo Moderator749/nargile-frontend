@@ -77,6 +77,7 @@ import { ISTANBUL } from "@/lib/provinces";
 import { productHref } from "@/lib/seo";
 import { useCartLines } from "@/hooks/useCartLines";
 import { checkStock } from "@/lib/catalogApi";
+import { heldToOnlineStock } from "@/lib/stockLimit";
 import { formatMoney } from "@/lib/format";
 import { estimateCart } from "@/lib/cartEstimate";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -211,7 +212,8 @@ export function CartView({ checkoutStep = false }: { checkoutStep?: boolean } = 
   const updateQuantity = useCartStore((s) => s.updateQuantity);
   const [stockMax, setStockMax] = useState<Record<string, number>>({});
   const asked = useRef(0);
-  const holdsToStock = authHydrated && !isExportAccount(user);
+  // Not for an export or a branch / test account (lib/stockLimit).
+  const holdsToStock = authHydrated && heldToOnlineStock(user);
   function changeQuantity(variantId: string, quantity: number) {
     const before = useCartStore.getState().items.find((i) => i.variant_id === variantId)?.quantity ?? 0;
     updateQuantity(variantId, quantity);
@@ -544,7 +546,7 @@ export function CartView({ checkoutStep = false }: { checkoutStep?: boolean } = 
   // A line above the shop's stock would be refused at checkout: say which,
   // here. A request has no limit. A firm's account is told the count; a
   // bireysel buyer only that the line is short.
-  const overStock = quoteOnly ? undefined : quote?.items.find((i) => i.stock_short);
+  const overStock = !heldToOnlineStock(user) ? undefined : quote?.items.find((i) => i.stock_short);
   const stockProblem = overStock
     ? overStock.available_quantity == null
       ? t.view.stockShort(overStock.product_name)
@@ -766,9 +768,9 @@ export function CartView({ checkoutStep = false }: { checkoutStep?: boolean } = 
                   productHref={product ? productHref(product) : undefined}
                   havaleEligible={line?.havale_eligible}
                   havaleDiscount={line?.havale_discount}
-                  maxQuantity={quoteOnly ? null : (stockMax[item.variant_id] ?? line?.available_quantity)}
-                  limitReached={!quoteOnly && stockMax[item.variant_id] === item.quantity}
-                  soldOut={!quoteOnly && guest?.in_stock === false}
+                  maxQuantity={!heldToOnlineStock(user) ? null : (stockMax[item.variant_id] ?? line?.available_quantity)}
+                  limitReached={heldToOnlineStock(user) && stockMax[item.variant_id] === item.quantity}
+                  soldOut={heldToOnlineStock(user) && guest?.in_stock === false}
                   onQuantityChange={(q) => changeQuantity(item.variant_id, q)}
                   sku={line?.sku ?? guest?.sku}
                 />
