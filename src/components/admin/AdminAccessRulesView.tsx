@@ -164,6 +164,7 @@ export function AdminAccessRulesView() {
           draft={draft}
           categories={data.categories}
           brands={data.brands}
+          dirty={dirty}
           onChange={(next) => {
             setDrafts((d) => ({ ...d, [tier]: next }));
             setResult(null);
@@ -219,43 +220,52 @@ function CustomerTab({ options }: { options: AccessRules }) {
 
   const results = query.trim().length >= 2 ? found : [];
 
+  // Full width, stacked: the finding on top, the chosen customer's rules below
+  // at the same roomy width as a group's (a side column squeezed the names).
   return (
-    <div className="grid gap-6 xl:grid-cols-[20rem_1fr]">
-      <aside className={`${panelClass} h-max p-5`}>
-        <label className="relative block">
-          <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" aria-hidden />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Ad, firma, e-posta, telefon"
-            aria-label="Cari ara"
-            className="h-9 w-full rounded-lg border border-slate-300 bg-white pl-8 pr-3 text-sm dark:border-white/15 dark:bg-zinc-900"
-          />
-        </label>
-        <ul className="mt-3 space-y-1">
-          {results.map((c) => (
-            <li key={c.id}>
-              <PickButton active={picked === c.id} onClick={() => setPicked(c.id)} label={c.label} detail={c.detail} segment={c.segment} />
-            </li>
-          ))}
-        </ul>
-        <h3 className="mt-5 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-zinc-400">Kısıtlaması olan cariler</h3>
-        <ul className="mt-2 space-y-1">
-          {withRules === null && <li className="h-8 rounded bg-slate-100 motion-safe:animate-pulse dark:bg-white/5" />}
-          {withRules?.length === 0 && <li className="text-sm text-slate-500 dark:text-zinc-400">Henüz yok.</li>}
-          {withRules?.map((c) => (
-            <li key={c.id}>
-              <PickButton
-                active={picked === c.id}
-                onClick={() => setPicked(c.id)}
-                label={customerLabel(c)}
-                detail={`${c.rule_count} kısıtlama · ${c.email}`}
-                segment={(c.segment as SegmentType | null) ?? null}
+    <div className="space-y-6">
+      <section className={`${panelClass} p-5`} aria-label="Cari seç">
+        <div className="grid gap-6 lg:grid-cols-2">
+          <div>
+            <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-zinc-400">Cari ara</h3>
+            <label className="relative mt-2 block">
+              <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" aria-hidden />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Ad, firma, e-posta, telefon"
+                aria-label="Cari ara"
+                className="h-9 w-full rounded-lg border border-slate-300 bg-white pl-8 pr-3 text-sm dark:border-white/15 dark:bg-zinc-900"
               />
-            </li>
-          ))}
-        </ul>
-      </aside>
+            </label>
+            <ul className="mt-3 grid gap-1 sm:grid-cols-2">
+              {results.map((c) => (
+                <li key={c.id}>
+                  <PickButton active={picked === c.id} onClick={() => setPicked(c.id)} label={c.label} detail={c.detail} segment={c.segment} />
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-zinc-400">Kısıtlaması olan cariler</h3>
+            <ul className="mt-2 grid max-h-64 gap-1 overflow-y-auto sm:grid-cols-2">
+              {withRules === null && <li className="h-8 rounded bg-slate-100 motion-safe:animate-pulse dark:bg-white/5" />}
+              {withRules?.length === 0 && <li className="text-sm text-slate-500 dark:text-zinc-400">Henüz yok.</li>}
+              {withRules?.map((c) => (
+                <li key={c.id}>
+                  <PickButton
+                    active={picked === c.id}
+                    onClick={() => setPicked(c.id)}
+                    label={customerLabel(c)}
+                    detail={`${c.rule_count} kısıtlama · ${c.email}`}
+                    segment={(c.segment as SegmentType | null) ?? null}
+                  />
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </section>
       <div>
         {picked ? (
           <CustomerAccessRules

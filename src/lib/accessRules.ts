@@ -52,7 +52,18 @@ export async function saveTierRules(tier: AccessTier, rules: TierRules): Promise
   return data;
 }
 
-export { categoryTree, customerLabel, normalizeRoute, routeCovers, sameRules } from "./accessRulesMath";
+export {
+  allBrands,
+  allCategories,
+  allRoutes,
+  categoryTree,
+  clearAll,
+  customerLabel,
+  normalizeRoute,
+  restrictAll,
+  routeCovers,
+  sameRules,
+} from "./accessRulesMath";
 
 // ── Per customer ("Cari bazında") ────────────────────────────────────────────
 

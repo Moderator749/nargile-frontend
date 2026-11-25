@@ -1,10 +1,23 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { EyeOff, Plus, Search, X } from "lucide-react";
+import { EyeOff, Lock, LockOpen, Plus, Search, X } from "lucide-react";
 
 import { panelClass } from "@/components/admin/AdminShell";
-import { SUGGESTED_ROUTES, categoryTree, normalizeRoute, type AccessOption, type TierRules } from "@/lib/accessRules";
+import {
+  SUGGESTED_ROUTES,
+  allBrands,
+  allCategories,
+  allRoutes,
+  categoryTree,
+  clearAll,
+  normalizeRoute,
+  restrictAll,
+  type AccessOption,
+  type TierRules,
+} from "@/lib/accessRules";
+
+const QUICK_ROUTES = SUGGESTED_ROUTES.map((r) => r.path);
 
 const fold = (s: string) => s.toLocaleLowerCase("tr-TR");
 
@@ -13,6 +26,13 @@ const fold = (s: string) => s.toLocaleLowerCase("tr-TR");
  * its subcategories, shown ticked and locked), brands, storefront pages — for
  * a customer group or one customer ("Cari bazında"). Holds no state of its own
  * but the searches: the caller keeps the draft and saves it.
+ *
+ * "Tümünü Kısıtla" closes every category (by its roots: the rest go with
+ * them), every brand and every quick-select page at once; "Tümünü Kaldır"
+ * empties the set; each column's "Tümü / Temizle" does the same for that
+ * column alone. A customer's group rules ("grubundan") are never part of
+ * the set, so the bulk actions leave them as they are. Nothing is saved
+ * until the caller's "Kaydet": `dirty` says so above the columns.
  */
 export function AccessRulesEditor({
   draft,
@@ -20,6 +40,7 @@ export function AccessRulesEditor({
   brands,
   onChange,
   inherited: fromGroup,
+  dirty = false,
 }: {
   draft: TierRules;
   categories: AccessOption[];
@@ -27,6 +48,8 @@ export function AccessRulesEditor({
   onChange: (next: TierRules) => void;
   /** A customer's group's own set: shown as already closed, not editable here. */
   inherited?: TierRules;
+  /** Unsaved changes: said above the columns, so a bulk action is not taken for saved. */
+  dirty?: boolean;
 }) {
   const [catQuery, setCatQuery] = useState("");
   const [brandQuery, setBrandQuery] = useState("");
@@ -62,10 +85,54 @@ export function AccessRulesEditor({
   const shownCats = tree.filter((c) => !catQuery.trim() || fold(c.name).includes(fold(catQuery.trim())));
   const shownBrands = brands.filter((b) => !brandQuery.trim() || fold(b.name).includes(fold(brandQuery.trim())));
 
+  const bulkButton =
+    "inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-40";
+  const restrictedAll = restrictAll(draft, categories, brands, QUICK_ROUTES, fromGroup);
+  const isEverything =
+    restrictedAll.category_ids.every((id) => draft.category_ids.includes(id)) &&
+    restrictedAll.brand_ids.every((id) => draft.brand_ids.includes(id)) &&
+    restrictedAll.routes.every((r) => draft.routes.includes(r));
+  const isEmpty = draft.category_ids.length + draft.brand_ids.length + draft.routes.length === 0;
+
   return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => onChange(restrictedAll)}
+          disabled={isEverything}
+          className={`${bulkButton} bg-red-600 text-white hover:bg-red-500 dark:bg-red-500 dark:hover:bg-red-400`}
+          title="Tüm kategoriler, tüm markalar ve hızlı seçimdeki tüm sayfalar kapanır"
+        >
+          <Lock className="h-3.5 w-3.5" aria-hidden /> Tümünü Kısıtla
+        </button>
+        <button
+          type="button"
+          onClick={() => onChange(clearAll())}
+          disabled={isEmpty}
+          className={`${bulkButton} text-slate-700 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 dark:text-zinc-200 dark:ring-white/15 dark:hover:bg-white/5`}
+          title={fromGroup ? "Bu carinin kendi kısıtlamaları kalkar; fiyat grubundan gelenler kalır" : "Bu grubun tüm kısıtlamaları kalkar"}
+        >
+          <LockOpen className="h-3.5 w-3.5" aria-hidden /> Tümünü Kaldır
+        </button>
+        {fromGroup && (
+          <span className="text-xs text-slate-500 dark:text-zinc-400">“grubundan” olanlar burada değişmez.</span>
+        )}
+        {dirty && (
+          <span role="status" className="ml-auto rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/30">
+            Kaydedilmemiş değişiklikler var — uygulamak için Kaydet’e basın
+          </span>
+        )}
+      </div>
     <div className="grid gap-6 xl:grid-cols-3">
       <section className={`${panelClass} p-5`} aria-label="Kategoriler">
-        <Header title="Kategoriler" note={`${draft.category_ids.length} kapalı · alt kategoriler de kapanır`} />
+        <Header
+          title="Kategoriler"
+          note={`${draft.category_ids.length} kapalı · alt kategoriler de kapanır`}
+          onAll={() => edit({ category_ids: allCategories(categories, groupCats) })}
+          onClear={() => edit({ category_ids: [] })}
+          clearDisabled={draft.category_ids.length === 0}
+        />
         <SearchBox value={catQuery} onChange={setCatQuery} label="Kategori ara" />
         <ul className="mt-3 max-h-[28rem] space-y-0.5 overflow-y-auto pr-1">
           {shownCats.map((c) => {
@@ -89,7 +156,13 @@ export function AccessRulesEditor({
       </section>
 
       <section className={`${panelClass} p-5`} aria-label="Markalar">
-        <Header title="Markalar" note={`${draft.brand_ids.length} kapalı`} />
+        <Header
+          title="Markalar"
+          note={`${draft.brand_ids.length} kapalı`}
+          onAll={() => edit({ brand_ids: allBrands(brands, groupBrands) })}
+          onClear={() => edit({ brand_ids: [] })}
+          clearDisabled={draft.brand_ids.length === 0}
+        />
         <SearchBox value={brandQuery} onChange={setBrandQuery} label="Marka ara" />
         <ul className="mt-3 max-h-[28rem] space-y-0.5 overflow-y-auto pr-1">
           {shownBrands.map((b) => {
@@ -111,7 +184,14 @@ export function AccessRulesEditor({
       </section>
 
       <section className={`${panelClass} p-5`} aria-label="Sayfalar">
-        <Header title="Sayfalar" note="Yol ve altındaki sayfalar kapanır" />
+        <Header
+          title="Sayfalar"
+          note="Yol ve altındaki sayfalar kapanır"
+          onAll={() => edit({ routes: allRoutes(draft.routes, QUICK_ROUTES, groupRoutes) })}
+          onClear={() => edit({ routes: [] })}
+          clearDisabled={draft.routes.length === 0}
+          allTitle="Hızlı seçimdeki tüm sayfalar kapanır"
+        />
         <form
           className="mt-3 flex gap-2"
           onSubmit={(e) => {
@@ -181,14 +261,42 @@ export function AccessRulesEditor({
         </p>
       </section>
     </div>
+    </div>
   );
 }
 
-function Header({ title, note }: { title: string; note: string }) {
+function Header({
+  title,
+  note,
+  onAll,
+  onClear,
+  clearDisabled,
+  allTitle,
+}: {
+  title: string;
+  note: string;
+  onAll: () => void;
+  onClear: () => void;
+  clearDisabled: boolean;
+  allTitle?: string;
+}) {
+  const chip =
+    "rounded px-1.5 py-0.5 text-[11px] font-semibold transition-colors duration-150 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-white/10";
   return (
-    <div className="flex items-baseline justify-between gap-2">
-      <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-zinc-400">{title}</h2>
-      <span className="text-xs text-slate-500 dark:text-zinc-400">{note}</span>
+    <div>
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-zinc-400">{title}</h2>
+        <span className="flex shrink-0 items-center gap-0.5">
+          <button type="button" onClick={onAll} className={`${chip} text-red-700 dark:text-red-300`} title={allTitle ?? `${title}: tümü kapanır`}>
+            Tümü
+          </button>
+          <span className="text-slate-300 dark:text-zinc-600" aria-hidden>/</span>
+          <button type="button" onClick={onClear} disabled={clearDisabled} className={`${chip} text-slate-600 dark:text-zinc-300`} title={`${title}: kısıtlamalar kalkar`}>
+            Temizle
+          </button>
+        </span>
+      </div>
+      <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">{note}</p>
     </div>
   );
 }

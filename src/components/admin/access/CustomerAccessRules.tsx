@@ -114,6 +114,7 @@ export function CustomerAccessRules({
         categories={data.categories}
         brands={data.brands}
         inherited={group}
+        dirty={dirty}
         onChange={(next) => {
           setDraft(next);
           setResult(null);
