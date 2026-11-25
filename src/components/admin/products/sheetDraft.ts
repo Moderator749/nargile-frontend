@@ -14,7 +14,8 @@ import {
   type ErpDisplayField,
   type PriceMatrix,
 } from "@/lib/erpCatalog";
-import { convertVat, kurusToInput, parseDecimalInput, typedVatCell, vatCellAtRate, type VatCell } from "@/lib/format";
+import { convertVat, kurusToInput, parseDecimalInput, tidyPriceInput, typedVatCell, vatCellAtRate, type VatCell } from "@/lib/format";
+import { wholeLira } from "@/lib/pricingMath";
 import { PRODUCT_SLUG } from "@/lib/slug";
 import type {
   TranslatedLocale,
@@ -57,6 +58,21 @@ export function withoutVat(incl: string, rate: VatRate): string {
 
 /** A cell after the admin typed `raw` into one of its boxes (lib/format's `typedVatCell`). */
 export const typedCell: (cell: CellDraft, side: "excl" | "incl", raw: string, rate: VatRate) => CellDraft = typedVatCell;
+
+/**
+ * The retail TL cell as the site keeps it: KDV dahil in whole lira, rounded up
+ * (7,50 → 8,00), its KDV hariç following from that — what the server writes
+ * on save (product_blueprint._sync_prices). Any other cell, or one without a
+ * usable price, comes back as it is: Bayi, Toptan and Kafe keep their kuruş.
+ */
+export function wholeLiraRetail(cell: CellDraft, rate: VatRate): CellDraft {
+  const incl = parseDecimalInput(cell.incl);
+  if (incl === null || Number(incl) <= 0) return cell;
+  const whole = wholeLira(Number(incl));
+  if (whole === Number(incl)) return cell;
+  const next = typedCell(cell, "incl", String(whole), rate);
+  return { ...next, incl: tidyPriceInput(next.incl), excl: tidyPriceInput(next.excl) };
+}
 
 /** A cell re-derived at a new rate, from whichever price the admin typed (lib/format's `vatCellAtRate`). */
 export const atRate: (cell: CellDraft, rate: VatRate) => CellDraft = vatCellAtRate;

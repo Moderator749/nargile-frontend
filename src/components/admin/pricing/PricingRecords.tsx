@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, FolderInput, History, ImageOff, RotateCcw, Trash2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2, FolderInput, History, ImageOff, RotateCcw, Trash2 } from "lucide-react";
 
 import { formatDate, formatDateParts } from "@/lib/format";
 import type { PricingCurrency, PricingRecord, StoredColumn } from "@/lib/pricing";
@@ -126,6 +126,24 @@ export function PricingRecords({
                     title={`Sitedeki fiyatlar bu kaydın önceki halinden (uygulandı: ${formatDate(r.applied_at!)}). Güncel hali siteye uygulanmadı: cetvele yükleyip “Kaydet ve Siteye Uygula” ile uygulayabilirsiniz.`}
                   >
                     <History className="h-3.5 w-3.5" aria-hidden /> Sitede · önceki hali
+                  </span>
+                )}
+                {/* Applied as it stands, but the product's prices were changed since. */}
+                {appliedState(r) === "drift" && (
+                  <span
+                    className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-800 ring-1 ring-inset ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/30"
+                    title={`Siteye uygulandı: ${formatDate(r.applied_at!)}. Sonradan üründe değişen fiyatlar: ${(r.site_drift ?? []).join(", ")}. Sitedeki fiyatlar bu kayıttakilerle aynı değil.`}
+                  >
+                    <AlertTriangle className="h-3.5 w-3.5" aria-hidden /> Sitede · fiyat değişti
+                  </span>
+                )}
+                {/* A later record was applied to the same product: this one is history. */}
+                {appliedState(r) === "superseded" && (
+                  <span
+                    className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600 ring-1 ring-inset ring-slate-200 dark:bg-white/5 dark:text-zinc-400 dark:ring-white/10"
+                    title={`Uygulandı: ${formatDate(r.applied_at!)}. Aynı ürüne daha sonra başka bir kayıt uygulandı; sitedeki fiyatlar o kayıttan.`}
+                  >
+                    <History className="h-3.5 w-3.5" aria-hidden /> Yerine yenisi uygulandı
                   </span>
                 )}
                 <button

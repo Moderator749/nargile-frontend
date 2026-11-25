@@ -30,13 +30,26 @@ export const originOf = (r: SavedRow): PricingOrigin => ({
 });
 
 /**
- * Whether a row's prices are on the site: never applied; applied as it
- * stands; or applied and saved over since — the site has its earlier
- * version's prices ("Sitede · önceki hali").
+ * Whether a row's prices are on the site:
+ * - "none": never applied;
+ * - "current": applied as it stands, and the product still has those prices;
+ * - "earlier": applied, then saved over — the site has its earlier version's
+ *   prices ("Sitede · önceki hali");
+ * - "drift": applied as it stands, but the product's prices were changed since
+ *   (in the product form, say) — `site_drift` names the groups;
+ * - "superseded": a later record was applied to the same product, so this one
+ *   is no longer the site's. Only one record per product is ever "current".
  */
-export function appliedState(r: { applied_at: string | null; updated_at: string }): "none" | "current" | "earlier" {
+export function appliedState(r: {
+  applied_at: string | null;
+  updated_at: string;
+  superseded?: boolean;
+  site_drift?: string[] | null;
+}): "none" | "current" | "earlier" | "drift" | "superseded" {
   if (!r.applied_at) return "none";
-  return Date.parse(r.updated_at) > Date.parse(r.applied_at) ? "earlier" : "current";
+  if (r.superseded) return "superseded";
+  if (Date.parse(r.updated_at) > Date.parse(r.applied_at)) return "earlier";
+  return r.site_drift && r.site_drift.length > 0 ? "drift" : "current";
 }
 
 /**

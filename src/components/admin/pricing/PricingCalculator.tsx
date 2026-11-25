@@ -12,8 +12,12 @@ import { getApiErrorMessage } from "@/lib/errors";
 import { loadExchangeRates } from "@/lib/money";
 import {
   SEGMENT_LABELS,
+  VAT_RATES,
   computeSheet,
+  decimalText,
+  parseAmount,
   sameCodeRows,
+  sheetProblem,
   savePricing,
   type FileTarget,
   type PricingCurrency,
@@ -22,6 +26,7 @@ import {
   type PricingSegment,
   type PricingSheetInput,
   type VatMode,
+  wholeLira,
 } from "@/lib/pricing";
 import { type PricingOrigin, originOf, savesOver } from "@/lib/pricingOrigin";
 import { refreshStorefront } from "@/lib/revalidate";
@@ -91,26 +96,10 @@ export const emptySheet = (vatMode: VatMode = "EXCL"): SheetDraft => ({
   finalTry: "",
 });
 
-/**
- * A number as a Turkish admin types it: "1250,5", "1.250,50", "49,3681", "-5".
- * Up to four decimals — exchange rates and costs need them — where the shared
- * money parser stops at kuruş. Null when empty or unusable.
- */
-function num(raw: string): number | null {
-  let t = raw.trim().replace(/\s|₺|\$|€|%/g, "");
-  if (!t) return null;
-  const negative = t.startsWith("-");
-  if (negative) t = t.slice(1);
-  if (t.includes(",")) t = t.replace(/\./g, "").replace(",", ".");
-  else if (/^\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, ""); // "12.500": thousands
-  if (!/^\d+(\.\d{1,4})?$/.test(t)) return null;
-  return Number(t) * (negative ? -1 : 1);
-}
-/** For the server: `places` decimals at most (prices 2, rates and percents 4). */
-const dec = (raw: string, places = 4) => {
-  const n = num(raw);
-  return n === null ? null : String(Number(n.toFixed(places)));
-};
+/** A typed figure as a number (lib/pricingMath `parseAmount`): null when empty or unusable. */
+const num = parseAmount;
+/** For the server: `places` decimals at most (prices 2; ERP prices, rates and percents 4). */
+const dec = decimalText;
 
 /** A column's typed figures as numbers, for the arithmetic. */
 const typedOf = (c: ColumnDraft) => ({ percent: num(c.percent), desired: num(c.desired), erpPrice: num(c.erpPrice) });
@@ -295,30 +284,9 @@ export function PricingCalculator({
 
 
   // What the server takes; null with the reason when the sheet is not complete.
-  const used = d.columns.map((c) => c.segment).filter(Boolean);
-  // The extras are optional and independent: one with a percent is sent, one
-  // without is not — unless something was typed in it that would be lost.
+  // An extra with no percent is not sent (and not checked beyond being empty).
   const sentExtras = d.extras.filter((c) => num(c.percent) !== null);
-  const strayExtra = d.extras.some((c) => num(c.percent) === null && (c.percent.trim() || c.desired.trim()));
-  const problem =
-    num(d.cost) === null || num(d.cost)! <= 0
-      ? "Maliyeti girin."
-      : [...d.columns, ...sentExtras].some((c) => !c.label.trim())
-        ? "Her fiyat sınıfına bir ad verin."
-        : d.columns.some((c) => num(c.percent) === null) || num(d.retailPercent) === null
-          ? "Her sütunun kâr oranını girin (0 da olabilir)."
-          : strayExtra
-            ? "Mağaza fiyatına önce kâr oranını girin (boşsa kaydedilmez)."
-            : [...d.columns, ...d.extras].some((c) => c.erpPrice.trim() && !(num(c.erpPrice)! > 0)) ||
-                (d.retailErpPrice.trim() && !(num(d.retailErpPrice)! > 0))
-              ? "ERP fiyatlarını sayı olarak girin (ya da boş bırakın)."
-              : d.appliedPercent.trim() && num(d.appliedPercent) === null
-                ? "Uygulanacak oranı sayı olarak girin (ya da boş bırakın)."
-              : num(d.vatRate) === null
-                ? "Perakende için KDV oranını girin."
-                : new Set(used).size !== used.length
-                  ? "Bir müşteri grubu yalnızca bir sütuna bağlanabilir."
-                  : null;
+  const problem = sheetProblem(d);
   const payload = (): PricingSheetInput => ({
     product_code: d.code.trim(),
     product_name: d.name.trim(),
@@ -330,19 +298,19 @@ export function PricingCalculator({
       segment: c.segment || null,
       percent: dec(c.percent)!,
       desired: dec(c.desired, 2),
-      erp_price: dec(c.erpPrice, 2),
+      erp_price: dec(c.erpPrice),
     })),
     retail: {
       percent: dec(d.retailPercent)!,
       vat_rate: dec(d.vatRate, 2)!,
       desired: dec(d.retailDesired, 2),
-      erp_price: dec(d.retailErpPrice, 2),
+      erp_price: dec(d.retailErpPrice),
     },
     extras: sentExtras.map((c) => ({
       label: c.label.trim(),
       percent: dec(c.percent)!,
       desired: dec(c.desired, 2),
-      erp_price: dec(c.erpPrice, 2),
+      erp_price: dec(c.erpPrice),
     })),
     applied_percent: dec(d.appliedPercent),
     usd_rate: foreign ? dec(d.usdRate) : null,
@@ -421,9 +389,15 @@ export function PricingCalculator({
         ? [{ label: c.label.trim() || SEGMENT_LABELS[c.segment], value: `${fmt(calc.columns[i].price, d.currency)} ${basis}` }]
         : [],
     ),
+    // Retail as the site gets it: TL in whole lira, rounded up (1.904,40 → 1.905,00).
     foreign && num(d.finalTry) !== null
-      ? { label: "Perakende (son karar)", value: `${fmt(num(d.finalTry), "TRY")} KDV dahil` }
-      : { label: "Perakende", value: `${fmt(calc.retail.price, d.currency)} KDV dahil` },
+      ? { label: "Perakende (son karar)", value: `${fmt(wholeLira(num(d.finalTry)!), "TRY")} KDV dahil` }
+      : foreign
+        ? {
+            label: "Perakende",
+            value: `${fmt(calc.retail.price, d.currency)} KDV dahil — sitede günün kuruyla TL’ye çevrilir, tam liraya yuvarlanır`,
+          }
+        : { label: "Perakende", value: `${fmt(calc.retailShelf, "TRY")} KDV dahil` },
   ];
 
   // On a before-VAT sheet, the orange retail cell says how it got there.
@@ -513,7 +487,21 @@ export function PricingCalculator({
                 <span className={headText}>{d.vatMode === "EXCL" ? "KDV hariç maliyet" : "KDV dahil maliyet"}</span>
                 {/* The sheet's VAT rate, set at its start: retail adds it on a
                     before-VAT sheet, and every price is stored with it. */}
-                <PercentBadge label="KDV oranı" prefix="KDV %" value={d.vatRate} onChange={(vatRate) => set({ vatRate })} />
+                <select
+                  value={num(d.vatRate) !== null && (VAT_RATES as readonly number[]).includes(num(d.vatRate)!) ? String(num(d.vatRate)) : ""}
+                  onChange={(e) => set({ vatRate: e.target.value })}
+                  aria-label="KDV oranı"
+                  className={`${smallSelect} mt-1`}
+                >
+                  {num(d.vatRate) === null || !(VAT_RATES as readonly number[]).includes(num(d.vatRate)!) ? (
+                    <option value="">KDV seçin</option>
+                  ) : null}
+                  {VAT_RATES.map((rate) => (
+                    <option key={rate} value={String(rate)}>
+                      KDV %{rate}
+                    </option>
+                  ))}
+                </select>
                 <span className="mt-1 block text-[10px] font-normal text-slate-500 dark:text-zinc-400">{SYMBOL[d.currency]} cinsinden</span>
               </th>
               {d.columns.map((c) => (
@@ -547,7 +535,7 @@ export function PricingCalculator({
                 <th scope="col" className={`${td} ${clip} px-1.5 py-1.5 text-left align-top`}>
                   <span className={headText}>TL fiyat</span>
                   <span className="mt-1 block text-[10px] font-normal text-slate-500 dark:text-zinc-400">
-                    Perakende × {d.currency === "USD" ? "dolar" : "euro"} kuru
+                    Perakende × {d.currency === "USD" ? "dolar" : "euro"} kuru, tam liraya yukarı
                   </span>
                 </th>
               )}
@@ -701,6 +689,12 @@ export function PricingCalculator({
                 currency={d.currency}
                 onChange={(retailDesired) => set({ retailDesired })}
                 strong
+                // A TL retail price goes to the site in whole lira, rounded up: say so when it differs.
+                note={
+                  calc.retailShelf !== null && calc.retail.price !== null && calc.retailShelf !== calc.retail.price
+                    ? `Sitede ${fmt(calc.retailShelf, "TRY")}`
+                    : undefined
+                }
               />
               {foreign && (
                 <td className={`${td} ${clip} bg-red-50 p-0 dark:bg-red-500/10`}>
@@ -805,8 +799,10 @@ export function PricingCalculator({
           ? "maliyet KDV hariç olduğundan KDV perakende adımında eklenir."
           : "maliyet zaten KDV dahil olduğundan perakendeye ayrıca KDV eklenmez; KDV oranı fiyatların KDV hariç karşılığı için kullanılır."}{" "}
         Perakende, mağaza fiyatının KDV’siz adımının üzerine hesaplanır (KDV bir kez eklenir). Mağaza fiyatı isteğe bağlıdır
-        (kâr oranı boşsa kaydedilmez ve perakende kafe fiyatının üzerine hesaplanır), kayda girer ama siteye
-        yazılmaz.
+        (kâr oranı boşsa kaydedilmez ve perakende en sağdaki fiyat sınıfının üzerine hesaplanır), kayda girer ama
+        siteye yazılmaz. Siteye yazılırken perakendenin TL fiyatı tam liraya yukarı yuvarlanır (1.904,40 → 1.905,00;
+        yeşil hücrenin altında “Sitede” olarak görünür); bayi, toptan ve kafe kuruşuyla yazılır. Yarım kuruş yukarı
+        yuvarlanır (10,605 → 10,61).
       </p>
 
       {result && (
@@ -893,6 +889,7 @@ function PriceCell({
   currency,
   onChange,
   strong,
+  note,
 }: {
   label: string;
   value: string;
@@ -900,6 +897,8 @@ function PriceCell({
   currency: PricingCurrency;
   onChange: (value: string) => void;
   strong?: boolean;
+  /** A line under the price: what the site gets when it differs (retail TL in whole lira). */
+  note?: string;
 }) {
   const shown = auto === null ? "" : auto.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   return (
@@ -914,6 +913,11 @@ function PriceCell({
         aria-label={label}
         className={`${priceInput} ${strong ? "font-semibold" : ""}`}
       />
+      {note && (
+        <span className="block truncate px-1 pb-0.5 text-right font-mono text-[9px] font-semibold leading-3 text-emerald-900 dark:text-emerald-200">
+          {note}
+        </span>
+      )}
     </td>
   );
 }

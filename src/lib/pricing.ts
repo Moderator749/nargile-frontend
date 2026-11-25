@@ -2,6 +2,8 @@ import { api } from "@/lib/api";
 import type { ProductErpCatalog } from "@/lib/erpCatalog";
 import type { DecimalString, ISODateTime, UUID } from "@/types";
 
+import type { PricingCurrency, VatMode } from "./pricingMath";
+
 /*
  * "Fiyat Hesaplama Cetveli": the worksheet's shapes, its arithmetic, and the
  * calls that save it and push it to a product. The arithmetic mirrors
@@ -10,8 +12,7 @@ import type { DecimalString, ISODateTime, UUID } from "@/types";
  */
 
 export type PricingSegment = "DEALER" | "WHOLESALE" | "CAFE";
-export type PricingCurrency = "TRY" | "USD" | "EUR";
-export type VatMode = "EXCL" | "INCL";
+export type { PricingCurrency, VatMode } from "./pricingMath";
 
 export const SEGMENT_LABELS: Record<PricingSegment | "RETAIL", string> = {
   DEALER: "Bayi",
@@ -100,6 +101,14 @@ export interface PricingRecord {
    * catalogue. Only on the lists; null when the code names no product.
    */
   product_erp?: ProductErpCatalog | null;
+  /** Applied, but a later record was applied to the same product since: no longer the site's prices. */
+  superseded?: boolean;
+  /**
+   * Applied and still the product's record, but these groups' live prices
+   * differ from what it applied (changed in the product form, say). Only on
+   * the lists; null or absent when nothing differs.
+   */
+  site_drift?: string[] | null;
 }
 
 export interface PricingFile {
@@ -125,105 +134,11 @@ export interface ApplyResult {
 export type FileTarget = { file_id: number } | { file_name: string };
 
 // ── Arithmetic ───────────────────────────────────────────────────────────────
+// In ./pricingMath, free of the API client so `npm test` can read it.
 
-/** A column's figures below its percent: calculated, its automatic "uygulanacak fiyat", and the price it sends (typed, else that). */
-export interface ComputedPrice {
-  computed: number | null;
-  /** The base — the ERP fiyatı, else the calculated value — plus the sheet's uygulanacak oran. */
-  auto: number | null;
-  price: number | null;
-}
-
-export interface ComputedSheet {
-  columns: ComputedPrice[];
-  /** Between the classes and retail, each shown as retail is: after VAT, with its step before VAT. */
-  extras: (ComputedPrice & { beforeVat: number | null })[];
-  /** Retail after VAT ("KDV dahil perakende"), calculated and applied. */
-  retail: ComputedPrice;
-  /** The retail markup step before VAT is added (equal to `computed` on an after-VAT sheet). */
-  retailBeforeVat: number | null;
-  /** USD/EUR sheets: retail × the typed rate. */
-  tryPrice: number | null;
-}
-
-const round2 = (n: number) => Math.round(n * 100) / 100;
-
-type Typed = { percent: number | null; desired: number | null; erpPrice: number | null };
-
-/**
- * A calculated value's own figures: the base (the ERP fiyatı typed, else the
- * calculated value) plus the uygulanacak oran (none or 0: as it is), a typed
- * price winning. The ERP fiyatı is in the column's own basis already and is
- * taken as it is — no VAT is added to it.
- */
-function priced(computed: number | null, { desired, erpPrice }: Typed, applied: number | null): ComputedPrice {
-  const base = erpPrice ?? computed;
-  const auto = base === null ? null : round2(applied ? base * (1 + applied / 100) : base);
-  return { computed: computed === null ? null : round2(computed), auto, price: desired ?? auto };
-}
-
-/**
- * The calculated row is one unbroken chain: each column is the previous
- * *calculated* value plus its percent. A typed "uygulanacak fiyat" becomes that
- * column's price but never feeds the chain. Null propagates: a column after an
- * unusable one has nothing to stand on.
- *
- * After the classes come the extras ("Mağaza Fiyatı"), then retail, both shown
- * after VAT while the chain runs on before VAT, so VAT is added once: retail
- * builds on the extra's step before VAT. An extra left without a percent is
- * not sent, and is passed over here too: retail then builds on the step
- * before it. Each column's "uygulanacak fiyat", when none is typed, is its
- * ERP fiyatı (else its calculated value) plus — for the classes only — the
- * sheet's "uygulanacak oran"; the extras and retail never take the rate. No
- * VAT is ever added to an ERP fiyatı: the classes' is in the sheet's basis
- * (before VAT on Cetvel 1, after on Cetvel 2: 115 + 5% is 120.75), and the
- * extras' and retail's are shelf prices, after VAT on both sheets — 250
- * typed is 250.00 to apply. Only an empty one leaves the chain's own price,
- * VAT included.
- */
-export function computeSheet(input: {
-  cost: number | null;
-  columns: Typed[];
-  extras?: Typed[];
-  retail: Typed & { vatRate: number | null };
-  appliedPercent?: number | null;
-  vatMode: VatMode;
-  currency: PricingCurrency;
-  usdRate: number | null;
-  eurRate: number | null;
-}): ComputedSheet {
-  const r = input.retail;
-  const applied = input.appliedPercent ?? null;
-  const factor = r.vatRate !== null ? 1 + r.vatRate / 100 : null;
-  const withVat = (v: number | null) =>
-    v === null ? null : input.vatMode === "INCL" ? v : factor === null ? null : v * factor;
-
-  let previous = input.cost;
-  const columns = input.columns.map((typed) => {
-    const computed = previous !== null && typed.percent !== null ? previous * (1 + typed.percent / 100) : null;
-    previous = computed;
-    return priced(computed, typed, applied);
-  });
-  const extras = (input.extras ?? []).map((typed) => {
-    if (typed.percent === null) return { computed: null, auto: null, price: null, beforeVat: null };
-    const step = previous === null ? null : previous * (1 + typed.percent / 100);
-    previous = step;
-    // The rate is the classes' only: an extra's price is its base.
-    return { ...priced(withVat(step), typed, null), beforeVat: step === null ? null : round2(step) };
-  });
-  // Retail is the shelf price, after VAT: VAT is added here when the sheet's
-  // cost (and so its chain) is before VAT.
-  const beforeVat = previous !== null && r.percent !== null ? previous * (1 + r.percent / 100) : null;
-  const retail = priced(withVat(beforeVat), r, null); // retail never takes the rate
-  const rate = input.currency === "USD" ? input.usdRate : input.currency === "EUR" ? input.eurRate : null;
-  return {
-    columns,
-    extras,
-    retail,
-    retailBeforeVat: beforeVat === null ? null : round2(beforeVat),
-    tryPrice: retail.price !== null && rate ? round2(retail.price * rate) : null,
-  };
-}
+export { computeSheet, decimalText, parseAmount, round2, sheetProblem, unreadable, VAT_RATES, wholeLira } from "./pricingMath";
+export type { TypedSheet } from "./pricingMath";
+export type { ComputedPrice, ComputedSheet } from "./pricingMath";
 
 // ── API: "Taslaklar" and "Dosyalar" ─────────────────────────────────────────
 

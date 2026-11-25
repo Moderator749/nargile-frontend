@@ -26,3 +26,14 @@ test("Kaydet writes over the loaded row only while its code is unchanged", () =>
   assert.equal(savesOver(null, "NT10 G"), false); // a new sheet
   assert.equal(savesOver({ code: "" }, ""), true); // a code-less row loaded and saved again
 });
+
+test("one record per product is on the site: a superseded one is history, a changed product is flagged", () => {
+  const applied = { applied_at: "2026-11-03T10:00:01Z", updated_at: "2026-11-03T10:00:00Z" };
+  assert.equal(appliedState({ ...applied, superseded: true }), "superseded");
+  assert.equal(appliedState({ ...applied, superseded: true, site_drift: ["Perakende Fiyat"] }), "superseded");
+  assert.equal(appliedState({ ...applied, site_drift: ["Perakende Fiyat"] }), "drift");
+  assert.equal(appliedState({ ...applied, site_drift: [] }), "current");
+  assert.equal(appliedState({ ...applied, site_drift: null }), "current");
+  // Saved over since its apply: that says more than the drift does.
+  assert.equal(appliedState({ applied_at: "2026-11-03T10:00:00Z", updated_at: "2026-11-03T11:00:00Z", site_drift: ["Bayi"] }), "earlier");
+});

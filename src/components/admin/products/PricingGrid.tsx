@@ -5,6 +5,7 @@ import {
   SHEET_COLUMNS,
   SHEET_CURRENCIES,
   typedCell,
+  wholeLiraRetail,
   type CellDraft,
   type SheetDraft,
   type VatRate,
@@ -76,6 +77,9 @@ export function PricingGrid({
               </th>
               {SHEET_COLUMNS.map(({ segment, label }) => {
                 const cell = prices[currency][segment];
+                // Retail in TL is whole lira, rounded up, as the server saves it: shown so on leaving the box.
+                const settle = (next: CellDraft) =>
+                  currency === "TRY" && segment === "RETAIL" ? wholeLiraRetail(next, vatRate) : next;
                 return (
                   <td key={segment} className="border border-slate-300 p-1.5 dark:border-white/15">
                     <div className="grid grid-cols-2 gap-2">
@@ -85,7 +89,7 @@ export function PricingGrid({
                         value={cell.excl}
                         onChange={(e) => onChange(currency, segment, typedCell(cell, "excl", e.target.value, vatRate))}
                         onKeyDown={(e) => stepOnArrowKey(e, (v) => onChange(currency, segment, typedCell(cell, "excl", v, vatRate)))}
-                        onBlur={() => onChange(currency, segment, { ...cell, excl: tidyPriceInput(cell.excl) })}
+                        onBlur={() => onChange(currency, segment, settle({ ...cell, excl: tidyPriceInput(cell.excl) }))}
                         aria-invalid={invalid(cell.excl) || undefined}
                         aria-label={`${label} ${CURRENCY_LABEL[currency]} KDV hariç fiyat`}
                         placeholder="0,00"
@@ -97,7 +101,7 @@ export function PricingGrid({
                         value={cell.incl}
                         onChange={(e) => onChange(currency, segment, typedCell(cell, "incl", e.target.value, vatRate))}
                         onKeyDown={(e) => stepOnArrowKey(e, (v) => onChange(currency, segment, typedCell(cell, "incl", v, vatRate)))}
-                        onBlur={() => onChange(currency, segment, { ...cell, incl: tidyPriceInput(cell.incl) })}
+                        onBlur={() => onChange(currency, segment, settle({ ...cell, incl: tidyPriceInput(cell.incl) }))}
                         aria-invalid={invalid(cell.incl) || undefined}
                         aria-label={`${label} ${CURRENCY_LABEL[currency]} KDV dahil fiyat`}
                         placeholder="0,00"
@@ -111,6 +115,10 @@ export function PricingGrid({
           ))}
         </tbody>
       </table>
+      <p className="mt-1.5 text-[11px] leading-4 text-slate-500 dark:text-zinc-400">
+        Perakende TL fiyatı tam liraya yukarı yuvarlanır (7,50 → 8,00; KDV hariç ondan hesaplanır). Bayi, toptan ve kafe
+        kuruşuyla kaydedilir.
+      </p>
     </div>
   );
 }
