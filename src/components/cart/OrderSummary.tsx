@@ -33,6 +33,12 @@ interface OrderSummaryProps {
    * the server decides the amounts either way.
    */
   perks: boolean;
+  /**
+   * Whether it has Sultan Puan — the points box and what the cart earns —
+   * which goes by the price list alone (lib/perks `loyaltyPerks`): a Kurumsal
+   * account on Perakende has it without the cart discounts. Defaults to `perks`.
+   */
+  loyaltyPerks?: boolean;
   /** An export account: no gateway, no points, and a request rather than an
       order. The server enforces all three (`is_quote_account`). */
   quoteOnly?: boolean;
@@ -347,7 +353,8 @@ export function OrderSummary(props: OrderSummaryProps) {
   const b2bInvoice =
     !!quote && !quote.perks_eligible && !props.quoteOnly && quote.subtotal_excl_tax != null && quote.vat_total != null;
   // Sultan Puan is a retail promotion and can be switched off in the panel.
-  const loyalty = props.perks && params.loyalty.enabled && !props.guest;
+  // The server's word once the quote is in; until then, the account's.
+  const loyalty = (quote?.loyalty_eligible ?? props.loyaltyPerks ?? props.perks) && params.loyalty.enabled && !props.guest;
   // A B2B cart with products that give its list the havale discount ("Bayide / Toptanda / Kafede …").
   const b2bHavale = !!quote?.items.some((i) => i.havale_eligible);
   const transferHint = transferDiscountHint(params, locale);

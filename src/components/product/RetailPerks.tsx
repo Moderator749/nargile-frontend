@@ -9,7 +9,7 @@ import { useMessages } from "@/components/i18n/LocaleProvider";
 import { PERKS_PAGE } from "@/lib/bilgi";
 import { homeMessages } from "@/lib/i18n/messages/home";
 import { productMessages } from "@/lib/i18n/messages/product";
-import { retailPerks } from "@/lib/perks";
+import { loyaltyPerks, retailPerks } from "@/lib/perks";
 import { storeAdvantages, type AdvantageKey, type AdvantageSources, type StoreAdvantage } from "@/lib/storeAdvantages";
 import { useAuthStore } from "@/store/useAuthStore";
 import type { StoreParameters, User } from "@/types";
@@ -24,7 +24,7 @@ import type { StoreParameters, User } from "@/types";
  * in, and this is the block that argues they should.
  */
 export const showsRetailPerks = (user: Pick<User, "account_type" | "segment_code"> | null) =>
-  !user || retailPerks(user);
+  !user || retailPerks(user) || loyaltyPerks(user);
 
 /**
  * The ones a product page states. Of the homepage's advantages, the ways a
@@ -54,7 +54,11 @@ export function RetailPerks({ params, sources }: { params: StoreParameters; sour
   const user = useAuthStore((s) => s.user);
   const { percent } = useMessages(homeMessages);
   if (!showsRetailPerks(user)) return null;
-  const shown = storeAdvantages(sources, params, percent).filter((advantage) => isProductPagePerk(advantage.key));
+  // A Kurumsal account on Perakende: SultanPuan and Kumbara, not the cart discount.
+  const volume = !user || retailPerks(user);
+  const shown = storeAdvantages(sources, params, percent).filter(
+    (advantage) => isProductPagePerk(advantage.key) && (advantage.key !== "volume" || volume),
+  );
   return <AdvantageList advantages={shown} />;
 }
 

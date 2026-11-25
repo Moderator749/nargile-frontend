@@ -700,6 +700,8 @@ export interface Cart {
    * account pays its tier price net.
    */
   perks_eligible: boolean;
+  /** Whether it has Sultan Puan (earns, may spend): the Perakende price list, Bireysel or Kurumsal. */
+  loyalty_eligible?: boolean;
   cargo_cost: DecimalString;
   shipping: ShippingBreakdown;
   /** Volume ("ciro") discount, on the subtotal. */

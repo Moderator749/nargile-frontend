@@ -6,7 +6,7 @@ import { adminLoyaltyView, showsWallet } from "./loyaltyAccess.ts";
 
 const person = (segment_code, account_type = "INDIVIDUAL") => ({ account_type, segment_code });
 
-test("only a bireysel Perakende account sees the wallet", () => {
+test("an account on the Perakende price list sees the wallet, Bireysel or Kurumsal", () => {
   assert.equal(showsWallet(person("RETAIL"), { eligible: true }), true);
   assert.equal(showsWallet(person(null), null), true); // still loading: as its group says
   for (const tier of ["CAFE", "WHOLESALE", "DEALER"]) {
@@ -14,7 +14,11 @@ test("only a bireysel Perakende account sees the wallet", () => {
     assert.equal(showsWallet(person(tier), { eligible: true }), false, tier);
   }
   assert.equal(showsWallet(person("RETAIL"), { eligible: false }), false); // the server's word wins
-  assert.equal(showsWallet(person("RETAIL", "CAFE"), null), false); // a firm on retail prices
+  // The price list decides (2026-11-25): a Kurumsal account on Perakende keeps its wallet.
+  assert.equal(showsWallet(person("RETAIL", "CAFE"), null), true);
+  assert.equal(showsWallet(person("RETAIL", "TOBACCO_SHOP"), { eligible: true }), true);
+  assert.equal(showsWallet(person("DEALER", "TOBACCO_SHOP"), null), false);
+  assert.equal(showsWallet(person("RETAIL", "INTERNATIONAL"), null), false); // export: quotes, no points
   assert.equal(showsWallet(null, null), false);
 });
 

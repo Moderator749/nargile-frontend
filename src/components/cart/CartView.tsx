@@ -63,7 +63,7 @@ import { isExportAccount } from "@/lib/exportAccount";
 import { cartMessages } from "@/lib/i18n/messages/cart";
 import { guestMessages } from "@/lib/i18n/messages/guest";
 import { fetchPaytrStatus, openPaytrPage, type PaytrPage, type PaytrStatus } from "@/lib/paytr";
-import { retailPerks } from "@/lib/perks";
+import { loyaltyPerks, retailPerks } from "@/lib/perks";
 import {
   buildCheckoutRequest,
   checkout,
@@ -291,10 +291,12 @@ export function CartView({ checkoutStep = false }: { checkoutStep?: boolean } = 
   // Sultan Puan and the cart discounts are retail promotions; the server decides
   // the amounts, this decides what is on screen.
   const perks = retailPerks(user ?? null);
+  // Sultan Puan goes by the price list alone: Perakende, Bireysel or Kurumsal.
+  const loyaltyOk = loyaltyPerks(user ?? null);
   const balance = user?.loyalty_balance ?? 0;
   const params = useStoreParameters();
   // Nothing is spent while the program is switched off in the panel.
-  const points = perks && params.loyalty.enabled ? Math.min(storedPoints, balance) : 0;
+  const points = loyaltyOk && params.loyalty.enabled ? Math.min(storedPoints, balance) : 0;
 
   useEffect(() => {
     if (token) refreshProfile();
@@ -896,6 +898,7 @@ export function CartView({ checkoutStep = false }: { checkoutStep?: boolean } = 
           isLoggedIn={isLoggedIn}
           guest={!!user?.is_guest}
           perks={perks}
+          loyaltyPerks={loyaltyOk}
           params={params}
           cardAvailable={cardAvailable}
           quoteOnly={quoteOnly}

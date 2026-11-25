@@ -10,7 +10,7 @@ import { useMessages } from "@/components/i18n/LocaleProvider";
 import { useOwnPrices } from "@/hooks/useOwnPrices";
 import { homeMessages } from "@/lib/i18n/messages/home";
 import { PAGE_CONTAINER } from "@/lib/layout";
-import { retailPerks } from "@/lib/perks";
+import { loyaltyPerks } from "@/lib/perks";
 import { isAdminRole } from "@/lib/roles";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useAuthHydrated } from "@/store/useHasHydrated";
@@ -180,7 +180,8 @@ export function GoldShowcase({
   }
 
   if (products.length === 0) return null;
-  if (loggedIn && user && !retailPerks(user) && !isAdminRole(user.role)) return null;
+  // The SultanPuan and Kumbara bands: the Perakende price list's, Bireysel or Kurumsal.
+  if (loggedIn && user && !loyaltyPerks(user) && !isAdminRole(user.role)) return null;
 
   return (
     // The whole band in its tone, edge to edge (TONES).

@@ -5,7 +5,7 @@ import { useMessages } from "@/components/i18n/LocaleProvider";
 import { useLoyaltyBand } from "@/hooks/useLoyaltyBand";
 import { homeMessages } from "@/lib/i18n/messages/home";
 import { productMessages } from "@/lib/i18n/messages/product";
-import { retailPerks } from "@/lib/perks";
+import { loyaltyPerks } from "@/lib/perks";
 import { bandText } from "@/lib/storeAdvantages";
 import { sultanPuanPercent } from "@/lib/sultanPuan";
 import { useAuthStore } from "@/store/useAuthStore";
@@ -20,7 +20,7 @@ function useSultanPuanRate(priceInclTax: string | null | undefined): { rate: str
   const loyalty = useLoyaltyBand();
   const user = useAuthStore((s) => s.user);
   const { percent } = useMessages(homeMessages);
-  if (user && !retailPerks(user)) return null;
+  if (user && !loyaltyPerks(user)) return null;
   const rate = sultanPuanPercent(priceInclTax, loyalty);
   if (rate === null) return null;
   return { rate: percent(rate), band: bandText(loyalty.band_min, loyalty.band_max) };
