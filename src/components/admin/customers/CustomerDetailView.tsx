@@ -17,6 +17,7 @@ import {
 } from "@/components/admin/customers/CustomerLabels";
 import { CustomerAccessRules } from "@/components/admin/access/CustomerAccessRules";
 import { AccountTypeEditor } from "@/components/admin/customers/AccountTypeEditor";
+import { CustomerDeleteSection } from "@/components/admin/customers/CustomerDeleteSection";
 import { CustomerOrderHistory } from "@/components/admin/customers/CustomerOrderHistory";
 import { SegmentAssign } from "@/components/admin/customers/SegmentAssign";
 import { SystemAdminBadge } from "@/components/admin/SystemAdminBadge";
@@ -396,6 +397,8 @@ export function CustomerDetailView({ userId }: { userId: string }) {
           </>
         )}
       </section>
+
+      {manageable && <CustomerDeleteSection customer={customer} />}
     </>
   );
 }

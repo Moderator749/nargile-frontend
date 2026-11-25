@@ -747,6 +747,17 @@ export async function adminAssignSegment(userId: string, segment: SegmentType): 
   return data;
 }
 
+/**
+ * "Kalıcı Olarak Sil": an account without orders is deleted; one with orders is
+ * emptied (personal details erased, login closed) and its orders kept.
+ */
+export async function adminDeleteCustomer(
+  userId: string,
+): Promise<{ mode: "deleted" | "anonymized"; orders_kept: number }> {
+  const { data } = await api.delete<{ mode: "deleted" | "anonymized"; orders_kept: number }>(`/admin/customers/${userId}`);
+  return data;
+}
+
 /** "Stok ve Raporlardan Hariç Tut (Şube / Test Hesabı)": on or off, from the account's next order on. */
 export async function adminSetStockExclusion(userId: string, enabled: boolean): Promise<AdminCustomerDetail> {
   const { data } = await api.put<AdminCustomerDetail>(`/admin/customers/${userId}/stock-exclusion`, { enabled });
