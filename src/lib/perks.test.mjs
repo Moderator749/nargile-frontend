@@ -16,8 +16,11 @@ test("Sultan Puan and Kumbara go by the price list alone", () => {
   assert.equal(loyaltyPerks(null), false);
 });
 
-test("the cart discounts stay a bireysel Perakende account's", () => {
-  assert.equal(retailPerks(account("INDIVIDUAL", "RETAIL")), true);
-  assert.equal(retailPerks(account("CAFE", "RETAIL")), false);
-  assert.equal(retailPerks(account("INDIVIDUAL", "DEALER")), false);
+test("the cart discounts go by the price list too: Perakende, Bireysel or Kurumsal", () => {
+  for (const type of ["INDIVIDUAL", "CAFE", "TOBACCO_SHOP", "COMPANY", "SOLE_PROPRIETOR"]) {
+    assert.equal(retailPerks(account(type, "RETAIL")), true, `${type} on Perakende`);
+    for (const tier of ["CAFE", "WHOLESALE", "DEALER"]) assert.equal(retailPerks(account(type, tier)), false, `${type} on ${tier}`);
+  }
+  assert.equal(retailPerks(account("INTERNATIONAL", "RETAIL")), false); // export: quotes
+  assert.equal(retailPerks(null), false);
 });

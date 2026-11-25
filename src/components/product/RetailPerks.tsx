@@ -9,7 +9,7 @@ import { useMessages } from "@/components/i18n/LocaleProvider";
 import { PERKS_PAGE } from "@/lib/bilgi";
 import { homeMessages } from "@/lib/i18n/messages/home";
 import { productMessages } from "@/lib/i18n/messages/product";
-import { loyaltyPerks, retailPerks } from "@/lib/perks";
+import { retailPerks } from "@/lib/perks";
 import { storeAdvantages, type AdvantageKey, type AdvantageSources, type StoreAdvantage } from "@/lib/storeAdvantages";
 import { useAuthStore } from "@/store/useAuthStore";
 import type { StoreParameters, User } from "@/types";
@@ -24,7 +24,7 @@ import type { StoreParameters, User } from "@/types";
  * in, and this is the block that argues they should.
  */
 export const showsRetailPerks = (user: Pick<User, "account_type" | "segment_code"> | null) =>
-  !user || retailPerks(user) || loyaltyPerks(user);
+  !user || retailPerks(user);
 
 /**
  * The ones a product page states. Of the homepage's advantages, the ways a
@@ -45,8 +45,9 @@ const isProductPagePerk = (key: AdvantageKey): key is PerkKey => (PRODUCT_PAGE_P
  * to its section on "Ayrıcalıklar ve Avantajlar"; its fuller sentence is the
  * link's title.
  *
- * Shown to a bireysel account and to a visitor who has not signed in — never
- * to a kafe, a bayi or a toptan account, whose discounts are zero by rule
+ * Shown to an account on the Perakende price list (Bireysel or Kurumsal) and
+ * to a visitor who has not signed in — never to a kafe, a bayi or a toptan
+ * account, whose discounts are zero by rule
  * (`lib/perks`, mirroring the server): offering them here would be offering
  * something checkout will not honour.
  */
@@ -54,11 +55,7 @@ export function RetailPerks({ params, sources }: { params: StoreParameters; sour
   const user = useAuthStore((s) => s.user);
   const { percent } = useMessages(homeMessages);
   if (!showsRetailPerks(user)) return null;
-  // A Kurumsal account on Perakende: SultanPuan and Kumbara, not the cart discount.
-  const volume = !user || retailPerks(user);
-  const shown = storeAdvantages(sources, params, percent).filter(
-    (advantage) => isProductPagePerk(advantage.key) && (advantage.key !== "volume" || volume),
-  );
+  const shown = storeAdvantages(sources, params, percent).filter((advantage) => isProductPagePerk(advantage.key));
   return <AdvantageList advantages={shown} />;
 }
 
