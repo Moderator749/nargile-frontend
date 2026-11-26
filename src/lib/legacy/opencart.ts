@@ -1066,6 +1066,9 @@ export const RETIRED_PRODUCTS: Record<string, string> = {
   "yp-sf-05-nargile-sisesi": "/catalog/siseler",
   "steamulation-ultimate-mini-nargile-takimi-white-matt": "/catalog/steamulation",
   "steamulation-pure-nargile-takimi-black-matt": "/catalog/steamulation",
+  // The silver one (STEAM 13-4) is off sale: the same Pure in stock instead
+  // (Search Console's only 404 with impressions, 2026-11-26).
+  "steamulation-pure-nargile-takimi-silver-metalic-1": "/product/steam-13-2-pure-nargile-takimi",
   "steamulation-ultimate-gen-3-nargile-takimi-silver-matt": "/catalog/steamulation",
   "steamulation-ultimate-one-gen-3-nargile-takimi-clear": "/catalog/steamulation",
   "steamulation-ultimate-one-gen-3-nargile-takimi-graphite-metallic": "/catalog/steamulation",
