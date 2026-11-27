@@ -5,6 +5,7 @@
  */
 
 import { defineMessages } from "@/lib/i18n/messages";
+import { FREE_SHIPPING_LABEL } from "@/lib/freeShippingBadge";
 import type { SortKey } from "@/lib/catalogFilters";
 import type { ListingScope } from "@/lib/catalogParts";
 import type { SegmentType } from "@/types";
@@ -125,6 +126,7 @@ export const catalogMessages = defineMessages({
     },
     card: {
       heavy: "Ağır kargo",
+      freeShipping: FREE_SHIPPING_LABEL.tr,
       soldOut: "Tükendi",
       deal: "Fırsat Ürün",
       missed: "Fırsat Kaçtı",
@@ -256,6 +258,7 @@ export const catalogMessages = defineMessages({
     },
     card: {
       heavy: "Heavy cargo",
+      freeShipping: FREE_SHIPPING_LABEL.en,
       soldOut: "Sold out",
       deal: "Deal",
       missed: "Deal Ended",
@@ -383,6 +386,7 @@ export const catalogMessages = defineMessages({
     },
     card: {
       heavy: "شحن ثقيل",
+      freeShipping: FREE_SHIPPING_LABEL.ar,
       soldOut: "نفدت الكمية",
       deal: "عرض خاص",
       missed: "انتهى العرض",

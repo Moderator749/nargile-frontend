@@ -12,6 +12,7 @@ import { CrossSells } from "@/components/product/CrossSells";
 import { ProductDescription } from "@/components/product/ProductDescription";
 import { ProductCategoryLink } from "@/components/product/ProductCategoryLink";
 import { RetailPerks, showsRetailPerks } from "@/components/product/RetailPerks";
+import { FreeShippingBadge } from "@/components/catalog/FreeShippingBadge";
 import { SultanPuanPriceCallout } from "@/components/catalog/SultanPuanBadge";
 import { ShippingAndTrust } from "@/components/product/ShippingAndTrust";
 import type { AdvantageSources } from "@/lib/storeAdvantages";
@@ -269,6 +270,16 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
           youtubeUrl={product.youtube_video_url}
           alt={productImageAlt(product, category)}
           dimmed={soldOut}
+          badge={
+            !soldOut && !pricesPending ? (
+              <FreeShippingBadge
+                product={product}
+                priceInclTax={price?.price_incl_tax}
+                dealLive={sale.kind === "live"}
+                size="page"
+              />
+            ) : null
+          }
           fallback={
             <div className="flex h-full items-center justify-center text-zinc-300">
               <Icon className="h-20 w-20" strokeWidth={1} aria-hidden />
@@ -415,6 +426,7 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
               variantId={variant.id}
               params={params}
               showShipping={perksShown && !quoteOnly}
+              dealLive={sale.kind === "live"}
             />
           )}
           {/* The cart discount, SultanPuan and Kumbara in one row under the

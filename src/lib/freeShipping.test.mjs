@@ -33,3 +33,8 @@ test("a little coal in a big cart does not hold free shipping back", () => {
 test("exactly at the threshold is free, as checkout has it (subtotal >= threshold)", () => {
   assert.deepEqual(shippingState({ amount: 3000, coal: false }, empty, params), { kind: "free_here" });
 });
+
+test("a product with its own Kargo Bedava switch ships the cart free at any total, coal or not", () => {
+  assert.deepEqual(shippingState({ amount: 250, coal: false, shipsFree: true }, empty, params), { kind: "free_here" });
+  assert.deepEqual(shippingState({ amount: 250, coal: true, shipsFree: true }, { amount: 0, coal: 0 }, params), { kind: "free_here" });
+});

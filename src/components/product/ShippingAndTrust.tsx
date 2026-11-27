@@ -34,6 +34,7 @@ export function ShippingAndTrust({
   variantId,
   params,
   showShipping,
+  dealLive = false,
 }: {
   product: CatalogProduct;
   sku: string;
@@ -43,6 +44,8 @@ export function ShippingAndTrust({
   variantId: string;
   params: StoreParameters;
   showShipping: boolean;
+  /** The deal price is live: the Fırsat block's "Kargo Bedava" applies instead. */
+  dealLive?: boolean;
 }) {
   const t = useMessages(productMessages);
   const cartHydrated = useCartHydrated();
@@ -53,7 +56,11 @@ export function ShippingAndTrust({
     const others = items.filter((i) => i.variant_id !== variantId);
     const amount = (i: (typeof items)[number]) => Number(i.segment_price ?? i.price) * i.quantity;
     state = shippingState(
-      { amount: unitPrice * Math.max(1, quantity), coal: product.is_cart_rule_applied !== false },
+      {
+        amount: unitPrice * Math.max(1, quantity),
+        coal: product.is_cart_rule_applied !== false,
+        shipsFree: flaggedFree(product, dealLive, Math.max(1, quantity)),
+      },
       {
         amount: others.reduce((sum, i) => sum + amount(i), 0),
         coal: others.filter((i) => i.coal).reduce((sum, i) => sum + amount(i), 0),
@@ -141,4 +148,11 @@ export function ShippingAndTrust({
       )}
     </div>
   );
+}
+
+/** The product's "Kargo Bedava" switch holds at `quantity` (checkout_engine.ResolvedCartItem.ships_free). */
+function flaggedFree(product: CatalogProduct, dealLive: boolean, quantity: number): boolean {
+  const on = dealLive ? product.opp_is_free_shipping : product.is_free_shipping;
+  const minimum = dealLive ? product.opp_free_shipping_min_quantity : product.free_shipping_min_quantity;
+  return !!on && quantity >= (minimum ?? 1);
 }

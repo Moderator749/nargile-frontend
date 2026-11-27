@@ -405,6 +405,16 @@ export interface Product {
    * which then promises nothing.
    */
   is_cart_rule_applied?: boolean;
+  /**
+   * "Kargo Bedava" on the product sheet, with its "Adet şartı" (null = any),
+   * and the Fırsat block's own pair, which holds while the deal price does.
+   * A retail cart holding it ships free at any total (checkout_engine). Absent
+   * (older API) is read as off.
+   */
+  is_free_shipping?: boolean;
+  free_shipping_min_quantity?: number | null;
+  opp_is_free_shipping?: boolean;
+  opp_free_shipping_min_quantity?: number | null;
 }
 
 // Catalog listing (GET /products/): prices resolved for the caller's segment.

@@ -7,6 +7,7 @@ import Link from "@/components/i18n/Link";
 import { useMessages } from "@/components/i18n/LocaleProvider";
 import { ProductImage } from "@/components/catalog/ProductImage";
 import { useProductList } from "@/components/catalog/ProductListContext";
+import { FreeShippingBadge } from "@/components/catalog/FreeShippingBadge";
 import { SultanPuanCardBadge } from "@/components/catalog/SultanPuanBadge";
 import { useDisplayMoney } from "@/hooks/useDisplayMoney";
 import { useNow } from "@/hooks/useNow";
@@ -231,6 +232,10 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
               </span>
             )}
           </span>
+          {/* The other corner: the deal / sold-out pill, then "Kargo Bedava"
+              under it — never in SultanPuan's corner (lib/freeShippingBadge).
+              `ms-auto` keeps the column at the end even when it wraps under. */}
+          <span className="ms-auto flex flex-col items-end gap-1.5">
           {soldOut ? (
             <span className={`${badgeClass} bg-white/80 text-zinc-900 ring-1 ring-inset ring-black/10`}>{t.soldOut}</span>
           ) : sale.kind === "live" ? (
@@ -259,6 +264,10 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
               {t.missed} <Hourglass className="h-3 w-3 shrink-0" aria-hidden />
             </span>
           ) : null}
+          {!soldOut && !pricesPending && (
+            <FreeShippingBadge product={product} priceInclTax={price?.price_incl_tax} dealLive={sale.kind === "live"} />
+          )}
+          </span>
         </div>
 
         {inCartShown > 0 && variant ? (

@@ -35,6 +35,7 @@ export function ProductGallery({
   alt,
   dimmed,
   fallback,
+  badge,
 }: {
   /** The gallery, cover first. May be absent in an older cached payload. */
   images: string[] | undefined;
@@ -43,6 +44,8 @@ export function ProductGallery({
   /** Sold out: the media dims, the controls do not. */
   dimmed?: boolean;
   fallback: ReactNode;
+  /** A mark for the photo's top end corner ("Kargo Bedava"), over every slide. */
+  badge?: ReactNode;
 }) {
   const t = useMessages(productMessages).gallery;
   const videoId = youtubeId(youtubeUrl);
@@ -59,7 +62,17 @@ export function ProductGallery({
   const [lightbox, setLightbox] = useState<number | null>(null);
   const photos = images ?? [];
 
-  if (slides.length === 0) return <div className={frameClass}>{fallback}</div>;
+  const corner = badge ? (
+    <div className="pointer-events-none absolute end-3 top-3 z-10 sm:end-4 sm:top-4">{badge}</div>
+  ) : null;
+
+  if (slides.length === 0)
+    return (
+      <div className={frameClass}>
+        {fallback}
+        {corner}
+      </div>
+    );
 
   const current = slides[Math.min(index, slides.length - 1)];
   const go = (next: number) => {
@@ -132,6 +145,8 @@ export function ProductGallery({
             </span>
           </button>
         )}
+
+        {corner}
 
         {slides.length > 1 && (
           <>

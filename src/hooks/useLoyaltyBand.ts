@@ -5,10 +5,11 @@ import { useSyncExternalStore } from "react";
 import { fetchStoreParameters } from "@/lib/settingsApi";
 import { DEFAULT_STORE_PARAMETERS } from "@/lib/storeParameters";
 import type { LoyaltyBand } from "@/lib/sultanPuan";
+import type { StoreParameters } from "@/types";
 
 // One read of "Parametreler" per page load, shared by every card that asks:
 // a shelf of thirty cards is one request, not thirty.
-let known: LoyaltyBand | null = null;
+let known: StoreParameters | null = null;
 let asking = false;
 const listeners = new Set<() => void>();
 
@@ -17,7 +18,7 @@ function load() {
   asking = true;
   fetchStoreParameters()
     .then((params) => {
-      known = params.loyalty;
+      known = params;
       listeners.forEach((listener) => listener());
     })
     .catch(() => {
@@ -33,7 +34,16 @@ function subscribe(listener: () => void) {
   };
 }
 
-const fallback = () => DEFAULT_STORE_PARAMETERS.loyalty;
+const fallback = () => DEFAULT_STORE_PARAMETERS;
+
+/**
+ * "Parametreler" as the panel has them now, read once per page load and
+ * shared by every card that asks (the SultanPuan band, the free-shipping
+ * threshold). Starts on the server's defaults, so the first paint matches.
+ */
+export function useSharedStoreParameters(): StoreParameters {
+  return useSyncExternalStore(subscribe, () => known ?? fallback(), fallback);
+}
 
 /**
  * The SultanPuan band as "Parametreler" has it now. It starts on the defaults
@@ -42,5 +52,5 @@ const fallback = () => DEFAULT_STORE_PARAMETERS.loyalty;
  * figures once read.
  */
 export function useLoyaltyBand(): LoyaltyBand {
-  return useSyncExternalStore(subscribe, () => known ?? fallback(), fallback);
+  return useSharedStoreParameters().loyalty;
 }
