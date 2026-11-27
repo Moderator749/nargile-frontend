@@ -21,8 +21,9 @@ export function recoveryAmounts(
   return { before: kurus / 100, after: (kurus - off) / 100, discount: off / 100 };
 }
 
-/** After this hour (İstanbul), a parcel no longer leaves the same day. */
+/** The hour (İstanbul) from which a parcel no longer leaves the same day: weekdays, then Saturday. */
 export const SHIPPING_CUTOFF_HOUR = 16;
+export const SATURDAY_CUTOFF_HOUR = 12;
 
 const ISTANBUL_DAY_HOUR = new Intl.DateTimeFormat("en-GB", {
   timeZone: "Europe/Istanbul",
@@ -32,15 +33,25 @@ const ISTANBUL_DAY_HOUR = new Intl.DateTimeFormat("en-GB", {
 });
 
 /**
- * Whether an order paid now still ships today: a weekday (Monday–Friday)
- * before 16:00 on İstanbul's clock. An evening or a weekend says "ilk
- * sevkiyatta" instead, which is never untrue.
+ * Whether an order paid now still ships today, on İstanbul's clock: Monday–
+ * Friday before 16:00, Saturday before 12:00. Later, and all Sunday, the
+ * message says "ilk sevkiyatta" instead.
  */
 export function shipsToday(now: Date = new Date()): boolean {
   const parts = ISTANBUL_DAY_HOUR.formatToParts(now);
   const weekday = parts.find((p) => p.type === "weekday")?.value;
   const hour = Number(parts.find((p) => p.type === "hour")?.value);
-  return weekday !== "Sat" && weekday !== "Sun" && hour < SHIPPING_CUTOFF_HOUR;
+  if (weekday === "Sun") return false;
+  return hour < (weekday === "Sat" ? SATURDAY_CUTOFF_HOUR : SHIPPING_CUTOFF_HOUR);
+}
+
+/**
+ * The chat link with the message written in. `api.whatsapp.com/send`, not
+ * `wa.me`: wa.me's redirect re-encodes the text, and some WhatsApp clients
+ * (desktop and web) then show a 4-byte emoji (👋, 📦) as the replacement character (U+FFFD).
+ */
+export function whatsappSendHref(number: string, message: string): string {
+  return `https://api.whatsapp.com/send?phone=${number}&text=${encodeURIComponent(message)}`;
 }
 
 /** A percent as Turkish writes it: 5 → "5", 2.5 → "2,5". */

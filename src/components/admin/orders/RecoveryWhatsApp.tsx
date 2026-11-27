@@ -2,7 +2,7 @@ import { Loader2, MessageCircle, Undo2 } from "lucide-react";
 
 import { whatsappNumber } from "@/components/admin/orders/sheetData";
 import type { OrderActions } from "@/components/admin/orders/useOrderActions";
-import { RECOVERY_DISCOUNT_PERCENT, recoveryAmounts, recoveryMessage } from "@/lib/cartRecovery";
+import { RECOVERY_DISCOUNT_PERCENT, recoveryAmounts, recoveryMessage, whatsappSendHref } from "@/lib/cartRecovery";
 import { formatMoney } from "@/lib/format";
 import { orderNetTotal } from "@/lib/ordersApi";
 import type { AdminOrder } from "@/types";
@@ -36,7 +36,7 @@ export function recoveryHref(order: AdminOrder, now: Date = new Date()): string 
     earnsPoints: !!order.recovery_earns_points,
     now,
   });
-  return `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
+  return whatsappSendHref(number, message);
 }
 
 /** Whether the order was won back by "WhatsApp ile Kurtar" and still waits for the transfer. */
