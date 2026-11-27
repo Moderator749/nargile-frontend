@@ -5,59 +5,90 @@
  * the figures the button shows before that, and the message sent after it.
  */
 
-/** The transfer discount offered, in percent of what the customer was to pay (the server's rate too). */
+/** The transfer discount offered, in percent — the server's rate, until an order says its own. */
 export const RECOVERY_DISCOUNT_PERCENT = 5;
 
 /**
  * The total before and after the discount, worked in kuruş so it rounds once,
  * half up, to the kuruş — as the server does: 1.551,52 TL → 1.473,94 TL.
  */
-export function recoveryAmounts(total: number): { before: number; after: number; discount: number } {
+export function recoveryAmounts(
+  total: number,
+  percent: number = RECOVERY_DISCOUNT_PERCENT,
+): { before: number; after: number; discount: number } {
   const kurus = Math.round(total * 100);
-  const off = Math.round((kurus * RECOVERY_DISCOUNT_PERCENT) / 100);
+  const off = Math.round((kurus * percent) / 100);
   return { before: kurus / 100, after: (kurus - off) / 100, discount: off / 100 };
 }
 
-const ISTANBUL = new Intl.DateTimeFormat("en-GB", {
+/** After this hour (İstanbul), a parcel no longer leaves the same day. */
+export const SHIPPING_CUTOFF_HOUR = 16;
+
+const ISTANBUL_DAY_HOUR = new Intl.DateTimeFormat("en-GB", {
   timeZone: "Europe/Istanbul",
-  year: "numeric",
-  month: "numeric",
-  day: "numeric",
+  weekday: "short",
   hour: "numeric",
   hourCycle: "h23",
 });
-const ISTANBUL_DATE = new Intl.DateTimeFormat("tr-TR", { timeZone: "Europe/Istanbul", day: "numeric", month: "long" });
 
-/** The day (as a count of days) and the hour, on the shop's clock. */
-function istanbulDayHour(at: Date): { day: number; hour: number } {
-  const part = (type: string) => Number(ISTANBUL.formatToParts(at).find((p) => p.type === type)?.value);
-  return { day: Date.UTC(part("year"), part("month") - 1, part("day")) / 86_400_000, hour: part("hour") };
+/**
+ * Whether an order paid now still ships today: a weekday (Monday–Friday)
+ * before 16:00 on İstanbul's clock. An evening or a weekend says "ilk
+ * sevkiyatta" instead, which is never untrue.
+ */
+export function shipsToday(now: Date = new Date()): boolean {
+  const parts = ISTANBUL_DAY_HOUR.formatToParts(now);
+  const weekday = parts.find((p) => p.type === "weekday")?.value;
+  const hour = Number(parts.find((p) => p.type === "hour")?.value);
+  return weekday !== "Sat" && weekday !== "Sun" && hour < SHIPPING_CUTOFF_HOUR;
+}
+
+/** A percent as Turkish writes it: 5 → "5", 2.5 → "2,5". */
+function percentText(value: number): string {
+  return String(Math.round(value * 100) / 100).replace(".", ",");
+}
+
+export interface RecoveryOffer {
+  /** The customer's full name; the message greets them by the first. */
+  name: string | null | undefined;
+  /** The totals, already formatted ("1.551,52 TL"). */
+  before: string;
+  after: string;
+  discountPercent: number;
+  /** A guest checkout ("Üye olmadan devam et"), not a registered account. */
+  guest: boolean;
+  /** The Sultan Puan rate of the buyer's price list (a guest's as a member); null: none to offer. */
+  loyaltyPercent: number | null;
+  /** Whether this order earns it (its total inside the band): only then is it promised to a member. */
+  earnsPoints: boolean;
+  /** The moment the message is written, for the shipping sentence. */
+  now?: Date;
 }
 
 /**
- * When the order was placed, as the message's sentence begins ("… oluşturduğunuz
- * siparişte"), on İstanbul's clock: today by the part of the day — Gece
- * (00–06), Sabah (06–12), Bugün (12–18), Akşam (18–24); yesterday the same
- * with "Dün" ("Dün gece", "Dün öğleden sonra"); before that, its date ("3
- * Kasım tarihinde"), as a part of the day long gone would read oddly.
+ * The message. A member is promised the Sultan Puan this order earns; a guest
+ * is told what signing up brings; neither is promised points the shop's rules
+ * would not give (B2B, Sultan Puan off, a total outside the band) — the
+ * sentence then ends with the discount. No name: "Merhaba,".
  */
-export function placedWhen(createdAt: string | Date, now: Date = new Date()): string {
-  const placed = new Date(createdAt);
-  const { day, hour } = istanbulDayHour(placed);
-  const ago = istanbulDayHour(now).day - day;
-  const part = hour < 6 ? 0 : hour < 12 ? 1 : hour < 18 ? 2 : 3;
-  if (ago <= 0) return ["Gece", "Sabah", "Bugün", "Akşam"][part];
-  if (ago === 1) return `Dün ${["gece", "sabah", "öğleden sonra", "akşam"][part]}`;
-  return `${ISTANBUL_DATE.format(placed)} tarihinde`;
-}
-
-/** The message, with the amounts already formatted ("1.551,52 TL"). No name: "Merhaba,". */
-export function recoveryMessage(name: string | null | undefined, when: string, before: string, after: string): string {
-  const who = name?.trim();
+export function recoveryMessage(offer: RecoveryOffer): string {
+  const first = offer.name?.trim().split(/\s+/)[0];
+  const discount = `İşlemi havale ile tamamlamak isterseniz *%${percentText(offer.discountPercent)} havale indirimiyle* tutarınız *${offer.before} yerine ${offer.after}*'ye düşüyor`;
+  const rate = offer.loyaltyPercent ? `*%${percentText(offer.loyaltyPercent)} SultanPuan*` : null;
+  const advantage = !rate
+    ? `${discount}.`
+    : offer.guest
+      ? `${discount}; dilerseniz üyelik oluşturduğunuzda ${rate} avantajından da yararlanabilirsiniz.`
+      : offer.earnsPoints
+        ? `${discount}; ayrıca ${rate} hesabınıza tanımlanıyor.`
+        : `${discount}.`;
+  const shipping = shipsToday(offer.now)
+    ? "Uygunsa IBAN bilgilerimizi ileteyim, siparişinizi bugün kargoya verelim."
+    : "Uygunsa IBAN bilgilerimizi ileteyim, siparişinizi ilk sevkiyatta kargoya verelim.";
   return [
-    `Merhaba${who ? ` ${who}` : ""}, Nargile Malzemesi'nden ulaşıyorum.`,
-    `${when} oluşturduğunuz siparişte banka limit/onay sistemlerinden kaynaklı ufak bir takılma olmuş. Siparişinizi iptal etmedik, stoklar tükenmeden ürünlerinizi sizin için ayırdık. 🤝`,
-    `Eğer işlemi Havale/EFT ile tamamlamak isterseniz, aracı kurum (Sanal POS) komisyonunu iptal edip bu tutarı doğrudan size indirim olarak yansıtabiliriz. Böylece sepet tutarınız ${before} yerine *${after}*'ye düşmüş olur.`,
-    "Sizin için de uygunsa ödemeyi tamamlayabilmeniz için IBAN bilgilerimizi iletebilirim, siparişinizi bugün kargoya vermiş oluruz. 🚀",
+    `Merhaba${first ? ` ${first}` : ""}, *Nargile Malzemesi*'nden ulaşıyorum. 👋`,
+    "Siparişinizde banka onayından kaynaklı ufak bir takılma olmuş, ürünlerinizi sizin için ayırdık.",
+    advantage,
+    `${shipping} 📦`,
   ].join("\n\n");
 }

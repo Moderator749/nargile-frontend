@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { placedWhen, recoveryAmounts, recoveryMessage } from "./cartRecovery.ts";
+import { recoveryAmounts, recoveryMessage, shipsToday } from "./cartRecovery.ts";
 import { formatMoney } from "./format.ts";
 
 test("five percent off, to the kuruş", () => {
@@ -14,59 +14,100 @@ test("five percent off, to the kuruş", () => {
   assert.equal(recoveryAmounts(0.1 + 0.2).after, 0.28);
 });
 
+test("another rate, when the order says one", () => {
+  assert.deepEqual(recoveryAmounts(1000, 7), { before: 1000, after: 930, discount: 70 });
+});
+
 test("the amounts read as the shop writes them", () => {
   const { before, after } = recoveryAmounts(1551.52);
   assert.equal(formatMoney(before), "1.551,52 TL");
   assert.equal(formatMoney(after), "1.473,94 TL");
 });
 
-test("the message names the customer and both totals, the new one bold", () => {
-  const text = recoveryMessage("Ahmet Yılmaz", "Gece", "1.551,52 TL", "1.473,94 TL");
-  assert.ok(text.startsWith("Merhaba Ahmet Yılmaz, Nargile Malzemesi'nden ulaşıyorum.\n\nGece oluşturduğunuz"));
-  assert.ok(text.includes("sepet tutarınız 1.551,52 TL yerine *1.473,94 TL*'ye düşmüş olur."));
-  assert.ok(text.endsWith("bugün kargoya vermiş oluruz. 🚀"));
-  assert.equal(text.split("\n\n").length, 4);
+// İstanbul is UTC+3 all year. 2026-11-27 is a Friday, 2026-11-28 a Saturday.
+const FRI_1559 = new Date("2026-11-27T12:59:00Z");
+const FRI_1600 = new Date("2026-11-27T13:00:00Z");
+const FRI_2330 = new Date("2026-11-27T20:30:00Z");
+const SAT_1000 = new Date("2026-11-28T07:00:00Z");
+const MON_0005 = new Date("2026-11-29T21:05:00Z"); // 00:05 on Monday in İstanbul, still Sunday in UTC
+
+test("ships today: a weekday before 16:00 on İstanbul's clock", () => {
+  assert.equal(shipsToday(FRI_1559), true);
+  assert.equal(shipsToday(FRI_1600), false);
+  assert.equal(shipsToday(FRI_2330), false);
+  assert.equal(shipsToday(SAT_1000), false);
+  assert.equal(shipsToday(MON_0005), true);
+});
+
+const before = formatMoney(1551.52);
+const after = formatMoney(1473.94);
+const offer = {
+  name: "Ahmet Yılmaz",
+  before,
+  after,
+  discountPercent: 5,
+  guest: false,
+  loyaltyPercent: 5,
+  earnsPoints: true,
+};
+
+const MEMBER_BLOCK = `İşlemi havale ile tamamlamak isterseniz *%5 havale indirimiyle* tutarınız *${before} yerine ${after}*'ye düşüyor; ayrıca *%5 SultanPuan* hesabınıza tanımlanıyor.`;
+const GUEST_BLOCK = `İşlemi havale ile tamamlamak isterseniz *%5 havale indirimiyle* tutarınız *${before} yerine ${after}*'ye düşüyor; dilerseniz üyelik oluşturduğunuzda *%5 SultanPuan* avantajından da yararlanabilirsiniz.`;
+const TODAY = "Uygunsa IBAN bilgilerimizi ileteyim, siparişinizi bugün kargoya verelim. 📦";
+const FIRST = "Uygunsa IBAN bilgilerimizi ileteyim, siparişinizi ilk sevkiyatta kargoya verelim. 📦";
+const head = (name) =>
+  `Merhaba ${name}, *Nargile Malzemesi*'nden ulaşıyorum. 👋\n\nSiparişinizde banka onayından kaynaklı ufak bir takılma olmuş, ürünlerinizi sizin için ayırdık.`;
+
+test("1) a registered member before 16:00", () => {
+  assert.equal(recoveryMessage({ ...offer, now: FRI_1559 }), `${head("Ahmet")}\n\n${MEMBER_BLOCK}\n\n${TODAY}`);
+});
+
+test("2) a registered member at and after 16:00", () => {
+  assert.equal(recoveryMessage({ ...offer, now: FRI_1600 }), `${head("Ahmet")}\n\n${MEMBER_BLOCK}\n\n${FIRST}`);
+  assert.equal(recoveryMessage({ ...offer, now: FRI_2330 }), `${head("Ahmet")}\n\n${MEMBER_BLOCK}\n\n${FIRST}`);
+});
+
+test("3) a guest before and after 16:00", () => {
+  const guest = { ...offer, name: "Ayşe Nur Kaya", guest: true, earnsPoints: false };
+  assert.equal(recoveryMessage({ ...guest, now: FRI_1559 }), `${head("Ayşe")}\n\n${GUEST_BLOCK}\n\n${TODAY}`);
+  assert.equal(recoveryMessage({ ...guest, now: FRI_1600 }), `${head("Ayşe")}\n\n${GUEST_BLOCK}\n\n${FIRST}`);
+});
+
+test("4) the discounted amount in the message is the exact kuruş", () => {
+  const { before: b, after: a } = recoveryAmounts(1551.52, 5);
+  const text = recoveryMessage({ ...offer, before: formatMoney(b), after: formatMoney(a), now: FRI_1559 });
+  assert.ok(text.includes("*1.551,52 TL yerine 1.473,94 TL*'ye düşüyor"));
+});
+
+test("the rates come from the order: 10% Sultan Puan, a fractional discount", () => {
+  const text = recoveryMessage({ ...offer, loyaltyPercent: 10, discountPercent: 2.5, now: FRI_1559 });
+  assert.ok(text.includes("*%2,5 havale indirimiyle*"));
+  assert.ok(text.includes("ayrıca *%10 SultanPuan* hesabınıza tanımlanıyor."));
+});
+
+test("no points promised that the rules would not give", () => {
+  const plain = `İşlemi havale ile tamamlamak isterseniz *%5 havale indirimiyle* tutarınız *${before} yerine ${after}*'ye düşüyor.`;
+  // A member whose total is outside the Sultan Puan band.
+  assert.ok(recoveryMessage({ ...offer, earnsPoints: false, now: FRI_1559 }).includes(`\n\n${plain}\n\n`));
+  // A B2B buyer, or Sultan Puan off: no rate at all, member or guest.
+  assert.ok(recoveryMessage({ ...offer, loyaltyPercent: null, now: FRI_1559 }).includes(`\n\n${plain}\n\n`));
+  assert.ok(recoveryMessage({ ...offer, guest: true, loyaltyPercent: null, now: FRI_1559 }).includes(`\n\n${plain}\n\n`));
 });
 
 test("no name: a plain greeting", () => {
-  assert.ok(recoveryMessage("  ", "Gece", "1 TL", "0,95 TL").startsWith("Merhaba, Nargile"));
-  assert.ok(recoveryMessage(null, "Gece", "1 TL", "0,95 TL").startsWith("Merhaba, Nargile"));
+  assert.ok(recoveryMessage({ ...offer, name: "  " }).startsWith("Merhaba, *Nargile Malzemesi*"));
+  assert.ok(recoveryMessage({ ...offer, name: null }).startsWith("Merhaba, *Nargile Malzemesi*"));
 });
 
 test("the link's text survives encoding, emoji and line breaks included", () => {
-  const text = recoveryMessage("Ayşe", "Akşam", "1.551,52 TL", "1.473,94 TL");
+  const text = recoveryMessage({ ...offer, now: FRI_1559 });
   const href = `https://wa.me/905321112233?text=${encodeURIComponent(text)}`;
-  // Nothing raw in the query: no spaces, line breaks or emoji.
-  assert.ok(!/[\s🤝🚀]/u.test(href));
+  assert.ok(!/[\s👋📦]/u.test(href));
   assert.equal(new URL(href).searchParams.get("text"), text);
-});
-
-// İstanbul is UTC+3 all year: 06:00 there is 03:00Z.
-const NOW = new Date("2026-11-06T17:00:00Z"); // 20:00 in İstanbul
-
-test("placed today: the part of the day, on İstanbul's clock", () => {
-  assert.equal(placedWhen("2026-11-05T21:00:00Z", NOW), "Gece"); // 00:00
-  assert.equal(placedWhen("2026-11-06T02:59:00Z", NOW), "Gece"); // 05:59
-  assert.equal(placedWhen("2026-11-06T03:00:00Z", NOW), "Sabah"); // 06:00
-  assert.equal(placedWhen("2026-11-06T08:59:00Z", NOW), "Sabah"); // 11:59
-  assert.equal(placedWhen("2026-11-06T09:00:00Z", NOW), "Bugün"); // 12:00
-  assert.equal(placedWhen("2026-11-06T14:59:00Z", NOW), "Bugün"); // 17:59
-  assert.equal(placedWhen("2026-11-06T15:00:00Z", NOW), "Akşam"); // 18:00
-});
-
-test("placed yesterday: the same, after \"Dün\"; before that, its date", () => {
-  assert.equal(placedWhen("2026-11-05T20:59:00Z", NOW), "Dün akşam"); // 23:59 on the 5th
-  assert.equal(placedWhen("2026-11-04T22:30:00Z", NOW), "Dün gece"); // 01:30 on the 5th
-  assert.equal(placedWhen("2026-11-05T10:00:00Z", NOW), "Dün öğleden sonra");
-  assert.equal(placedWhen("2026-11-03T10:00:00Z", NOW), "3 Kasım tarihinde");
-});
-
-test("UTC's midnight is not İstanbul's", () => {
-  // 22:30Z on the 5th is 01:30 on the 6th in İstanbul: tonight, not yesterday.
-  assert.equal(placedWhen("2026-11-05T22:30:00Z", new Date("2026-11-06T06:00:00Z")), "Gece");
-});
-
-test("the message opens its second paragraph with when", () => {
-  const text = recoveryMessage("Ali", "Dün akşam", "1 TL", "0,95 TL");
-  assert.ok(text.includes("\n\nDün akşam oluşturduğunuz siparişte banka limit/onay"));
+  // The exact encoding of the opening, as WhatsApp receives it.
+  assert.ok(
+    href.startsWith(
+      "https://wa.me/905321112233?text=Merhaba%20Ahmet%2C%20*Nargile%20Malzemesi*'nden%20ula%C5%9F%C4%B1yorum.%20%F0%9F%91%8B%0A%0A",
+    ),
+  );
 });

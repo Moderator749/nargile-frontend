@@ -1232,6 +1232,14 @@ export interface AdminOrder extends Omit<Order, "items"> {
   customer_email: string;
   customer_name: string | null;
   customer_phone: string | null;
+  /** A guest checkout's buyer ("Üye olmadan devam et"), not a registered account. */
+  customer_is_guest?: boolean;
+  /** "WhatsApp ile Kurtar": the havale discount offered, in percent ("5"). */
+  recovery_discount_percent?: DecimalString;
+  /** The buyer's Sultan Puan rate in percent ("10"), a guest's as a member; null when there is none to offer. */
+  loyalty_percent?: DecimalString | null;
+  /** Whether this order's total earns that Sultan Puan (inside the band). */
+  recovery_earns_points?: boolean;
   /** From the customer's company profile (B2B); null for retail buyers. */
   company_title: string | null;
   /** Free-form on the server, so every field is optional here. */

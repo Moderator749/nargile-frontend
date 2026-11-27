@@ -2,7 +2,7 @@ import { Loader2, MessageCircle, Undo2 } from "lucide-react";
 
 import { whatsappNumber } from "@/components/admin/orders/sheetData";
 import type { OrderActions } from "@/components/admin/orders/useOrderActions";
-import { RECOVERY_DISCOUNT_PERCENT, placedWhen, recoveryAmounts, recoveryMessage } from "@/lib/cartRecovery";
+import { RECOVERY_DISCOUNT_PERCENT, recoveryAmounts, recoveryMessage } from "@/lib/cartRecovery";
 import { formatMoney } from "@/lib/format";
 import { orderNetTotal } from "@/lib/ordersApi";
 import type { AdminOrder } from "@/types";
@@ -10,18 +10,32 @@ import type { AdminOrder } from "@/types";
 const base =
   "inline-flex min-h-8 items-center justify-center gap-1.5 rounded-lg px-2.5 py-1 text-center text-xs font-semibold leading-4 shadow-sm transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600";
 
-/** A recovered order has taken its discount: the chat it is offered in, or null without a dialable number. */
-export function recoveryHref(order: AdminOrder): string | null {
+/** The havale discount this order is (or was) offered, in percent. */
+function discountPercent(order: AdminOrder): number {
+  const given = Number(order.recovery_discount_percent);
+  return given > 0 ? given : RECOVERY_DISCOUNT_PERCENT;
+}
+
+/**
+ * A recovered order has taken its discount: the chat it is offered in, or null
+ * without a dialable number. Written at `now` — the shipping sentence turns
+ * on İstanbul's 16:00 — so build it when the link is used, not ahead.
+ */
+export function recoveryHref(order: AdminOrder, now: Date = new Date()): string | null {
   const number = whatsappNumber(order);
   if (!number) return null;
   const after = orderNetTotal(order);
   const before = after + Number(order.recovery_discount ?? 0);
-  const message = recoveryMessage(
-    order.customer_name || order.shipping_address?.full_name,
-    placedWhen(order.created_at),
-    formatMoney(before),
-    formatMoney(after),
-  );
+  const message = recoveryMessage({
+    name: order.customer_name || order.shipping_address?.full_name,
+    before: formatMoney(before),
+    after: formatMoney(after),
+    discountPercent: discountPercent(order),
+    guest: !!order.customer_is_guest,
+    loyaltyPercent: order.loyalty_percent ? Number(order.loyalty_percent) : null,
+    earnsPoints: !!order.recovery_earns_points,
+    now,
+  });
   return `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
 }
 
@@ -44,7 +58,8 @@ export function isRecoveredTransfer(order: AdminOrder): boolean {
 export function RecoveryWhatsApp({ order, actions }: { order: AdminOrder; actions: OrderActions }) {
   const dialable = !!whatsappNumber(order);
   const busy = actions.busy(order.id);
-  const { before, after } = recoveryAmounts(orderNetTotal(order));
+  const percent = discountPercent(order);
+  const { before, after } = recoveryAmounts(orderNetTotal(order), percent);
 
   async function recover() {
     const updated = await actions.recoverToTransfer(order);
@@ -63,7 +78,7 @@ export function RecoveryWhatsApp({ order, actions }: { order: AdminOrder; action
         aria-busy={busy}
         title={
           dialable
-            ? `Siparişi %${RECOVERY_DISCOUNT_PERCENT} indirimle havaleye çevirip stoğu ayırır, sonra teklifi WhatsApp'ta açar`
+            ? `Siparişi %${percent} indirimle havaleye çevirip stoğu ayırır, sonra teklifi WhatsApp'ta açar`
             : "Müşterinin WhatsApp'a uygun bir telefon numarası yok"
         }
         className={`${base} ${
@@ -84,7 +99,7 @@ export function RecoveryWhatsApp({ order, actions }: { order: AdminOrder; action
           <>
             <span className="line-through">{formatMoney(before)}</span>{" "}
             <span className="font-semibold text-emerald-700 dark:text-emerald-400">{formatMoney(after)}</span>{" "}
-            <span className="whitespace-nowrap">(Havale −%{RECOVERY_DISCOUNT_PERCENT})</span>
+            <span className="whitespace-nowrap">(Havale −%{percent})</span>
           </>
         ) : (
           "Telefon numarası yok"
@@ -108,6 +123,10 @@ export function RecoveryResend({ order, actions }: { order: AdminOrder; actions:
       {href && (
         <a
           href={href}
+          // Written again on the click: the shipping sentence may have turned since the row was drawn.
+          onClick={(e) => {
+            e.currentTarget.href = recoveryHref(order) ?? href;
+          }}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1 text-[11px] font-semibold leading-4 text-emerald-700 underline-offset-2 hover:underline dark:text-emerald-400"
@@ -119,7 +138,7 @@ export function RecoveryResend({ order, actions }: { order: AdminOrder; actions:
         type="button"
         onClick={() => void actions.revertRecovery(order)}
         disabled={busy}
-        title="Stoğu serbest bırakır, %5 indirimi kaldırır, siparişi yeniden 'Ödeme başarısız' yapar"
+        title={`Stoğu serbest bırakır, %${discountPercent(order)} indirimi kaldırır, siparişi yeniden 'Ödeme başarısız' yapar`}
         className="inline-flex items-center gap-1 rounded text-[11px] font-semibold leading-4 text-slate-500 underline-offset-2 transition-colors hover:text-red-600 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500 disabled:cursor-wait disabled:opacity-60 dark:text-zinc-400 dark:hover:text-red-400"
       >
         {busy ? <Loader2 className="h-3 w-3 shrink-0 animate-spin" aria-hidden /> : <Undo2 className="h-3 w-3 shrink-0" aria-hidden />}
