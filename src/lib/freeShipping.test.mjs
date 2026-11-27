@@ -38,3 +38,7 @@ test("a product with its own Kargo Bedava switch ships the cart free at any tota
   assert.deepEqual(shippingState({ amount: 250, coal: false, shipsFree: true }, empty, params), { kind: "free_here" });
   assert.deepEqual(shippingState({ amount: 250, coal: true, shipsFree: true }, { amount: 0, coal: 0 }, params), { kind: "free_here" });
 });
+
+test("a Kargo Bedava line already in the cart ships it free with the cart", () => {
+  assert.deepEqual(shippingState({ amount: 250, coal: false }, { amount: 100, coal: 0, shipsFree: true }, params), { kind: "free_with_cart" });
+});

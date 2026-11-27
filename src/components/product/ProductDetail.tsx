@@ -272,12 +272,7 @@ export function ProductDetail({ initialProduct, category, categories, breadcrumb
           dimmed={soldOut}
           badge={
             !soldOut && !pricesPending ? (
-              <FreeShippingBadge
-                product={product}
-                priceInclTax={price?.price_incl_tax}
-                dealLive={sale.kind === "live"}
-                size="page"
-              />
+              <FreeShippingBadge product={product} dealLive={sale.kind === "live"} size="page" />
             ) : null
           }
           fallback={

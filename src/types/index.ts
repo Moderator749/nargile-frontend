@@ -560,6 +560,13 @@ export interface CartLineItem extends CartItem {
   category?: string | null;
   /** "Sepet Kuralı" (coal) for the free-shipping rule, so a product page can say what the cart will ship at. */
   coal?: boolean;
+  /**
+   * From how many units this line ships the whole retail cart free by the
+   * product's "Kargo Bedava" switch (lib/freeShippingBadge.freeShippingFrom);
+   * null/absent when the switch was off. A snapshot for the visitor's estimate;
+   * the server quote has the last word.
+   */
+  ships_free_from?: number | null;
 }
 
 /**

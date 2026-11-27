@@ -3,7 +3,6 @@
 import { Truck } from "lucide-react";
 
 import { useMessages } from "@/components/i18n/LocaleProvider";
-import { useSharedStoreParameters } from "@/hooks/useLoyaltyBand";
 import { showsFreeShipping } from "@/lib/freeShippingBadge";
 import { catalogMessages } from "@/lib/i18n/messages/catalog";
 import { retailPerks } from "@/lib/perks";
@@ -25,27 +24,18 @@ const SIZES = {
  */
 export function FreeShippingBadge({
   product,
-  priceInclTax,
   dealLive,
   size = "card",
   className = "",
 }: {
   product: Product;
-  priceInclTax: string | null | undefined;
   dealLive: boolean;
   size?: keyof typeof SIZES;
   className?: string;
 }) {
-  const params = useSharedStoreParameters();
   const user = useAuthStore((s) => s.user);
   const label = useMessages(catalogMessages).card.freeShipping;
-  const shown = showsFreeShipping({
-    product,
-    priceInclTax,
-    dealLive,
-    threshold: params.free_shipping_threshold,
-    perks: !user || retailPerks(user),
-  });
+  const shown = showsFreeShipping({ product, dealLive, perks: !user || retailPerks(user) });
   if (!shown) return null;
   return (
     <span data-badge="free-shipping" className={`${PILL} ${SIZES[size]} ${className}`}>

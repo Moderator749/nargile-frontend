@@ -4,7 +4,8 @@ import type { StoreParameters } from "@/types";
  * A visitor's cart summed up before they sign in, by the same rules checkout
  * applies to a bireysel order (`rate_for` and the shipping rule in
  * app/services): the ciro discount of the highest tier the subtotal has
- * reached, and free shipping from the threshold up. An estimate — the server
+ * reached, and free shipping from the threshold up — or at any total when a
+ * line meets its product's "Kargo Bedava" switch. An estimate — the server
  * prices the order, and a firm's account gets its own list's prices instead.
  */
 export interface CartEstimate {
@@ -26,6 +27,8 @@ const cents = (n: number) => Math.round(n * 100) / 100;
 export function estimateCart(
   subtotal: number,
   params: Pick<StoreParameters, "volume_tiers" | "free_shipping_threshold">,
+  /** A line meets its product's "Kargo Bedava" switch (lib/cartLine.lineShipsFree): free at any total. */
+  opts: { shipsFree?: boolean } = {},
 ): CartEstimate {
   const tiers = params.volume_tiers
     .map((t) => ({ threshold: Number(t.threshold), rate: Number(t.rate) }))
@@ -36,7 +39,7 @@ export function estimateCart(
   const volumeDiscount = cents(subtotal * volumeRate);
   const next = tiers.find((t) => subtotal < t.threshold) ?? null;
   const shippingThreshold = Number(params.free_shipping_threshold);
-  const freeShipping = subtotal >= shippingThreshold;
+  const freeShipping = !!opts.shipsFree || subtotal >= shippingThreshold;
   return {
     subtotal,
     volumeRate,

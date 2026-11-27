@@ -1,4 +1,4 @@
-import type { Product } from "@/types";
+import type { CartLineItem, Product } from "@/types";
 
 /**
  * Where the photo badges sit, in logical corners so Arabic mirrors them: the
@@ -15,48 +15,46 @@ export const FREE_SHIPPING_LABEL: Readonly<Record<"tr" | "en" | "ar", string>> =
   ar: "شحن مجاني",
 };
 
-type Flags = Pick<
+export type FreeShippingFlags = Pick<
   Product,
-  | "is_free_shipping"
-  | "free_shipping_min_quantity"
-  | "opp_is_free_shipping"
-  | "opp_free_shipping_min_quantity"
-  | "is_cart_rule_applied"
+  "is_free_shipping" | "free_shipping_min_quantity" | "opp_is_free_shipping" | "opp_free_shipping_min_quantity"
 >;
 
 /**
- * Whether a card or a product page may say "Kargo Bedava": only when checkout
- * would ship this product, bought on its own, free (checkout_engine.
- * quote_shipping) — so it never promises carriage the order will not cover.
+ * From how many units of this product a retail cart ships free by its own
+ * "Kargo Bedava" switch (the Fırsat block's while the deal price is live), or
+ * null when the switch is off. Mirrors checkout_engine.ResolvedCartItem.ships_free.
+ */
+export function freeShippingFrom(product: FreeShippingFlags, dealLive: boolean): number | null {
+  const on = dealLive ? product.opp_is_free_shipping : product.is_free_shipping;
+  const minimum = dealLive ? product.opp_free_shipping_min_quantity : product.free_shipping_min_quantity;
+  return on ? Math.max(1, minimum ?? 1) : null;
+}
+
+/**
+ * Whether a card or a product page says "Kargo Bedava": only for a product the
+ * admin ships free on purpose — its "Kargo Bedava" switch (the Fırsat block's
+ * while the deal price is live), with one unit enough to meet its "Adet şartı".
+ * A price over the free-shipping threshold does not earn the badge: such
+ * carts ship free anyway, and a grid of sets all saying so is clutter
+ * (user's decision, 2026-11-27).
  *
- * - Retail promises only (`perks`: a visitor or a Perakende account); a
- *   Kafe/Toptan/Bayi price never includes carriage.
- * - The product's own "Kargo Bedava" switch — the Fırsat block's while the deal
- *   price is live — ships the whole cart free at any total, but only from its
- *   "Adet şartı": one unit has to be enough, or the badge would overpromise.
- * - Otherwise the price alone reaches the free-shipping threshold, and the
- *   product is not coal ("Sepet Kuralı"), whose cart needs a minimum weight.
+ * Retail promises only (`perks`: a visitor or a Perakende account); a
+ * Kafe/Toptan/Bayi price never includes carriage.
  */
 export function showsFreeShipping({
   product,
-  priceInclTax,
   dealLive,
-  threshold,
   perks,
 }: {
-  product: Flags;
-  priceInclTax: string | number | null | undefined;
+  product: FreeShippingFlags;
   dealLive: boolean;
-  threshold: string | number;
   perks: boolean;
 }): boolean {
-  if (!perks) return false;
-  const on = dealLive ? product.opp_is_free_shipping : product.is_free_shipping;
-  const minimum = dealLive ? product.opp_free_shipping_min_quantity : product.free_shipping_min_quantity;
-  if (on && (minimum ?? 1) <= 1) return true;
-  if (priceInclTax === null || priceInclTax === undefined || priceInclTax === "") return false;
-  if (product.is_cart_rule_applied !== false) return false;
-  const price = Number(priceInclTax);
-  const limit = Number(threshold);
-  return Number.isFinite(price) && Number.isFinite(limit) && price >= limit;
+  return perks && freeShippingFrom(product, dealLive) === 1;
+}
+
+/** A cart line meets its product's "Kargo Bedava" switch: the whole retail cart ships free. */
+export function lineShipsFree(line: Pick<CartLineItem, "quantity" | "ships_free_from">): boolean {
+  return line.ships_free_from != null && line.quantity >= line.ships_free_from;
 }

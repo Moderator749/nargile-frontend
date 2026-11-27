@@ -265,7 +265,7 @@ export function ProductCard({ product, category, isLoggedIn, publicPrices, price
             </span>
           ) : null}
           {!soldOut && !pricesPending && (
-            <FreeShippingBadge product={product} priceInclTax={price?.price_incl_tax} dealLive={sale.kind === "live"} />
+            <FreeShippingBadge product={product} dealLive={sale.kind === "live"} />
           )}
           </span>
         </div>

@@ -33,3 +33,12 @@ test("the highest tier reached gives its rate; the threshold itself counts", () 
   assert.equal(top.volumeRate, 0.08);
   assert.equal(top.nextTier, null);
 });
+
+test("a line meeting its product's Kargo Bedava switch frees the cart under the threshold", () => {
+  const e = estimateCart(1190, params, { shipsFree: true });
+  assert.equal(e.freeShipping, true);
+  assert.equal(e.toFreeShipping, 0); // no "3.000 TL'ye X TL kaldı"
+  // Without one, the threshold still rules (a 3,000 TL+ cart ships free with no switch).
+  assert.equal(estimateCart(1190, params).freeShipping, false);
+  assert.equal(estimateCart(3000, params).freeShipping, true);
+});

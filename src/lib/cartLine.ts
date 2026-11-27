@@ -1,3 +1,4 @@
+import { freeShippingFrom } from "@/lib/freeShippingBadge";
 import type { CartLineItem, CatalogPrice, CatalogProduct, CatalogVariant } from "@/types";
 
 /**
@@ -25,5 +26,7 @@ export function cartLineFor(
     category: opts.category ?? null,
     // Absent on an older API is read as coal, as the shipping rule reads it: promise nothing.
     coal: product.is_cart_rule_applied !== false,
+    // The product's own "Kargo Bedava", for the visitor's shipping estimate.
+    ships_free_from: freeShippingFrom(product, opts.saleLive),
   };
 }

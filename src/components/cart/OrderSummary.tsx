@@ -15,6 +15,8 @@ import { PaymentBadges } from "@/components/payment/PaymentBadges";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { estimateCart } from "@/lib/cartEstimate";
+import { lineShipsFree } from "@/lib/freeShippingBadge";
+import { useCartStore } from "@/store/useCartStore";
 import { formatMoney } from "@/lib/format";
 import type { Locale } from "@/lib/i18n/config";
 import { INTL_LOCALE } from "@/lib/i18n/messages";
@@ -309,7 +311,9 @@ function FreeShippingProgress({
 function GuestEstimate({ subtotal, params }: { subtotal: number; params: StoreParameters }) {
   const t = useMessages(cartMessages).summary;
   const locale = useLocale();
-  const e = estimateCart(subtotal, params);
+  // A line whose product ships free ("Kargo Bedava") frees the whole cart, as checkout has it.
+  const shipsFree = useCartStore((s) => s.items.some(lineShipsFree));
+  const e = estimateCart(subtotal, params, { shipsFree });
   // Within reach only, as for a signed-in cart (VolumeNudge).
   const nudge = e.nextTier && e.nextTier.remaining <= e.nextTier.threshold / 3 ? e.nextTier : null;
   return (
@@ -326,7 +330,7 @@ function GuestEstimate({ subtotal, params }: { subtotal: number; params: StorePa
         </dd>
       </div>
       <div className="space-y-2 pt-1">
-        <FreeShippingProgress subtotal={e.subtotal} threshold={e.shippingThreshold} />
+        <FreeShippingProgress subtotal={e.subtotal} threshold={e.shippingThreshold} done={e.freeShipping} />
         {nudge && (
           <p className="flex gap-2 rounded-xl bg-emerald-50 px-3 py-2.5 text-xs leading-5 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-200">
             <TrendingUp className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />

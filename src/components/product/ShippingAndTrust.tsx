@@ -14,6 +14,8 @@ import { STORES, WHATSAPP_STORE, whatsappLink } from "@/lib/stores";
 import { useCartStore } from "@/store/useCartStore";
 import { useCartHydrated } from "@/store/useHasHydrated";
 import { shippingState, type ShippingState } from "@/lib/freeShipping";
+import { freeShippingFrom } from "@/lib/freeShippingBadge";
+import { lineShipsFree } from "@/lib/freeShippingBadge";
 import type { CatalogProduct, StoreParameters } from "@/types";
 
 /** From this unit price up, the WhatsApp line is offered: a set worth a question before paying. */
@@ -64,6 +66,7 @@ export function ShippingAndTrust({
       {
         amount: others.reduce((sum, i) => sum + amount(i), 0),
         coal: others.filter((i) => i.coal).reduce((sum, i) => sum + amount(i), 0),
+        shipsFree: others.some(lineShipsFree),
       },
       params,
     );
@@ -152,7 +155,6 @@ export function ShippingAndTrust({
 
 /** The product's "Kargo Bedava" switch holds at `quantity` (checkout_engine.ResolvedCartItem.ships_free). */
 function flaggedFree(product: CatalogProduct, dealLive: boolean, quantity: number): boolean {
-  const on = dealLive ? product.opp_is_free_shipping : product.is_free_shipping;
-  const minimum = dealLive ? product.opp_free_shipping_min_quantity : product.free_shipping_min_quantity;
-  return !!on && quantity >= (minimum ?? 1);
+  const from = freeShippingFrom(product, dealLive);
+  return from !== null && quantity >= from;
 }
